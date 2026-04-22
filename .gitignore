@@ -1,0 +1,17 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+*.log
+server_err.log
+server_out.log
+mega-sync-*.log
+sync-repo-*.log
+.backup-*/
+backup-*/
+STATE/snapshot_*/
+STATE/backup_*/
+dist/
+coverage/
+Thumbs.db
+.DS_Store
