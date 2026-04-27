@@ -40,3 +40,17 @@ Product requirements captured: verified
 Code/runtime verification: not completed
 Production-ready: no
 ```
+
+
+## 2026-04-27T23:20:27.269236+00:00 — Termux React shell autofix prepared
+
+- Generated missing safe shell files only when absent.
+- No demo data added.
+- Build will be attempted by the Termux script after npm install.
+
+
+## 2026-04-27T23:21:19.193868+00:00 — Termux build attempt
+
+```text
+no build log
+```
