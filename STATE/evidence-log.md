@@ -68,3 +68,30 @@ no build log
 ```text
 no build log
 ```
+
+
+## 2026-04-27 — User Termux run result
+
+### Verified from user terminal output
+
+```text
+commit: 5150d0c Complete safe React shell for Moodle Teacher Hub
+push: PUSH_OK
+remote: c8f45ad..5150d0c main -> main
+BUILD_STATUS=1
+PROJECT_PROGRESS=99%
+```
+
+### Truth status
+
+- Git push succeeded.
+- Build did not pass yet because `BUILD_STATUS=1`.
+- The exact build error was not included in the pasted output.
+- Next required step: inspect `/tmp/www-build.log` or rerun build and capture full error.
+
+### Not verified yet
+
+- production build success.
+- runtime server preview.
+- route rendering.
+- Moodle/LTI end-to-end launch.
