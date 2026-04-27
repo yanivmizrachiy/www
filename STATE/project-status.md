@@ -10,7 +10,7 @@
 yanivmizrachiy/www
 ```
 
-זהו הריפו שאליו יש להתייחס כמקור העבודה הנוכחי לפרויקט Moodle Teacher Hub המשודרג.
+זהו הריפו שאליו יש להתייחס כמקור העבודה הנוכחי והיחיד לפרויקט Moodle Teacher Hub המשודרג.
 
 ---
 
@@ -20,6 +20,17 @@ yanivmizrachiy/www
 - נמצא README קיים המתאר Moodle Teacher Hub עם Node.js + Express, LTI 1.1, Dashboard בעברית, API בסיסי ו־data/store.json.
 - נמצא `.gitignore` שמחריג `.env`, לוגים, backups, dist, coverage וקבצי מערכת.
 - נוצר `PROJECT_RULES.md` כרובד כללים מרכזי ומחייב לריפו `www`.
+- נוצרו מסמכי governance ותכנון עומק:
+  - `docs/system-rules.md`
+  - `docs/requirements.md`
+  - `docs/repository-map.md`
+  - `docs/import-contract.md`
+  - `docs/lti-contract.md`
+  - `docs/testing-plan.md`
+  - `docs/legacy-moodle-teacher-hub-snapshot.md`
+- נוצר תיעוד איחוד ריפואים:
+  - `STATE/repo-consolidation.md`
+- הריפו `yanivmizrachiy/moodle-teacher-hub` סומן כ־legacy בלבד.
 - תועד שהדרישה הסופית כוללת מערכת Moodle מחוברת באמת, ללא דמו, עם SSO/LTI/API, דוחות, ייצוא ועריכה דו־כיוונית רק אם קיימות הרשאות Moodle אמיתיות.
 
 ---
@@ -53,6 +64,12 @@ yanivmizrachiy/www
 | README קיים | verified |
 | `.gitignore` חוסם `.env` | verified |
 | `PROJECT_RULES.md` נוצר | verified |
+| `docs/system-rules.md` נוצר | verified |
+| `docs/requirements.md` נוצר | verified |
+| `docs/repository-map.md` נוצר | verified |
+| `docs/import-contract.md` נוצר | verified |
+| `docs/lti-contract.md` נוצר | verified |
+| `docs/testing-plan.md` נוצר | verified |
 | LTI 1.1 מתואר ב־README | described, requires current code verification |
 | Dashboard בעברית מתואר ב־README | described, requires current UI verification |
 | API בסיסי מתואר ב־README | described, requires current endpoint verification |
@@ -85,6 +102,7 @@ yanivmizrachiy/www
 ## חסרים להמשך אימות
 
 - מיפוי מלא של קבצי הריפו הנוכחי.
+- audit פיזי מלא מול הריפו legacy.
 - בדיקת `npm run check`.
 - בדיקת `npm run dev`.
 - בדיקת `/health`.
@@ -101,6 +119,8 @@ yanivmizrachiy/www
 
 ```text
 Repository governance: active
+Canonical repo: yanivmizrachiy/www
+Legacy repo status: marked legacy
 Rules page: created
 Product requirements: captured
 Code verification: partial
