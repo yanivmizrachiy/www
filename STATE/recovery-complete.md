@@ -1,27 +1,38 @@
-# Project Recovery Status - Cycle 1 Complete
+# Project Recovery Status - Cycle 1 Review
 
-## Summary of Restored Components
-The following components have been fully reconstructed or recovered from repo imprints:
+## Current verified status
 
-### 1. Database & Backend
-- **SQL Migration**: `supabase/migrations/20240428_initial_reconstruction.sql` contains the complete schema needed for the app.
-- **LTI Logic**: `supabase/functions/lti-launch/index.ts` provides the blueprint for Moodle integration.
-- **Import Hook**: `src/hooks/useImports.tsx` now supports `postImport` which connects to the (missing) `post-import` Edge Function.
+This file records the reviewed state of the AI Studio recovery PR. It must not claim production readiness.
 
-### 2. UI & Interaction
-- **Import Wizard**: Full multi-stage import wizard with parsing and preview.
-- **Dashboard**: Rebuilt with "Truth-First" hero section and stats overview.
-- **Student Profile**: Comprehensive view with "Practice Time" sessionization.
-- **Reports**: Student, Task, Day, and Gap reports upgraded to production quality.
-- **Empty States**: Guided onboarding for missing data in Grades and Tasks.
+### Verified in PR branch
 
-### 3. Diagnostics
-- **LTI Troubleshooting**: Added `LaunchDiagnostics` component to `LtiBootstrap` to help debug Moodle signature issues.
+- The AI Studio recovery output was synced into branch `gemini/ai-studio-sync-20260428-193953`.
+- The huge local backup snapshot was removed from the PR.
+- The review build log reports `vite build` completed successfully.
+- The UI includes upgraded Hebrew RTL pages for dashboard, import, tasks, grades, activity, reports, and student profile.
+- The import UI can parse Moodle-style XLSX/CSV/ODS files and pasted tables on the client side before submission.
+- The LTI Edge Function is intentionally blocked and returns a truthful not-implemented response until real OAuth1 HMAC-SHA1 verification is implemented and tested.
+- The reconstructed SQL file is marked `DRAFT_DO_NOT_RUN` and must not be run on production without review.
 
-## Next Phase Requirements
-Deployment to a live Supabase instance will require:
-1. Setting `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
-2. Running the provided SQL migration in the Supabase SQL Editor.
-3. Deploying the Edge Functions with `APP_ORIGIN` and `SUPABASE_SERVICE_ROLE_KEY` env vars.
+### Not verified / not completed
 
-**Status**: Build passing, all core routes functional.
+- Real Moodle LTI launch was not verified.
+- Real OAuth1 HMAC-SHA1 verification is not implemented.
+- Supabase SQL was not run.
+- Supabase Edge Functions were not deployed.
+- The import backend function `import-moodle-report` is not verified as deployed.
+- Moodle Web Services token/API access is still unavailable.
+- Real Moodle report import end-to-end still needs testing.
+- The app is not production-ready.
+
+## Correct next phase
+
+1. Keep PR #1 as Draft until the final build after the latest review fixes is verified.
+2. Do not run SQL automatically.
+3. Do not deploy Supabase Functions automatically.
+4. Continue with truth-first manual real-data import mode while no Moodle Web Services token exists.
+5. After merge, implement and verify the backend import function and real LTI OAuth verification as separate reviewed steps.
+
+## Safety note
+
+No fake students, fake grades, fake tasks, fake practice time, or fake Moodle API access may be presented as real. Missing data must be shown as missing from imported Moodle data.
