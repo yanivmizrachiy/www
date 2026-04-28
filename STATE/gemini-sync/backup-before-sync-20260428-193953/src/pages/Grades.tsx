@@ -1,0 +1,3 @@
+import { SafePage, EmptyTruth } from "@/components/SafePage";
+import { useGradesMatrix } from "@/hooks/useImports";
+export default function Page() { const {data, loading, error} = useGradesMatrix(); return <SafePage title="ציונים" description="מטריצת ציונים מדוח Moodle אמיתי. ערך חסר נשאר חסר.">{loading ? <p className="text-sm text-muted-foreground">טוען...</p> : error ? <EmptyTruth>{error}</EmptyTruth> : <ul className="space-y-2">{data?.items?.map((i)=><li key={i.id} className='rounded border p-3'>{i.item_name}<span className='text-muted-foreground'> · {i.max_grade ?? '—'}</span></li>)}</ul>}</SafePage>; }
