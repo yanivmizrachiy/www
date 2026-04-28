@@ -95,3 +95,46 @@ PROJECT_PROGRESS=99%
 - runtime server preview.
 - route rendering.
 - Moodle/LTI end-to-end launch.
+
+---
+
+## 2026-04-28 — Moodle external tool configuration screenshots
+
+### Observed from user screenshots
+
+- The Moodle host appears to be `moodlemoe.lms.education.gov.il`.
+- The user is configuring/opening the external tool inside a real Moodle course/learning space.
+- Tool name shown: `Moodle Teacher Hub`.
+- Tool URL shown: `https://iibrglxkiszrbzakrnlo.functions.supabase.co/lti-launch`.
+- Tool description shown: `כלי לניהול משימות ודוחות`.
+- LTI version shown: `LTI 1.0/1.1`.
+- Consumer key shown: `yaniv-lti-tool`.
+- Shared Secret field exists and is masked. The secret value was not captured and must not be stored in GitHub.
+
+### Observed current app state inside Moodle
+
+- The app/tool appears inside the Moodle course area under the name `Moodle Teacher Hub`.
+- A setup/status screen is visible inside the Moodle context.
+- Tabs or sections visible include LTI/external-tool rules, settings, Moodle metadata, and additional options.
+- The status message indicates the Web Service token is missing/invalid, so live Moodle Web Services access is not available.
+- The UI warns that without a Web Service token it cannot show live students/grades from Moodle Web Services.
+
+### Truth status
+
+```text
+External tool configuration: observed from screenshots
+LTI version: observed as LTI 1.0/1.1
+Consumer key: observed
+Shared secret: exists but value unknown/not stored
+Moodle Web Services token: not available / not verified
+Active data mode: Manual Real Data Import + maximum automation from real Moodle reports/tables
+Live Moodle API sync: blocked-no-token
+```
+
+### Not verified yet
+
+- Successful OAuth signature validation.
+- Session token creation from real launch.
+- `lti_get_context` success after real launch.
+- Live Moodle Web Services/API access.
+- Real import of Moodle reports end-to-end.
