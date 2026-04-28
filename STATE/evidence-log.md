@@ -177,3 +177,13 @@ Live Moodle API sync: blocked-no-token
   - No SQL operations performed.
   - No Supabase functions deployed.
   - LTI Signature verification not refreshed from external Moodle.
+
+## PR Safety Hardening Update (2026-04-28)
+- **Branch**: gemini/ai-studio-sync-20260428-193953
+- **PR**: https://github.com/yanivmizrachiy/www/pull/1
+- **LTI hardening**: `supabase/functions/lti-launch/index.ts` was changed to a safe blocked implementation. It no longer pretends OAuth verification works, does not create teacher sessions, and does not log launch success before real OAuth1 HMAC-SHA1 verification is implemented and tested.
+- **SQL safety**: the reconstructed AI Studio migration was copied into `supabase/migrations/20240428_initial_reconstruction_DRAFT_DO_NOT_RUN.sql` with a clear warning header, and the runnable `20240428_initial_reconstruction.sql` file was removed from the PR branch.
+- **No SQL operations performed.**
+- **No Supabase functions deployed.**
+- **No real Moodle LTI launch verified yet.**
+- **Production-ready**: no.
