@@ -6,3 +6,5 @@ coverage/
 *.log
 .env*
 !.env.example
+
+STATE/gemini-sync/backup-before-sync-*/

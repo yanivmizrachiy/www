@@ -147,3 +147,19 @@ Live Moodle API sync: blocked-no-token
 - **Logs**: Located in STATE/gemini-sync/
 - **Safety**: No SQL was executed. No Supabase functions deployed. LTI not verified.
 - **Notes**: Automated recovery sync from Gemini AI Studio.
+
+## PR Cleanup Update (20260428-200201)
+- **Task**: Removed local backup snapshot from PR tracking.
+- **Branch**: gemini/ai-studio-sync-20260428-193953
+- **Removed**: STATE/gemini-sync/backup-before-sync-20260428-193953
+- **Updated .gitignore**: Added pattern for backup exclusions.
+- **Build Status**: BUILD_PASSED
+- **Install Exit Code**: 0
+- **Build Exit Code**: 0
+- **Logs**:
+  - STATE/gemini-sync/review-npm-install-20260428-200201.log
+  - STATE/gemini-sync/review-npm-build-20260428-200201.log
+- **Security Check**:
+  - No SQL operations performed.
+  - No Supabase functions deployed.
+  - LTI Signature verification not refreshed from external Moodle.

@@ -1,3 +1,0 @@
-import { SafePage, EmptyTruth } from "@/components/SafePage";
-import { useImportedStudents } from "@/hooks/useImports";
-export default function Page() { const {data, loading, error} = useImportedStudents(); return <SafePage title="תלמידים" description="רשימת תלמידים מיובאת מדוח Moodle אמיתי.">{loading ? <p className="text-sm text-muted-foreground">טוען...</p> : error ? <EmptyTruth>{error}</EmptyTruth> : <ul className="space-y-2">{data?.map((s)=><li key={s.id} className='rounded border p-3'><b>{s.full_name}</b><div className='text-xs text-muted-foreground'>{s.external_username ?? s.email ?? '—'}</div></li>)}</ul>}</SafePage>; }
