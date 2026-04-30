@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "siteTitle": "לוז טדי",
+  "timezone": "Asia/Jerusalem",
+  "updatedAt": null,
+  "activityTypes": {
+    "exam": { "label": "מבחן", "color": "#ef4444" },
+    "activity": { "label": "פעילות", "color": "#2563eb" },
+    "club": { "label": "חוג", "color": "#16a34a" },
+    "special": { "label": "פעילות מיוחדת", "color": "#9333ea" },
+    "other": { "label": "אחר", "color": "#f97316" }
+  },
+  "events": []
+}
