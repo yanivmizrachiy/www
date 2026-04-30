@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>לוז טדי</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="hero" id="top">
+    <p class="kicker">לו״ז בית ספר</p>
+    <h1>לוז טדי</h1>
+    <p class="lead">ניהול מבחנים, פעילויות, חוגים ופעילויות מיוחדות — רק לפי מידע אמיתי.</p>
+    <div class="actions">
+      <button id="todayBtn" type="button">היום</button>
+      <button id="copyBtn" type="button">העתק קישור</button>
+    </div>
+    <div class="status"><b id="statusTitle">טוען נתונים</b><span id="statusText">קורא קובץ נתונים</span></div>
+  </header>
+
+  <nav class="chips" id="rangeNav">
+    <button class="active" data-range="month" type="button">החודש</button>
+    <button data-range="week" type="button">השבוע</button>
+    <button data-range="today" type="button">היום</button>
+    <button data-range="all" type="button">הכול</button>
+  </nav>
+
+  <section class="panel">
+    <label class="search"><span>חיפוש</span><input id="search" type="search" placeholder="חפש לפי פעילות, כיתה, מקום או אחראי"></label>
+    <div class="chips" id="typeNav"></div>
+  </section>
+
+  <section class="stats">
+    <article><span>היום</span><b id="countToday">0</b></article>
+    <article><span>השבוע</span><b id="countWeek">0</b></article>
+    <article><span>מבחנים</span><b id="countExams">0</b></article>
+    <article><span>סה״כ</span><b id="countTotal">0</b></article>
+  </section>
+
+  <main class="panel" id="calendar">
+    <div class="title-row"><h2 id="monthTitle">חודש</h2><button id="resetBtn" type="button">איפוס</button></div>
+    <div class="weekdays"><span>א׳</span><span>ב׳</span><span>ג׳</span><span>ד׳</span><span>ה׳</span><span>ו׳</span><span>ש׳</span></div>
+    <div class="month" id="monthGrid"></div>
+  </main>
+
+  <section class="panel" id="list">
+    <h2 id="listTitle">רשימת אירועים</h2>
+    <div class="events" id="events"></div>
+  </section>
+
+  <section class="panel note">
+    <h2>נתונים אמיתיים בלבד</h2>
+    <p>האירועים נשמרים בקובץ data/events.json. הקובץ מתחיל ריק כדי שלא יהיו נתוני דמו.</p>
+  </section>
+
+  <nav class="bottom"><a href="#top">ראשי</a><a href="#calendar">חודש</a><a href="#list">לו״ז</a></nav>
+  <div class="toast" id="toast"></div>
+  <script src="script.js" defer></script>
+</body>
+</html>
