@@ -12,6 +12,6 @@
     "mode": "live-public-sheet-exact-tab",
     "cacheBusting": true,
     "autoRefreshMs": 180000,
-    "truthRule": "This exact Google Sheet tab is the primary source. No demo data."
+    "truthRule": "Use only gid=970211231 as the primary source. No demo data."
   }
 }

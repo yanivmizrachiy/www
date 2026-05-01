@@ -2,15 +2,16 @@
 
 אפליקציית לו״ז בית ספר בעברית RTL.
 
-## קבצים
+מקור הנתונים הראשי:
 
-- `index.html` — מבנה האתר
-- `styles.css` — עיצוב
-- `script.js` — טעינת נתונים, חיפוש וסינון
-- `data/source.json` — מקור Google Sheet
-- `data/events.json` — fallback בלבד
-- `RULES.md` — מקור אמת של הדרישות
+`1bG6RsGZK39lNogtTBS5_voJz0WVcRu2D`
 
-## מדיניות
+טאב מדויק:
 
-אין נתוני דמו. כל מידע חייב להגיע מהגיליון או ממקור אמיתי שיניב מספק.
+`970211231`
+
+קישור אתר:
+
+`https://yanivmizrachiy.github.io/www/luz-teddy/`
+
+אין נתוני דמו. הנתונים נשאבים מהטאב המדויק של Google Sheet.
