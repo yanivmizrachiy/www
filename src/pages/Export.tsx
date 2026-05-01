@@ -60,7 +60,7 @@ export default function Export() {
   const exportStudents = () => {
     const rows = (students.data ?? []).map((student) => ({
       "שם תלמיד": student.full_name,
-      "דוא\"ל": student.email ?? "",
+      "דואל": student.email ?? "",
       "שם משתמש Moodle": student.external_username ?? "",
       "מזהה Moodle": student.external_id ?? "",
       "עודכן לאחרונה": student.updated_at,
@@ -125,7 +125,7 @@ export default function Export() {
         <div className="grid gap-4 md:grid-cols-3">
           <ExportCard
             title="דוח תלמידים"
-            description="ייצוא רשימת תלמידים אמיתית: שם, דוא\"ל, שם משתמש ומזהה Moodle אם קיימים בדוח שיובא."
+            description="ייצוא רשימת תלמידים אמיתית: שם, דואל, שם משתמש ומזהה Moodle אם קיימים בדוח שיובא."
             disabledReason={!students.data?.length ? "חסר דוח תלמידים או דוח Moodle המכיל תלמידים." : undefined}
             onExport={exportStudents}
           />
