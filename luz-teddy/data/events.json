@@ -6,54 +6,18 @@
   "primarySource": "data/source.json",
   "palettePolicy": "premium-calm-meaningful-colors-real-data-only",
   "activityTypes": {
-    "exam": {
-      "label": "מבחן",
-      "color": "#B91C1C"
-    },
-    "quiz": {
-      "label": "בוחן",
-      "color": "#DC2626"
-    },
-    "vacation": {
-      "label": "חופשה",
-      "color": "#0F766E"
-    },
-    "trip": {
-      "label": "טיול",
-      "color": "#15803D"
-    },
-    "activity": {
-      "label": "פעילות",
-      "color": "#2563EB"
-    },
-    "club": {
-      "label": "חוג",
-      "color": "#7C3AED"
-    },
-    "special": {
-      "label": "פעילות מיוחדת",
-      "color": "#BE185D"
-    },
-    "ceremony": {
-      "label": "טקס",
-      "color": "#92400E"
-    },
-    "meeting": {
-      "label": "ישיבה",
-      "color": "#475569"
-    },
-    "deadline": {
-      "label": "תאריך יעד",
-      "color": "#C2410C"
-    },
-    "community": {
-      "label": "קהילה / הורים",
-      "color": "#0891B2"
-    },
-    "other": {
-      "label": "אחר",
-      "color": "#A16207"
-    }
+    "exam": { "label": "מבחנים", "color": "#B91C1C" },
+    "quiz": { "label": "בחנים", "color": "#DC2626" },
+    "vacation": { "label": "חופשות", "color": "#0F766E" },
+    "trip": { "label": "טיולים", "color": "#15803D" },
+    "activity": { "label": "פעילויות", "color": "#2563EB" },
+    "club": { "label": "חוגים", "color": "#7C3AED" },
+    "special": { "label": "פעילויות מיוחדות", "color": "#BE185D" },
+    "ceremony": { "label": "טקסים", "color": "#92400E" },
+    "meeting": { "label": "ישיבות", "color": "#475569" },
+    "deadline": { "label": "תאריך יעד", "color": "#C2410C" },
+    "community": { "label": "קהילה / הורים", "color": "#0891B2" },
+    "other": { "label": "אחר", "color": "#A16207" }
   },
   "events": []
 }

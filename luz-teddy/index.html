@@ -2,29 +2,41 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>לוז טדי</title>
-  <meta name="description" content="אפליקציית לו״ז בית ספר מסונכרנת מ־Google Sheet">
-  <meta name="theme-color" content="#111827">
+  <meta name="description" content="לוח פעילות בית ספרי מסונכרן מגיליון Google Sheet">
+  <meta name="theme-color" content="#101827">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="hero" id="top">
-    <div class="heroText">
-      <p class="kicker">לו״ז בית ספר מסונכרן</p>
-      <h1>לוז טדי</h1>
-      <p class="lead">מבחנים, חופשות, טיולים, חוגים ופעילויות - נשאבים מהגיליון המדויק של בית הספר.</p>
-      <div class="actions">
-        <button id="todayBtn" type="button">היום</button>
-        <button id="copyBtn" class="secondary" type="button">העתק קישור</button>
-        <button id="syncBtn" class="secondary" type="button">רענן נתונים</button>
+  <header class="topbar" id="top">
+    <div class="brandWrap">
+      <img src="assets/logo.png" alt="לוגו תיכון טדי קולק" class="brandLogo">
+      <div class="brandMeta">
+        <div class="brandOverline">לוח פעילות בית ספרי</div>
+        <h1>לוז טדי</h1>
+        <p>כל המידע נשאב מהגיליון המדויק של בית הספר — ללא נתוני דמו.</p>
       </div>
     </div>
-    <aside class="status">
-      <b id="statusTitle">טוען נתונים</b>
-      <span id="statusText">קורא Google Sheet</span>
-    </aside>
+    <div class="clockPanel">
+      <div class="clockLabel">שעה</div>
+      <div class="liveClock" id="liveClock">--:--:--</div>
+      <div class="liveDate" id="liveDate">--</div>
+    </div>
   </header>
+
+  <section class="hero">
+    <div class="heroText">
+      <div class="heroBadge" id="statusTitle">טוען נתונים</div>
+      <h2>מבחנים, חופשות, טיולים, חוגים ופעילויות — מותאם במיוחד לטלפון נייד</h2>
+      <p id="statusText">קורא עכשיו את הגיליון המדויק של בית הספר</p>
+    </div>
+    <div class="heroActions">
+      <button id="syncBtn" type="button">רענן נתונים</button>
+      <button id="todayBtn" type="button" class="secondary">היום</button>
+      <button id="copyBtn" type="button" class="secondary">העתק קישור</button>
+    </div>
+  </section>
 
   <nav class="chips" id="rangeNav">
     <button class="active" data-range="month" type="button">החודש</button>
@@ -34,9 +46,9 @@
   </nav>
 
   <section class="panel">
-    <label class="search">
+    <label class="searchBox">
       <span>חיפוש מהיר</span>
-      <input id="search" type="search" placeholder="שם אירוע, סוג, שכבה, כיתה, מקום או אחראי">
+      <input id="search" type="search" placeholder="חיפוש לפי אירוע, סוג, מיקום או טקסט חופשי">
     </label>
     <div class="chips typeChips" id="typeNav"></div>
   </section>
@@ -49,25 +61,28 @@
   </section>
 
   <main class="panel" id="calendar">
-    <div class="titleRow"><h2 id="monthTitle">חודש</h2><button id="resetBtn" type="button">איפוס</button></div>
-    <div class="weekdays"><span>א׳</span><span>ב׳</span><span>ג׳</span><span>ד׳</span><span>ה׳</span><span>ו׳</span><span>ש׳</span></div>
+    <div class="titleRow">
+      <h2 id="monthTitle">חודש</h2>
+      <button id="resetBtn" type="button">איפוס סינון</button>
+    </div>
+    <div class="weekdays">
+      <span>א׳</span><span>ב׳</span><span>ג׳</span><span>ד׳</span><span>ה׳</span><span>ו׳</span><span>ש׳</span>
+    </div>
     <div class="month" id="monthGrid"></div>
   </main>
 
   <section class="panel" id="list">
-    <h2 id="listTitle">רשימת אירועים</h2>
+    <div class="titleRow">
+      <h2 id="listTitle">רשימת אירועים</h2>
+      <div class="miniInfo">נשאב מהגיליון המדויק</div>
+    </div>
     <div class="events" id="events"></div>
   </section>
 
-  <section class="panel note">
-    <h2>מקור אמת</h2>
-    <p>הנתונים נשאבים מהטאב המדויק בגיליון Google Sheet. אין באתר נתוני דמו.</p>
-  </section>
-
-  <nav class="bottom">
+  <nav class="bottomNav">
     <a href="#top">ראשי</a>
     <a href="#calendar">חודש</a>
-    <a href="#list">לו״ז</a>
+    <a href="#list">אירועים</a>
   </nav>
 
   <div class="toast" id="toast"></div>

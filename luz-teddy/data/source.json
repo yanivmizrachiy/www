@@ -13,6 +13,6 @@
     "mode": "live-public-sheet-exact-tab-calendar-grid",
     "cacheBusting": true,
     "autoRefreshMs": 180000,
-    "truthRule": "Use only gid=970211231. Parse calendar grid deeply. No demo data."
+    "truthRule": "Use only the exact Google Sheet tab. No demo data."
   }
 }
