@@ -1,0 +1,12 @@
+{
+  "name": "הצעה לניהול הלו״ז של חטיבת הביניים",
+  "short_name": "לו״ז חטיבה",
+  "description": "לוח פעילות בית ספרי מסונכרן מגיליון Google Sheet",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fbf6ea",
+  "theme_color": "#101827",
+  "dir": "rtl",
+  "lang": "he"
+}
