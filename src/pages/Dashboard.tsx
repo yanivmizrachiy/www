@@ -4,10 +4,10 @@ import { useLtiSession } from "@/hooks/useLtiSession";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, GraduationCap, ClipboardList, Database, Calendar, Import, ArrowRight } from "lucide-react";
+import { Users, GraduationCap, ClipboardList, Database, Calendar, Import, ArrowRight, AlertCircle } from "lucide-react";
 import { motion } from "motion/react";
 
-function StatCard({ label, value, icon: Icon, delay = 0 }: { label: string, value: any, icon: any, delay?: number }) {
+function StatCard({ label, value, icon: Icon, delay = 0 }: { label: string, value: number | string, icon: any, delay?: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -32,24 +32,23 @@ function StatCard({ label, value, icon: Icon, delay = 0 }: { label: string, valu
 export default function Dashboard() {
   const { session, site } = useLtiSession();
   const { data, loading, error } = useImportsOverview();
-  
-  const v = (n: number | undefined) => session && data ? n ?? 0 : "—";
+  const hasSession = Boolean(session);
+  const v = (n: number | undefined) => hasSession && data ? n ?? 0 : "—";
 
   return (
     <div className="space-y-8" dir="rtl">
-      {/* Hero Section */}
       <section className="relative overflow-hidden rounded-3xl bg-gradient-hero p-8 shadow-elegant lg:p-12">
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-6">
           <div className="space-y-4 max-w-2xl">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               className="inline-flex items-center gap-2 rounded-full bg-background/20 px-3 py-1 text-xs font-bold text-background/80 backdrop-blur-md"
             >
               <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
-              מחובר כמורה ב-Moodle
+              {hasSession ? "מחובר מתוך Moodle" : "ממתין לכניסה מאומתת מתוך Moodle"}
             </motion.div>
-            <motion.h1 
+            <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
@@ -57,16 +56,16 @@ export default function Dashboard() {
             >
               שלום, {session?.moodle_username?.split(" ")[0] || "מורה"}
             </motion.h1>
-            <motion.p 
+            <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
               className="text-lg text-white/70 font-medium"
             >
-              {session?.course_title ?? site?.site_name ?? "ברוך הבא למרכז המורה המסונכרן."}
+              {session?.course_title ?? site?.site_name ?? "עדיין לא התקבלה כניסה אמיתית מתוך Moodle. ניתן להתחיל רק מייבוא נתוני Moodle אמיתיים."}
             </motion.p>
-            
-            <motion.div 
+
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
@@ -83,17 +82,16 @@ export default function Dashboard() {
               </Button>
             </motion.div>
           </div>
-          
-          <motion.div 
+
+          <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.4, type: "spring" }}
           >
-            <StatusBadge status={session ? "proven" : "missing"} className="scale-150 shadow-2xl" />
+            <StatusBadge status={hasSession ? "proven" : "missing"} className="scale-150 shadow-2xl" />
           </motion.div>
         </div>
-        
-        {/* Background Decorative Element */}
+
         <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
         <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-accent/20 blur-3xl" />
       </section>
@@ -108,7 +106,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Primary Stats */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard label="תלמידים רשומים" value={v(data?.students_count)} icon={Users} delay={0.1} />
         <StatCard label="פריטי ציון" value={v(data?.grade_items_count)} icon={GraduationCap} delay={0.2} />
@@ -118,7 +115,6 @@ export default function Dashboard() {
         <StatCard label="אירועי לוג" value={v(data?.log_events_count)} icon={Calendar} delay={0.6} />
       </section>
 
-      {/* Quick Actions & Insight */}
       <section className="grid gap-6 lg:grid-cols-2">
         <Card className="shadow-elegant border-none bg-muted/30">
           <CardHeader>
@@ -126,12 +122,11 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              הנתונים המוצגים כאן נגזרים ישירות מהייבוא שביצעת. 
-              המערכת אינה מחשבת ממוצעים או זמנים על בסיס נתונים חסרים - מה שאתה רואה הוא המציאות כפי שדווחה על ידי Moodle.
+              הנתונים המוצגים כאן נגזרים רק מהייבוא שבוצע או מסשן Moodle מאומת. המערכת אינה מחשבת ממוצעים או זמנים על בסיס נתונים חסרים.
             </p>
             <div className="flex gap-4">
-              <Button asChild variant="link" className="p-0 text-primary font-bold">
-                <Link to="/reports/gap" className="flex items-center gap-1">
+              <Button asChild variant="ghost" className="p-0 text-primary font-bold hover:bg-transparent">
+                <Link to="/reports/gaps" className="flex items-center gap-1">
                   הצג דוח פערים
                   <ArrowRight className="h-4 w-4" />
                 </Link>
@@ -147,18 +142,18 @@ export default function Dashboard() {
           <CardContent className="space-y-4">
             <p className="text-sm font-medium">ייבוא מהיר של נתוני לוגים לשיפור דוח זמן תרגול:</p>
             <div className="flex flex-col gap-2">
-               <div className="flex items-center justify-between rounded-lg bg-white/50 p-3 text-xs">
-                 <span>דוא"ל תלמידים:</span>
-                 <span className={data?.students_count ? "text-status-proven font-bold" : "text-status-blocked"}>
-                   {data?.students_count ? "פעיל" : "נדרש ייבוא"}
-                 </span>
-               </div>
-               <div className="flex items-center justify-between rounded-lg bg-white/50 p-3 text-xs">
-                 <span>מיפוי משימות לפרקים:</span>
-                 <span className={data?.chapters_count ? "text-status-proven font-bold" : "text-status-blocked"}>
-                   {data?.chapters_count ? "פעיל" : "חסר מיפוי"}
-                 </span>
-               </div>
+              <div className="flex items-center justify-between rounded-lg bg-white/50 p-3 text-xs">
+                <span>דוא"ל תלמידים:</span>
+                <span className={data?.students_count ? "text-status-proven font-bold" : "text-status-blocked"}>
+                  {data?.students_count ? "פעיל" : "נדרש ייבוא"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg bg-white/50 p-3 text-xs">
+                <span>מיפוי משימות לפרקים:</span>
+                <span className={data?.chapters_count ? "text-status-proven font-bold" : "text-status-blocked"}>
+                  {data?.chapters_count ? "פעיל" : "חסר מיפוי"}
+                </span>
+              </div>
             </div>
             <Button asChild className="w-full">
               <Link to="/import">עבור לממשק הייבוא</Link>
@@ -176,4 +171,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
