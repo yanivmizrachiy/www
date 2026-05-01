@@ -5,18 +5,43 @@ import { TruthBadge } from "@/components/TruthBadge";
 import { PracticeTimeSection } from "@/components/PracticeTimeSection";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { User, ClipboardList, GraduationCap, History } from "lucide-react";
 
 export default function StudentProfile() {
   const { id } = useParams();
   const { data, loading, error } = useStudentProfile(id);
 
-  if (loading) return <SafePage title="פרופיל תלמיד" description="טוען..."><div className="animate-pulse space-y-4"><div className="h-40 bg-muted rounded-xl" /></div></SafePage>;
-  if (error || !data) return <SafePage title="פרופיל תלמיד" description="שגיאה"><EmptyTruth>{error ?? "תלמיד לא נמצא"}</EmptyTruth></SafePage>;
+  if (loading) {
+    return (
+      <SafePage title="פרופיל תלמיד" description="טוען...">
+        <div className="animate-pulse space-y-4"><div className="h-40 bg-muted rounded-xl" /></div>
+      </SafePage>
+    );
+  }
+
+  if (error || !data) {
+    return <SafePage title="פרופיל תלמיד" description="שגיאה"><EmptyTruth>{error ?? "תלמיד לא נמצא"}</EmptyTruth></SafePage>;
+  }
+
+  const numericGrades = data.grades
+    .filter((grade) => !grade.is_missing && typeof grade.numeric_value === "number")
+    .map((grade) => grade.numeric_value as number);
+
+  const averageGrade = numericGrades.length > 0
+    ? Math.round(numericGrades.reduce((sum, grade) => sum + grade, 0) / numericGrades.length)
+    : null;
 
   return (
-    <SafePage 
-      title={data.student.full_name} 
+    <SafePage
+      title={data.student.full_name}
       description={`עדכון אחרון: ${new Date(data.student.updated_at).toLocaleDateString()}`}
     >
       <div className="space-y-6">
@@ -39,9 +64,18 @@ export default function StudentProfile() {
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid gap-4 md:grid-cols-3">
-              <Card><CardHeader><CardTitle className="text-sm text-muted-foreground font-medium">ממוצע ציונים</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{data.activity.active_days > 0 ? "85" : "—"}</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-sm text-muted-foreground font-medium">משימות שהושלמו</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{data.completion.filter(c => c.is_complete).length}</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-sm text-muted-foreground font-medium">ימי פעילות</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{data.activity.active_days}</CardContent></Card>
+              <Card>
+                <CardHeader><CardTitle className="text-sm text-muted-foreground font-medium">ממוצע ציונים</CardTitle></CardHeader>
+                <CardContent className="text-2xl font-bold">{averageGrade ?? "—"}</CardContent>
+              </Card>
+              <Card>
+                <CardHeader><CardTitle className="text-sm text-muted-foreground font-medium">משימות שהושלמו</CardTitle></CardHeader>
+                <CardContent className="text-2xl font-bold">{data.completion.filter(c => c.is_complete).length}</CardContent>
+              </Card>
+              <Card>
+                <CardHeader><CardTitle className="text-sm text-muted-foreground font-medium">ימי פעילות</CardTitle></CardHeader>
+                <CardContent className="text-2xl font-bold">{data.activity.active_days}</CardContent>
+              </Card>
             </div>
             <PracticeTimeSection studentId={id} title="זמן תרגול אישי" />
           </TabsContent>
@@ -65,20 +99,20 @@ export default function StudentProfile() {
           </TabsContent>
 
           <TabsContent value="completion">
-             <Card><CardContent className="p-0">
-                <Table dir="rtl">
-                  <TableHeader><TableRow><TableHead className="text-right">משימה</TableHead><TableHead className="text-center">סטטוס</TableHead><TableHead className="text-right">בוצע ב-</TableHead></TableRow></TableHeader>
-                  <TableBody>
-                    {data.completion.map((c) => (
-                      <TableRow key={c.task_id}>
-                        <TableCell className="text-right">{c.task_name}</TableCell>
-                        <TableCell className="text-center">{c.is_complete ? "✅" : "❌"}</TableCell>
-                        <TableCell className="text-right text-xs text-muted-foreground">{c.completed_at ? new Date(c.completed_at).toLocaleString() : "—"}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent></Card>
+            <Card><CardContent className="p-0">
+              <Table dir="rtl">
+                <TableHeader><TableRow><TableHead className="text-right">משימה</TableHead><TableHead className="text-center">סטטוס</TableHead><TableHead className="text-right">בוצע ב-</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {data.completion.map((c) => (
+                    <TableRow key={c.task_id}>
+                      <TableCell className="text-right">{c.task_name}</TableCell>
+                      <TableCell className="text-center">{c.is_complete ? "✓" : "—"}</TableCell>
+                      <TableCell className="text-right text-xs text-muted-foreground">{c.completed_at ? new Date(c.completed_at).toLocaleString() : "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent></Card>
           </TabsContent>
 
           <TabsContent value="activity">
@@ -94,4 +128,3 @@ export default function StudentProfile() {
     </SafePage>
   );
 }
-
