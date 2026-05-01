@@ -187,3 +187,13 @@ Live Moodle API sync: blocked-no-token
 - **No Supabase functions deployed.**
 - **No real Moodle LTI launch verified yet.**
 - **Production-ready**: no.
+
+## PR branch local audit (20260501-065132)
+- Branch: gemini/ai-studio-sync-20260428-193953
+- Commit: c6da29ecd628811847cbf15c1b0d178ae9e3eaea
+- Build: BUILD_FAILED
+- Typecheck: FAILED
+- Has demo strings: True
+- OAuth heuristic: False
+- Ready for Moodle use: NO
+- Report: STATE/local-audit/pr-branch-audit-20260501-065132.md
