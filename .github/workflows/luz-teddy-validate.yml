@@ -1,0 +1,47 @@
+name: Validate Luz Teddy
+
+on:
+  push:
+    paths:
+      - 'luz-teddy/**'
+      - '.github/workflows/luz-teddy-validate.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate required files and JSON
+        run: |
+          test -f luz-teddy/index.html
+          test -f luz-teddy/styles.css
+          test -f luz-teddy/script.js
+          test -f luz-teddy/doctor.html
+          test -f luz-teddy/doctor.js
+          test -f luz-teddy/data/source.json
+          test -f luz-teddy/data/events.json
+          python -m json.tool luz-teddy/data/source.json >/dev/null
+          python -m json.tool luz-teddy/data/events.json >/dev/null
+      - name: Validate exact Google Sheet source tab
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          src=json.loads(Path('luz-teddy/data/source.json').read_text(encoding='utf-8'))
+          assert src['sheetId']=='1bG6RsGZK39lNogtTBS5_voJz0WVcRu2D'
+          assert str(src['gid'])=='970211231'
+          assert '970211231' in src.get('csvUrl','')
+          assert src.get('isPrimarySource') is True
+          print('LUZ_TEDDY_SOURCE_OK')
+          PY
+      - name: Validate no obvious demo events
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('luz-teddy/data/events.json').read_text(encoding='utf-8'))
+          assert isinstance(data.get('events'), list)
+          assert data.get('events') == []
+          print('LUZ_TEDDY_NO_DEMO_OK')
+          PY
