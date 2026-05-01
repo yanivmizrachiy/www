@@ -8,10 +8,11 @@
   "isPrimarySource": true,
   "requiresPublicReadAccess": true,
   "fallbackFile": "data/events.json",
+  "sheetLayout": "calendar-grid",
   "syncPolicy": {
-    "mode": "live-public-sheet-exact-tab",
+    "mode": "live-public-sheet-exact-tab-calendar-grid",
     "cacheBusting": true,
     "autoRefreshMs": 180000,
-    "truthRule": "Use only gid=970211231 as the primary source. No demo data."
+    "truthRule": "Use only gid=970211231. Parse calendar grid deeply. No demo data."
   }
 }

@@ -8,63 +8,51 @@
   "activityTypes": {
     "exam": {
       "label": "מבחן",
-      "color": "#B91C1C",
-      "tone": "בולט, רציני וברור"
+      "color": "#B91C1C"
     },
     "quiz": {
       "label": "בוחן",
-      "color": "#DC2626",
-      "tone": "אדום נקי אך פחות כבד ממבחן"
+      "color": "#DC2626"
     },
     "vacation": {
       "label": "חופשה",
-      "color": "#0F766E",
-      "tone": "רגוע ומתאים לחופשות"
+      "color": "#0F766E"
     },
     "trip": {
       "label": "טיול",
-      "color": "#15803D",
-      "tone": "טבע, תנועה ויציאה החוצה"
+      "color": "#15803D"
     },
     "activity": {
       "label": "פעילות",
-      "color": "#2563EB",
-      "tone": "כחול מסודר ויציב"
+      "color": "#2563EB"
     },
     "club": {
       "label": "חוג",
-      "color": "#7C3AED",
-      "tone": "יצירתי, מובחן ונעים"
+      "color": "#7C3AED"
     },
     "special": {
       "label": "פעילות מיוחדת",
-      "color": "#BE185D",
-      "tone": "חגיגי ובולט בלי עומס"
+      "color": "#BE185D"
     },
     "ceremony": {
       "label": "טקס",
-      "color": "#92400E",
-      "tone": "רשמי, מכובד וחם"
+      "color": "#92400E"
     },
     "meeting": {
       "label": "ישיבה",
-      "color": "#475569",
-      "tone": "ניהולי, שקט ומקצועי"
+      "color": "#475569"
     },
     "deadline": {
       "label": "תאריך יעד",
-      "color": "#C2410C",
-      "tone": "התראה עדינה וברורה"
+      "color": "#C2410C"
     },
     "community": {
       "label": "קהילה / הורים",
-      "color": "#0891B2",
-      "tone": "תקשורתי, פתוח ונעים"
+      "color": "#0891B2"
     },
     "other": {
       "label": "אחר",
-      "color": "#A16207",
-      "tone": "ניטרלי חמים"
+      "color": "#A16207"
     }
   },
   "events": []
