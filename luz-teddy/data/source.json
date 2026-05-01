@@ -8,11 +8,12 @@
   "isPrimarySource": true,
   "requiresPublicReadAccess": true,
   "fallbackFile": "data/events.json",
-  "sheetLayout": "calendar-grid",
+  "displayMode": "event-stream-mobile-first",
+  "sheetLayout": "excel-like-calendar-grid-all-known-tabs",
   "syncPolicy": {
-    "mode": "live-public-sheet-candidate-tabs-calendar-grid",
+    "mode": "live-public-sheet-event-stream-known-tabs",
     "cacheBusting": true,
     "autoRefreshMs": 180000,
-    "truthRule": "Use only this Google Sheet as real source. Try candidate gids. Never demo data."
+    "truthRule": "Use only real events extracted from the Google Sheet file. Show no demo blocks, no fake stats, and no monthly calendar view."
   }
 }
