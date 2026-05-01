@@ -1,8 +1,8 @@
 {
   "name": "הצעה לניהול הלו״ז של חטיבת הביניים",
   "short_name": "לו״ז חטיבה",
-  "description": "לוח פעילות בית ספרי מסונכרן מגיליון Google Sheet",
-  "start_url": "./index.html",
+  "description": "רצף אירועים בית ספרי אמיתי מתוך Google Sheet, ללא נתוני דמו",
+  "start_url": "./stream.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#fbf6ea",
