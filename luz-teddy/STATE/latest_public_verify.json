@@ -1,7 +1,9 @@
 {
-  "timestamp": "2026-05-01T10:10:39",
+  "timestamp": "2026-05-01T10:17:14",
   "site": "https://yanivmizrachiy.github.io/www/luz-teddy/",
-  "publicOk": false,
+  "publicOk": true,
+  "lastHttp": 200,
+  "lastError": null,
   "repo": "yanivmizrachiy/www",
-  "note": "Final public verification after enabling GitHub Pages"
+  "note": "Final public verification with fixed literal URL"
 }
