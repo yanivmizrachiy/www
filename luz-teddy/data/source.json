@@ -2,7 +2,7 @@
   "sourceType": "google-sheet",
   "sheetId": "1bG6RsGZK39lNogtTBS5_voJz0WVcRu2D",
   "gid": "970211231",
-  "originalUrl": "https://docs.google.com/spreadsheets/d/1bG6RsGZK39lNogtTBS5_voJz0WVcRu2D/edit?gid=970211231#gid=970211231",
+  "candidateGids": ["970211231", "0"],
   "csvUrl": "https://docs.google.com/spreadsheets/d/1bG6RsGZK39lNogtTBS5_voJz0WVcRu2D/gviz/tq?tqx=out:csv&gid=970211231",
   "jsonUrl": "https://docs.google.com/spreadsheets/d/1bG6RsGZK39lNogtTBS5_voJz0WVcRu2D/gviz/tq?gid=970211231&tqx=out:json",
   "isPrimarySource": true,
@@ -10,9 +10,9 @@
   "fallbackFile": "data/events.json",
   "sheetLayout": "calendar-grid",
   "syncPolicy": {
-    "mode": "live-public-sheet-exact-tab-calendar-grid",
+    "mode": "live-public-sheet-candidate-tabs-calendar-grid",
     "cacheBusting": true,
     "autoRefreshMs": 180000,
-    "truthRule": "Use only the exact Google Sheet tab. No demo data."
+    "truthRule": "Use only this Google Sheet as real source. Try candidate gids. Never demo data."
   }
 }
