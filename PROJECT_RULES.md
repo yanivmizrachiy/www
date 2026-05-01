@@ -240,3 +240,21 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 מה שחסר — מציגים כחסר.
 מה שלא קיים — מתוכנן בלבד.
 מה שסותר את האמת — מתקנים מיד.
+
+<!-- MTH_PRODUCTION_HARDENING_START -->
+
+## Moodle Teacher Hub — Production Hardening Rules
+
+- GitHub remains the source of truth.
+- Canonical LTI endpoint: /api/lti/launch.
+- Legacy /lti/launch-1p1 must not be used as the Moodle Tool URL.
+- No demo teacher, demo space, fake grades, fake activity, or fake practice time are allowed in production paths.
+- LTI launch must require OAuth1 HMAC-SHA1 verification.
+- Missing LTI_SHARED_SECRET must block launch.
+- Missing or wrong LTI_CONSUMER_KEY must block launch when configured.
+- Supabase SERVICE_ROLE_KEY must remain server-only.
+- SQL must remain unrun until reviewed and approved.
+- Moodle use is allowed only after real launch evidence is recorded in STATE/evidence-log.md.
+
+<!-- MTH_PRODUCTION_HARDENING_END -->
+

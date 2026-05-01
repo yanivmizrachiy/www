@@ -25,7 +25,7 @@
 - הרצת שרת.
 - `/health`.
 - `/dev/login`.
-- `/lti/launch-1p1` מול Moodle אמיתי.
+- `/api/lti/launch` מול Moodle אמיתי.
 - חיבור Moodle API חי.
 - SSO משרד החינוך מלא.
 - ייצוא Excel אמיתי.
@@ -197,3 +197,15 @@ Live Moodle API sync: blocked-no-token
 - OAuth heuristic: False
 - Ready for Moodle use: NO
 - Report: STATE/local-audit/pr-branch-audit-20260501-065132.md
+
+
+## Production hardening patch (20260501-070424)
+- Branch: gemini/ai-studio-sync-20260428-193953
+- Commit before patch: 24cbc582b99676ed16866102a9c4e996d13fb069
+- Canonical endpoint set to /api/lti/launch.
+- Runtime server src/server.js replaced with OAuth1 HMAC-SHA1 verification.
+- server.ts aligned as source server.
+- No SQL was run.
+- No deploy was performed.
+- Moodle Tool URL was not changed automatically.
+- Real Moodle launch still must be verified after secrets are configured.
