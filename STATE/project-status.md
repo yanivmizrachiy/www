@@ -1,129 +1,82 @@
 # Project Status — www / Moodle Teacher Hub
 
-סטטוס אמת עדכני לריפו `yanivmizrachiy/www`.
+Updated: 2026-05-01
+Repository: `yanivmizrachiy/www`
+Active PR branch: `gemini/ai-studio-sync-20260428-193953`
 
----
+## Current verified checkpoint
 
-## שם הריפו המחייב
+Latest verified local/Termux status from user output:
 
 ```text
-yanivmizrachiy/www
+TYPECHECK_EXIT=0
+BUILD_EXIT=0
+BRANCH=gemini/ai-studio-sync-20260428-193953
+COMMIT=2036f8f Ignore TypeScript build info files
+STATUS: clean
 ```
 
-זהו הריפו שאליו יש להתייחס כמקור העבודה הנוכחי והיחיד לפרויקט Moodle Teacher Hub המשודרג.
+Additional repo commits after that checkpoint prepared source/docs only and require another pull/build verification:
 
----
+- `90cf9b8` — current verification checkpoint file
+- `ccab1d6` — Supabase deployment runbook
 
-## מה בוצע בפועל
+## What is now actually built in source
 
-- אותר הריפו `yanivmizrachiy/www`.
-- נמצא README קיים המתאר Moodle Teacher Hub עם Node.js + Express, LTI 1.1, Dashboard בעברית, API בסיסי ו־data/store.json.
-- נמצא `.gitignore` שמחריג `.env`, לוגים, backups, dist, coverage וקבצי מערכת.
-- נוצר `PROJECT_RULES.md` כרובד כללים מרכזי ומחייב לריפו `www`.
-- נוצרו מסמכי governance ותכנון עומק:
-  - `docs/system-rules.md`
-  - `docs/requirements.md`
-  - `docs/repository-map.md`
-  - `docs/import-contract.md`
-  - `docs/lti-contract.md`
-  - `docs/testing-plan.md`
-  - `docs/legacy-moodle-teacher-hub-snapshot.md`
-- נוצר תיעוד איחוד ריפואים:
-  - `STATE/repo-consolidation.md`
-- הריפו `yanivmizrachiy/moodle-teacher-hub` סומן כ־legacy בלבד.
-- תועד שהדרישה הסופית כוללת מערכת Moodle מחוברת באמת, ללא דמו, עם SSO/LTI/API, דוחות, ייצוא ועריכה דו־כיוונית רק אם קיימות הרשאות Moodle אמיתיות.
+- Hebrew RTL React/Vite app.
+- Main routes for Dashboard, Import, Students, Student Profile, Tasks, Chapters, Grades, Activity, Reports, Export, Settings, Setup, and LTI bootstrap.
+- Dashboard no longer claims verified Moodle connection without a session.
+- Student profile no longer uses fake average grade `85`; average is calculated only from real numeric grades.
+- Export page includes real XLSX export code for available real data only.
+- Import page parses Moodle files/tables and posts to the import endpoint.
+- Safe source for `supabase/functions/import-moodle-report/index.ts` exists.
+- Safe blocked source for `supabase/functions/lti-launch/index.ts` exists.
+- Reviewed minimal Supabase schema source exists in `supabase/migrations/20260501_initial_schema.sql`.
+- `.gitignore` ignores `*.tsbuildinfo`.
 
----
+## What is verified
 
-## דרישות מוצר מחייבות שנקלטו
-
-- הריפו חייב להיות נקי, מסודר וללא כפילויות.
-- חובה דף כללים מעודכן תמיד.
-- המערכת חייבת לעבוד ממחשבי חדר מחשב, מחשב אישי וטלפון נייד בלי בלבול state.
-- אין דמו ואין מידע מומצא.
-- כל מידע חייב להגיע מנתוני Moodle אמיתיים.
-- כל הניווט בעברית.
-- עמוד ראשי עם שם מורה ושם מרחב כאשר זמינים.
-- גישה מהירה לתלמידים, משימות, פרקים, דוחות, פעילות/זמנים, הגדרות וייצוא.
-- כניסה דרך Moodle / משרד החינוך ללא סיסמה נוספת כאשר SSO/LTI מוגדרים בפועל.
-- סינון תלמיד, קבוצה, כיתה וטווח תאריכים כאשר הנתונים קיימים.
-- הצגת משימות, ציונים, ניסיונות, ממוצעים ופעילות רק מנתוני אמת.
-- זמן תרגול מצטבר יומי רק אם ניתן להוכחה ממקור Moodle או מחישוב לוגים מסומן היטב.
-- משימות עם פרק/נושא, כמות שאלות אם קיימת, קישור ישיר אם מאומת.
-- דוחות: ציונים, משימות, זמנים, פעילות ושילובים.
-- ייצוא יעד: Excel, PDF, הדפסה ו־CSV כאשר קיים.
-- עריכה דו־כיוונית מול Moodle רק עם token והרשאות כתיבה אמיתיות.
-
----
-
-## סטטוס יכולות לפי אמת נוכחית
-
-| יכולת | סטטוס |
+| Area | Status |
 |---|---|
-| ריפו `www` קיים | verified |
-| README קיים | verified |
-| `.gitignore` חוסם `.env` | verified |
-| `PROJECT_RULES.md` נוצר | verified |
-| `docs/system-rules.md` נוצר | verified |
-| `docs/requirements.md` נוצר | verified |
-| `docs/repository-map.md` נוצר | verified |
-| `docs/import-contract.md` נוצר | verified |
-| `docs/lti-contract.md` נוצר | verified |
-| `docs/testing-plan.md` נוצר | verified |
-| LTI 1.1 מתואר ב־README | described, requires current code verification |
-| Dashboard בעברית מתואר ב־README | described, requires current UI verification |
-| API בסיסי מתואר ב־README | described, requires current endpoint verification |
-| חיבור Moodle API חי | not verified |
-| SSO משרד החינוך מלא | not verified |
-| ייצוא Excel | planned / not verified |
-| ייצוא PDF | planned / not verified |
-| עריכה דו־כיוונית ב־Moodle | blocked until real token/write permission |
-| Production-ready | not verified |
+| Correct PR branch | verified |
+| TypeScript typecheck | verified passing at commit `2036f8f` |
+| Vite build | verified passing at commit `2036f8f` |
+| Export source | implemented, build-passing after local verification |
+| Import function source | present in repo |
+| Reviewed schema source | present in repo |
+| Secrets in GitHub | no known real secret committed; must keep verifying |
+| Moodle production readiness | not ready |
 
----
+## What is not verified / not done
 
-## מה אסור לטעון עדיין
+- Supabase SQL has not been run.
+- Supabase Edge Functions have not been deployed.
+- Real Moodle LTI launch has not been verified end-to-end.
+- Real OAuth1 HMAC-SHA1 launch evidence has not been recorded.
+- Manual Real Data Import has not been tested end-to-end with a real Moodle export.
+- Excel export has not yet been tested from real imported data.
+- Moodle Tool URL must not be changed yet.
+- PR is still Draft and should not be merged until final review.
 
-אין לטעון שהמערכת production-ready.
+## Strict truth rules
 
-אין לטעון שחיבור Moodle API חי עובד עד שתהיה הוכחה:
+- Do not claim production-ready.
+- Do not claim real Moodle connection until a real Moodle launch is verified.
+- Do not run SQL automatically.
+- Do not deploy functions automatically.
+- Do not paste or commit real secrets.
+- Do not create demo students, fake grades, fake activity, or fake practice time.
+- Any future change must preserve existing working UI unless the exact file/scope is approved.
 
-- token אמיתי.
-- קריאת API אמיתית.
-- תוצאה אמיתית מ־Moodle.
-- תיעוד ב־evidence log.
-
-אין לטעון ש־Excel/PDF עובדים אם קיימים רק CSV/הדפסה.
-
-אין לטעון שעריכה מול Moodle עובדת בלי בדיקת כתיבה אמיתית.
-
----
-
-## חסרים להמשך אימות
-
-- מיפוי מלא של קבצי הריפו הנוכחי.
-- audit פיזי מלא מול הריפו legacy.
-- בדיקת `npm run check`.
-- בדיקת `npm run dev`.
-- בדיקת `/health`.
-- בדיקת `/dev/login`.
-- בדיקת `/lti/launch-1p1` עם launch אמיתי או payload בדיקה חוקי.
-- בדיקת APIs.
-- בדיקת Dashboard.
-- בדיקת ייצוא.
-- בדיקת שאין secrets בריפו.
-
----
-
-## סטטוס כולל
+## Current readiness estimate
 
 ```text
-Repository governance: active
-Canonical repo: yanivmizrachiy/www
-Legacy repo status: marked legacy
-Rules page: created
-Product requirements: captured
-Code verification: partial
-Moodle API live connection: not verified
-Production readiness: not verified
+Repository control: strong
+Frontend typecheck/build: verified passing
+Export source: implemented
+Import backend source: implemented but not deployed
+Supabase schema source: reviewed source only, not applied
+LTI source: safe/blocked until real OAuth verification
+Real teacher use: not approved
+Estimated readiness: 80%-82%
 ```
