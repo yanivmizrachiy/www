@@ -1,0 +1,24 @@
+const app=document.getElementById('app');
+const color={exam:'#B91C1C',quiz:'#DC2626',vacation:'#0F766E',trip:'#15803D',activity:'#2563EB',club:'#7C3AED',ceremony:'#92400E',meeting:'#475569',deadline:'#C2410C',other:'#A16207'};
+const label={exam:'מבחן',quiz:'בוחן',vacation:'חופשה',trip:'טיול',activity:'פעילות',club:'חוג',ceremony:'טקס',meeting:'מפגש',deadline:'תאריך יעד',other:'אירוע'};
+app.innerHTML='<header class="top"><h1>הצעה לניהול הלו״ז של חטיבת הביניים</h1><p class="sub" id="status">טוען...</p></header><main class="list" id="list"></main>';
+main();
+async function main(){try{let src=await fetch('data/source.json?cb='+Date.now(),{cache:'no-store'}).then(r=>r.json());let gids=[...(src.candidateGids||[]),src.gid,'0'].filter(Boolean).map(String).filter((v,i,a)=>a.indexOf(v)===i);let all=[];for(const gid of gids){try{let t=await load(src.sheetId,gid);all=all.concat(parse(t,gid))}catch{}}let ev=uniq(all).sort((a,b)=>(a.raw+a.time+a.title).localeCompare(b.raw+b.time+b.title));document.getElementById('status').textContent=ev.length?ev.length+' אירועים':'לא נמצאו אירועים';draw(ev)}catch{document.getElementById('status').textContent='לא נמצאו אירועים';draw([])}}
+function load(id,gid){return new Promise((ok,bad)=>{let cb='c'+Date.now()+Math.random().toString(36).slice(2);window[cb]=r=>{delete window[cb];document.getElementById(cb)?.remove();r&&r.status==='ok'?ok(r.table):bad()};let s=document.createElement('script');s.id=cb;s.onerror=bad;s.src=`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?gid=${gid}&tqx=out:json;responseHandler:${cb}&_=${Date.now()}`;document.body.appendChild(s)})}
+function cells(t){return(t.rows||[]).map(r=>(r.c||[]).map(c=>c?String(c.f??c.v??'').trim():''))}
+function parse(t,gid){let m=cells(t),by={},out=[];for(let r of m){for(let c=0;c<r.length;c++){let v=clean(r[c]);if(!v)continue;let d=date(v);if(d){by[c]=d;let rest=clean(v.replace(reDate(),'').replace(/^יום\s+\S+/,''));if(rest&&!skip(rest))out.push(make(rest,d,gid));continue}if(by[c]&&!skip(v)){parts(v).forEach(p=>{p=clean(p);if(p&&!skip(p))out.push(make(p,by[c],gid))})}}}return out}
+function make(v,d,gid){let tm=time(v),title=clean(v.replace(/\(?\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\)?/,'').replace(/\(?\d{1,2}:\d{2}\)?/,''))||v;return{title,raw:d,date:toDate(d),time:[tm[0],tm[1]].filter(Boolean).join(' - '),type:kind(v),note:v===title?'':v,gid}}
+function draw(arr){let list=document.getElementById('list');if(!arr.length){list.innerHTML='<div class="empty">לא נמצאו אירועים</div>';return}let g={};arr.forEach(e=>(g[e.raw]||(g[e.raw]=[])).push(e));list.innerHTML=Object.entries(g).map(([d,a])=>`<section class="day"><div class="dayHead"><div class="dayName">${fmtDay(a[0].date)}</div><div class="dateText">${fmtDate(a[0].date)}</div></div>${a.map(card).join('')}</section>`).join('')}
+function card(e){let c=color[e.type]||color.other;return`<article class="event" style="--c:${c}"><div class="time">${esc(e.time||'ללא שעה')}</div><div class="title">${esc(e.title)}</div>${e.note?`<div class="note">${esc(e.note)}</div>`:''}<div class="type">${esc(label[e.type]||label.other)}</div></article>`}
+function reDate(){return/(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))?/}
+function date(v){let m=String(v).match(reDate());if(!m)return'';let now=new Date(),base=now.getMonth()>=8?now.getFullYear():now.getFullYear()-1;let y=m[3]?(m[3].length===2?2000+ +m[3]:+m[3]):(+m[2]>=9?base:base+1);return`${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`}
+function toDate(s){let[a,b,c]=s.split('-').map(Number);return new Date(a,b-1,c)}
+function time(v){let m=String(v).match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/);if(m)return[m[1],m[2]];m=String(v).match(/(\d{1,2}:\d{2})/);return m?[m[1],'']:['','']}
+function kind(v){v=String(v).toLowerCase();if(v.includes('מבחן'))return'exam';if(v.includes('בוחן')||v.includes('בחן'))return'quiz';if(v.includes('חופש'))return'vacation';if(v.includes('טיול')||v.includes('סיור'))return'trip';if(v.includes('חוג'))return'club';if(v.includes('טקס'))return'ceremony';if(v.includes('מפגש')||v.includes('ישיבה'))return'meeting';if(v.includes('הגשה'))return'deadline';return'activity'}
+function skip(v){v=clean(v);return!v||v.includes('לוח')||v.includes('גלישת טקסט')||v.includes('גודל גופן')||v.includes('כל חודש')||v.length<2}
+function parts(v){return String(v).split(/\n|\r|•|▪|▫|;|\s{3,}/).filter(Boolean)}
+function uniq(a){let s=new Set();return a.filter(e=>{let k=e.raw+'|'+e.title+'|'+e.time;if(s.has(k))return false;s.add(k);return true})}
+function clean(s){return String(s||'').trim().replace(/\s+/g,' ')}
+function fmtDay(d){return new Intl.DateTimeFormat('he-IL',{weekday:'long'}).format(d)}
+function fmtDate(d){return new Intl.DateTimeFormat('he-IL',{day:'numeric',month:'long',year:'numeric'}).format(d)}
+function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
