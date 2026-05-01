@@ -1,9 +1,17 @@
 {
   "sourceType": "google-sheet",
   "sheetId": "1bG6RsGZK39lNogtTBS5_voJz0WVcRu2D",
-  "gid": "0",
-  "csvUrl": "https://docs.google.com/spreadsheets/d/1bG6RsGZK39lNogtTBS5_voJz0WVcRu2D/gviz/tq?tqx=out:csv&gid=0",
+  "gid": "970211231",
+  "originalUrl": "https://docs.google.com/spreadsheets/d/1bG6RsGZK39lNogtTBS5_voJz0WVcRu2D/edit?gid=970211231#gid=970211231",
+  "csvUrl": "https://docs.google.com/spreadsheets/d/1bG6RsGZK39lNogtTBS5_voJz0WVcRu2D/gviz/tq?tqx=out:csv&gid=970211231",
+  "jsonUrl": "https://docs.google.com/spreadsheets/d/1bG6RsGZK39lNogtTBS5_voJz0WVcRu2D/gviz/tq?gid=970211231&tqx=out:json",
   "isPrimarySource": true,
   "requiresPublicReadAccess": true,
-  "fallbackFile": "data/events.json"
+  "fallbackFile": "data/events.json",
+  "syncPolicy": {
+    "mode": "live-public-sheet-exact-tab",
+    "cacheBusting": true,
+    "autoRefreshMs": 180000,
+    "truthRule": "This exact Google Sheet tab is the primary source. No demo data."
+  }
 }
