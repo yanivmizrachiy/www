@@ -1,5 +1,43 @@
 {
-  "sourceType": "real-exams-to-be-provided-by-user",
-  "note": "אין כאן מבחני דמו. המבחנים יתווספו רק אחרי שהמשתמש יספק תאריכים אמיתיים.",
-  "exams": []
+  "sourceType": "real-exams-provided-by-user",
+  "note": "מבחנים אמיתיים שנמסרו על ידי המשתמש. אין כאן מבחני דמו.",
+  "exams": [
+    {
+      "date": "2026-05-04",
+      "dateLabel": "4/5",
+      "dayLabel": "ב׳",
+      "title": "אנגלית — שכבה ת׳",
+      "subject": "אנגלית",
+      "className": "שכבה ת׳",
+      "type": "exam"
+    },
+    {
+      "date": "2026-05-06",
+      "dateLabel": "6/5",
+      "dayLabel": "ד׳",
+      "title": "אנגלית — כיתה ח׳1 מדעית",
+      "subject": "אנגלית",
+      "className": "ח׳1 מדעית",
+      "type": "exam"
+    },
+    {
+      "date": "2026-05-07",
+      "dateLabel": "7/5",
+      "dayLabel": "ה׳",
+      "title": "אנגלית — ח׳3, ח׳4",
+      "subject": "אנגלית",
+      "className": "ח׳3, ח׳4",
+      "type": "exam"
+    },
+    {
+      "date": "2026-05-07",
+      "dateLabel": "7/5",
+      "dayLabel": "ה׳",
+      "title": "מתמטיקה — ז׳1 עם טל",
+      "subject": "מתמטיקה",
+      "className": "ז׳1",
+      "teacher": "טל",
+      "type": "exam"
+    }
+  ]
 }
