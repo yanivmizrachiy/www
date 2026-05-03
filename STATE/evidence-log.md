@@ -209,3 +209,59 @@ Live Moodle API sync: blocked-no-token
 - No deploy was performed.
 - Moodle Tool URL was not changed automatically.
 - Real Moodle launch still must be verified after secrets are configured.
+
+---
+
+## 2026-05-03 — Central coordination evidence update
+
+### Verified from current conversation screenshots and terminal output
+
+- Correct Supabase project identified: `moodle-teacher-hub`.
+- Correct Supabase project URL identified: `https://ncoqanascubqkxxfvucfz.supabase.co`.
+- Wrong Supabase project encountered once: `calendar-app`; it is paused and must not be used for Moodle Teacher Hub.
+- Supabase project overview showed `Healthy`.
+- Supabase project overview showed `Last migration: No migrations`, `Last backup: No backups`, and `No branches`.
+- Moodle external tool screen showed current Tool URL: `https://nasty-rabbits-wait.loca.lt/api/lti/launch`.
+- Moodle external tool screen showed LTI version `LTI 1.0/1.1` and consumer key `yaniv-lti-tool`.
+- A Moodle launch attempt showed `503 - Tunnel Unavailable`, proving Moodle attempted to open the tool but the temporary tunnel was not reachable.
+- Termux runtime on branch `gemini/ai-studio-sync-20260428-193953` reached commit `abd480c Redact LTI shared secret from setup log`.
+- Termux used Node `v24.14.1` and npm `10.9.8`.
+- `npm install` completed in the clean runtime folder.
+- `npm run build` passed with Vite `5.4.21`.
+- Local server `/health` returned JSON successfully on `http://127.0.0.1:3000/health`.
+- Local server health showed canonical endpoint `/api/lti/launch` and OAuth required.
+- Local server health showed `supabaseConfigured: false` at the time of the test.
+- Local server health showed `readyForMoodleUse: false` at the time of the test.
+- `npx localtunnel` CLI failed in Termux because `openurl` does not support Android.
+- Supabase SQL table-list query verified exactly three public tables:
+  - `launch_attempts`, RLS enabled.
+  - `moodle_sites`, RLS enabled.
+  - `teacher_sessions`, RLS enabled.
+
+### Current truth status after 2026-05-03 evidence
+
+```text
+Correct Supabase backend candidate: verified by screenshot
+Supabase public table list: verified by safe SQL screenshot
+Supabase full schema columns: not verified yet
+Supabase RPCs/functions: not verified yet
+Runtime Supabase connection: not configured in latest local health
+Termux build: verified passing
+Local Node server: verified passing
+Public tunnel: failing / not verified
+Real Moodle LTI OAuth: not verified
+Manual Real Data Import tables: not present in table-list screenshot
+Production-ready: no
+```
+
+### Decision
+
+Do not start a new app and do not run broad experiments. Continue from the existing GitHub PR branch, existing Moodle configuration, existing Node server, and existing Supabase project. The immediate practical target is a single working launch path:
+
+```text
+Moodle -> https://nasty-rabbits-wait.loca.lt/api/lti/launch -> Node server -> verified LTI session -> Supabase teacher/session record -> React dashboard
+```
+
+### Next technical action
+
+Use the existing Supabase tables first. Before creating missing import tables, connect the runtime to `ncoqanascubqkxxfvucfz` with local-only environment variables and make the public tunnel reachable. Then test the Moodle launch and record the exact server log result.
