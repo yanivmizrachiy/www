@@ -1,16 +1,22 @@
 # מערכת PDF קבועה — לוז טדי
 
-דף הורדה:
-https://yanivmizrachiy.github.io/www/downloads/hazaa-luz-teddy/
-
 PDF ישיר:
 https://yanivmizrachiy.github.io/www/downloads/hazaa-luz-teddy/hazaa-luz-teddy.pdf
 
 אתר:
 https://yanivmizrachiy.github.io/www/luz-teddy/clean.html?v=1511f59
 
-שיטה:
-pillow-jpeg-embedded-pdf-no-pip-no-rust
+שיטת תיקון:
+librsvg-pango-rtl-svg-render-plus-clickable-pdf
+
+מה תוקן:
+- עברית לא נכתבת יותר הפוך ידנית.
+- הכותרת נרנדרת דרך מנוע RTL אמיתי.
+- PDF נשמר קבוע בריפו.
+- עותק מקומי נשמר ב־Download.
+
+עותק מקומי:
+ /sdcard/Download/hazaa-luz-teddy-fixed.pdf
 
 גיבוי:
-backup-before-luz-pdf-20260503-103631
+backup-before-hebrew-pdf-fix-20260503-130119
