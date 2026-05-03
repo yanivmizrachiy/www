@@ -5,7 +5,7 @@ Branch: `gemini/ai-studio-sync-20260428-193953`
 
 ## Evidence source
 
-User pasted Termux output after running the local runtime script.
+User pasted Termux output after running the local runtime script and then pasted the tunnel log.
 
 ## Verified from output
 
@@ -24,16 +24,19 @@ User pasted Termux output after running the local runtime script.
 - Server log shows:
   - `moodle-teacher-hub running on port 3000`
   - `canonical LTI endpoint: /api/lti/launch`
+- Tunnel log now shows repeated alive messages for:
+  - `https://nasty-rabbits-wait.loca.lt`
+  - timestamps around `2026-05-03T13:59:15Z` through `2026-05-03T14:03:15Z`.
 
 ## Important correction
 
-The script printed `TUNNEL_OK`, but the public health check actually timed out:
+The earlier script printed `TUNNEL_OK`, but the public health check actually timed out:
 
 ```text
 curl: (28) Operation timed out after 15002 milliseconds with 0 bytes received
 ```
 
-Therefore public Localtunnel reachability is **not verified**. Treat the printed `TUNNEL_OK` as a false positive from the script logic, not as evidence that the tunnel works.
+Later tunnel logs show the Localtunnel process is alive and holding the expected URL, but public HTTP health is still not verified until `https://nasty-rabbits-wait.loca.lt/health` returns JSON from the local Node server.
 
 ## Current truth
 
@@ -42,7 +45,8 @@ Local Node server: verified working
 LTI secret loaded into local process: yes, from user terminal output
 readyForMoodleUse in local health: true
 Supabase configured in local runtime: false
-Public tunnel health: failed / timed out
+Localtunnel process: alive according to tunnel log
+Public tunnel health JSON: not verified yet
 Moodle launch through tunnel: not verified
 Real OAuth verification from Moodle: not verified
 ```
@@ -53,11 +57,4 @@ A real LTI shared-secret-like value was pasted into the chat during troubleshoot
 
 ## Next technical action
 
-Fix tunnel reachability first. Do not test Moodle launch until `https://nasty-rabbits-wait.loca.lt/health` returns the local health JSON.
-
-Potential next options:
-
-1. Check `~/moodle-hub-logs/tunnel.log` for the actual Localtunnel URL or error.
-2. Use a different temporary tunnel provider if Localtunnel does not work reliably on Termux.
-3. Use a stable deployment host instead of phone-hosted Termux for LTI testing.
-4. After tunnel works, update Moodle Tool URL and APP_BASE_URL to match exactly.
+Verify public tunnel reachability directly. If `https://nasty-rabbits-wait.loca.lt/health` returns the local server health JSON, then the next step is a real Moodle launch attempt. If it returns a Localtunnel password/interstitial page or times out, the tunnel layer is still the blocker.
