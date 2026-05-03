@@ -1,0 +1,16 @@
+{
+  "launches": [],
+  "teachers": [],
+  "spaces": [],
+  "students": [],
+  "tasks": [],
+  "grades": [],
+  "activitySessions": [],
+  "moodleCaptures": [],
+  "sessions": [],
+  "settings": {
+    "allowTeacherSettingsView": true,
+    "allowExport": true,
+    "lastSyncAt": null
+  }
+}

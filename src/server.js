@@ -1,6 +1,7 @@
 import express from "express";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
+import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
@@ -11,6 +12,8 @@ const __dirname = path.dirname(__filename);
 const ROOT = path.dirname(__dirname);
 const PORT = Number(process.env.PORT || 3000);
 const STORE_PATH = path.join(ROOT, "data", "store.json");
+const SESSION_TTL_HOURS = Number(process.env.LTI_SESSION_TTL_HOURS || process.env.SESSION_TTL_HOURS || 8);
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 function loadEnvFile() {
   const envPath = path.join(ROOT, ".env");
@@ -39,6 +42,7 @@ function defaultStore() {
     grades: [],
     activitySessions: [],
     moodleCaptures: [],
+    sessions: [],
     settings: {
       allowTeacherSettingsView: true,
       allowExport: true,
@@ -47,13 +51,31 @@ function defaultStore() {
   };
 }
 
+function migrateStore(raw) {
+  const base = defaultStore();
+  const merged = {
+    ...base,
+    ...(raw && typeof raw === "object" ? raw : {}),
+    settings: {
+      ...base.settings,
+      ...(raw?.settings && typeof raw.settings === "object" ? raw.settings : {})
+    }
+  };
+
+  for (const key of ["launches", "teachers", "spaces", "students", "tasks", "grades", "activitySessions", "moodleCaptures", "sessions"]) {
+    if (!Array.isArray(merged[key])) merged[key] = [];
+  }
+
+  return merged;
+}
+
 function ensureStoreDir() {
   fs.mkdirSync(path.dirname(STORE_PATH), { recursive: true });
 }
 
 function loadStore() {
   try {
-    return JSON.parse(fs.readFileSync(STORE_PATH, "utf8"));
+    return migrateStore(JSON.parse(fs.readFileSync(STORE_PATH, "utf8")));
   } catch {
     ensureStoreDir();
     const s = defaultStore();
@@ -64,22 +86,46 @@ function loadStore() {
 
 const store = loadStore();
 
+function purgeExpiredSessions() {
+  const now = Date.now();
+  store.sessions = store.sessions.filter(session => {
+    const expiresAt = Date.parse(session.expiresAt || "");
+    return Number.isFinite(expiresAt) && expiresAt > now;
+  });
+}
+
 function saveStore() {
+  purgeExpiredSessions();
   ensureStoreDir();
   fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), "utf8");
 }
 
-const sessions = new Map();
-
 function setSession(res, data) {
   const sid = uuidv4();
-  sessions.set(sid, data);
-  res.cookie("sid", sid, { httpOnly: true, sameSite: "lax", secure: false });
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + (SESSION_TTL_HOURS * 60 * 60 * 1000)).toISOString();
+  store.sessions.push({
+    id: sid,
+    createdAt: now.toISOString(),
+    expiresAt,
+    ...data
+  });
+  saveStore();
+  res.cookie("sid", sid, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: IS_PRODUCTION,
+    expires: new Date(expiresAt)
+  });
 }
 
 function getSession(req) {
+  purgeExpiredSessions();
   const sid = req.cookies?.sid;
-  return sid ? (sessions.get(sid) || null) : null;
+  if (!sid) return null;
+  const session = store.sessions.find(entry => entry.id === sid);
+  if (!session) return null;
+  return session;
 }
 
 function upsertTeacher(name, externalId = "teacher-demo") {
@@ -175,7 +221,90 @@ function buildGradesCsv() {
   return csv;
 }
 
+function oauthPercentEncode(value) {
+  return encodeURIComponent(String(value ?? ""))
+    .replace(/[!'()*]/g, ch => `%${ch.charCodeAt(0).toString(16).toUpperCase()}`);
+}
+
+function normalizeUrlForOAuth(rawUrl) {
+  const url = new URL(rawUrl);
+  const scheme = url.protocol.toLowerCase();
+  const hostname = url.hostname.toLowerCase();
+  const isDefaultPort =
+    (scheme === "http:" && (!url.port || url.port === "80")) ||
+    (scheme === "https:" && (!url.port || url.port === "443"));
+  const port = isDefaultPort ? "" : `:${url.port}`;
+  return `${scheme}//${hostname}${port}${url.pathname}`;
+}
+
+function collectOAuthParams(req) {
+  const params = [];
+  const sources = [req.query || {}, req.body || {}];
+  for (const source of sources) {
+    for (const [key, value] of Object.entries(source)) {
+      if (key === "oauth_signature" || value == null) continue;
+      if (Array.isArray(value)) {
+        value.forEach(item => params.push([oauthPercentEncode(key), oauthPercentEncode(item)]));
+      } else {
+        params.push([oauthPercentEncode(key), oauthPercentEncode(value)]);
+      }
+    }
+  }
+  params.sort((a, b) => {
+    if (a[0] === b[0]) return a[1].localeCompare(b[1]);
+    return a[0].localeCompare(b[0]);
+  });
+  return params;
+}
+
+function buildOAuthBaseString(req) {
+  const method = (req.method || "POST").toUpperCase();
+  const launchUrl = `${req.protocol}://${req.get("host")}${req.originalUrl.split("?")[0]}`;
+  const normalizedUrl = normalizeUrlForOAuth(launchUrl);
+  const normalizedParams = collectOAuthParams(req)
+    .map(([key, value]) => `${key}=${value}`)
+    .join("&");
+  return [
+    oauthPercentEncode(method),
+    oauthPercentEncode(normalizedUrl),
+    oauthPercentEncode(normalizedParams)
+  ].join("&");
+}
+
+function safeCompare(a, b) {
+  const left = Buffer.from(String(a || ""), "utf8");
+  const right = Buffer.from(String(b || ""), "utf8");
+  if (left.length !== right.length) return false;
+  return crypto.timingSafeEqual(left, right);
+}
+
+function verifyLti11Request(req) {
+  if (!ENV.LTI11_KEY || !ENV.LTI11_SECRET) {
+    return { ok: false, status: 503, error: "LTI11_NOT_CONFIGURED" };
+  }
+  const body = req.body || {};
+  if (!body.oauth_consumer_key || !body.oauth_signature) {
+    return { ok: false, status: 401, error: "MISSING_OAUTH_FIELDS" };
+  }
+  if (body.oauth_consumer_key !== ENV.LTI11_KEY) {
+    return { ok: false, status: 401, error: "INVALID_CONSUMER_KEY" };
+  }
+  if ((body.oauth_signature_method || "").toUpperCase() !== "HMAC-SHA1") {
+    return { ok: false, status: 401, error: "UNSUPPORTED_SIGNATURE_METHOD" };
+  }
+
+  const baseString = buildOAuthBaseString(req);
+  const signingKey = `${oauthPercentEncode(ENV.LTI11_SECRET)}&`;
+  const expected = crypto.createHmac("sha1", signingKey).update(baseString).digest("base64");
+  if (!safeCompare(expected, body.oauth_signature)) {
+    return { ok: false, status: 401, error: "INVALID_OAUTH_SIGNATURE" };
+  }
+
+  return { ok: true };
+}
+
 const app = express();
+app.set("trust proxy", 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -201,6 +330,10 @@ app.get("/health", (_req, res) => {
       grades: store.grades.length,
       activitySessions: store.activitySessions.length,
       moodleCaptures: store.moodleCaptures.length
+    },
+    session: {
+      ttlHours: SESSION_TTL_HOURS,
+      secureCookies: IS_PRODUCTION
     },
     now: new Date().toISOString()
   });
@@ -239,6 +372,11 @@ app.get("/dev/login", (_req, res) => {
 });
 
 app.post("/lti/launch-1p1", (req, res) => {
+  const verification = verifyLti11Request(req);
+  if (!verification.ok) {
+    logLaunch("lti11", false, "", "", verification.error);
+    return res.status(verification.status).json({ ok: false, error: verification.error });
+  }
   const body = req.body || {};
   const teacher = upsertTeacher(body.lis_person_name_full || body.user_id || "מורה", body.user_id || "lti11-user");
   const space = upsertSpace(body.context_title || "מרחב Moodle", body.context_id || "lti11-space");
@@ -322,4 +460,5 @@ app.get("/", (_req, res) => {
 
 app.listen(PORT, () => {
   console.log(`moodle-teacher-hub running on ${APP_BASE_URL}`);
+  console.log(`LTI cookies require HTTPS in production: ${IS_PRODUCTION ? "yes" : "no (development mode)"}`);
 });
