@@ -9,6 +9,7 @@
 <title>ניהול הלו״ז של חטיבת הביניים</title>
 <link rel="stylesheet" href="clean.css?v=fbc2c896">
 <link rel="stylesheet" href="exam-clock.css?v=444cade">
+<style>.todayBanner{display:none!important}</style>
 </head>
 <body>
 <header class="pageTitle">
@@ -20,5 +21,19 @@
 </header>
 <div class="app" id="app"></div>
 <script src="clean-view.js?v=49e7303"></script>
+<script>
+(function(){
+  function updateTodayLine(){
+    var target=document.getElementById('clockDate');
+    if(!target)return;
+    var now=new Date();
+    var weekday=new Intl.DateTimeFormat('he-IL',{weekday:'long'}).format(now);
+    var date=new Intl.DateTimeFormat('he-IL',{day:'numeric',month:'long',year:'numeric'}).format(now);
+    target.textContent='היום '+weekday+' — '+date;
+  }
+  updateTodayLine();
+  setInterval(updateTodayLine,1000);
+})();
+</script>
 </body>
 </html>
