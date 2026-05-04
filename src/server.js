@@ -163,6 +163,7 @@ function loadStore() {
 
 const store = loadStore();
 const sessions = new Map();
+const tokenSessions = new Map();
 
 function saveStore() {
   fs.mkdirSync(path.dirname(STORE_PATH), { recursive: true });
@@ -214,10 +215,13 @@ function upsertSpaceFromLti(body) {
 function setSession(res, data) {
   const sid = crypto.randomUUID();
   sessions.set(sid, data);
+  if (data?.sessionToken) tokenSessions.set(data.sessionToken, data);
+
+  const secure = env("COOKIE_SECURE", env("NODE_ENV", "") === "production" ? "true" : "false") === "true";
   res.cookie("sid", sid, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: env("COOKIE_SECURE", env("NODE_ENV", "") === "production" ? "true" : "false") === "true"
+    sameSite: secure ? "none" : "lax",
+    secure
   });
   return sid;
 }
@@ -225,6 +229,43 @@ function setSession(res, data) {
 function getSession(req) {
   const sid = req.cookies?.sid;
   return sid ? sessions.get(sid) || null : null;
+}
+
+function getSessionFromToken(token) {
+  if (!token || typeof token !== "string") return null;
+  return tokenSessions.get(token) || null;
+}
+
+function numericCourseId(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function buildNodeContextPayload(sessionData) {
+  return {
+    ok: true,
+    session: {
+      id: sessionData.sessionToken,
+      course_id: numericCourseId(sessionData.courseId),
+      course_title: sessionData.courseTitle || sessionData.spaceTitle || null,
+      moodle_username: sessionData.moodleUsername || sessionData.teacherName || null,
+      moodle_user_id: numericCourseId(sessionData.moodleUserId),
+      role: sessionData.role || "teacher",
+      launched_at: sessionData.createdAt,
+      expires_at: sessionData.expiresAt || new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString()
+    },
+    site: {
+      id: sessionData.siteId || "moodlemoe",
+      site_url: sessionData.siteUrl || "https://moodlemoe.lms.education.gov.il",
+      site_name: sessionData.siteName || "Moodle משרד החינוך",
+      consumer_guid: sessionData.consumerGuid || null,
+      lti_configured: true,
+      ws_configured: false,
+      ws_token_status: "blocked-no-token",
+      last_probed_at: null
+    },
+    probes: []
+  };
 }
 
 async function recordSupabaseSession(sessionRecord) {
@@ -282,7 +323,14 @@ function buildGradesCsv() {
 
 const app = express();
 app.set("trust proxy", true);
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(helmet({ contentSecurityPolicy: false, frameguard: false }));
+
+// MTH iframe allowlist: Moodle embeds external tools in an iframe.
+app.use((_req, res, next) => {
+  res.removeHeader("X-Frame-Options");
+  res.setHeader("Content-Security-Policy", "frame-ancestors 'self' https://moodlemoe.lms.education.gov.il https://*.lms.education.gov.il;");
+  next();
+});
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
@@ -361,9 +409,19 @@ app.post(CANONICAL_LTI_ENDPOINT, async (req, res) => {
       teacherId: teacher.id,
       spaceTitle: space.title,
       spaceId: space.id,
+      courseId: body.context_id ?? null,
+      courseTitle: body.context_title || space.title,
+      moodleUsername: body.ext_user_username || body.lis_person_contact_email_primary || body.lis_person_name_full || body.user_id || null,
+      moodleUserId: body.user_id ?? null,
+      role: roles || "teacher",
+      siteId: stableId("site", body.tool_consumer_instance_guid || body.tool_consumer_instance_url || "moodlemoe"),
+      siteUrl: body.tool_consumer_instance_url || "https://moodlemoe.lms.education.gov.il",
+      siteName: body.tool_consumer_instance_name || "Moodle משרד החינוך",
+      consumerGuid: body.tool_consumer_instance_guid || null,
       source: "lti11",
       verified: true,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString()
     };
 
     store.launches.push({
@@ -389,7 +447,7 @@ app.post(CANONICAL_LTI_ENDPOINT, async (req, res) => {
     });
 
     setSession(res, sessionData);
-    res.redirect(`/lti-bootstrap?t=${encodeURIComponent(sessionToken)}&course=${encodeURIComponent(space.title)}`);
+    res.redirect(`/lti?t=${encodeURIComponent(sessionToken)}&course=${encodeURIComponent(space.title)}`);
   } catch (error) {
     console.error("LTI Launch Error:", error);
     res.status(500).send("שגיאת שרת בחיבור Moodle Teacher Hub");
@@ -397,18 +455,20 @@ app.post(CANONICAL_LTI_ENDPOINT, async (req, res) => {
 });
 
 app.get("/api/bootstrap", (req, res) => {
-  const s = getSession(req);
-  if (!s) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
+  const token = typeof req.query?.t === "string" ? req.query.t : "";
+  const sessionData = getSessionFromToken(token) || getSession(req);
+  if (!sessionData) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
 
   const lastLaunch = store.launches.length ? store.launches[store.launches.length - 1] : null;
   const lastCapture = store.moodleCaptures.length ? store.moodleCaptures[store.moodleCaptures.length - 1] : null;
+  const context = buildNodeContextPayload(sessionData);
 
   res.json({
-    ok: true,
-    teacher: { name: s.teacherName, id: s.teacherId },
-    space: { title: s.spaceTitle, id: s.spaceId },
-    source: s.source,
-    verified: !!s.verified,
+    ...context,
+    teacher: { name: sessionData.teacherName, id: sessionData.teacherId },
+    space: { title: sessionData.spaceTitle, id: sessionData.spaceId },
+    source: sessionData.source,
+    verified: !!sessionData.verified,
     dataReady: {
       hasRealLaunch: store.moodleCaptures.some(c => c.source === "lti11" && c.verificationCode === "OAUTH_VERIFIED"),
       hasStudents: store.students.length > 0,

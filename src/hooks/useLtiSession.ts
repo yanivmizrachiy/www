@@ -110,31 +110,7 @@ export function useLtiSession() {
   const [site, setSite] = useState<SiteInfo | null>(null);
   const [domains, setDomains] = useState<Record<DomainKey, DomainState>>(() => buildEmptyDomains());
 
-  const refresh = useCallback(async () => {
-    const token = getLtiToken();
-    if (!token) {
-      setLoading(false);
-      setSession(null);
-      setSite(null);
-      setError(null);
-      return;
-    }
-    setLoading(true);
-    const { data, error: rpcErr } = await (supabase.rpc as unknown as (
-      fn: string,
-      args: Record<string, unknown>,
-    ) => Promise<{ data: unknown; error: { message: string } | null }>)("lti_get_context", { _token: token });
-    setLoading(false);
-    if (rpcErr) { setError(rpcErr.message); return; }
-
-    const payload = data as { error?: string } | ContextPayload;
-    if (!payload || (payload as { error?: string }).error) {
-      setError((payload as { error?: string })?.error ?? "unknown");
-      clearLtiToken();
-      setSession(null); setSite(null);
-      return;
-    }
-    const ctx = payload as ContextPayload;
+  const applyContext = useCallback((ctx) => {
     setError(null);
     setSession(ctx.session);
     setSite(ctx.site);
@@ -151,6 +127,48 @@ export function useLtiSession() {
     }
     setDomains(next);
   }, []);
+
+  const refresh = useCallback(async () => {
+    const token = getLtiToken();
+    if (!token) {
+      setLoading(false);
+      setSession(null);
+      setSite(null);
+      setError(null);
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const nodeRes = await fetch(`/api/bootstrap?t=${encodeURIComponent(token)}`, {
+        credentials: "include",
+      });
+      if (nodeRes.ok) {
+        const nodePayload = await nodeRes.json();
+        if (nodePayload?.ok && nodePayload?.session && nodePayload?.site) {
+          setLoading(false);
+          applyContext(nodePayload);
+          return;
+        }
+      }
+    } catch {
+      // Fall through to Supabase RPC.
+    }
+
+    const { data, error: rpcErr } = await (supabase.rpc)("lti_get_context", { _token: token });
+    setLoading(false);
+    if (rpcErr) { setError(rpcErr.message); return; }
+
+    const payload = data;
+    if (!payload || payload.error) {
+      setError(payload?.error ?? "unknown");
+      clearLtiToken();
+      setSession(null); setSite(null);
+      return;
+    }
+    applyContext(payload);
+  }, [applyContext]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
