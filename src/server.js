@@ -491,6 +491,30 @@ app.get("/api/bootstrap", (req, res) => {
   });
 });
 
+
+app.get("/api/imports/overview", (req, res) => {
+  const token = typeof req.query?.t === "string" ? req.query.t : "";
+  const sessionData = getSessionFromToken(token) || getSession(req);
+  if (!sessionData) {
+    return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
+  }
+
+  const importBatches = Array.isArray(store.importBatches) ? store.importBatches : [];
+  const gradeItems = Array.isArray(store.gradeItems) ? store.gradeItems : [];
+  const chapters = Array.isArray(store.chapters) ? store.chapters : [];
+  const logEvents = Array.isArray(store.logEvents) ? store.logEvents : [];
+
+  res.json({
+    students_count: Array.isArray(store.students) ? store.students.length : 0,
+    grade_items_count: gradeItems.length || (Array.isArray(store.tasks) ? store.tasks.length : 0),
+    grades_count: Array.isArray(store.grades) ? store.grades.length : 0,
+    chapters_count: chapters.length,
+    tasks_count: Array.isArray(store.tasks) ? store.tasks.length : 0,
+    log_events_count: logEvents.length || (Array.isArray(store.activitySessions) ? store.activitySessions.length : 0),
+    batches: [...importBatches].reverse()
+  });
+});
+
 app.get("/api/launches", (_req, res) => res.json([...store.launches].reverse()));
 app.get("/api/students", (_req, res) => res.json(store.students));
 app.get("/api/tasks", (_req, res) => res.json(store.tasks));

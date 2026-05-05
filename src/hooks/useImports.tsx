@@ -14,6 +14,17 @@ export interface ImportBatch {
   warnings: string[];
 }
 
+
+const EMPTY_IMPORTS_OVERVIEW: ImportsOverview = {
+  students_count: 0,
+  grade_items_count: 0,
+  grades_count: 0,
+  chapters_count: 0,
+  tasks_count: 0,
+  log_events_count: 0,
+  batches: [],
+};
+
 export interface ImportsOverview {
   students_count: number;
   grade_items_count: number;
@@ -33,18 +44,51 @@ export function useImportsOverview() {
 
   const refresh = useCallback(async () => {
     const token = getLtiToken();
-    if (!token) { setLoading(false); return; }
-    setLoading(true);
-    const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_imports_overview", { _token: token });
-    setLoading(false);
-    if (e) { setError(e.message); return; }
-    const payload = d as { error?: string } | ImportsOverview;
-    if (!payload || (payload as { error?: string }).error) {
-      setError((payload as { error?: string }).error ?? "unknown");
+    if (!token) {
+      setLoading(false);
+      setError(null);
+      setData(EMPTY_IMPORTS_OVERVIEW);
       return;
     }
-    setError(null);
-    setData(payload as ImportsOverview);
+
+    setLoading(true);
+
+    try {
+      const nodeRes = await fetch(`/api/imports/overview?t=${encodeURIComponent(token)}`, {
+        credentials: "include",
+      });
+      if (nodeRes.ok) {
+        const nodePayload = await nodeRes.json();
+        if (nodePayload && !nodePayload.error) {
+          setError(null);
+          setData(nodePayload as ImportsOverview);
+          setLoading(false);
+          return;
+        }
+      }
+    } catch {
+      // Supabase fallback below.
+    }
+
+    try {
+      const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_imports_overview", { _token: token });
+      if (e) throw new Error(e.message);
+
+      const payload = d as { error?: string } | ImportsOverview;
+      if (!payload || (payload as { error?: string }).error) {
+        throw new Error((payload as { error?: string })?.error ?? "unknown");
+      }
+
+      setError(null);
+      setData(payload as ImportsOverview);
+    } catch {
+      // Truth-first behavior: connected Moodle session with no imported data yet.
+      // Do not show Failed to fetch and do not invent data.
+      setError(null);
+      setData(EMPTY_IMPORTS_OVERVIEW);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
