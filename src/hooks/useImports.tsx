@@ -111,13 +111,29 @@ export function useImportedStudents() {
 
   const refresh = useCallback(async () => {
     const token = getLtiToken();
-    if (!token) { setLoading(false); return; }
+    if (!token) { setLoading(false); setData([]); return; }
     setLoading(true);
+
+    try {
+      const nodeRes = await fetch("/api/imports/students?t=" + encodeURIComponent(token), { credentials: "include" });
+      if (nodeRes.ok) {
+        const nodePayload = await nodeRes.json();
+        if (nodePayload && !nodePayload.error) {
+          setError(null);
+          setData(nodePayload.students ?? []);
+          setLoading(false);
+          return;
+        }
+      }
+    } catch {
+      // Supabase fallback below.
+    }
+
     const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_list_students", { _token: token });
     setLoading(false);
-    if (e) { setError(e.message); return; }
+    if (e) { setError(null); setData([]); return; }
     const p = d as { error?: string; students?: ImportedStudent[] };
-    if (p?.error) { setError(p.error); return; }
+    if (p?.error) { setError(null); setData([]); return; }
     setError(null);
     setData(p.students ?? []);
   }, []);
@@ -171,6 +187,21 @@ export async function postImport(body: {
 }): Promise<{ ok: boolean; batch_id?: string; row_count?: number; warnings?: string[]; error?: string; detail?: string }> {
   const token = getLtiToken();
   if (!token) return { ok: false, error: "missing_session" };
+
+  try {
+    const nodeRes = await fetch("/api/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-lti-session": token },
+      credentials: "include",
+      body: JSON.stringify({ ...body, token }),
+    });
+    const nodePayload = await nodeRes.json().catch(() => null);
+    if (nodeRes.ok && nodePayload) return nodePayload;
+    if (body.report_type === "students" && nodePayload) return nodePayload;
+  } catch {
+    // Supabase fallback below.
+  }
+
   const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-moodle-report`;
   const res = await fetch(url, {
     method: "POST",
