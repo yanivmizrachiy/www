@@ -20,21 +20,35 @@ must(server, 'app.post(CANONICAL_LTI_ENDPOINT', 'POST LTI launch route');
 must(server, 'app.get("/api/bootstrap"', 'bootstrap route');
 must(server, 'app.get("/api/imports/overview"', 'imports overview route');
 
+if (!server.includes('const LTI_ROUTING_FIX_VERSION')) {
+  server = server.replace(
+    'const CANONICAL_LTI_ENDPOINT = "/api/lti/launch";',
+    'const CANONICAL_LTI_ENDPOINT = "/api/lti/launch";\nconst LTI_ROUTING_FIX_VERSION = "2026-05-06-render-lti-routing-cache-v2";'
+  );
+}
+
 if (!server.includes('function noStore(res)')) {
   server = server.replace(
     'function numberOrZero(value) {',
-    `function noStore(res) {\n  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");\n  res.setHeader("Pragma", "no-cache");\n  res.setHeader("Expires", "0");\n}\n\nfunction numberOrZero(value) {`
+    `function noStore(res) {\n  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");\n  res.setHeader("Pragma", "no-cache");\n  res.setHeader("Expires", "0");\n  res.setHeader("Surrogate-Control", "no-store");\n}\n\nfunction numberOrZero(value) {`
+  );
+}
+
+if (!server.includes('ltiRoutingFixVersion: LTI_ROUTING_FIX_VERSION')) {
+  server = server.replace(
+    'legacyRootDashboardDisabled: true,',
+    'legacyRootDashboardDisabled: true,\n    ltiRoutingFixVersion: LTI_ROUTING_FIX_VERSION,'
   );
 }
 
 if (!server.includes('app.get(CANONICAL_LTI_ENDPOINT')) {
-  const getRescue = `\napp.get(CANONICAL_LTI_ENDPOINT, (req, res) => {\n  noStore(res);\n  const session = sessionFromRequest(req);\n  if (session?.sessionToken) {\n    return res.redirect(303, publicBaseUrl(req) + "/lti?t=" + encodeURIComponent(session.sessionToken) + "&next=" + encodeURIComponent("/import"));\n  }\n  return res.redirect(303, publicBaseUrl(req) + "/setup?reason=direct-lti-get");\n});\n`;
+  const getRescue = `\napp.get(CANONICAL_LTI_ENDPOINT, (req, res) => {\n  noStore(res);\n  const session = sessionFromRequest(req);\n  const base = publicBaseUrl(req);\n  if (session?.sessionToken) {\n    return res.redirect(303, base + "/lti?t=" + encodeURIComponent(session.sessionToken) + "&next=" + encodeURIComponent("/import"));\n  }\n  return res.redirect(303, base + "/setup?reason=direct-lti-get");\n});\n`;
   server = server.replace('app.post(CANONICAL_LTI_ENDPOINT', getRescue + '\napp.post(CANONICAL_LTI_ENDPOINT');
 }
 
 server = server.replace(
   '    setSession(res, session);\n    res.redirect(`/lti?t=${encodeURIComponent(sessionToken)}&course=${encodeURIComponent(space.title)}`);',
-  '    setSession(res, session);\n    noStore(res);\n    res.redirect(303, publicBaseUrl(req) + "/lti?t=" + encodeURIComponent(sessionToken) + "&course=" + encodeURIComponent(space.title) + "&next=" + encodeURIComponent("/import"));'
+  '    setSession(res, session);\n    noStore(res);\n    return res.redirect(303, publicBaseUrl(req) + "/lti?t=" + encodeURIComponent(sessionToken) + "&course=" + encodeURIComponent(space.title) + "&next=" + encodeURIComponent("/import"));'
 );
 
 server = server.replace(
@@ -65,11 +79,11 @@ must(lti, 'const token = params.get("t")', 'LtiBootstrap token line');
 if (!lti.includes('const nextPath')) {
   lti = lti.replace(
     '    const token = params.get("t") || new URLSearchParams(window.location.hash.split("?")[1] || "").get("t");\n    if (token) { ',
-    '    const hashParams = new URLSearchParams(window.location.hash.split("?")[1] || "");\n    const token = params.get("t") || hashParams.get("t");\n    const nextPath = params.get("next") || hashParams.get("next") || "/import";\n    if (token) { '
+    '    const hashParams = new URLSearchParams(window.location.hash.split("?")[1] || "");\n    const token = params.get("t") || hashParams.get("t");\n    const nextPath = params.get("next") || hashParams.get("next") || "/import";\n    const safeNextPath = nextPath.startsWith("/") && !nextPath.startsWith("/api/") ? nextPath : "/import";\n    if (token) { '
   );
   lti = lti.replace(
     '      setTimeout(() => navigate("/", { replace:true }), 1000); ',
-    '      setTimeout(() => navigate(nextPath.startsWith("/") ? nextPath : "/import", { replace:true }), 250); '
+    '      setTimeout(() => navigate(safeNextPath, { replace:true }), 250); '
   );
 }
 
