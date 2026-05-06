@@ -1,0 +1,10 @@
+{
+  "repo": "yanivmizrachiy/www",
+  "source_branch": "gemini/ai-studio-sync-20260428-193953",
+  "source_commit": "9fe68e06232dff54113524b32be744e0d8d47599",
+  "package": "moodle-teacher-hub-termux-runtime.tar.gz",
+  "contains_dist": true,
+  "contains_server": true,
+  "contains_no_secrets": true,
+  "created_at_utc": "2026-05-06T07:34:16Z"
+}
