@@ -202,14 +202,14 @@ export async function postImport(body: {
     // Supabase fallback below.
   }
 
-  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-moodle-report`;
+  const url = String(import.meta.env.VITE_SUPABASE_URL || "") + "/functions/v1/import-moodle-report";
   const res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "x-lti-session": token,
       apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      Authorization: "Bearer " + import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
     },
     body: JSON.stringify(body),
   });
