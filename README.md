@@ -6,100 +6,187 @@
 yanivmizrachiy/www
 ```
 
-הריפו הזה הוא מקור האמת היחיד להמשך העבודה על אתר Moodle Teacher Hub המשודרג.
+הריפו הזה הוא מקור האמת היחיד להמשך העבודה על Moodle Teacher Hub.
 
-## מטרה
+## מטרת המערכת
 
-מוצר אמיתי למורים מתוך Moodle באמצעות LTI 1.1, עם Dashboard בעברית מלאה, RTL, API פנימי, דוחות, ייצוא וארגון ריפו לקראת הרחבות עתידיות.
+Moodle Teacher Hub הוא כלי מורה בעברית מלאה וב־RTL שנפתח מתוך Moodle באמצעות LTI 1.0/1.1, מזהה מורה ומרחב לימודי, ובהמשך מציג נתוני Moodle אמיתיים בלבד: תלמידים, ציונים, פעילות, דוחות וייצוא.
 
-המערכת לא מציגה דמו ולא ממציאה נתונים. כל נתון חייב להגיע ממקור Moodle אמיתי: LTI/API מאומת או ייבוא ידני של דוחות Moodle אמיתיים.
+המערכת אינה מציגה דמו ואינה ממציאה נתונים. כל נתון חייב להגיע מאחד המקורות האמיתיים הבאים:
 
-## סטטוס איחוד ריפואים
+1. LTI launch מאומת — לכניסה, מורה, תפקיד והקשר מרחב.
+2. ייבוא דוחות Moodle אמיתיים — Participants, Gradebook, Logs, Activity Completion.
+3. Moodle Web Services API רק בעתיד, אם יתקבל token אמיתי ומאומת.
 
-היה קיים גם ריפו בשם:
+## ארכיטקטורה פעילה נכון לעכשיו
+
+המסלול הפעיל והקבוע הוא:
 
 ```text
-yanivmizrachiy/moodle-teacher-hub
+Moodle External Tool
+  -> Render permanent runtime
+  -> /api/lti/launch
+  -> React Moodle Teacher Hub
 ```
 
-הריפו הזה סומן כ־legacy / לא מקור אמת. החומר החשוב ממנו נשמר ותועד בתוך `www`, והמשך העבודה חייב להתבצע רק כאן.
+כתובת Render קבועה:
 
-## עקרונות
+```text
+https://www-tijc.onrender.com
+```
 
-- לא דמו.
-- לא נתונים מומצאים.
-- לא לשבור מה שכבר עובד.
-- Launch דרך Moodle הוא נקודת הכניסה.
-- נתונים אמיתיים מגיעים מ־Moodle Web Services / APIs רק אם יש token אמיתי ומאומת.
-- אם אין token — עובדים במצב Manual Real Data Import בלבד.
-- UI נפרד מלוגיקה עסקית.
-- אין כפתורים שלא עושים פעולה אמיתית.
-- אין לטעון production-ready בלי בדיקות.
+כתובת LTI קנונית לשימוש ב־Moodle:
 
-## קיים כרגע לפי README המקורי
+```text
+https://www-tijc.onrender.com/api/lti/launch
+```
 
-- Node.js + Express.
-- `/lti/launch-1p1`.
-- `/health`.
-- Dashboard בעברית.
-- `data/store.json`.
-- API בסיסי:
-  - `/api/bootstrap`
-  - `/api/launches`
-  - `/api/students`
-  - `/api/tasks`
-  - `/api/grades`
-  - `/api/activity`
-  - `/api/settings`
-  - `/api/moodle-summary`
-  - `/api/moodle-captures`
-  - `/api/export/grades.csv`
+## מה לא פעיל יותר כנתיב LTI
 
-## דרישות מוצר מחייבות
+המסלולים הבאים אינם נתיב העבודה הפעיל:
 
-- עמוד ראשי עם שם המורה ושם המרחב כאשר הנתונים זמינים.
-- ניווט עברי לתלמידים, משימות, פרקים, דוחות, פעילות/זמנים, הגדרות וייצוא.
-- סינון תלמיד, קבוצה, כיתה וטווח תאריכים כאשר הנתונים זמינים.
-- הצגת ציונים, ניסיונות, פעילות, ממוצעים וזמן תרגול רק מנתוני אמת.
-- משימות עם שיוך לפרק/נושא, כמות שאלות אם קיימת, וקישור ישיר רק אם מאומת.
-- דוחות ציונים, משימות, זמנים ופעילות.
-- ייצוא CSV/Excel/PDF/הדפסה — רק מה שבאמת קיים ונבדק יסומן כעובד.
-- עריכה דו־כיוונית מול Moodle רק אחרי token אמיתי והרשאות כתיבה מאומתות.
+```text
+Termux / Cloudflare temporary URLs
+Localtunnel temporary URLs
+Supabase Gateway forwarding route
+legacy /lti/launch-1p1
+legacy /dev/login
+```
+
+Supabase Gateway קיים ותועד, אך אינו מומלץ כרגע כנתיב LTI פעיל בגלל בעיית forwarding שהובילה ל־`MISSING_OAUTH_SIGNATURE`.
+
+Supabase עדיין רלוונטי למסד נתונים, ייבוא, RPC עתידי ושמירת נתונים — לא כנתיב LTI פעיל כרגע.
+
+## Render
+
+הפריסה הקבועה מוגדרת דרך `render.yaml`.
+
+Build command שעבד בפועל:
+
+```bash
+npm ci --include=dev && npm run build
+```
+
+Start command:
+
+```bash
+npm run start
+```
+
+Health check:
+
+```text
+/health
+```
+
+משתני סביבה נדרשים ב־Render:
+
+```text
+NODE_ENV=production
+PORT=10000
+COOKIE_SECURE=true
+APP_BASE_URL=https://www-tijc.onrender.com
+LTI_CONSUMER_KEY=yaniv-lti-tool
+LTI_SHARED_SECRET=<same value as Moodle, never commit>
+VITE_SUPABASE_URL=https://ncoqanascubqkxfvucfz.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<Supabase publishable/anon key>
+```
+
+אופציונלי ורק בצד שרת:
+
+```text
+SUPABASE_SERVICE_ROLE_KEY=<server-only key, never expose to browser>
+```
+
+## מצב נתונים אמיתי
+
+LTI 1.0/1.1 אינו מספק אוטומטית רשימת תלמידים, ציונים, לוגים או זמן פעילות.
+
+כל עוד אין Moodle Web Services token מאומת, מצב העבודה האמיתי הוא:
+
+```text
+Manual Real Data Import
+```
+
+סדר הנתונים הנכון:
+
+1. Participants / Students — ראשון, כדי להציג שמות תלמידים.
+2. Gradebook / Grades — אחרי שתלמידים עובדים.
+3. Logs — אחרי תלמידים/ציונים, לצורך פעילות וזמן תרגול מחושב.
+4. Activity Completion — לפי דוח אמיתי.
+
+## סטטוס אמת נוכחי
+
+עובד/תועד:
+
+- ריפו מקור אמת: `yanivmizrachiy/www`.
+- ענף עבודה פעיל: `gemini/ai-studio-sync-20260428-193953`.
+- Render runtime קבוע: `https://www-tijc.onrender.com`.
+- LTI endpoint קנוני: `/api/lti/launch`.
+- Build ב־Render עבר אחרי תיקון `vite: not found`.
+- Termux/Cloudflare אינם נדרשים למסלול ההפעלה הקבוע.
+
+לא מאומת עדיין:
+
+- ייבוא Participants אמיתי מקצה לקצה.
+- הצגת תלמידים אחרי ייבוא.
+- ייבוא ציונים.
+- ייבוא לוגים/זמני פעילות.
+- ייבוא Activity Completion.
+- Moodle Web Services API.
+- מוכנות רחבה לכל המורים.
 
 ## מסמכי מקור אמת
 
 - `PROJECT_RULES.md` — דף הכללים העליון.
-- `docs/system-rules.md` — כללי עבודה מעשיים.
-- `docs/requirements.md` — דרישות המוצר המרוכזות.
-- `docs/legacy-moodle-teacher-hub-snapshot.md` — חומר שנשמר מהריפו הישן.
 - `STATE/project-status.md` — סטטוס אמת עדכני.
-- `STATE/repo-consolidation.md` — תיעוד איחוד הריפואים.
+- `STATE/evidence-log.md` — לוג הוכחות.
+- `docs/import-contract.md` — חוזה ייבוא נתוני Moodle.
+- `docs/lti-contract.md` — חוזה LTI.
+- `docs/moodle-api-contract.md` — חוזה Moodle API עתידי.
+- `STATE/readiness-audit/render-production-launch-20260506.md`.
+- `STATE/readiness-audit/error-audit-and-smarter-fixes-20260506.md`.
+- `STATE/readiness-audit/deep-repo-audit-and-next-optimization-20260506.md`.
 
-## הפעלה מקומית
+## הפעלה מקומית לפיתוח בלבד
 
 ```bash
 npm install
 npm run check
-npm run dev
+npm run build
+npm run start
 ```
 
-לאחר הפעלה מקומית:
+בדיקת health מקומית:
 
 ```text
 http://127.0.0.1:3000/health
-http://127.0.0.1:3000/dev/login
 ```
 
-או דרך LTI 1.1 כאשר מוגדרים ערכי הסביבה המתאימים.
+אין להשתמש ב־local dev כראיה לייצור. ראיות ייצור חייבות להירשם ב־`STATE/evidence-log.md`.
 
-## מבנה ידוע
+## השלב הבא היחיד לפני פיתוח רחב
 
-- `src/server.js` — שרת ראשי.
-- `src/ui/dashboard/dashboard.html` — דשבורד.
-- `docs/` — החלטות, פריסה, API ומוצר.
-- `STATE/` — סטטוס, איחוד, הוכחות בדיקה.
-- `data/store.json` — אחסון מקומי זמני.
+לפני כל פיצ׳ר נוסף, צריך לסגור נתיב נתונים אמיתי ראשון:
 
-## סטטוס אמת
+```text
+Participants report אמיתי ממודל
+  -> Import page
+  -> POST /api/import או נתיב שמירה מאומת
+  -> Students page
+  -> שמות תלמידים אמיתיים מופיעים
+  -> תיעוד ב־STATE/evidence-log.md
+```
 
-הריפו מאוחד תיעודית תחת `www`. עדיין נדרש אימות קוד מלא לפני סימון production-ready.
+אין להמשיך ל־Gradebook, Logs, Practice Time או דוחות מתקדמים לפני שזה עובד.
+
+## כללי איסור קבועים
+
+- אין דמו.
+- אין תלמידים מזויפים.
+- אין ציונים מזויפים.
+- אין זמן פעילות מומצא.
+- אין כפתורי סרק.
+- אין secrets בריפו.
+- אין קבצי תלמידים פרטיים בריפו.
+- אין סימון production-ready בלי בדיקות אמיתיות.
