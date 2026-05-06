@@ -11,11 +11,15 @@ export default function LtiBootstrap() {
   const [status, setStatus] = useState<"pending" | "missing" | "success">("pending");
 
   useEffect(() => {
-    const token = params.get("t") || new URLSearchParams(window.location.hash.split("?")[1] || "").get("t");
+    const hashParams = new URLSearchParams(window.location.hash.split("?")[1] || "");
+    const token = params.get("t") || hashParams.get("t");
+    const nextPath = params.get("next") || hashParams.get("next") || "/import";
+    const safeNextPath = nextPath.startsWith("/") && !nextPath.startsWith("/api/") ? nextPath : "/import";
+
     if (token) { 
       setLtiToken(token); 
       setStatus("success");
-      setTimeout(() => navigate("/", { replace:true }), 1000); 
+      setTimeout(() => navigate(safeNextPath, { replace:true }), 250); 
     } else {
       setStatus("missing");
     }
@@ -40,7 +44,7 @@ export default function LtiBootstrap() {
             <>
               <ShieldCheck className="mb-4 h-10 w-10 text-status-proven" />
               <h2 className="text-xl font-bold text-status-proven">הכניסה הצליחה!</h2>
-              <p className="text-sm text-muted-foreground">מעביר אותך למרכז המורה...</p>
+              <p className="text-sm text-muted-foreground">מעביר אותך לייבוא הנתונים...</p>
             </>
           )}
 
