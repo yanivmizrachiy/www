@@ -1,331 +1,261 @@
 # Work Plan — www / Moodle Teacher Hub
 
-תוכנית עבודה מעשית לריפו `yanivmizrachiy/www`.
+Updated: 2026-05-06
 
-מקור אמת: `PROJECT_RULES.md`.
+מקור אמת עליון: `PROJECT_RULES.md`.
 
-הכלל המרכזי: מתקדמים רק לפי קוד אמיתי, בדיקות אמיתיות ותיעוד ב־STATE. אין דמו, אין נתונים מומצאים, ואין כפתורי סרק.
-
----
-
-## מצב נוכחי
-
-הריפו כבר כולל שכבת governance ותיעוד חזקה:
-
-- `PROJECT_RULES.md`
-- `docs/system-rules.md`
-- `docs/requirements.md`
-- `docs/repository-map.md`
-- `docs/import-contract.md`
-- `docs/lti-contract.md`
-- `docs/moodle-api-contract.md`
-- `docs/testing-plan.md`
-- `docs/implementation-plan.md`
-- `docs/typescript-config-notes.md`
-- `STATE/project-status.md`
-- `STATE/evidence-log.md`
-- `STATE/lovable-intake.md`
-
-בנוסף סונכרנו חלקי Lovable מרכזיים:
-
-- `src/App.tsx`
-- `src/main.tsx`
-- `src/vite-env.d.ts`
-- `src/index.css`
-- `src/components/AppLayout.tsx`
-- `src/components/AppSidebar.tsx`
-- `src/components/StatusBadge.tsx`
-- `src/hooks/useLtiSession.ts`
-- `src/hooks/useMoodleConnection.ts`
-- `src/hooks/useImports.tsx`
-- `src/hooks/useChaptersIndex.ts`
-- `src/hooks/use-mobile.tsx`
-- `src/hooks/use-toast.ts`
-- `src/integrations/supabase/client.ts`
-- `src/integrations/supabase/types.ts`
-
----
-
-## יעד על
-
-להפוך את הריפו `www` לאתר Moodle Teacher Hub יציב, אמיתי, מסודר ומוכן להמשך פיתוח, כאשר כל מה שמוצג בממשק מבוסס על נתוני אמת בלבד:
-
-- LTI מספק כניסה והקשר.
-- Supabase RPC מספק נתונים שיובאו או אומתו.
-- Moodle API חי יופעל רק אם יהיה token אמיתי ומאומת.
-- מסכים ריקים מציגים הסבר אמת ולא דמו.
-
----
-
-## שלב 1 — השלמת קבצים שחסרים ל־build
-
-מטרה: להגיע למצב שהאפליקציה יכולה להיבנות ללא import חסר.
-
-קבצים חסרים בעדיפות גבוהה:
-
-- `src/hooks/useMoodleData.ts`
-- `src/lib/utils.ts`
-- `src/components/ui/*` הנדרשים ל־shadcn/sidebar/toast/button/cards
-- `src/pages/Dashboard.tsx`
-- `src/pages/Import.tsx`
-- `src/pages/Students.tsx`
-- `src/pages/StudentProfile.tsx`
-- `src/pages/Tasks.tsx`
-- `src/pages/Chapters.tsx`
-- `src/pages/ChapterDetail.tsx`
-- `src/pages/Grades.tsx`
-- `src/pages/ActivityPage.tsx`
-- `src/pages/Reports.tsx`
-- `src/pages/reports/StudentReport.tsx`
-- `src/pages/reports/TaskReport.tsx`
-- `src/pages/reports/DayReport.tsx`
-- `src/pages/reports/GapReport.tsx`
-- `src/pages/Export.tsx`
-- `src/pages/SettingsPage.tsx`
-- `src/pages/Setup.tsx`
-- `src/pages/LtiBootstrap.tsx`
-- `src/pages/NotFound.tsx`
-
-כל קובץ שנוצר לבד חייב לעמוד בכללים:
-
-- אין נתוני דמו.
-- אין כפתור שלא עובד.
-- אם אין נתונים — empty state ברור.
-- כל נתונים מגיעים מ־hooks/RPC בלבד.
-
----
-
-## שלב 2 — השלמת תשתית build
-
-מטרה: לוודא שהריפו מכיל את כל קבצי התשתית הדרושים.
-
-קבצים לבדיקה/השלמה:
-
-- `package.json`
-- `vite.config.ts`
-- `tsconfig.json`
-- `tsconfig.app.json`
-- `tsconfig.node.json`
-- `tailwind.config.ts`
-- `postcss.config.js`
-- `components.json`
-- `index.html`
-- `.env.example`
-
-בדיקות:
-
-```bash
-npm install
-npm run build
-npm run lint
-npm run test
-```
-
-אם פקודה לא קיימת — לתעד ב־STATE ולא להמציא שעברה.
-
----
-
-## שלב 3 — מסכי shell בטוחים
-
-מטרה: כל route ב־`App.tsx` ייטען ולא יישבר.
-
-דרישה לכל מסך:
-
-- כותרת ברורה בעברית.
-- הסבר מה המסך מציג.
-- מצב טעינה.
-- מצב שגיאה.
-- מצב ריק שמסביר איזה דוח Moodle חסר.
-- אין ערכי placeholder שמתחזים לנתונים אמיתיים.
-
-מסכים לפי סדר עבודה:
-
-1. Dashboard
-2. Import
-3. Students
-4. Grades
-5. Tasks
-6. Chapters
-7. Activity
-8. Reports
-9. Export
-10. Settings
-11. Setup
-12. LtiBootstrap
-13. NotFound
-
----
-
-## שלב 4 — חיבור נתונים אמיתי למסכים
-
-מטרה: להשתמש ב־hooks שכבר סונכרנו.
-
-חיבורים עיקריים:
-
-- Dashboard -> `useImportsOverview`, `useLtiSession`
-- Students -> `useImportedStudents`
-- Grades -> `useGradesMatrix`
-- Tasks/Chapters -> `useCourseStructure`, `useChaptersIndex`
-- Activity -> `useActivityOverview`, `useDailyActivity`, `usePracticeTime`
-- Reports -> `useStudentReports`, `useTaskCompletionDetail`, `useDailyActivity`
-- StudentProfile -> `useStudentProfile`
-- Import -> `postImport`
-- Settings -> `useLtiSession`, domain statuses
-
-כל חיבור צריך להציג חוסרים בצורה שקופה.
-
----
-
-## שלב 5 — ייבוא Moodle אמיתי
-
-מטרה: לוודא שהייבוא לא ממציא נתונים.
-
-נדרש:
-
-- parser/mapper ל־Students.
-- parser/mapper ל־Grades.
-- parser/mapper ל־Activity Completion.
-- parser/mapper ל־Logs.
-- preview לפני כתיבה.
-- warnings.
-- provenance.
-- שמירת batch.
-
-הייבוא בפועל מתבצע דרך:
+הריפו הרשמי והמחייב:
 
 ```text
-/functions/v1/import-moodle-report
+yanivmizrachiy/www
 ```
 
-אין לשמור דוחות תלמידים אמיתיים בריפו.
+הענף הפעיל לעבודה הנוכחית:
 
----
+```text
+gemini/ai-studio-sync-20260428-193953
+```
 
-## שלב 6 — LTI אמיתי
+## כלל עבודה מרכזי
 
-מטרה: לוודא ש־LTI אינו רק מסמך אלא עובד.
+לא מוסיפים פיצ׳רים חדשים לפני שמוכיחים נתיב נתונים אמיתי ראשון.
 
-בדיקות:
+אין דמו. אין תלמידים מזויפים. אין ציונים מזויפים. אין זמן פעילות מומצא. אין כפתורי סרק. אין secrets בריפו.
 
-- `lti-launch` קיים.
-- OAuth1 HMAC-SHA1 מאומת.
-- launch URL נקי.
-- consumer key/secret בלי whitespace.
-- session token נוצר.
-- redirect ל־`/lti?t=<token>` או route תואם.
-- `lti_get_context` מחזיר site/session/domains.
+## ארכיטקטורה פעילה
 
-אין להסיק מ־LTI שיש API נתונים חי.
+המסלול הפעיל הוא:
 
----
+```text
+Moodle External Tool
+  -> Render permanent runtime
+  -> /api/lti/launch
+  -> React Moodle Teacher Hub
+```
 
-## שלב 7 — Supabase functions ומיגרציות
+כתובת Render קבועה:
 
-מטרה: לסגור backend אמיתי.
+```text
+https://www-tijc.onrender.com
+```
 
-קבצים שצריך לסנכרן או ליצור:
+כתובת LTI קנונית ב־Moodle:
 
-- `supabase/functions/lti-launch/index.ts`
-- `supabase/functions/lti-config/index.ts`
-- `supabase/functions/import-moodle-report/index.ts`
-- `supabase/functions/moodle-probe/index.ts`
-- `supabase/functions/moodle-proxy/index.ts`
-- `supabase/functions/site-admin/index.ts`
-- `supabase/migrations/*.sql`
+```text
+https://www-tijc.onrender.com/api/lti/launch
+```
 
-בדיקה חשובה:
+## מסלולים שאינם פעילים יותר
 
+אין להשתמש בהם להמשך העבודה:
+
+```text
+Termux runtime as production path
+Cloudflare temporary trycloudflare URLs
+Localtunnel temporary URLs
+Supabase Gateway forwarding as active LTI route
+legacy /lti/launch-1p1
+legacy /dev/login
+```
+
+Supabase Gateway נשאר מתועד בלבד, ולא ישמש כנתיב LTI פעיל עד שתתוקן ותאומת בעיית forwarding/signature.
+
+## מצב תשתית
+
+עובד/תועד:
+
+- Render service חי ב־`https://www-tijc.onrender.com`.
+- שרת Node מאזין על port 10000 ב־Render.
+- endpoint קנוני: `/api/lti/launch`.
+- Build ב־Render עבר אחרי תיקון `vite: not found`.
+- `render.yaml` עודכן ל־`npm ci --include=dev && npm run build`.
+- `APP_BASE_URL=https://www-tijc.onrender.com` מוגדר בתצורת Render.
+
+לא מאומת עדיין:
+
+- ייבוא Participants אמיתי מקצה לקצה.
+- Students page אחרי ייבוא.
+- Gradebook import.
+- Logs import.
+- Activity Completion import.
+- Supabase persistence/RPC מלא.
+- Moodle Web Services API.
+
+## שלב 1 — ניקוי סתירות בריפו
+
+מטרה: למנוע חזרה למסלולים ישנים.
+
+בוצע/נדרש:
+
+- לעדכן `README.md` למצב Render-first.
+- לעדכן `docs/work-plan.md` למצב הנוכחי.
+- להסיר legacy dashboard artifact אם הוא משתלט על `/`.
+- לוודא ש־`STATE/project-status.md` תואם ל־Render.
+- לוודא שכל מסמך שמזכיר Termux/Cloudflare מציג אותם כהיסטוריה ולא כנתיב פעיל.
+
+סטטוס:
+
+```text
+In progress / mostly done
+```
+
+## שלב 2 — נתיב ייבוא תלמידים ראשון
+
+המטרה הטכנית הבאה היחידה:
+
+```text
+Participants report אמיתי ממודל
+  -> Import page
+  -> Render backend
+  -> Students page
+  -> שמות תלמידים אמיתיים מופיעים
+```
+
+### תיקון נדרש בקוד
+
+1. `src/server.js`
+   - להוסיף `POST /api/import`.
+   - לתמוך קודם רק ב־`report_type=students`.
+   - לשמור imported students ב־`store.students`.
+   - לשמור import batch metadata.
+   - להחזיר `ok`, `row_count`, `warnings`.
+
+2. `src/hooks/useImports.tsx`
+   - `postImport()` ינסה קודם:
+
+```text
+POST /api/import
+```
+
+   - Supabase function תהיה fallback בלבד.
+
+3. `useImportedStudents()` ינסה קודם:
+
+```text
+GET /api/imports/students?t=<token>
+```
+
+   - Supabase RPC `lti_list_students` תהיה fallback בלבד.
+
+4. `src/pages/Students.tsx`
+   - להציג empty state ברור אם אין תלמידים.
+   - לא להציג שגיאת RPC גולמית למורה.
+
+### הצלחה נחשבת רק אם
+
+```text
+1. מורה פותח מתוך Moodle.
+2. קיים session מחובר.
+3. דוח Participants אמיתי נטען.
+4. מופיע preview.
+5. אישור הייבוא מצליח.
+6. מסך תלמידים מציג שמות אמיתיים.
+7. `STATE/evidence-log.md` מתעד את הבדיקה ללא פרטים פרטיים.
+```
+
+## שלב 3 — Gradebook
+
+רק אחרי Participants עובד.
+
+מטרה:
+
+```text
+Gradebook export
+  -> Import page
+  -> grades matrix
+```
+
+כללי אמת:
+
+- ציון חסר נשאר חסר.
+- אין 0 במקום missing.
+- ממוצע מחושב רק על ציונים מספריים אמיתיים.
+
+## שלב 4 — Logs / Practice Time
+
+רק אחרי Students ו־Grades.
+
+מטרה:
+
+```text
+Logs export
+  -> activity events
+  -> calculated practice windows
+```
+
+כלל אמת:
+
+```text
+אם אין לוגים: לא ניתן לחשב ללא לוגים.
+אם הזמן מחושב מלוגים: חובה לסמן שהוא מחושב ולא משך רשמי ממודל.
+```
+
+## שלב 5 — Activity Completion
+
+רק אחרי שיש student matching יציב.
+
+מטרה:
+
+```text
+Activity completion report
+  -> task completion state
+```
+
+אין להציג completion אם לא יובא דוח מתאים.
+
+## שלב 6 — Supabase persistence מלא
+
+רק אחרי שהנתיב המקומי/Render-first עובד.
+
+מטרה:
+
+- טבלאות students/import_batches/grades/logs/completion.
+- RLS/RPC מתועדים.
 - אין service role בפרונט.
-- אין secrets בריפו.
-- RLS/RPC/session מתועדים.
+- אין SQL רחב ללא סקירה.
 
----
-
-## שלב 8 — Moodle API עתידי
-
-מטרה: להכין בלי לשקר.
+## שלב 7 — Moodle Web Services API עתידי
 
 סטטוס נוכחי:
 
 ```text
-Moodle API live sync: blocked-no-token
-Moodle write-back: blocked-no-token
+blocked-no-token
 ```
 
-פתיחה רק אחרי:
+אין לטעון API חי בלי:
 
 - token אמיתי.
-- endpoint אמיתי.
+- endpoint מאומת.
 - בדיקת קריאה.
 - בדיקת הרשאות.
-- תיעוד ב־`STATE/evidence-log.md`.
+- תיעוד ב־STATE/evidence-log.md.
 
-כתיבה ל־Moodle רק אחרי בדיקת הרשאות כתיבה ופעולה מבוקרת.
+## בדיקות חובה לפני כל המשך
 
----
+כל שינוי משמעותי חייב לעבור:
 
-## שלב 9 — ייצוא ודוחות
+```bash
+npm run check
+npm run build
+```
 
-מטרה: להציג רק יכולות קיימות.
+אם פקודה חסרה או נכשלת — לתעד, לא להמציא הצלחה.
 
-סטטוסי יעד:
-
-- CSV — אם קיים קוד יצוא.
-- Excel/XLSX — רק אם נוצרת חוברת אמיתית.
-- PDF — רק אם יש יצוא PDF אמיתי או הדפסת דפדפן מוצהרת.
-- Print — רק אם נבדק.
-
-אין להציג Excel/PDF כעובדים אם לא נבדקו.
-
----
-
-## שלב 10 — בדיקות ושחרור
-
-לפני סימון pilot-ready:
-
-- build עובר.
-- אין imports שבורים.
-- כל route נטען.
-- empty states קיימים.
-- ייבוא אחד לפחות נבדק עם קובץ Moodle אמיתי לא פרטי / מסונן.
-- אין secrets.
-- STATE מעודכן.
-
-לפני production-ready:
-
-- LTI אמיתי מול Moodle אמיתי נבדק.
-- Supabase functions נבדקו.
-- ייבוא דוחות מרכזיים נבדק.
-- הרשאות מורה/קורס נבדקו.
-- כל כפתור בממשק עובד או מוסתר.
-
----
-
-## סדר העבודה המיידי
-
-1. להשלים `useMoodleData.ts`.
-2. להשלים `src/lib/utils.ts`.
-3. להשלים רכיבי UI שחסרים ל־shadcn.
-4. ליצור/לסנכרן `Dashboard.tsx`.
-5. ליצור/לסנכרן `Import.tsx`.
-6. ליצור shells בטוחים לכל routes.
-7. להריץ build.
-8. לתקן שגיאות build אחת־אחת.
-9. לעדכן `STATE/evidence-log.md` אחרי כל בדיקה.
-
----
-
-## אחוזי התקדמות
+## מדד מוכנות נוכחי
 
 ```text
-Governance/docs: 100%
-Lovable intake: 98% לפי קבצים שנמסרו
-Frontend shell: חלקי, מתקדם
-Data hooks: מתקדם
-Supabase types/client: מתקדם
-Pages: חסר
-UI components: חסר חלקית
-Build verification: 0% עד שלא הורץ בפועל
-Runtime verification: 0% עד שלא נבדק בפועל
-Production readiness: 0% עד בדיקות אמיתיות
+Permanent Render runtime: high confidence
+Direct LTI connection: user reported connected
+Repo documentation: improving, still must stay aligned
+Participants import: not verified
+Grades/logs/completion: not verified
+Overall product: not production-ready
+```
+
+## next action allowed
+
+רק אחרי סיום ניקוי הסתירות:
+
+```text
+Implement Render-first Participants import path.
 ```
