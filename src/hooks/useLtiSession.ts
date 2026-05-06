@@ -2,19 +2,20 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * LTI-only session model. We do NOT use Supabase Auth at all.
+ * LTI-only session model. We do NOT use Supabase Auth for teacher login.
  *
- * Flow:
+ * Current active flow:
  *   1. Teacher clicks the External Tool inside Moodle.
- *   2. Moodle POSTs to our /lti-launch edge function.
- *   3. That function verifies OAuth, mints a session_token, and 302s the
- *      browser to /#/lti?t=<token>.
- *   4. The /lti route stores the token in sessionStorage and redirects to /.
- *   5. From then on, this hook reads sessionStorage and calls
- *      public.lti_get_context(<token>) to get site + session + probes.
+ *   2. Moodle POSTs directly to the permanent Render endpoint /api/lti/launch.
+ *   3. The Node runtime verifies OAuth1 HMAC-SHA1 and creates a session token.
+ *   4. The server redirects to /lti?t=<token>.
+ *   5. The /lti route stores the token in sessionStorage and redirects to /.
+ *   6. This hook first calls /api/bootstrap?t=<token> on Render.
+ *   7. Supabase RPC lti_get_context is a fallback only, not the active launch path.
  *
- * No teacher accounts. No passwords. The teacher's identity is whatever
- * Moodle (i.e. משרד החינוך) already verified.
+ * No teacher accounts. No passwords. The teacher identity and course context come
+ * from the real Moodle LTI launch. Student/grade/log data still require real
+ * Moodle report import or a future verified Moodle Web Services token.
  */
 
 const STORAGE_KEY = "lti_session_token";
@@ -68,15 +69,15 @@ const DOMAIN_LABELS: Record<DomainKey, string> = {
 };
 
 const DEFAULT_REASON: Record<DomainKey, string> = {
-  students: "טרם בוצע probe — חבר WS token והרץ בדיקה",
-  tasks: "טרם בוצע probe",
-  chapters: "טרם בוצע probe",
-  grades: "טרם בוצע probe",
-  activity: "טרם בוצע probe",
-  time_accumulated: "ייגזר מלוגים אמיתיים אם report_log_get_log_records נגיש",
-  reports: "ייפתח כשדומיין כלשהו יהיה מחובר",
+  students: "טרם יובא דוח Participants / Students אמיתי ממודל",
+  tasks: "טרם יובא דוח משימות או השלמת פעילות אמיתי ממודל",
+  chapters: "טרם יובא מבנה קורס/פעילויות אמיתי ממודל",
+  grades: "טרם יובא דוח Gradebook אמיתי ממודל",
+  activity: "טרם יובא דוח Logs אמיתי ממודל",
+  time_accumulated: "לא ניתן לחשב ללא לוגים אמיתיים ממודל",
+  reports: "ייפתח לאחר ייבוא נתוני אמת",
   export_data: "אין נתוני אמת לייצוא",
-  settings_write: "נדרש editingteacher + core_course_update_courses",
+  settings_write: "עריכה מול Moodle חסומה עד Moodle Web Services token מאומת עם הרשאות כתיבה",
 };
 
 export function getLtiToken(): string | null {
@@ -110,7 +111,7 @@ export function useLtiSession() {
   const [site, setSite] = useState<SiteInfo | null>(null);
   const [domains, setDomains] = useState<Record<DomainKey, DomainState>>(() => buildEmptyDomains());
 
-  const applyContext = useCallback((ctx) => {
+  const applyContext = useCallback((ctx: ContextPayload) => {
     setError(null);
     setSession(ctx.session);
     setSite(ctx.site);
@@ -148,19 +149,19 @@ export function useLtiSession() {
         const nodePayload = await nodeRes.json();
         if (nodePayload?.ok && nodePayload?.session && nodePayload?.site) {
           setLoading(false);
-          applyContext(nodePayload);
+          applyContext(nodePayload as ContextPayload);
           return;
         }
       }
     } catch {
-      // Fall through to Supabase RPC.
+      // Fall through to Supabase RPC fallback.
     }
 
     const { data, error: rpcErr } = await (supabase.rpc)("lti_get_context", { _token: token });
     setLoading(false);
     if (rpcErr) { setError(rpcErr.message); return; }
 
-    const payload = data;
+    const payload = data as ({ error?: string } & ContextPayload) | null;
     if (!payload || payload.error) {
       setError(payload?.error ?? "unknown");
       clearLtiToken();
