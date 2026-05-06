@@ -23,8 +23,10 @@ must(server, 'app.get("/api/imports/overview"', 'imports overview route');
 if (!server.includes('const LTI_ROUTING_FIX_VERSION')) {
   server = server.replace(
     'const CANONICAL_LTI_ENDPOINT = "/api/lti/launch";',
-    'const CANONICAL_LTI_ENDPOINT = "/api/lti/launch";\nconst LTI_ROUTING_FIX_VERSION = "2026-05-06-render-lti-routing-cache-v2";'
+    'const CANONICAL_LTI_ENDPOINT = "/api/lti/launch";\nconst LTI_ROUTING_FIX_VERSION = "2026-05-06-render-lti-routing-cache-v3";'
   );
+} else {
+  server = server.replace(/const LTI_ROUTING_FIX_VERSION = "[^"]+";/, 'const LTI_ROUTING_FIX_VERSION = "2026-05-06-render-lti-routing-cache-v3";');
 }
 
 if (!server.includes('function noStore(res)')) {
@@ -69,6 +71,11 @@ server = server.replace(
 server = server.replace(
   'app.get("/api/imports/overview", (req, res) => {\n  if (!sessionFromRequest(req)) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });',
   'app.get("/api/imports/overview", (req, res) => {\n  noStore(res);\n  if (!sessionFromRequest(req)) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });'
+);
+
+server = server.replace(
+  'app.use(express.static(distPath));\n  app.get("*", (_req, res) => res.sendFile(path.join(distPath, "index.html")));',
+  'app.use(express.static(distPath, {\n    setHeaders: (res, filePath) => {\n      if (filePath.endsWith("index.html")) noStore(res);\n    }\n  }));\n  app.get("*", (_req, res) => {\n    noStore(res);\n    res.sendFile(path.join(distPath, "index.html"));\n  });'
 );
 
 write('src/server.js', server);
