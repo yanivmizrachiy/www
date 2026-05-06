@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "start": "node src/server.js",
+    "start": "node scripts/fix-lti-routing-redirect-cache.cjs && node --check src/server.js && node src/server.js",
     "check": "node --check src/server.js",
-    "dev:server": "node src/server.js",
+    "dev:server": "node scripts/fix-lti-routing-redirect-cache.cjs && node --check src/server.js && node src/server.js",
     "build": "node scripts/fix-lti-routing-redirect-cache.cjs && node --check src/server.js && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc -b --pretty false"
