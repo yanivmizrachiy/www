@@ -1,66 +1,173 @@
 # Project Status — www / Moodle Teacher Hub
 
-Updated: 2026-05-03
+Updated: 2026-05-06
 Repository: `yanivmizrachiy/www`
-Active PR branch: `gemini/ai-studio-sync-20260428-193953`
-PR: #1 — Draft / not merged / not production-ready
+Active work branch: `gemini/ai-studio-sync-20260428-193953`
+PR: #1 — Draft / not merged / not production-ready for all teachers
 
 ## Current source-of-truth position
 
-This project already has real components in several places. The correct work now is integration, verification, and cleanup — not rebuilding from scratch.
+Moodle Teacher Hub now has a permanent Render runtime URL and no longer depends on Termux or temporary Cloudflare/Localtunnel URLs for the main LTI launch path.
+
+Current preferred architecture:
 
 ```text
-Moodle external tool
-  -> current temporary Localtunnel URL
-  -> Node LTI endpoint /api/lti/launch
+Moodle External Tool
+  -> Render permanent Node endpoint /api/lti/launch
   -> React/Vite Moodle Teacher Hub UI
-  -> Supabase project moodle-teacher-hub
+  -> Supabase project moodle-teacher-hub for future persistence/import workflows
   -> Manual Real Data Import until Moodle Web Services token is verified
 ```
 
-## Current verified evidence
+## Current permanent runtime
 
-### GitHub / PR
+Render Web Service:
 
-- Repository: `yanivmizrachiy/www`.
-- Active work branch: `gemini/ai-studio-sync-20260428-193953`.
-- PR #1 is still Draft and must not be merged directly.
-- AI Studio/Gemini recovery code is present in the PR branch, not fully merged into `main`.
-- The PR branch contains important source files including Dashboard, Import, reports, `PracticeTimeSection`, `TruthBadge`, `server.ts`, `src/server.js`, Supabase source functions, and schema files.
+```text
+https://www-tijc.onrender.com
+```
 
-### Moodle evidence from screenshots
+Canonical LTI endpoint:
 
-- Moodle host shown: `moodlemoe.lms.education.gov.il`.
-- External tool name shown: `Moodle Teacher Hub`.
-- Current Moodle Tool URL shown: `https://nasty-rabbits-wait.loca.lt/api/lti/launch`.
-- LTI version shown: `LTI 1.0/1.1`.
-- Consumer key shown: `yaniv-lti-tool`.
-- Shared secret exists and is masked. It must never be committed or pasted into chat.
-- A real launch attempt currently showed `503 - Tunnel Unavailable`, meaning Moodle tried to open the tool but the tunnel was unavailable. This is reachability failure, not OAuth proof.
+```text
+https://www-tijc.onrender.com/api/lti/launch
+```
 
-### Supabase evidence from screenshots
+Health endpoint:
 
-- Correct Supabase project: `moodle-teacher-hub`.
-- Correct project id / URL: `ncoqanascubqkxxfvucfz` / `https://ncoqanascubqkxxfvucfz.supabase.co`.
-- Supabase status visible: `Healthy`.
-- Project overview visible: `Last migration: No migrations`, `Last backup: No backups`, `Recent branch: No branches`.
-- `calendar-app` is a wrong/irrelevant paused project and must not be used for Moodle Teacher Hub.
-- A SQL Editor screenshot showed `Success. No rows returned` for a Moodle LTI schema query, but actual tables/columns/RPCs still require verification.
+```text
+https://www-tijc.onrender.com/health
+```
 
-### Termux runtime evidence
+Render evidence from user screenshots showed:
 
-- Runtime folder: `~/www-moodle-runtime`.
-- Branch checked out: `gemini/ai-studio-sync-20260428-193953`.
-- Head observed: `abd480c Redact LTI shared secret from setup log`.
-- Node observed: `v24.14.1`.
-- npm observed: `10.9.8`.
-- `npm install` completed.
-- `npm run build` completed successfully with Vite 5.4.21.
-- Local server answered `http://127.0.0.1:3000/health`.
-- Local health showed canonical endpoint `/api/lti/launch` and OAuth required.
-- Local health showed `supabaseConfigured: false` at the time of test.
-- Local health showed `readyForMoodleUse: false` at the time of test.
-- `npx localtunnel` CLI failed on Android/Termux due to `Unsupported platform: android` from `openurl`.
+```text
+moodle-teacher-hub running on port 10000
+canonical LTI endpoint: /api/lti/launch
+Your service is live
+Available at your primary URL https://www-tijc.onrender.com
+```
+
+## Render build status
+
+An initial Render deploy failed with:
+
+```text
+sh: 1: vite: not found
+Exited with status 127
+```
+
+The build command was fixed to:
+
+```text
+npm ci --include=dev && npm run build
+```
+
+After the fix, Render logs showed:
+
+```text
+built in 4.49s
+Build successful
+Deploying
+Your service is live
+```
+
+The repository `render.yaml` was updated to match the working Render configuration.
+
+## Required Render environment variables
+
+Required:
+
+```text
+NODE_ENV=production
+PORT=10000
+COOKIE_SECURE=true
+LTI_CONSUMER_KEY=yaniv-lti-tool
+LTI_SHARED_SECRET=<same value as Moodle; never commit>
+APP_BASE_URL=https://www-tijc.onrender.com
+VITE_SUPABASE_URL=https://ncoqanascubqkxfvucfz.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<Supabase publishable/anon key>
+```
+
+Optional / only when persistence is implemented and verified:
+
+```text
+SUPABASE_SERVICE_ROLE_KEY=<server-only key; never expose to browser>
+```
+
+## Moodle configuration now recommended
+
+The current simple permanent LTI path should be direct Moodle -> Render.
+
+Moodle Tool URL should be:
+
+```text
+https://www-tijc.onrender.com/api/lti/launch
+```
+
+Moodle settings:
+
+```text
+LTI version: LTI 1.0/1.1
+Consumer key: yaniv-lti-tool
+Shared secret: must exactly match Render LTI_SHARED_SECRET
+```
+
+## Supabase status
+
+Correct project ref confirmed by user evidence:
+
+```text
+ncoqanascubqkxfvucfz
+```
+
+Supabase Gateway health was confirmed at:
+
+```text
+https://ncoqanascubqkxfvucfz.supabase.co/functions/v1/lti-launch
+```
+
+GET response showed:
+
+```json
+{"service":"LTI 1.1 Permanent Gateway","status":"ok","project":"moodle-teacher-hub","runtime_configured":true}
+```
+
+However, the Supabase Gateway is not the current recommended LTI launch path because the gateway-forwarded path produced:
+
+```text
+Moodle Teacher Hub blocked launch: MISSING_OAUTH_SIGNATURE
+```
+
+Decision: do not use Supabase Gateway as the active LTI launch route until gateway-to-runtime OAuth forwarding/signature behavior is fixed and verified.
+
+Supabase remains relevant for:
+
+- database persistence
+- imported Moodle report storage
+- future RPC/API workflows
+- possible future Web Services integration
+
+## Data truth
+
+The successful direct Render LTI connection verifies login/context only.
+
+It does not automatically provide:
+
+- student list
+- grades
+- logs
+- activity completion
+- practice time
+
+Until Moodle Web Services token or LTI 1.3 Advantage is available and verified, real data must come from Manual Real Data Import:
+
+1. Participants / Students report
+2. Gradebook report
+3. Logs report
+4. Activity completion report
+
+The Import page and parser exist, but real import end-to-end is not yet verified.
 
 ## Current status table
 
@@ -68,77 +175,70 @@ Moodle external tool
 |---|---|
 | Requirements | Strong / captured |
 | Source repo | Verified |
-| Active PR branch | Verified |
-| AI Studio recovery code | Present in PR branch |
-| Main branch merge | Not approved |
-| Moodle external tool setup | Screenshot verified |
-| Moodle current Tool URL | `https://nasty-rabbits-wait.loca.lt/api/lti/launch` |
-| Node build in Termux | Verified passing |
-| Local Node `/health` | Verified passing |
-| Public tunnel | Failing / not verified |
-| Real Moodle LTI OAuth | Not verified |
-| Supabase project identity | Screenshot verified: `ncoqanascubqkxxfvucfz` |
-| Supabase table schema | Not yet audited |
-| Supabase runtime env connection | Not configured in latest Termux health output |
+| Active branch | Verified |
+| Render runtime | Live / verified by user screenshot |
+| Render build | Passed after build-command fix |
+| Permanent URL | `https://www-tijc.onrender.com` |
+| Canonical LTI endpoint | `/api/lti/launch` |
+| Direct Moodle -> Render LTI | User reported connected; should be treated as partially verified until evidence is added to evidence-log |
+| Supabase Gateway | Health OK, but not active LTI path due MISSING_OAUTH_SIGNATURE when forwarding |
+| Termux/Cloudflare | No longer required for active launch path |
 | Manual import end-to-end | Not verified |
 | Moodle Web Services token | Not verified / blocked-no-token |
-| Production readiness | No |
+| Production readiness | Partial; not ready for all teachers until data import/persistence verified |
 
 ## Current blockers
 
-1. Public reachability: Localtunnel currently unavailable or failing from Termux.
-2. Supabase schema audit: need Table Editor / safe SQL output to know what already exists.
-3. Runtime env: local server still needs real Supabase env values locally/server-side; no secrets in repo/chat.
-4. Real LTI launch: not verified until tunnel is reachable and Moodle POST reaches server.
-5. Manual import: not verified until LTI/session and Supabase schema are confirmed.
+1. Manual import end-to-end has not yet been verified with a real Moodle Participants report.
+2. Student names/grades/logs do not appear automatically from LTI 1.0/1.1.
+3. Moodle Web Services token is not verified.
+4. Supabase persistence/import storage still needs schema/RPC verification.
+5. Supabase Gateway should not be used as LTI forwarding route until signature forwarding is fixed and verified.
 
 ## Do not do
 
+- Do not return to Termux/Cloudflare temporary URLs for the production launch path.
+- Do not use the Supabase Gateway as active LTI route unless it is fixed and verified.
 - Do not rebuild the app from scratch.
 - Do not create a new repo.
 - Do not merge PR #1 while Draft/diverged without review.
 - Do not run old AI SQL blindly.
-- Do not deploy Supabase functions blindly.
 - Do not expose or commit secrets.
 - Do not use fake students, fake grades, fake activity, or fake practice time.
-- Do not claim production-ready.
+- Do not claim full production-ready status.
 
 ## Current next step
 
-Work step-by-step with the user screenshots.
-
-Immediate next evidence required:
+Verify the first real data workflow:
 
 ```text
-Supabase Table Editor screenshot for project moodle-teacher-hub showing the list of public tables.
+Moodle course -> Participants report export/copy -> Moodle Teacher Hub Import page -> confirm preview -> import -> Students page shows real names
 ```
 
-After that:
+After that, update:
 
-```text
-Run safe SQL only for table names / columns / row counts, with no secrets and no student data.
-```
-
-Only after Supabase existing state is understood should runtime integration continue.
+- `STATE/evidence-log.md`
+- `STATE/readiness-audit/*`
+- any relevant docs if the workflow changes
 
 ## Related audit files
 
+- `STATE/readiness-audit/render-production-launch-20260506.md`
+- `STATE/readiness-audit/dashboard-data-fallback-20260505.md`
+- `STATE/readiness-audit/termux-prebuilt-runtime-ready-20260505.md`
 - `STATE/readiness-audit/central-coordinator-plan-20260503.md`
 - `STATE/readiness-audit/supabase-existing-state-audit-20260503.md`
-- `STATE/readiness-audit/supabase-mobile-navigation-evidence-20260503.md`
 
 ## Current readiness estimate
 
 ```text
 Requirements clarity: 99%
-Repo understanding: 90%+
-Moodle setup evidence: 90%
-Supabase project identification: 95%
-Termux local build/server: verified
-Tunnel/public reachability: not working yet
-Real LTI launch: not verified
-Supabase schema/RPCs: not audited yet
-Manual data import: not verified end-to-end
-Overall execution readiness: 60%-65%
-Production-ready: no
+Repo governance: 95%
+Permanent runtime deployment: verified
+Direct LTI launch: likely working / needs final evidence-log entry
+Supabase Gateway: health OK but not active route
+Manual import: not verified end-to-end
+Moodle API/Web Services: blocked-no-token
+Overall execution readiness: 78%-82%
+Production-ready for broad teacher use: no
 ```
