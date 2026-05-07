@@ -828,6 +828,116 @@ async function lti13VerifyJwtSignature(idToken, header, payload) {
   };
 }
 
+
+function lti13CookieValue(req, name) {
+  const raw = String((req.headers && req.headers.cookie) || "");
+  const parts = raw.split(";").map((part) => part.trim());
+  const prefix = name + "=";
+  const found = parts.find((part) => part.startsWith(prefix));
+  if (!found) return "";
+  try {
+    return decodeURIComponent(found.slice(prefix.length));
+  } catch {
+    return found.slice(prefix.length);
+  }
+}
+
+function lti13AudContains(aud, expected) {
+  if (!expected) return false;
+  if (Array.isArray(aud)) return aud.map(String).includes(String(expected));
+  return String(aud || "") === String(expected);
+}
+
+function lti13Claim(payload, key) {
+  return payload["https://purl.imsglobal.org/spec/lti/claim/" + key];
+}
+
+function lti13VerifyCoreClaims(req, payload) {
+  const expectedIssuer = process.env.LTI13_PLATFORM_ISSUER || "https://moodlemoe.lms.education.gov.il";
+  const expectedClientId = process.env.LTI13_CLIENT_ID || "WgIZjAqxrP2zFbz";
+  const expectedDeploymentId = process.env.LTI13_DEPLOYMENT_ID || "3";
+  const expectedNonce = lti13CookieValue(req, "lti13_nonce");
+
+  const deploymentId = lti13Claim(payload, "deployment_id");
+  const messageType = lti13Claim(payload, "message_type");
+  const version = lti13Claim(payload, "version");
+
+  const checks = {
+    issuer: payload.iss === expectedIssuer,
+    audience: lti13AudContains(payload.aud, expectedClientId),
+    deployment_id: String(deploymentId || "") === String(expectedDeploymentId),
+    message_type: messageType === "LtiResourceLinkRequest",
+    version: version === "1.3.0",
+    nonce_cookie_present: !!expectedNonce,
+    nonce_matches: !!expectedNonce && payload.nonce === expectedNonce
+  };
+
+  const ok = Object.values(checks).every(Boolean);
+
+  return {
+    ok,
+    checks,
+    expected: {
+      issuer: expectedIssuer,
+      client_id: expectedClientId,
+      deployment_id: expectedDeploymentId
+    },
+    actual: {
+      issuer: payload.iss || null,
+      audience: payload.aud || null,
+      deployment_id: deploymentId || null,
+      message_type: messageType || null,
+      version: version || null,
+      nonce_present: !!payload.nonce
+    }
+  };
+}
+
+function lti13BuildVerifiedSession(payload) {
+  const context = lti13Claim(payload, "context") || {};
+  const resourceLink = lti13Claim(payload, "resource_link") || {};
+  const roles = lti13Claim(payload, "roles") || [];
+  const deploymentId = lti13Claim(payload, "deployment_id") || "";
+
+  const courseId = String(context.id || "");
+  const courseTitle = String(context.title || context.label || "Moodle course");
+  const teacherName =
+    String(payload.name || [payload.given_name, payload.family_name].filter(Boolean).join(" ") || payload.email || payload.sub || "Moodle teacher");
+
+  const sessionToken = crypto.randomBytes(32).toString("hex");
+
+  const session = {
+    token: sessionToken,
+    sessionToken,
+    source: "lti13",
+    ltiVersion: "1.3",
+    role: "teacher",
+    roles,
+    userId: String(payload.sub || ""),
+    moodleUsername: teacherName,
+    moodleUserName: teacherName,
+    teacherName,
+    email: String(payload.email || ""),
+    courseId,
+    course_id: courseId,
+    contextId: courseId,
+    context_id: courseId,
+    courseTitle,
+    course_title: courseTitle,
+    contextTitle: courseTitle,
+    context_title: courseTitle,
+    resourceLinkId: String(resourceLink.id || ""),
+    resourceLinkTitle: String(resourceLink.title || ""),
+    deploymentId: String(deploymentId),
+    deployment_id: String(deploymentId),
+    issuer: String(payload.iss || ""),
+    clientId: Array.isArray(payload.aud) ? String(payload.aud[0] || "") : String(payload.aud || ""),
+    createdAt: new Date().toISOString()
+  };
+
+  return { sessionToken, session, courseTitle, courseId, teacherName };
+}
+
 app.all("/api/lti13/launch", async (req, res) => {
   lti13NoStore(res);
 
@@ -869,44 +979,73 @@ app.all("/api/lti13/launch", async (req, res) => {
 
   const signature = await lti13VerifyJwtSignature(idToken, header, payload);
 
-  return res.status(signature.ok ? 200 : 401).json({
-    ok: false,
-    mode: signature.ok ? "phase2-signature-verified-session-not-created-yet" : "phase2-signature-verification-failed",
-    message: signature.ok
-      ? "LTI 1.3 id_token signature was verified against Moodle platform JWKS. Session is still not created until issuer/client/deployment/nonce verification is completed."
-      : "LTI 1.3 id_token was received, but signature verification did not pass.",
-    signature,
-    header: {
-      alg: header.alg || null,
-      kid: header.kid || null,
-      typ: header.typ || null
-    },
-    payload_summary: {
-      iss: payload.iss || null,
-      aud: payload.aud || null,
-      sub_present: !!payload.sub,
-      nonce_present: !!payload.nonce,
-      deployment_id: payload["https://purl.imsglobal.org/spec/lti/claim/deployment_id"] || null,
-      message_type: payload["https://purl.imsglobal.org/spec/lti/claim/message_type"] || null,
-      version: payload["https://purl.imsglobal.org/spec/lti/claim/version"] || null,
-      target_link_uri: payload["https://purl.imsglobal.org/spec/lti/claim/target_link_uri"] || null,
-      context: payload["https://purl.imsglobal.org/spec/lti/claim/context"] || null,
-      resource_link: payload["https://purl.imsglobal.org/spec/lti/claim/resource_link"] || null,
-      roles: payload["https://purl.imsglobal.org/spec/lti/claim/roles"] || []
-    },
-    next_required: [
-      "Verify issuer",
-      "Verify client_id/audience",
-      "Verify deployment_id",
-      "Verify nonce/state",
-      "Only then create a real Moodle Teacher Hub session"
-    ],
-    safety: {
-      existing_lti11_endpoint_kept: CANONICAL_LTI_ENDPOINT,
-      no_fake_success: true
-    },
-    now: new Date().toISOString()
-  });
+  if (!signature.ok) {
+    return res.status(401).json({
+      ok: false,
+      mode: "phase3-signature-verification-failed",
+      message: "LTI 1.3 id_token was received, but signature verification did not pass.",
+      signature,
+      header: {
+        alg: header.alg || null,
+        kid: header.kid || null,
+        typ: header.typ || null
+      },
+      safety: {
+        existing_lti11_endpoint_kept: CANONICAL_LTI_ENDPOINT,
+        no_fake_success: true
+      },
+      now: new Date().toISOString()
+    });
+  }
+
+  const claimVerification = lti13VerifyCoreClaims(req, payload);
+
+  if (!claimVerification.ok) {
+    return res.status(401).json({
+      ok: false,
+      mode: "phase3-core-claims-verification-failed",
+      message: "LTI 1.3 signature is valid, but issuer/client/deployment/nonce checks are not complete.",
+      signature,
+      claim_verification: claimVerification,
+      safety: {
+        existing_lti11_endpoint_kept: CANONICAL_LTI_ENDPOINT,
+        no_fake_success: true
+      },
+      now: new Date().toISOString()
+    });
+  }
+
+  const built = lti13BuildVerifiedSession(payload);
+  const { sessionToken, session, courseTitle, courseId, teacherName } = built;
+
+  try {
+    if (typeof recordSupabaseSession === "function") {
+      await recordSupabaseSession({
+        session_token: sessionToken,
+        course_id: courseId,
+        course_title: courseTitle,
+        moodle_username: teacherName,
+        role: "teacher",
+        created_at: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    console.warn("LTI 1.3 Supabase session recording warning:", error);
+  }
+
+  setSession(res, session);
+
+  const nextPath = "/import";
+  const redirectUrl =
+    publicBaseUrl(req) +
+    "/lti?t=" +
+    encodeURIComponent(sessionToken) +
+    "&course=" +
+    encodeURIComponent(courseTitle) +
+    "&next=" +
+    encodeURIComponent(nextPath);
+
+  return res.redirect(303, redirectUrl);
 });
 
 
