@@ -1125,6 +1125,62 @@ if (fs.existsSync(distPath)) {
   app.get("*", (_req, res) => res.status(404).send("Moodle Teacher Hub frontend build not found. Run npm run build."));
 }
 
+
+
+function lti13DiagnosticSessionsSnapshot() {
+  const raw =
+    Array.isArray(store?.sessions) ? store.sessions :
+    store?.sessions && typeof store.sessions === "object" ? Object.values(store.sessions) :
+    [];
+
+  return raw
+    .filter(Boolean)
+    .filter((session) => session.source === "lti13" || session.automaticServices)
+    .slice(-10);
+}
+
+app.get("/api/lti13/services-status", (req, res) => {
+  const sessions = lti13DiagnosticSessionsSnapshot();
+  const latest = sessions.length ? sessions[sessions.length - 1] : null;
+  const services = latest?.automaticServices || {
+    has_nrps: false,
+    has_ags: false,
+    nrps: { available: false },
+    ags: { available: false },
+    raw_claim_keys: []
+  };
+
+  res.json({
+    ok: true,
+    mode: "lti13-live-service-claims-status",
+    explanation: "Open the Moodle LTI 1.3 tool first, then this endpoint shows whether the real launch payload contained NRPS/AGS service claims.",
+    has_latest_lti13_session: !!latest,
+    session_count: sessions.length,
+    has_nrps: !!services.has_nrps,
+    has_ags: !!services.has_ags,
+    service_claims: services,
+    latest_session_summary: latest ? {
+      source: latest.source || null,
+      verified: !!latest.verified,
+      user: latest.user || null,
+      space: latest.space || null,
+      deployment_id: latest.deployment_id || null,
+      issuer: latest.issuer || null,
+      clientId: latest.clientId || null
+    } : null,
+    next_required: !latest
+      ? ["Open Moodle Teacher Hub — LTI 1.3 Test from Moodle, then call this endpoint again."]
+      : services.has_nrps
+        ? ["Implement real NRPS membership fetch using Moodle service token."]
+        : ["Enable Names and Roles / Membership service in Moodle tool settings, save, relaunch, and check again."],
+    safety: {
+      no_fake_success: true,
+      existing_lti11_endpoint_kept: CANONICAL_LTI_ENDPOINT
+    },
+    now: new Date().toISOString()
+  });
+});
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`moodle-teacher-hub running on port ${PORT}`);
   console.log(`canonical LTI endpoint: ${CANONICAL_LTI_ENDPOINT}`);
