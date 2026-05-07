@@ -1,0 +1,44 @@
+name: Moodle Teacher Hub Safety Check
+
+on:
+  push:
+    branches:
+      - gemini/ai-studio-sync-20260428-193953
+  workflow_dispatch:
+
+jobs:
+  lti-routing-safety:
+    name: Verify LTI routing fix and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --include=dev
+
+      - name: Apply automatic LTI routing fix
+        run: node scripts/fix-lti-routing-redirect-cache.cjs
+
+      - name: Verify automatic LTI routing fix markers
+        run: node scripts/verify-lti-routing-fix.cjs
+
+      - name: Check server syntax
+        run: node --check src/server.js
+
+      - name: Build production app
+        run: npm run build
+
+      - name: Print safety summary
+        run: |
+          echo "MOODLE_TEACHER_HUB_SAFETY_CHECK_OK"
+          echo "Verified: LTI routing fix script, markers, server syntax, and production build."
+          echo "This does not verify live Render deploy or real Moodle Participants import."
