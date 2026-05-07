@@ -764,7 +764,71 @@ app.all("/api/lti13/login", (req, res) => {
   return res.redirect(303, url.toString());
 });
 
-app.all("/api/lti13/launch", (req, res) => {
+
+function lti13Base64UrlBuffer(part) {
+  const normalized = String(part || "").replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
+  return Buffer.from(padded, "base64");
+}
+
+function lti13ExpectedMoodleJwksUrl(iss) {
+  if (process.env.LTI13_PLATFORM_JWKS_URL) return process.env.LTI13_PLATFORM_JWKS_URL;
+  try {
+    return new URL("/mod/lti/certs.php", String(iss)).toString();
+  } catch {
+    return "https://moodlemoe.lms.education.gov.il/mod/lti/certs.php";
+  }
+}
+
+async function lti13VerifyJwtSignature(idToken, header, payload) {
+  const parts = String(idToken || "").split(".");
+  if (parts.length !== 3) {
+    return { ok: false, error: "LTI13_JWT_PARTS_INVALID", detail: "JWT must contain header, payload and signature." };
+  }
+
+  if (!header || header.alg !== "RS256") {
+    return { ok: false, error: "LTI13_UNSUPPORTED_JWT_ALG", alg: header && header.alg ? header.alg : null };
+  }
+
+  if (!header.kid) {
+    return { ok: false, error: "LTI13_JWT_KID_MISSING" };
+  }
+
+  const jwksUrl = lti13ExpectedMoodleJwksUrl(payload && payload.iss ? payload.iss : "");
+  const response = await fetch(jwksUrl, { headers: { accept: "application/json" } });
+
+  if (!response.ok) {
+    return { ok: false, error: "LTI13_PLATFORM_JWKS_FETCH_FAILED", status: response.status, jwks_url: jwksUrl };
+  }
+
+  const jwks = await response.json();
+  const keys = Array.isArray(jwks.keys) ? jwks.keys : [];
+  const jwk = keys.find((key) => key && key.kid === header.kid);
+
+  if (!jwk) {
+    return {
+      ok: false,
+      error: "LTI13_JWT_KID_NOT_FOUND_IN_PLATFORM_JWKS",
+      kid: header.kid,
+      jwks_url: jwksUrl,
+      available_kids: keys.map((key) => key && key.kid).filter(Boolean)
+    };
+  }
+
+  const publicKey = crypto.createPublicKey({ key: jwk, format: "jwk" });
+  const signedData = Buffer.from(parts[0] + "." + parts[1]);
+  const signature = lti13Base64UrlBuffer(parts[2]);
+  const verified = crypto.verify("RSA-SHA256", signedData, publicKey, signature);
+
+  return {
+    ok: !!verified,
+    error: verified ? null : "LTI13_JWT_SIGNATURE_INVALID",
+    kid: header.kid,
+    jwks_url: jwksUrl
+  };
+}
+
+app.all("/api/lti13/launch", async (req, res) => {
   lti13NoStore(res);
 
   const params = lti13ReadParams(req);
@@ -803,10 +867,15 @@ app.all("/api/lti13/launch", (req, res) => {
     });
   }
 
-  return res.status(200).json({
+  const signature = await lti13VerifyJwtSignature(idToken, header, payload);
+
+  return res.status(signature.ok ? 200 : 401).json({
     ok: false,
-    mode: "phase1-launch-captured-not-yet-verified",
-    message: "LTI 1.3 launch reached the app and id_token was decoded. Signature, issuer, nonce and deployment verification are not completed yet, so no app session was created.",
+    mode: signature.ok ? "phase2-signature-verified-session-not-created-yet" : "phase2-signature-verification-failed",
+    message: signature.ok
+      ? "LTI 1.3 id_token signature was verified against Moodle platform JWKS. Session is still not created until issuer/client/deployment/nonce verification is completed."
+      : "LTI 1.3 id_token was received, but signature verification did not pass.",
+    signature,
     header: {
       alg: header.alg || null,
       kid: header.kid || null,
@@ -826,8 +895,10 @@ app.all("/api/lti13/launch", (req, res) => {
       roles: payload["https://purl.imsglobal.org/spec/lti/claim/roles"] || []
     },
     next_required: [
-      "Verify JWT signature using Moodle platform JWKS",
-      "Verify issuer, client_id/audience, deployment_id and nonce",
+      "Verify issuer",
+      "Verify client_id/audience",
+      "Verify deployment_id",
+      "Verify nonce/state",
       "Only then create a real Moodle Teacher Hub session"
     ],
     safety: {
