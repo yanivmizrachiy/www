@@ -13,6 +13,8 @@ const ROOT = path.dirname(__dirname);
 const PORT = Number(process.env.PORT || 3000);
 const STORE_PATH = path.join(ROOT, "data", "store.json");
 const CANONICAL_LTI_ENDPOINT = "/api/lti/launch";
+const LTI13_DIAGNOSTIC_VERSION = "2026-05-07-lti13-readiness-diagnostics-v2";
+const LTI_ROUTING_FIX_VERSION = "2026-05-06-render-lti-routing-cache-v3";
 
 const sessions = new Map();
 const tokenSessions = new Map();
@@ -85,6 +87,55 @@ function verifyLti(req, launchUrl) {
 
   return { ok: true, code: "OAUTH_VERIFIED" };
 }
+
+
+function lti13NoStore(res) {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+}
+
+function lti13EnvStatus() {
+  const required = [
+    "LTI13_PRIVATE_KEY_PEM",
+    "LTI13_KEY_ID",
+    "LTI13_ISSUER",
+    "LTI13_CLIENT_ID",
+    "LTI13_DEPLOYMENT_ID",
+    "LTI13_AUTH_LOGIN_URL",
+    "LTI13_TOKEN_URL",
+    "LTI13_PLATFORM_JWKS_URL"
+  ];
+  const present = Object.fromEntries(required.map(name => [name, !!env(name)]));
+  return {
+    required,
+    present,
+    configured: required.every(name => !!env(name)),
+    missing: required.filter(name => !env(name))
+  };
+}
+
+function lti13PublicJwks() {
+  const privateKeyPem = env("LTI13_PRIVATE_KEY_PEM");
+  const kid = env("LTI13_KEY_ID", "moodle-teacher-hub-lti13-dev-key");
+  if (!privateKeyPem) {
+    return { ok: false, error: "LTI13_PRIVATE_KEY_PEM_NOT_CONFIGURED", keys: [] };
+  }
+  try {
+    const normalizedPem = privateKeyPem.includes("\n") ? privateKeyPem.replace(/\n/g, String.fromCharCode(10)) : privateKeyPem;
+    const privateKey = crypto.createPrivateKey(normalizedPem);
+    const publicKey = crypto.createPublicKey(privateKey);
+    const jwk = publicKey.export({ format: "jwk" });
+    return {
+      ok: true,
+      error: null,
+      keys: [{ ...jwk, kid, use: "sig", alg: "RS256" }]
+    };
+  } catch (error) {
+    return { ok: false, error: "LTI13_PUBLIC_JWKS_EXPORT_FAILED", detail: error.message, keys: [] };
+  }
+}
+
 
 function emptyStore() {
   return {
@@ -176,6 +227,13 @@ function sessionFromRequest(req) {
   if (token && tokenSessions.has(token)) return tokenSessions.get(token);
   const sid = req.cookies?.sid;
   return sid ? sessions.get(sid) || null : null;
+}
+
+function noStore(res) {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.setHeader("Surrogate-Control", "no-store");
 }
 
 function numberOrZero(value) {
@@ -365,6 +423,7 @@ app.get("/health", (_req, res) => {
     activeRuntime: "render",
     reactRootIsCanonical: true,
     legacyRootDashboardDisabled: true,
+    ltiRoutingFixVersion: LTI_ROUTING_FIX_VERSION,
     oauthVerification: "required",
     supabaseConfigured: !!(env("VITE_SUPABASE_URL") && env("SUPABASE_SERVICE_ROLE_KEY")),
     readyForMoodleUse: !!(env("LTI_SHARED_SECRET") && env("LTI_CONSUMER_KEY")),
@@ -393,6 +452,17 @@ app.get("/lti11/config", (req, res) => {
   <blti:launch_url>${launch}</blti:launch_url>
   <blti:secure_launch_url>${launch}</blti:secure_launch_url>
 </cartridge_basiclti_link>`);
+});
+
+
+app.get(CANONICAL_LTI_ENDPOINT, (req, res) => {
+  noStore(res);
+  const session = sessionFromRequest(req);
+  const base = publicBaseUrl(req);
+  if (session?.sessionToken) {
+    return res.redirect(303, base + "/lti?t=" + encodeURIComponent(session.sessionToken) + "&next=" + encodeURIComponent("/import"));
+  }
+  return res.redirect(303, base + "/setup?reason=direct-lti-get");
 });
 
 app.post(CANONICAL_LTI_ENDPOINT, async (req, res) => {
@@ -440,7 +510,8 @@ app.post(CANONICAL_LTI_ENDPOINT, async (req, res) => {
     await recordSupabaseSession({ session_token: sessionToken, course_id: body.context_id, course_title: body.context_title, moodle_username: body.ext_user_username || body.lis_person_name_full || body.user_id, role: "teacher", created_at: new Date().toISOString() });
 
     setSession(res, session);
-    res.redirect(`/lti?t=${encodeURIComponent(sessionToken)}&course=${encodeURIComponent(space.title)}`);
+    noStore(res);
+    return res.redirect(303, publicBaseUrl(req) + "/lti?t=" + encodeURIComponent(sessionToken) + "&course=" + encodeURIComponent(space.title) + "&next=" + encodeURIComponent("/import"));
   } catch (error) {
     console.error("LTI Launch Error:", error);
     res.status(500).send("שגיאת שרת בחיבור Moodle Teacher Hub");
@@ -448,6 +519,7 @@ app.post(CANONICAL_LTI_ENDPOINT, async (req, res) => {
 });
 
 app.get("/api/bootstrap", (req, res) => {
+  noStore(res);
   const session = sessionFromRequest(req);
   if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
   const context = contextPayload(session);
@@ -465,6 +537,7 @@ app.get("/api/bootstrap", (req, res) => {
 });
 
 app.post("/api/import", (req, res) => {
+  noStore(res);
   const session = importSessionFromRequest(req);
   if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
 
@@ -502,6 +575,7 @@ app.post("/api/import", (req, res) => {
 });
 
 app.get("/api/imports/students", (req, res) => {
+  noStore(res);
   const session = importSessionFromRequest(req);
   if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
 
@@ -515,6 +589,7 @@ app.get("/api/imports/students", (req, res) => {
 });
 
 app.get("/api/imports/overview", (req, res) => {
+  noStore(res);
   if (!sessionFromRequest(req)) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
   res.json({ students_count: store.students.length, grade_items_count: store.gradeItems.length || store.tasks.length, grades_count: store.grades.length, chapters_count: store.chapters.length, tasks_count: store.tasks.length, log_events_count: store.logEvents.length || store.activitySessions.length, batches: [...store.importBatches].reverse() });
 });
@@ -535,10 +610,246 @@ app.get("/legacy-dashboard", (_req, res) => {
   return res.status(404).send("Legacy dashboard is not available in this branch. React app is the canonical UI.");
 });
 
+
+
+function lti13Base64UrlJson(part) {
+  const normalized = String(part || "").replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
+  return JSON.parse(Buffer.from(padded, "base64").toString("utf8"));
+}
+
+function lti13ReadParams(req) {
+  return Object.assign({}, req.query || {}, req.body || {});
+}
+
+function lti13PublicBase(req) {
+  if (typeof publicBaseUrl === "function") return publicBaseUrl(req);
+  const proto = req.headers["x-forwarded-proto"] || req.protocol || "https";
+  const host = req.headers["x-forwarded-host"] || req.headers.host;
+  return proto + "://" + host;
+}
+
+function lti13PlatformAuthUrl(iss) {
+  if (process.env.LTI13_PLATFORM_AUTH_URL) return process.env.LTI13_PLATFORM_AUTH_URL;
+  try {
+    return new URL("/mod/lti/auth.php", String(iss)).toString();
+  } catch {
+    return "";
+  }
+}
+
+app.get("/api/lti13/status", (req, res) => {
+  lti13NoStore(res);
+  const envStatus = lti13EnvStatus();
+  const base = publicBaseUrl(req);
+  const jwks = lti13PublicJwks();
+  res.json({
+    ok: true,
+    mode: "diagnostic-only",
+    lti13DiagnosticVersion: LTI13_DIAGNOSTIC_VERSION,
+    existingLti11EndpointKept: CANONICAL_LTI_ENDPOINT,
+    configured: envStatus.configured,
+    missing: envStatus.missing,
+    present: envStatus.present,
+    endpoints: {
+      login_url: base + "/api/lti13/login",
+      launch_url: base + "/api/lti13/launch",
+      jwks_url: base + "/api/lti13/jwks",
+      config_url: base + "/api/lti13/config"
+    },
+    capabilities: {
+      oidc_login: false,
+      jwt_launch_validation: false,
+      nrps_roster_sync: false,
+      ags_grade_sync: false,
+      jwks_available: jwks.ok
+    },
+    safety: {
+      do_not_replace_existing_lti11_tool_yet: true,
+      create_separate_test_tool_first: true,
+      no_moodle_settings_should_be_saved_until_lti13_status_is_configured: true
+    },
+    now: new Date().toISOString()
+  });
+});
+
+app.get("/api/lti13/config", (req, res) => {
+  lti13NoStore(res);
+  const base = publicBaseUrl(req);
+  res.json({
+    ok: true,
+    mode: "configuration-helper",
+    lti13DiagnosticVersion: LTI13_DIAGNOSTIC_VERSION,
+    warning: "Do not use this to replace the working LTI 1.0/1.1 Moodle Teacher Hub tool. Create a separate LTI 1.3 Test tool only after status is configured.",
+    suggested_tool_name: "Moodle Teacher Hub — LTI 1.3 Test",
+    tool_urls: {
+      oidc_login_initiation_url: base + "/api/lti13/login",
+      redirect_uri_or_launch_url: base + "/api/lti13/launch",
+      public_keyset_jwks_url: base + "/api/lti13/jwks"
+    },
+    services_to_check_in_moodle: [
+      "סינכרון וניהול משתמשים / Names and Roles / Membership service",
+      "סינכרון תתי-מטלות וציונים / Assignment and Grade Services",
+      "Deep Linking if needed"
+    ],
+    privacy_to_check_in_moodle: [
+      "Share user name only if required",
+      "Share user email only if required and approved",
+      "Accept grades from tool only if AGS is intentionally enabled"
+    ],
+    current_limit: "This endpoint only helps configuration. Full LTI 1.3 launch validation and NRPS/AGS calls are not implemented yet."
+  });
+});
+
+app.get("/api/lti13/jwks", (_req, res) => {
+  lti13NoStore(res);
+  const jwks = lti13PublicJwks();
+  res.status(jwks.ok ? 200 : 503).json({ keys: jwks.keys, ok: jwks.ok, error: jwks.error || null, detail: jwks.detail || null });
+});
+
+app.all("/api/lti13/login", (req, res) => {
+  lti13NoStore(res);
+
+  const params = lti13ReadParams(req);
+  const required = ["iss", "login_hint", "target_link_uri", "lti_message_hint", "client_id"];
+  const missing = required.filter((key) => !params[key]);
+
+  if (missing.length) {
+    return res.status(400).json({
+      ok: false,
+      error: "LTI13_OIDC_LOGIN_PARAMS_MISSING",
+      detail: "Moodle reached the LTI 1.3 login endpoint, but required OIDC login-initiation parameters were missing.",
+      missing,
+      query_keys_received: Object.keys(req.query || {}).sort(),
+      body_keys_received: Object.keys(req.body || {}).sort(),
+      safety: {
+        existing_lti11_endpoint_kept: CANONICAL_LTI_ENDPOINT,
+        no_fake_success: true
+      },
+      now: new Date().toISOString()
+    });
+  }
+
+  const state = crypto.randomBytes(24).toString("hex");
+  const nonce = crypto.randomBytes(24).toString("hex");
+  const redirectUri = lti13PublicBase(req) + "/api/lti13/launch";
+  const authUrl = lti13PlatformAuthUrl(params.iss);
+
+  if (!authUrl) {
+    return res.status(400).json({
+      ok: false,
+      error: "LTI13_PLATFORM_AUTH_URL_MISSING",
+      detail: "Could not derive Moodle authorization URL. Set LTI13_PLATFORM_AUTH_URL if this Moodle platform uses a custom authorization endpoint.",
+      iss: params.iss || null
+    });
+  }
+
+  res.setHeader("Set-Cookie", [
+    "lti13_state=" + encodeURIComponent(state) + "; HttpOnly; Secure; SameSite=None; Path=/; Max-Age=600",
+    "lti13_nonce=" + encodeURIComponent(nonce) + "; HttpOnly; Secure; SameSite=None; Path=/; Max-Age=600"
+  ]);
+
+  const url = new URL(authUrl);
+  url.searchParams.set("scope", "openid");
+  url.searchParams.set("response_type", "id_token");
+  url.searchParams.set("response_mode", "form_post");
+  url.searchParams.set("prompt", "none");
+  url.searchParams.set("client_id", String(params.client_id));
+  url.searchParams.set("redirect_uri", redirectUri);
+  url.searchParams.set("state", state);
+  url.searchParams.set("nonce", nonce);
+  url.searchParams.set("login_hint", String(params.login_hint));
+  url.searchParams.set("lti_message_hint", String(params.lti_message_hint));
+
+  return res.redirect(303, url.toString());
+});
+
+app.all("/api/lti13/launch", (req, res) => {
+  lti13NoStore(res);
+
+  const params = lti13ReadParams(req);
+  const idToken = params.id_token;
+
+  if (!idToken) {
+    return res.status(400).json({
+      ok: false,
+      error: "LTI13_ID_TOKEN_MISSING",
+      detail: "Moodle reached the LTI 1.3 launch endpoint, but no id_token was received.",
+      method: req.method,
+      query_keys_received: Object.keys(req.query || {}).sort(),
+      body_keys_received: Object.keys(req.body || {}).sort(),
+      safety: {
+        existing_lti11_endpoint_kept: CANONICAL_LTI_ENDPOINT,
+        no_fake_success: true
+      },
+      now: new Date().toISOString()
+    });
+  }
+
+  let header = null;
+  let payload = null;
+
+  try {
+    const parts = String(idToken).split(".");
+    if (parts.length < 2) throw new Error("JWT must contain header and payload");
+    header = lti13Base64UrlJson(parts[0]);
+    payload = lti13Base64UrlJson(parts[1]);
+  } catch (error) {
+    return res.status(400).json({
+      ok: false,
+      error: "LTI13_ID_TOKEN_DECODE_FAILED",
+      detail: String(error && error.message ? error.message : error),
+      now: new Date().toISOString()
+    });
+  }
+
+  return res.status(200).json({
+    ok: false,
+    mode: "phase1-launch-captured-not-yet-verified",
+    message: "LTI 1.3 launch reached the app and id_token was decoded. Signature, issuer, nonce and deployment verification are not completed yet, so no app session was created.",
+    header: {
+      alg: header.alg || null,
+      kid: header.kid || null,
+      typ: header.typ || null
+    },
+    payload_summary: {
+      iss: payload.iss || null,
+      aud: payload.aud || null,
+      sub_present: !!payload.sub,
+      nonce_present: !!payload.nonce,
+      deployment_id: payload["https://purl.imsglobal.org/spec/lti/claim/deployment_id"] || null,
+      message_type: payload["https://purl.imsglobal.org/spec/lti/claim/message_type"] || null,
+      version: payload["https://purl.imsglobal.org/spec/lti/claim/version"] || null,
+      target_link_uri: payload["https://purl.imsglobal.org/spec/lti/claim/target_link_uri"] || null,
+      context: payload["https://purl.imsglobal.org/spec/lti/claim/context"] || null,
+      resource_link: payload["https://purl.imsglobal.org/spec/lti/claim/resource_link"] || null,
+      roles: payload["https://purl.imsglobal.org/spec/lti/claim/roles"] || []
+    },
+    next_required: [
+      "Verify JWT signature using Moodle platform JWKS",
+      "Verify issuer, client_id/audience, deployment_id and nonce",
+      "Only then create a real Moodle Teacher Hub session"
+    ],
+    safety: {
+      existing_lti11_endpoint_kept: CANONICAL_LTI_ENDPOINT,
+      no_fake_success: true
+    },
+    now: new Date().toISOString()
+  });
+});
+
+
 const distPath = path.join(ROOT, "dist");
 if (fs.existsSync(distPath)) {
-  app.use(express.static(distPath));
-  app.get("*", (_req, res) => res.sendFile(path.join(distPath, "index.html")));
+  app.use(express.static(distPath, {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith("index.html")) noStore(res);
+    }
+  }));
+  app.get("*", (_req, res) => {
+    noStore(res);
+    res.sendFile(path.join(distPath, "index.html"));
+  });
 } else {
   app.get("*", (_req, res) => res.status(404).send("Moodle Teacher Hub frontend build not found. Run npm run build."));
 }
