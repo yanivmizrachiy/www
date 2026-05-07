@@ -265,3 +265,37 @@ Moodle -> https://nasty-rabbits-wait.loca.lt/api/lti/launch -> Node server -> ve
 ### Next technical action
 
 Use the existing Supabase tables first. Before creating missing import tables, connect the runtime to `ncoqanascubqkxxfvucfz` with local-only environment variables and make the public tunnel reachable. Then test the Moodle launch and record the exact server log result.
+
+---
+
+## 2026-05-07 — LTI 1.3 diagnostic endpoints live on Render
+
+### Verified from Termux checks
+
+```text
+live_health_ok=true
+live_lti13_status_seen=true
+live_lti13_config_seen=true
+live_lti13_jwks_expected=true
+```
+
+Evidence file:
+
+```text
+STATE/readiness-audit/lti13-live-diagnostics-evidence-20260507.md
+```
+
+### Truth boundary
+
+This verifies safe diagnostic endpoints only.
+
+It does not verify:
+
+- LTI 1.3 OIDC login.
+- LTI 1.3 JWT launch validation.
+- NRPS automatic participant sync.
+- AGS grade sync.
+- Full Moodle API access.
+
+The working LTI 1.0/1.1 tool must remain unchanged.
+
