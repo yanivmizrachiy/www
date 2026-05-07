@@ -529,6 +529,7 @@ app.get("/api/bootstrap", (req, res) => {
     space: { title: session.spaceTitle, id: session.spaceId },
     source: session.source,
     verified: !!session.verified,
+    automaticServices: session.automaticServices || { has_nrps: false, has_ags: false, nrps: { available: false }, ags: { available: false } },
     dataReady: { hasRealLaunch: store.moodleCaptures.some(item => item.source === "lti11" && item.verificationCode === "OAUTH_VERIFIED"), hasStudents: store.students.length > 0, hasTasks: store.tasks.length > 0, hasGrades: store.grades.length > 0, hasActivity: store.activitySessions.length > 0 },
     lastLaunchAt: store.launches.at(-1)?.createdAt ?? null,
     lastCaptureAt: store.moodleCaptures.at(-1)?.createdAt ?? null,
@@ -893,6 +894,65 @@ function lti13VerifyCoreClaims(req, payload) {
   };
 }
 
+
+function lti13ExtractServiceClaims(payload) {
+  const nrps =
+    payload?.["https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice"] ||
+    payload?.namesroleservice ||
+    null;
+
+  const ags =
+    payload?.["https://purl.imsglobal.org/spec/lti-ags/claim/endpoint"] ||
+    payload?.endpoint ||
+    null;
+
+  const contextMembershipsUrl =
+    nrps?.context_memberships_url ||
+    nrps?.context_membership_url ||
+    nrps?.membership_url ||
+    null;
+
+  const lineitemsUrl =
+    ags?.lineitems ||
+    ags?.lineitems_url ||
+    null;
+
+  const lineitemUrl =
+    ags?.lineitem ||
+    ags?.lineitem_url ||
+    null;
+
+  const scopes = Array.isArray(ags?.scope)
+    ? ags.scope
+    : typeof ags?.scope === "string"
+      ? [ags.scope]
+      : [];
+
+  return {
+    has_nrps: !!contextMembershipsUrl,
+    has_ags: !!(lineitemsUrl || lineitemUrl || scopes.length),
+    nrps: {
+      available: !!contextMembershipsUrl,
+      context_memberships_url: contextMembershipsUrl,
+      service_versions: Array.isArray(nrps?.service_versions) ? nrps.service_versions : []
+    },
+    ags: {
+      available: !!(lineitemsUrl || lineitemUrl || scopes.length),
+      lineitems_url: lineitemsUrl,
+      lineitem_url: lineitemUrl,
+      scopes
+    },
+    raw_claim_keys: Object.keys(payload || {}).filter(key =>
+      key.includes("lti-nrps") ||
+      key.includes("lti-ags") ||
+      key.toLowerCase().includes("namesrole") ||
+      key.toLowerCase().includes("membership") ||
+      key.toLowerCase().includes("lineitem") ||
+      key.toLowerCase().includes("endpoint")
+    ).sort()
+  };
+}
+
 function lti13BuildVerifiedSession(payload) {
   const context = lti13Claim(payload, "context") || {};
   const resourceLink = lti13Claim(payload, "resource_link") || {};
@@ -910,6 +970,7 @@ function lti13BuildVerifiedSession(payload) {
     token: sessionToken,
     sessionToken,
     source: "lti13",
+    automaticServices: lti13ExtractServiceClaims(payload),
     ltiVersion: "1.3",
     role: "teacher",
     roles,
