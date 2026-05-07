@@ -1128,14 +1128,28 @@ if (fs.existsSync(distPath)) {
 
 
 function lti13DiagnosticSessionsSnapshot() {
-  const raw =
-    Array.isArray(store?.sessions) ? store.sessions :
-    store?.sessions && typeof store.sessions === "object" ? Object.values(store.sessions) :
-    [];
+  const fromTokenSessions =
+    typeof tokenSessions !== "undefined" && tokenSessions instanceof Map
+      ? Array.from(tokenSessions.values())
+      : [];
 
-  return raw
+  const fromCookieSessions =
+    typeof sessions !== "undefined" && sessions instanceof Map
+      ? Array.from(sessions.values())
+      : [];
+
+  const combined = [...fromTokenSessions, ...fromCookieSessions]
     .filter(Boolean)
-    .filter((session) => session.source === "lti13" || session.automaticServices)
+    .filter((session) => session.source === "lti13" || session.automaticServices);
+
+  const seen = new Set();
+  return combined
+    .filter((session) => {
+      const key = session.sessionToken || session.token || JSON.stringify(session);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
     .slice(-10);
 }
 
