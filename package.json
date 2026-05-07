@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "start": "node scripts/fix-lti-routing-redirect-cache.cjs && node --check src/server.js && node src/server.js",
-    "check": "node --check src/server.js",
-    "dev:server": "node scripts/fix-lti-routing-redirect-cache.cjs && node --check src/server.js && node src/server.js",
-    "build": "node scripts/fix-lti-routing-redirect-cache.cjs && node --check src/server.js && vite build",
+    "start": "node scripts/fix-lti-routing-redirect-cache.cjs && node scripts/add-lti13-readiness.cjs && node --check src/server.js && node src/server.js",
+    "check": "node scripts/fix-lti-routing-redirect-cache.cjs && node scripts/add-lti13-readiness.cjs && node --check src/server.js",
+    "dev:server": "node scripts/fix-lti-routing-redirect-cache.cjs && node scripts/add-lti13-readiness.cjs && node --check src/server.js && node src/server.js",
+    "build": "node scripts/fix-lti-routing-redirect-cache.cjs && node scripts/add-lti13-readiness.cjs && node --check src/server.js && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc -b --pretty false"
   },
