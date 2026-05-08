@@ -1,5 +1,5 @@
 (function(){
-  var title='ניהול הלו״ז';
+  var title='ניהול הלוז של חטיבת הביניים';
   var stableDate=null;
 
   function todayText(){
