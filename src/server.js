@@ -411,6 +411,164 @@ function buildGradesCsv() {
   return csv;
 }
 
+
+const YANIV_MOODLE_WS_AUTOMATIC_READINESS_V1 = true;
+
+function moodleWsBaseUrl() {
+  return env("MOODLE_WS_BASE_URL", "https://moodlemoe.lms.education.gov.il").replace(/\/+$/, "");
+}
+
+function moodleWsStatus() {
+  const tokenConfigured = !!env("MOODLE_WS_TOKEN");
+  let host = "";
+
+  try {
+    host = new URL(moodleWsBaseUrl()).host;
+  } catch {
+    host = "INVALID_MOODLE_WS_BASE_URL";
+  }
+
+  return {
+    ok: true,
+    mode: "moodle-web-services-automatic-readiness",
+    configured: tokenConfigured,
+    base_url_host: host,
+    required_env: ["MOODLE_WS_TOKEN"],
+    optional_env: ["MOODLE_WS_BASE_URL"],
+    supported_automatic_functions: [
+      "core_webservice_get_site_info",
+      "core_enrol_get_enrolled_users"
+    ],
+    privacy: {
+      no_token_returned: true,
+      no_student_names_returned: true,
+      no_emails_returned: true,
+      no_save_performed: true
+    },
+    next_required: tokenConfigured
+      ? ["Test /api/moodle-ws/site-info and /api/moodle-ws/enrolled-users-preview."]
+      : ["Configure MOODLE_WS_TOKEN in Render only if Ministry Moodle provides a real Web Services token. Do not paste it in chat or GitHub."]
+  };
+}
+
+async function callMoodleWs(wsfunction, params = {}) {
+  const token = env("MOODLE_WS_TOKEN");
+
+  if (!token) {
+    return { ok: false, error: "MOODLE_WS_TOKEN_NOT_CONFIGURED" };
+  }
+
+  const endpoint = moodleWsBaseUrl() + "/webservice/rest/server.php";
+  const form = new URLSearchParams();
+  form.set("wstoken", token);
+  form.set("wsfunction", wsfunction);
+  form.set("moodlewsrestformat", "json");
+
+  for (const [key, value] of Object.entries(params || {})) {
+    if (value !== undefined && value !== null && value !== "") {
+      form.set(key, String(value));
+    }
+  }
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: form
+  });
+
+  const textBody = await response.text();
+  let json = null;
+
+  try {
+    json = JSON.parse(textBody);
+  } catch {
+    json = { raw: textBody.slice(0, 2000) };
+  }
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      http_status: response.status,
+      error: "MOODLE_WS_HTTP_ERROR",
+      preview: textBody.slice(0, 1000)
+    };
+  }
+
+  if (json && typeof json === "object" && (json.exception || json.errorcode)) {
+    return {
+      ok: false,
+      http_status: response.status,
+      error: "MOODLE_WS_EXCEPTION",
+      exception: json.exception || null,
+      errorcode: json.errorcode || null,
+      message: json.message || null
+    };
+  }
+
+  return { ok: true, http_status: response.status, data: json };
+}
+
+function latestLti13SessionForWs() {
+  const values = Array.from(tokenSessions.values()).filter(item => item && item.source === "lti13");
+  return values.length ? values[values.length - 1] : null;
+}
+
+function extractCourseIdCandidateForWs(session) {
+  if (!session) return null;
+
+  const directCandidates = [
+    session.courseId,
+    session.course_id,
+    session.contextId,
+    session.context_id
+  ];
+
+  for (const item of directCandidates) {
+    const n = Number(item);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+
+  const serialized = JSON.stringify(session);
+  const match = serialized.match(/CourseSection\/(\d+)\/bindings/i);
+
+  if (match && match[1]) {
+    const n = Number(match[1]);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+
+  return null;
+}
+
+function safeWsUserShape(user) {
+  const keys = Object.keys(user || {}).sort();
+  const roles = Array.isArray(user?.roles)
+    ? user.roles.map(role => role?.shortname || role?.roleid || role?.name).filter(Boolean)
+    : [];
+
+  const source = String(
+    user?.id ??
+    user?.userid ??
+    user?.username ??
+    user?.idnumber ??
+    user?.email ??
+    user?.fullname ??
+    ""
+  );
+
+  return {
+    user_hash: crypto.createHash("sha256").update(source).digest("hex").slice(0, 16),
+    keys,
+    roles,
+    has_id: user?.id != null || user?.userid != null,
+    has_username: Boolean(user?.username),
+    has_fullname: Boolean(user?.fullname),
+    has_firstname: Boolean(user?.firstname),
+    has_lastname: Boolean(user?.lastname),
+    has_email: Boolean(user?.email),
+    has_idnumber: Boolean(user?.idnumber)
+  };
+}
+
 const app = express();
 app.set("trust proxy", true);
 app.use(helmet({ contentSecurityPolicy: false, frameguard: false }));
@@ -602,6 +760,222 @@ app.get("/api/imports/overview", (req, res) => {
   noStore(res);
   if (!sessionFromRequest(req)) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
   res.json({ students_count: store.students.length, grade_items_count: store.gradeItems.length || store.tasks.length, grades_count: store.grades.length, chapters_count: store.chapters.length, tasks_count: store.tasks.length, log_events_count: store.logEvents.length || store.activitySessions.length, batches: [...store.importBatches].reverse() });
+});
+
+
+const YANIV_MOODLE_WS_AUTOMATIC_ROUTES_V1 = true;
+
+app.get("/api/moodle-ws/status", (_req, res) => {
+  noStore(res);
+  res.json({
+    ...moodleWsStatus(),
+    now: new Date().toISOString()
+  });
+});
+
+app.get("/api/moodle-ws/site-info", async (_req, res) => {
+  noStore(res);
+
+  try {
+    const status = moodleWsStatus();
+
+    if (!status.configured) {
+      return res.status(503).json({
+        ok: false,
+        mode: "moodle-web-services-site-info",
+        error: "MOODLE_WS_TOKEN_NOT_CONFIGURED",
+        status,
+        privacy: {
+          no_token_returned: true,
+          no_student_names_returned: true,
+          no_emails_returned: true,
+          no_save_performed: true
+        }
+      });
+    }
+
+    const result = await callMoodleWs("core_webservice_get_site_info");
+
+    if (!result.ok) {
+      return res.status(502).json({
+        ok: false,
+        mode: "moodle-web-services-site-info",
+        ...result,
+        privacy: {
+          no_token_returned: true,
+          no_student_names_returned: true,
+          no_emails_returned: true,
+          no_save_performed: true
+        }
+      });
+    }
+
+    const data = result.data || {};
+    let siteurlHost = null;
+
+    try {
+      siteurlHost = data.siteurl ? new URL(data.siteurl).host : null;
+    } catch {
+      siteurlHost = "INVALID_SITE_URL";
+    }
+
+    res.json({
+      ok: true,
+      mode: "moodle-web-services-site-info",
+      http_status: result.http_status,
+      site: {
+        sitename_present: Boolean(data.sitename),
+        siteurl_host: siteurlHost,
+        userid_present: data.userid != null,
+        username_present: Boolean(data.username),
+        fullname_present: Boolean(data.fullname),
+        functions_count: Array.isArray(data.functions) ? data.functions.length : null,
+        has_core_enrol_get_enrolled_users: Array.isArray(data.functions)
+          ? data.functions.some(fn => fn && fn.name === "core_enrol_get_enrolled_users")
+          : null
+      },
+      privacy: {
+        no_token_returned: true,
+        no_student_names_returned: true,
+        no_emails_returned: true,
+        no_save_performed: true
+      },
+      now: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      mode: "moodle-web-services-site-info",
+      error: "MOODLE_WS_SITE_INFO_FAILED",
+      message: error.message,
+      privacy: {
+        no_token_returned: true,
+        no_student_names_returned: true,
+        no_emails_returned: true,
+        no_save_performed: true
+      }
+    });
+  }
+});
+
+app.get("/api/moodle-ws/enrolled-users-preview", async (req, res) => {
+  noStore(res);
+
+  try {
+    const status = moodleWsStatus();
+
+    if (!status.configured) {
+      return res.status(503).json({
+        ok: false,
+        mode: "moodle-web-services-enrolled-users-preview-no-save",
+        error: "MOODLE_WS_TOKEN_NOT_CONFIGURED",
+        status,
+        privacy: {
+          no_token_returned: true,
+          no_student_names_returned: true,
+          no_emails_returned: true,
+          no_save_performed: true
+        }
+      });
+    }
+
+    const session = sessionFromRequest(req) || latestLti13SessionForWs();
+    const queryCourseId = typeof req.query?.courseid === "string" ? Number(req.query.courseid) : null;
+    const courseId = Number.isFinite(queryCourseId) && queryCourseId > 0
+      ? queryCourseId
+      : extractCourseIdCandidateForWs(session);
+
+    if (!courseId) {
+      return res.status(409).json({
+        ok: false,
+        mode: "moodle-web-services-enrolled-users-preview-no-save",
+        error: "NO_COURSE_ID_CANDIDATE",
+        next_required: [
+          "Open the Moodle LTI tool first.",
+          "If the course id is still missing, pass ?courseid=<real Moodle course id> after verifying it from Moodle."
+        ],
+        privacy: {
+          no_token_returned: true,
+          no_student_names_returned: true,
+          no_emails_returned: true,
+          no_save_performed: true
+        }
+      });
+    }
+
+    const result = await callMoodleWs("core_enrol_get_enrolled_users", { courseid: courseId });
+
+    if (!result.ok) {
+      return res.status(502).json({
+        ok: false,
+        mode: "moodle-web-services-enrolled-users-preview-no-save",
+        courseid_candidate: courseId,
+        ...result,
+        privacy: {
+          no_token_returned: true,
+          no_student_names_returned: true,
+          no_emails_returned: true,
+          no_save_performed: true
+        }
+      });
+    }
+
+    const users = Array.isArray(result.data) ? result.data : [];
+    const roleCounts = {};
+
+    for (const user of users) {
+      const roles = Array.isArray(user?.roles) ? user.roles : [];
+      if (!roles.length) roleCounts.NO_ROLE = (roleCounts.NO_ROLE || 0) + 1;
+
+      for (const role of roles) {
+        const key = String(role?.shortname || role?.name || role?.roleid || "UNKNOWN_ROLE");
+        roleCounts[key] = (roleCounts[key] || 0) + 1;
+      }
+    }
+
+    res.json({
+      ok: true,
+      mode: "moodle-web-services-enrolled-users-preview-no-save",
+      courseid_candidate: courseId,
+      users_count: users.length,
+      role_counts: roleCounts,
+      field_presence: {
+        has_id_count: users.filter(user => user?.id != null || user?.userid != null).length,
+        has_username_count: users.filter(user => Boolean(user?.username)).length,
+        has_fullname_count: users.filter(user => Boolean(user?.fullname)).length,
+        has_firstname_count: users.filter(user => Boolean(user?.firstname)).length,
+        has_lastname_count: users.filter(user => Boolean(user?.lastname)).length,
+        has_email_count: users.filter(user => Boolean(user?.email)).length,
+        has_idnumber_count: users.filter(user => Boolean(user?.idnumber)).length,
+        keys_union: Array.from(new Set(users.flatMap(user => Object.keys(user || {})))).sort().slice(0, 120)
+      },
+      sample_users_sanitized: users.slice(0, 8).map(safeWsUserShape),
+      privacy: {
+        no_token_returned: true,
+        no_student_names_returned: true,
+        no_emails_returned: true,
+        no_save_performed: true
+      },
+      next_required: [
+        "If users_count > 0 and has_fullname_count > 0, implement reviewed automatic save from Moodle Web Services.",
+        "Do not save until course isolation and privacy are verified."
+      ],
+      now: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      mode: "moodle-web-services-enrolled-users-preview-no-save",
+      error: "MOODLE_WS_ENROLLED_USERS_PREVIEW_FAILED",
+      message: error.message,
+      privacy: {
+        no_token_returned: true,
+        no_student_names_returned: true,
+        no_emails_returned: true,
+        no_save_performed: true
+      }
+    });
+  }
 });
 
 app.get("/api/launches", (_req, res) => res.json([...store.launches].reverse()));
@@ -1814,6 +2188,7 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`moodle-teacher-hub running on port ${PORT}`);
   console.log(`canonical LTI endpoint: ${CANONICAL_LTI_ENDPOINT}`);
 });
+
 
 
 
