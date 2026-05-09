@@ -755,12 +755,51 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
       });
     }
 
-    const tokenUrl = env("LTI13_TOKEN_URL");
+    /* YANIV_NRPS_TOKEN_DISCOVERY_FIX_20260509_START */
+    const configuredTokenUrl = env("LTI13_TOKEN_URL");
+    const discoveryUrl = env(
+      "LTI13_OPENID_CONFIGURATION_URL",
+      env("LTI13_ISSUER").replace(/\/+$/, "") + "/mod/lti/openid-configuration.php"
+    );
+
+    let tokenUrl = configuredTokenUrl;
+    let tokenEndpointSource = "env";
+    let discoveryHttpStatus = null;
+    let discoveryErrorPreview = "";
+    let discoveryTokenEndpoint = "";
+    let discoveryAuthorizationEndpoint = "";
+    let discoveryJwksUri = "";
+    let discoveryScopes = [];
+
+    try {
+      const discoveryResponse = await fetch(discoveryUrl, {
+        headers: { Accept: "application/json" }
+      });
+      discoveryHttpStatus = discoveryResponse.status;
+      const discoveryText = await discoveryResponse.text();
+
+      if (discoveryResponse.ok) {
+        const discoveryJson = JSON.parse(discoveryText);
+        discoveryTokenEndpoint = discoveryJson.token_endpoint || "";
+        discoveryAuthorizationEndpoint = discoveryJson.authorization_endpoint || "";
+        discoveryJwksUri = discoveryJson.jwks_uri || "";
+        discoveryScopes = Array.isArray(discoveryJson.scopes_supported) ? discoveryJson.scopes_supported : [];
+        if (discoveryTokenEndpoint) {
+          tokenUrl = discoveryTokenEndpoint;
+          tokenEndpointSource = "openid-configuration";
+        }
+      } else {
+        discoveryErrorPreview = nrpsPreviewSafeText(discoveryText, 600);
+      }
+    } catch (error) {
+      discoveryErrorPreview = nrpsPreviewSafeText(error?.message || error, 600);
+    }
+    /* YANIV_NRPS_TOKEN_DISCOVERY_FIX_20260509_END */
     const clientId = env("LTI13_CLIENT_ID");
     const keyId = env("LTI13_KEY_ID");
     const privateKeyRaw = env("LTI13_PRIVATE_KEY_PEM");
-    const privateKeyPem = privateKeyRaw.includes("\\n")
-      ? privateKeyRaw.replace(/\\n/g, String.fromCharCode(10))
+    const privateKeyPem = privateKeyRaw.includes("\n")
+      ? privateKeyRaw.replace(/\n/g, String.fromCharCode(10))
       : privateKeyRaw;
 
     const now = Math.floor(Date.now() / 1000);
@@ -769,8 +808,8 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
       iss: clientId,
       sub: clientId,
       aud: tokenUrl,
-      iat: now,
-      exp: now + 300,
+      iat: now - 5,
+      exp: now + 60,
       jti: crypto.randomUUID()
     };
 
@@ -812,6 +851,20 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
         token_http_status: tokenResponse.status,
         token_error: tokenJson.error || "TOKEN_REQUEST_FAILED",
         token_error_description: nrpsPreviewSafeText(tokenJson.error_description || tokenText),
+        token_diagnostics: {
+          configured_token_url_host: configuredTokenUrl ? new URL(configuredTokenUrl).host : null,
+          active_token_url_host: tokenUrl ? new URL(tokenUrl).host : null,
+          active_token_url_path: tokenUrl ? new URL(tokenUrl).pathname : null,
+          token_endpoint_source: tokenEndpointSource,
+          discovery_url: discoveryUrl,
+          discovery_http_status: discoveryHttpStatus,
+          discovery_error_preview: discoveryErrorPreview || null,
+          discovery_token_endpoint_host: discoveryTokenEndpoint ? new URL(discoveryTokenEndpoint).host : null,
+          discovery_token_endpoint_path: discoveryTokenEndpoint ? new URL(discoveryTokenEndpoint).pathname : null,
+          discovery_authorization_endpoint_host: discoveryAuthorizationEndpoint ? new URL(discoveryAuthorizationEndpoint).host : null,
+          discovery_jwks_uri_host: discoveryJwksUri ? new URL(discoveryJwksUri).host : null,
+          discovery_scopes_has_nrps: discoveryScopes.includes("https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly")
+        },
         privacy: {
           no_secrets_returned: true,
           no_access_token_returned: true,
@@ -878,6 +931,11 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
         client_id: clientId,
         deployment_id: env("LTI13_DEPLOYMENT_ID"),
         membership_url_host: new URL(membershipUrl).host,
+        token_endpoint_source: tokenEndpointSource,
+        active_token_url_host: tokenUrl ? new URL(tokenUrl).host : null,
+        active_token_url_path: tokenUrl ? new URL(tokenUrl).pathname : null,
+        discovery_http_status: discoveryHttpStatus,
+        discovery_scopes_has_nrps: discoveryScopes.includes("https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"),
         service_versions: statusJson?.service_claims?.nrps?.service_versions || []
       },
       privacy: {
