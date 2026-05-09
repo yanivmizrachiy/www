@@ -1190,7 +1190,16 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
       membership_http_status: memberResponse.status,
       members_count: members.length,
       role_counts: roleCounts,
-      sample_members_sanitized: members.slice(0, 8).map(nrpsPreviewSanitizeMember),
+      member_field_presence: {
+        has_name_count: members.filter(member => Boolean(member?.name)).length,
+        has_given_name_count: members.filter(member => Boolean(member?.given_name)).length,
+        has_family_name_count: members.filter(member => Boolean(member?.family_name)).length,
+        has_email_count: members.filter(member => Boolean(member?.email)).length,
+        has_user_id_count: members.filter(member => Boolean(member?.user_id || member?.userId || member?.sub)).length,
+        has_lis_person_sourcedid_count: members.filter(member => Boolean(member?.lis_person_sourcedid || member?.lis_person_sourcedId)).length,
+        has_lis_result_sourcedid_count: members.filter(member => Boolean(member?.lis_result_sourcedid || member?.lis_result_sourcedId)).length,
+        member_keys_union: Array.from(new Set(members.flatMap(member => Object.keys(member || {})))).sort().slice(0, 80)
+      },      sample_members_sanitized: members.slice(0, 8).map(nrpsPreviewSanitizeMember),
       source: {
         issuer: env("LTI13_ISSUER"),
         client_id: clientId,
@@ -1796,4 +1805,5 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`moodle-teacher-hub running on port ${PORT}`);
   console.log(`canonical LTI endpoint: ${CANONICAL_LTI_ENDPOINT}`);
 });
+
 
