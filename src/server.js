@@ -328,7 +328,10 @@ function normalizeImportedStudent(row, session) {
   const fullName = pickImportValue(row, ["שם מלא", "Full name", "שם", "Name"]) || [firstName, lastName].filter(Boolean).join(" ").trim();
   const email = pickImportValue(row, ["כתובת דואל", "כתובת דוא״ל", "דואל", "דוא״ל", "דואר אלקטרוני", "Email address", "Email"]);
   const externalUsername = pickImportValue(row, ["שם משתמש", "Username", "User name", "login", "מזהה משתמש"]);
-  const externalId = pickImportValue(row, ["מזהה", "ID number", "idnumber", "מספר זהות", "תז", "ת.ז.", "User ID", "user_id"]);
+  const moodleUserId = pickImportValue(row, ["user_id", "User ID", "מזהה משתמש", "ID", "id", "מזהה"]);
+  const lisPersonSourcedId = pickImportValue(row, ["lis_person_sourcedid", "lis_person_sourcedId", "sourcedid", "Source ID", "Sourced ID"]);
+  const idNumber = pickImportValue(row, ["ID number", "idnumber", "מספר זהות", "תז", "ת.ז.", "מספר מזהה"]);
+  const externalId = moodleUserId || lisPersonSourcedId || idNumber || externalUsername || email || fullName;
   const identity = externalId || email || externalUsername || fullName;
 
   if (!fullName || !identity) return null;
@@ -342,6 +345,9 @@ function normalizeImportedStudent(row, session) {
     email: email || null,
     external_username: externalUsername || null,
     external_id: externalId || identity,
+    moodle_user_id: moodleUserId || null,
+    lis_person_sourcedid: lisPersonSourcedId || null,
+    id_number: idNumber || null,
     space_id: spaceId,
     source: "moodle-participants-import",
     updated_at: now,
@@ -386,6 +392,9 @@ function importedStudentDto(student) {
     email: student.email || null,
     external_username: student.external_username || student.externalUsername || null,
     external_id: student.external_id || student.externalId || null,
+    moodle_user_id: student.moodle_user_id || student.moodleUserId || null,
+    lis_person_sourcedid: student.lis_person_sourcedid || student.lisPersonSourcedId || null,
+    id_number: student.id_number || student.idNumber || null,
     updated_at: student.updated_at || student.updatedAt || null
   };
 }
@@ -1805,5 +1814,6 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`moodle-teacher-hub running on port ${PORT}`);
   console.log(`canonical LTI endpoint: ${CANONICAL_LTI_ENDPOINT}`);
 });
+
 
 
