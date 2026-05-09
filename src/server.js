@@ -823,25 +823,60 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
 
     const clientAssertion = signingInput + "." + signature;
 
-    const tokenBody = new URLSearchParams({
-      grant_type: "client_credentials",
-      client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-      client_assertion: clientAssertion,
-      scope: "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"
-    });
+    /* YANIV_NRPS_TOKEN_CLIENT_ID_DIAG_20260509_START */
+    function buildTokenBody(includeClientId) {
+      const entries = {
+        grant_type: "client_credentials",
+        client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+        client_assertion: clientAssertion,
+        scope: "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"
+      };
+      if (includeClientId) entries.client_id = clientId;
+      return new URLSearchParams(entries);
+    }
 
-    const tokenResponse = await fetch(tokenUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Accept: "application/json"
-      },
-      body: tokenBody.toString()
-    });
+    async function requestTokenVariant(includeClientId) {
+      const body = buildTokenBody(includeClientId);
+      const response = await fetch(tokenUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json"
+        },
+        body: body.toString()
+      });
+      const text = await response.text();
+      let json = {};
+      try { json = JSON.parse(text); } catch {}
+      return {
+        includeClientId,
+        response,
+        text,
+        json,
+        ok: response.ok && Boolean(json.access_token)
+      };
+    }
 
-    const tokenText = await tokenResponse.text();
-    let tokenJson = {};
-    try { tokenJson = JSON.parse(tokenText); } catch {}
+    let tokenAttempt = await requestTokenVariant(false);
+    let fallbackAttempt = null;
+    if (!tokenAttempt.ok) {
+      fallbackAttempt = await requestTokenVariant(true);
+      if (fallbackAttempt.ok) tokenAttempt = fallbackAttempt;
+    }
+
+    const tokenResponse = tokenAttempt.response;
+    const tokenText = tokenAttempt.text;
+    const tokenJson = tokenAttempt.json;
+    const tokenVariantUsed = tokenAttempt.includeClientId ? "with_client_id" : "without_client_id";
+    const tokenFallbackSummary = fallbackAttempt ? {
+      tried: true,
+      include_client_id: true,
+      http_status: fallbackAttempt.response.status,
+      got_access_token: Boolean(fallbackAttempt.json?.access_token),
+      error: fallbackAttempt.json?.error || null,
+      error_description_preview: nrpsPreviewSafeText(fallbackAttempt.json?.error_description || fallbackAttempt.text, 500)
+    } : { tried: false };
+    /* YANIV_NRPS_TOKEN_CLIENT_ID_DIAG_20260509_END */
 
     if (!tokenResponse.ok || !tokenJson.access_token) {
       return res.status(502).json({
@@ -850,6 +885,8 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
         stage: "token",
         token_http_status: tokenResponse.status,
         token_error: tokenJson.error || "TOKEN_REQUEST_FAILED",
+        token_variant_used: tokenVariantUsed,
+        token_fallback_with_client_id: tokenFallbackSummary,
         token_error_description: nrpsPreviewSafeText(tokenJson.error_description || tokenText),
         token_diagnostics: {
           configured_token_url_host: configuredTokenUrl ? new URL(configuredTokenUrl).host : null,
@@ -863,7 +900,8 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
           discovery_token_endpoint_path: discoveryTokenEndpoint ? new URL(discoveryTokenEndpoint).pathname : null,
           discovery_authorization_endpoint_host: discoveryAuthorizationEndpoint ? new URL(discoveryAuthorizationEndpoint).host : null,
           discovery_jwks_uri_host: discoveryJwksUri ? new URL(discoveryJwksUri).host : null,
-          discovery_scopes_has_nrps: discoveryScopes.includes("https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly")
+          discovery_scopes_has_nrps: discoveryScopes.includes("https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"),
+          client_id_body_variant_tested: true
         },
         privacy: {
           no_secrets_returned: true,
@@ -922,6 +960,7 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
       mode: "lti13-nrps-preview-no-save",
       stage: "membership",
       token_http_status: tokenResponse.status,
+      token_variant_used: tokenVariantUsed,
       membership_http_status: memberResponse.status,
       members_count: members.length,
       role_counts: roleCounts,
