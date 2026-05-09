@@ -808,10 +808,12 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
       iss: clientId,
       sub: clientId,
       aud: tokenUrl,
+      "https://purl.imsglobal.org/spec/lti/claim/deployment_id": env("LTI13_DEPLOYMENT_ID"),
       iat: now - 5,
       exp: now + 60,
       jti: crypto.randomUUID()
     };
+    /* YANIV_NRPS_DEPLOYMENT_CLAIM_20260509 */
 
     const signingInput = nrpsPreviewBase64UrlJson(header) + "." + nrpsPreviewBase64UrlJson(payload);
     const signature = crypto
@@ -901,7 +903,8 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
           discovery_authorization_endpoint_host: discoveryAuthorizationEndpoint ? new URL(discoveryAuthorizationEndpoint).host : null,
           discovery_jwks_uri_host: discoveryJwksUri ? new URL(discoveryJwksUri).host : null,
           discovery_scopes_has_nrps: discoveryScopes.includes("https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"),
-          client_id_body_variant_tested: true
+          client_id_body_variant_tested: true,
+          deployment_id_claim_in_assertion: true
         },
         privacy: {
           no_secrets_returned: true,
