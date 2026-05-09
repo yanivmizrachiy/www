@@ -1142,7 +1142,7 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
       method: "GET",
       headers: {
         Authorization: "Bearer " + tokenJson.access_token,
-        Accept: "application/vnd.ims.lti-nrps.v2.membershipcontainer+json, application/json"
+        Accept: "application/vnd.ims.lti-nrps.v2.membershipcontainer+json"
       }
     });
 
@@ -1796,3 +1796,4 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`moodle-teacher-hub running on port ${PORT}`);
   console.log(`canonical LTI endpoint: ${CANONICAL_LTI_ENDPOINT}`);
 });
+
