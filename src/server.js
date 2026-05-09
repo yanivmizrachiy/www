@@ -641,6 +641,229 @@ function lti13PlatformAuthUrl(iss) {
 
 
 
+
+
+/* YANIV_LTI13_TOKEN_MATRIX_DIAG_20260510_START */
+function lti13TokenMatrixB64Url(input) {
+  return Buffer.from(input)
+    .toString("base64")
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+}
+
+function lti13TokenMatrixB64UrlJson(obj) {
+  return lti13TokenMatrixB64Url(JSON.stringify(obj));
+}
+
+function lti13TokenMatrixSafeText(value, max = 900) {
+  return String(value || "")
+    .replace(/Bearer\s+[A-Za-z0-9._~+\/-]+/gi, "Bearer ***")
+    .replace(/access_token["']?\s*[:=]\s*["']?[^"',}\s]+/gi, "access_token:***")
+    .slice(0, max);
+}
+
+function lti13TokenMatrixBodyKind(text) {
+  const t = String(text || "").trimStart();
+  if (t.startsWith("{")) return "json";
+  if (/<!doctype html|<html/i.test(t)) return "html";
+  return "other";
+}
+
+function lti13TokenMatrixHtmlTitle(text) {
+  const match = String(text || "").match(/<title>(.*?)<\/title>/is);
+  return match ? match[1].replace(/\s+/g, " ").trim().slice(0, 180) : null;
+}
+
+app.get("/api/lti13/token-matrix", async (req, res) => {
+  lti13NoStore(res);
+
+  const envStatus = lti13EnvStatus();
+  if (!envStatus.configured) {
+    return res.status(503).json({
+      ok: false,
+      mode: "lti13-token-matrix-no-save",
+      stage: "env",
+      missing: envStatus.missing,
+      privacy: { no_secrets_returned: true, no_tokens_returned: true, no_student_names_returned: true, no_save_performed: true }
+    });
+  }
+
+  try {
+    const configuredTokenUrl = env("LTI13_TOKEN_URL");
+    const clientId = env("LTI13_CLIENT_ID");
+    const keyId = env("LTI13_KEY_ID");
+    const deploymentId = env("LTI13_DEPLOYMENT_ID");
+    const privateKeyRaw = env("LTI13_PRIVATE_KEY_PEM");
+    const privateKeyPem = privateKeyRaw.includes("\n")
+      ? privateKeyRaw.replace(/\n/g, String.fromCharCode(10))
+      : privateKeyRaw;
+
+    const discoveryUrl = env(
+      "LTI13_OPENID_CONFIGURATION_URL",
+      env("LTI13_ISSUER").replace(/\/+$/, "") + "/mod/lti/openid-configuration.php"
+    );
+
+    let tokenUrl = configuredTokenUrl;
+    let discovery = {
+      url: discoveryUrl,
+      http_status: null,
+      token_endpoint_source: "env",
+      token_endpoint_path: new URL(configuredTokenUrl).pathname,
+      scopes_has_nrps: false,
+      error_preview: null
+    };
+
+    try {
+      const discoveryResponse = await fetch(discoveryUrl, { headers: { Accept: "application/json" } });
+      discovery.http_status = discoveryResponse.status;
+      const discoveryText = await discoveryResponse.text();
+      if (discoveryResponse.ok) {
+        const discoveryJson = JSON.parse(discoveryText);
+        if (discoveryJson.token_endpoint) {
+          tokenUrl = discoveryJson.token_endpoint;
+          discovery.token_endpoint_source = "openid-configuration";
+          discovery.token_endpoint_path = new URL(tokenUrl).pathname;
+        }
+        const scopes = Array.isArray(discoveryJson.scopes_supported) ? discoveryJson.scopes_supported : [];
+        discovery.scopes_has_nrps = scopes.includes("https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly");
+      } else {
+        discovery.error_preview = lti13TokenMatrixSafeText(discoveryText, 500);
+      }
+    } catch (error) {
+      discovery.error_preview = lti13TokenMatrixSafeText(error?.message || error, 500);
+    }
+
+    async function tryVariant(variant) {
+      const now = Math.floor(Date.now() / 1000);
+
+      const header = { alg: "RS256", typ: "JWT" };
+      if (variant.includeKid) header.kid = keyId;
+
+      const payload = {
+        iss: clientId,
+        sub: clientId,
+        aud: variant.audArray ? [tokenUrl] : tokenUrl,
+        iat: now - 5,
+        exp: now + 60,
+        jti: crypto.randomUUID()
+      };
+
+      if (variant.includeDeploymentId) {
+        payload["https://purl.imsglobal.org/spec/lti/claim/deployment_id"] = deploymentId;
+      }
+
+      const signingInput =
+        lti13TokenMatrixB64UrlJson(header) + "." + lti13TokenMatrixB64UrlJson(payload);
+
+      const signature = crypto
+        .sign("RSA-SHA256", Buffer.from(signingInput), privateKeyPem)
+        .toString("base64")
+        .replace(/=/g, "")
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_");
+
+      const clientAssertion = signingInput + "." + signature;
+
+      const entries = {
+        grant_type: "client_credentials",
+        client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+        client_assertion: clientAssertion,
+        scope: "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"
+      };
+
+      if (variant.includeClientIdInBody) entries.client_id = clientId;
+
+      const response = await fetch(tokenUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json"
+        },
+        body: new URLSearchParams(entries).toString()
+      });
+
+      const text = await response.text();
+      let json = {};
+      try { json = JSON.parse(text); } catch {}
+
+      return {
+        name: variant.name,
+        http_status: response.status,
+        ok_http: response.ok,
+        got_access_token: Boolean(json.access_token),
+        body_kind: lti13TokenMatrixBodyKind(text),
+        html_title: lti13TokenMatrixHtmlTitle(text),
+        json_error: json.error || null,
+        json_error_description_preview: lti13TokenMatrixSafeText(json.error_description || "", 500) || null,
+        body_preview: json.access_token ? null : lti13TokenMatrixSafeText(text, 350),
+        variant: {
+          aud: variant.audArray ? "array" : "string",
+          include_deployment_id: variant.includeDeploymentId,
+          include_client_id_body: variant.includeClientIdInBody,
+          include_kid: variant.includeKid
+        }
+      };
+    }
+
+    const variants = [];
+    for (const audArray of [false, true]) {
+      for (const includeDeploymentId of [true, false]) {
+        for (const includeClientIdInBody of [false, true]) {
+          variants.push({
+            name: "aud_" + (audArray ? "array" : "string") +
+              "__deployment_" + (includeDeploymentId ? "yes" : "no") +
+              "__clientidbody_" + (includeClientIdInBody ? "yes" : "no") +
+              "__kid_yes",
+            audArray,
+            includeDeploymentId,
+            includeClientIdInBody,
+            includeKid: true
+          });
+        }
+      }
+    }
+
+    const results = [];
+    for (const variant of variants) {
+      results.push(await tryVariant(variant));
+    }
+
+    const winner = results.find(item => item.got_access_token) || null;
+
+    return res.json({
+      ok: Boolean(winner),
+      mode: "lti13-token-matrix-no-save",
+      stage: winner ? "token-issued" : "token-failed",
+      discovery,
+      results,
+      winner: winner ? {
+        name: winner.name,
+        variant: winner.variant,
+        http_status: winner.http_status
+      } : null,
+      privacy: {
+        no_access_token_returned: true,
+        no_private_key_returned: true,
+        no_client_assertion_returned: true,
+        no_student_names_returned: true,
+        no_save_performed: true
+      },
+      now: new Date().toISOString()
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      mode: "lti13-token-matrix-no-save",
+      stage: "unexpected",
+      error: "TOKEN_MATRIX_FAILED",
+      detail: lti13TokenMatrixSafeText(error?.message || error, 900),
+      privacy: { no_secrets_returned: true, no_tokens_returned: true, no_save_performed: true }
+    });
+  }
+});
+/* YANIV_LTI13_TOKEN_MATRIX_DIAG_20260510_END */
+
 /* YANIV_NRPS_PREVIEW_SAFE_20260509_START */
 function nrpsPreviewBase64Url(input) {
   return Buffer.from(input)
