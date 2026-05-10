@@ -325,3 +325,19 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 
 אין לשים ב־docs נתוני תלמידים אמיתיים, קבצי Moodle, גיבויי JSON או secrets.
 <!-- MTH_DOCS_ORGANIZATION_20260510_END -->
+
+<!-- MTH_SCRIPTS_ORGANIZATION_20260510_START -->
+## Scripts Organization — 2026-05-10
+
+תיקיית `scripts/` מאורגנת לפי תפקיד:
+
+- `scripts/maintenance/` — סקריפטים שנדרשים ל־npm lifecycle או תחזוקה בטוחה.
+- `scripts/audit/` — בדיקות ואימותים read-only.
+- `scripts/termux/` — כלי Termux/מובייל.
+- `scripts/dev/` — כלי פיתוח מקומי.
+- `scripts/archive-candidates/` — סקריפטים חד־פעמיים/ישנים לבדיקה לפני ארכיון.
+
+אם סקריפט מופיע ב־`package.json`, אסור להזיז אותו בלי לעדכן את `package.json` ולהריץ `npm run check` ו־`npm run build`.
+
+אין לשים secrets, נתוני תלמידים, גיבויי Moodle או קבצי CSV/XLSX בתוך scripts.
+<!-- MTH_SCRIPTS_ORGANIZATION_20260510_END -->
