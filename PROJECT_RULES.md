@@ -295,3 +295,15 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 - Moodle use is allowed only after real launch evidence is recorded in STATE/evidence-log.md.
 
 <!-- MTH_PRODUCTION_HARDENING_END -->
+
+<!-- MTH_RUNTIME_DATA_SAFETY_20260510_START -->
+## Runtime Data Safety — 2026-05-10
+
+נתוני Moodle אמיתיים אינם חלק מקוד המקור.
+
+אסור להכניס ל־GitHub: data/store.json, גיבויי תלמידים, קבצי Participants/Gradebook/Logs, שמות, מיילים, ציונים, לוגים, tokens או secrets.
+
+הקובץ data/store.json הוא runtime/local בלבד. הדוגמה הסינתטית היחידה היא docs/examples/store.example.json.
+
+השלב הבא: persistence קבוע ואז מיפוי NRPS ↔ Participants.
+<!-- MTH_RUNTIME_DATA_SAFETY_20260510_END -->
