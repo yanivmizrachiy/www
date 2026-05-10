@@ -341,3 +341,109 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 
 אין לשים secrets, נתוני תלמידים, גיבויי Moodle או קבצי CSV/XLSX בתוך scripts.
 <!-- MTH_SCRIPTS_ORGANIZATION_20260510_END -->
+
+<!-- MTH_REPO_ORGANIZATION_MASTER_20260510_START -->
+## Repo Organization Master Plan — 2026-05-10
+
+הריפו מאורגן סביב מקור אמת אחד ברור.
+
+### מה כבר הצלחנו
+
+- LTI 1.3 עובד מתוך Moodle.
+- NRPS עובד.
+- NRPS החזיר 62 משתתפים אמיתיים: 59 תלמידים ו־3 מורים.
+- ייבוא Participants אמיתי הצליח.
+- נקלטו 62 שורות.
+- עמוד תלמידים מציג שמות ומיילים אמיתיים.
+- סודר מקור אמת.
+- סודר סיווג קבצים.
+- `data/store.json` יצא ממקור tracked.
+- `docs/` אורגן לפי תפקיד.
+- `scripts/` אורגן לפי תפקיד.
+
+### מבנה עבודה מחייב
+
+- `PROJECT_RULES.md` — מקור אמת עליון.
+- `README.md` — שער כניסה קצר.
+- `STATE/project-status.md` — סטטוס עדכני.
+- `STATE/evidence-log.md` — הוכחות aggregate בלבד.
+- `STATE/file-classification/` — מפת סיווג קבצים.
+- `docs/` — תיעוד לפי תחומים.
+- `scripts/` — אוטומציות לפי תפקיד.
+- `src/` — קוד פעיל.
+- `supabase/` — שכבת persistence עתידית לבדיקה.
+- `data/` — runtime/local בלבד, לא source.
+
+### מה נשאר להמשך
+
+1. לאמת גיבוי מקומי לתלמידים שיובאו.
+2. למזג את שרשרת PRs רק אחרי בדיקה ובסדר הנכון.
+3. לבנות persistence קבוע.
+4. לבנות מיפוי NRPS ↔ Participants.
+5. לבנות Gradebook.
+6. לבנות Logs וזמן תרגול.
+7. לבנות דוחות וייצוא.
+
+אין לסמן ציונים, לוגים, זמן תרגול או דוחות כעובדים עד שיש מקור נתונים אמיתי ואימות.
+<!-- MTH_REPO_ORGANIZATION_MASTER_20260510_END -->
+
+<!-- MTH_PERSISTENCE_PLAN_20260510_START -->
+## Persistence Plan — 2026-05-10
+
+לפני הרחבה לציונים, לוגים, זמן תרגול ודוחות — חובה לבנות persistence קבוע.
+
+### למה
+
+המערכת כבר הצליחה לייבא Participants אמיתי ולהציג שמות תלמידים, אבל נתונים כאלה חייבים להישמר בשכבת אחסון קבועה ולא להישען על runtime זמני.
+
+### שכבת persistence עתידית
+
+הכיוון המועדף הוא Supabase, אבל אין להריץ SQL, migrations או functions בלי בדיקה ואישור.
+
+### הפרדה מחייבת
+
+כל נתון שמור חייב להיות מופרד לפי:
+
+- issuer
+- clientId
+- deploymentId
+- course/context
+- teacher/user
+- importBatch
+- sourceType
+
+### סדר עבודה
+
+1. לתעד ולאשר תוכנית persistence.
+2. לבדוק קבצי Supabase קיימים.
+3. ליצור schema בטוח.
+4. לשמור import_batches ו־students.
+5. להוכיח reload/restart.
+6. לבנות מיפוי NRPS ↔ Participants.
+7. רק אחר כך Gradebook.
+8. רק אחר כך Logs / זמן תרגול.
+9. רק אחר כך דוחות.
+
+אין לסמן persistence כעובד עד שנתוני תלמידים אמיתיים נטענים מחדש אחרי restart/deploy בלי להיכנס לגיט.
+<!-- MTH_PERSISTENCE_PLAN_20260510_END -->
+
+<!-- MTH_SUPABASE_REVIEW_20260510_START -->
+## Supabase Review — 2026-05-10
+
+לפני שימוש ב־Supabase כ־persistence קבוע, חובה לסקור את כל קבצי Supabase הקיימים.
+
+אסור להריץ:
+- SQL
+- migrations
+- Supabase Functions
+- database deploy
+- service role usage
+
+לפני בדיקה ואישור.
+
+כל קובץ תחת `supabase/` הוא REVIEW_REQUIRED עד שנבדק.
+
+ה־schema העתידי חייב לתמוך בהפרדה לפי issuer/clientId/deploymentId/course/teacher/importBatch/sourceType.
+
+אין להכניס secrets, service-role keys, exports או נתוני תלמידים לגיט.
+<!-- MTH_SUPABASE_REVIEW_20260510_END -->
