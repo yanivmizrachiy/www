@@ -1,21 +1,24 @@
 # Participants Import Persistence Connection — 2026-05-10
 
-Mode: focused code PR.
+Mode: real focused code PR.
 
 ## What changed
 
-- Participants import attempts optional Supabase persistence through the existing adapter.
-- Existing runtime store behavior remains.
-- Returned persistence evidence is aggregate-only.
+- Participants import calls optional persistence after upsertImportedStudents.
+- Runtime store behavior remains.
+- Added /api/persistence/last-attempt for aggregate-only evidence.
 
 ## Safety
 
 - No SQL executed.
 - No database deployed.
-- No secrets added.
+- No secrets.
 - No student data committed.
 - If Supabase is not configured, persistence is skipped safely.
 
-## Next
+## Required validation
 
-After merge and Render deploy, test Participants import and verify persistence.skipped=true while SUPABASE_SERVICE_ROLE_KEY is missing.
+- npm run check
+- npm run build
+- Live import test after merge.
+- Check /api/persistence/last-attempt returns aggregate-only evidence.

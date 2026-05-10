@@ -1,32 +1,27 @@
 # Participants Import Persistence Connection — 2026-05-10
 
-Mode: safe focused code PR.
+Mode: real focused code PR.
 
-## What this branch does
+## What changed
 
-- Connects the Participants import route to the server-side persistence adapter.
-- Keeps the existing runtime store behavior.
-- Writes to Supabase only when persistence is configured on the server.
-- Returns aggregate persistence status only.
+- Participants import now calls the optional Supabase persistence adapter after runtime import.
+- Existing runtime store behavior remains.
+- If Supabase is not configured, persistence is skipped safely.
+- Added aggregate-only last-attempt endpoint.
 
-## What this branch does not do
+## Endpoints
 
-- No SQL execution.
-- No database deploy.
-- No secrets.
-- No student data in Git.
-- No forced persistence.
-- No Render environment changes.
+- GET /api/persistence/status
+- GET /api/persistence/last-attempt
 
-## Expected behavior
+## Safety
 
-If SUPABASE_SERVICE_ROLE_KEY is missing, import still works and persistence is skipped safely.
+- No SQL executed.
+- No database deployed.
+- No secrets added.
+- No student data committed.
+- No student names/emails returned from persistence evidence.
 
-If Supabase is configured later, import can persist teacher/course/batch/students server-side.
+## Next
 
-## Required validation
-
-- npm run check
-- npm run build
-- Live import test after merge
-- Aggregate-only evidence
+After merge and Render deploy, test Participants import and verify last_attempt.skipped=true while SUPABASE_SERVICE_ROLE_KEY is missing.
