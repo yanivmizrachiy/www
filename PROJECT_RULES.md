@@ -426,3 +426,24 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 
 אין לסמן persistence כעובד עד שנתוני תלמידים אמיתיים נטענים מחדש אחרי restart/deploy בלי להיכנס לגיט.
 <!-- MTH_PERSISTENCE_PLAN_20260510_END -->
+
+<!-- MTH_SUPABASE_REVIEW_20260510_START -->
+## Supabase Review — 2026-05-10
+
+לפני שימוש ב־Supabase כ־persistence קבוע, חובה לסקור את כל קבצי Supabase הקיימים.
+
+אסור להריץ:
+- SQL
+- migrations
+- Supabase Functions
+- database deploy
+- service role usage
+
+לפני בדיקה ואישור.
+
+כל קובץ תחת `supabase/` הוא REVIEW_REQUIRED עד שנבדק.
+
+ה־schema העתידי חייב לתמוך בהפרדה לפי issuer/clientId/deploymentId/course/teacher/importBatch/sourceType.
+
+אין להכניס secrets, service-role keys, exports או נתוני תלמידים לגיט.
+<!-- MTH_SUPABASE_REVIEW_20260510_END -->
