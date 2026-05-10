@@ -586,6 +586,18 @@ app.use("/public", express.static(path.join(ROOT, "public")));
 app.get("/api/persistence/status", (_req, res) => {
   res.json(persistenceStatus());
 });
+app.get("/api/persistence/last-attempt", (_req, res) => {
+  res.json({
+    ok: true,
+    mode: "moodle-teacher-hub-persistence-last-attempt",
+    last_attempt: store.settings?.lastPersistenceAttempt || null,
+    privacy: {
+      no_student_names_returned: true,
+      no_student_emails_returned: true,
+      no_service_role_key_returned: true
+    }
+  });
+});
 app.get("/health", (_req, res) => {
   res.json({
     ok: true,
@@ -725,6 +737,53 @@ app.post("/api/import", (req, res) => {
 
   const result = upsertImportedStudents(Array.isArray(body.payload) ? body.payload : [], session);
 
+  const importBodyForPersistence = typeof body !== "undefined" ? body : (req.body || {});
+  const studentsForPersistence = store.students.filter(student => student.space_id === (session?.spaceId || "unknown-space"));
+  void persistParticipantsImportIfConfigured({
+    session,
+    batch: {
+      file_name: importBodyForPersistence.file_name || importBodyForPersistence.fileName || importBodyForPersistence.filename || null,
+      row_count: result.row_count,
+      accepted_count: Number(result.inserted || 0) + Number(result.updated || 0),
+      skipped_count: result.skipped,
+      warnings: result.warnings
+    },
+    students: studentsForPersistence
+  }).then((persistenceAttempt) => {
+    store.settings.lastPersistenceAttempt = {
+      at: new Date().toISOString(),
+      source_type: "participants",
+      ok: !!persistenceAttempt?.ok,
+      skipped: !!persistenceAttempt?.skipped,
+      reason: persistenceAttempt?.reason || null,
+      stage: persistenceAttempt?.stage || null,
+      persisted_students: persistenceAttempt?.persisted_students || 0,
+      student_count: studentsForPersistence.length,
+      privacy: {
+        no_student_names_returned: true,
+        no_student_emails_returned: true,
+        no_service_role_key_returned: true
+      }
+    };
+    saveStore();
+  }).catch((error) => {
+    store.settings.lastPersistenceAttempt = {
+      at: new Date().toISOString(),
+      source_type: "participants",
+      ok: false,
+      skipped: false,
+      reason: "PERSISTENCE_BACKGROUND_ERROR",
+      stage: "background",
+      detail: String(error?.message || error).slice(0, 300),
+      student_count: studentsForPersistence.length,
+      privacy: {
+        no_student_names_returned: true,
+        no_student_emails_returned: true,
+        no_service_role_key_returned: true
+      }
+    };
+    saveStore();
+  });
   if (!Array.isArray(store.importBatches)) store.importBatches = [];
   const batch = {
     id: crypto.randomUUID(),
@@ -2192,8 +2251,3 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`moodle-teacher-hub running on port ${PORT}`);
   console.log(`canonical LTI endpoint: ${CANONICAL_LTI_ENDPOINT}`);
 });
-
-
-
-
-

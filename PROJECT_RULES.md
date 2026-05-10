@@ -496,3 +496,17 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 4. להריץ schema ידנית רק אחרי אישור.
 5. לבדוק שמירה אמיתית עם ראיות aggregate בלבד.
 <!-- MTH_PERSISTENCE_WRITE_PATH_20260510_END -->
+
+<!-- MTH_PARTICIPANTS_IMPORT_PERSISTENCE_CONNECTION_20260510_START -->
+## Participants Import Persistence Connection — 2026-05-10
+
+ייבוא Participants מחובר לשכבת persistence באופן בטוח.
+
+- אם Supabase לא מוגדר, הייבוא ממשיך לעבוד והכתיבה מדולגת.
+- אין SQL.
+- אין secrets.
+- אין נתוני תלמידים ב-Git.
+- הראיות חוזרות aggregate-only.
+
+לא להגדיר SUPABASE_SERVICE_ROLE_KEY ולא להריץ schema בלי אישור נפרד.
+<!-- MTH_PARTICIPANTS_IMPORT_PERSISTENCE_CONNECTION_20260510_END -->
