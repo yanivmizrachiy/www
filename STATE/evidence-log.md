@@ -299,3 +299,45 @@ It does not verify:
 
 The working LTI 1.0/1.1 tool must remain unchanged.
 
+
+
+<!-- MTH_EVIDENCE_PARTICIPANTS_IMPORT_20260510 -->
+
+## 2026-05-10 — LTI 1.3, NRPS, and Participants import milestone
+
+### Verified from live user workflow
+
+- Moodle Teacher Hub opened from Moodle through the LTI 1.3 tool.
+- LTI 1.3 session was available.
+- NRPS services-status showed a live LTI 1.3 session with NRPS available.
+- NRPS membership preview returned real membership counts:
+  - `members_count: 62`
+  - `Learner: 59`
+  - `Instructor: 3`
+- NRPS field presence showed identifiers but no names/emails:
+  - `has_user_id_count: 62`
+  - `has_lis_person_sourcedid_count: 62`
+  - `has_name_count: 0`
+  - `has_email_count: 0`
+- A real Moodle Participants report/table was imported through the Import page.
+- Import result shown in the UI:
+  - 62 rows accepted.
+  - 62 inserted.
+  - 0 updated.
+  - 0 skipped.
+- Students page displayed real imported student names/emails.
+
+### Privacy boundary
+
+- No student names, emails, CSV/XLSX/ODS files, backup JSON files, or runtime `data/store.json` may be committed to GitHub.
+- Evidence must remain aggregate-only.
+
+### Next required evidence
+
+- Local backup confirmation summary only, without student data.
+- Persistence implementation evidence.
+- NRPS ↔ Participants matching report.
+- Gradebook import evidence.
+- Logs/time calculation evidence.
+
+Updated: 2026-05-10T05:10:58Z

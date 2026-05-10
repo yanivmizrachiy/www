@@ -1,5 +1,42 @@
 # Project Status — www / Moodle Teacher Hub
 
+<!-- MTH_PROJECT_STATUS_20260510_START -->
+## Current verified status — 2026-05-10
+
+Repository: `yanivmizrachiy/www`
+Active branch: `gemini/ai-studio-sync-20260428-193953`
+Runtime: `https://www-tijc.onrender.com`
+
+### Verified
+
+- LTI 1.3 launch/session is working from Moodle.
+- NRPS membership fetch is working.
+- NRPS returned 62 real course members: 59 Learners and 3 Instructors.
+- NRPS returned identifiers/roles/status, but not student names/emails.
+- Real Moodle Participants import succeeded.
+- Participants import accepted 62 rows, inserted 62, updated 0, skipped 0.
+- Students page displays imported real student names/emails.
+- Moodle Web Services diagnostics path exists, but full automatic roster sync still requires a real `MOODLE_WS_TOKEN`.
+
+### Current architecture decision
+
+- Pause feature expansion.
+- Clean repo governance first.
+- Do not push changes to the active Render branch until backup/persistence risk is handled.
+- Do not commit real student data, backup JSON, CSV, XLSX, ODS, or runtime `data/store.json`.
+
+### Next
+
+1. Local browser-session backup.
+2. Durable persistence plan and implementation.
+3. NRPS ↔ Participants matching report.
+4. Gradebook import.
+5. Logs and daily practice time.
+6. Reports/export.
+
+Updated: 2026-05-10T05:10:58Z
+<!-- MTH_PROJECT_STATUS_20260510_END -->
+
 Updated: 2026-05-06
 Repository: `yanivmizrachiy/www`
 Active work branch: `gemini/ai-studio-sync-20260428-193953`

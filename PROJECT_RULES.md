@@ -1,5 +1,43 @@
 # PROJECT_RULES — www / Moodle Teacher Hub
 
+<!-- MTH_CURRENT_VERIFIED_STATE_20260510_START -->
+## מצב אמת מאומת — 2026-05-10
+
+הפרויקט אינו מתחיל מאפס. זהו ריפו קיים וחי, ויש להמשיך ממנו בלבד.
+
+### מה כבר עובד ומאומת
+
+- ריפו פעיל: `yanivmizrachiy/www`.
+- ענף עבודה פעיל: `gemini/ai-studio-sync-20260428-193953`.
+- Runtime קבוע: `https://www-tijc.onrender.com`.
+- LTI 1.3 עובד מתוך Moodle.
+- NRPS עובד ומחזיר משתתפים אמיתיים מהקורס.
+- NRPS החזיר 62 משתתפים: 59 Learners ו־3 Instructors.
+- NRPS מחזיר מזהים ותפקידים, אך לא שמות ולא מיילים.
+- ייבוא Participants אמיתי ממודל הצליח.
+- הייבוא קלט 62 שורות, הוסיף 62, עדכן 0 ודחה 0.
+- עמוד תלמידים מציג תלמידים אמיתיים עם שמות ומיילים שיובאו מ־Participants.
+- נתיב Moodle Web Services קיים כאבחון עתידי, אך תלוי ב־`MOODLE_WS_TOKEN` אמיתי ב־Render.
+
+### גבולות בטיחות
+
+- אין להעלות לגיט קבצי תלמידים, CSV/XLSX/ODS, גיבויי JSON, או `data/store.json`.
+- אין להריץ Deploy/Restart לפני גיבוי מקומי או persistence אמיתי.
+- אין להמשיך לציונים/לוגים/דוחות לפני סידור persistence ומיפוי תלמידים.
+
+### סדר המשך מחייב
+
+1. גיבוי מקומי בטוח של הנתונים שיובאו.
+2. סידור ריפו ומקור אמת.
+3. persistence קבוע, כנראה Supabase.
+4. מיפוי NRPS ↔ Participants.
+5. Gradebook / ציונים.
+6. Logs / זמן תרגול.
+7. דוחות וייצוא.
+
+Updated: 2026-05-10T05:10:58Z
+<!-- MTH_CURRENT_VERIFIED_STATE_20260510_END -->
+
 מסמך זה הוא מקור האמת העליון של הריפו `yanivmizrachiy/www`.
 
 הריפו הזה הוא הריפו המחייב לפרויקט Moodle Teacher Hub המשודרג. כל תיעוד, קוד, בדיקה, החלטה או שינוי עתידי חייבים להתיישר מול המסמך הזה.
@@ -257,4 +295,3 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 - Moodle use is allowed only after real launch evidence is recorded in STATE/evidence-log.md.
 
 <!-- MTH_PRODUCTION_HARDENING_END -->
-
