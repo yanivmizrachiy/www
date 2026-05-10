@@ -307,3 +307,21 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 
 השלב הבא: persistence קבוע ואז מיפוי NRPS ↔ Participants.
 <!-- MTH_RUNTIME_DATA_SAFETY_20260510_END -->
+
+<!-- MTH_DOCS_ORGANIZATION_20260510_START -->
+## Docs Organization — 2026-05-10
+
+תיקיית `docs/` מאורגנת לפי תפקיד:
+
+- `docs/architecture/` — ארכיטקטורה, חוזי API וזרימת נתונים.
+- `docs/lti/` — LTI 1.3, NRPS, AGS ונתיבי launch.
+- `docs/imports/` — Participants, Gradebook, Logs וחוזי ייבוא.
+- `docs/persistence/` — Supabase ושמירה קבועה.
+- `docs/privacy/` — פרטיות ונתוני תלמידים.
+- `docs/operations/` — בדיקות, הפעלה, runbooks ומפות ריפו.
+- `docs/ai-handoff/` — מסמכי מעבר ופרומפטים לכלי AI.
+- `docs/dev/` — הערות פיתוח.
+- `docs/archive-candidates/` — מסמכים ישנים לבדיקה לפני ארכיון.
+
+אין לשים ב־docs נתוני תלמידים אמיתיים, קבצי Moodle, גיבויי JSON או secrets.
+<!-- MTH_DOCS_ORGANIZATION_20260510_END -->
