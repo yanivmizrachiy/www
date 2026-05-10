@@ -341,3 +341,48 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 
 אין לשים secrets, נתוני תלמידים, גיבויי Moodle או קבצי CSV/XLSX בתוך scripts.
 <!-- MTH_SCRIPTS_ORGANIZATION_20260510_END -->
+
+<!-- MTH_REPO_ORGANIZATION_MASTER_20260510_START -->
+## Repo Organization Master Plan — 2026-05-10
+
+הריפו מאורגן סביב מקור אמת אחד ברור.
+
+### מה כבר הצלחנו
+
+- LTI 1.3 עובד מתוך Moodle.
+- NRPS עובד.
+- NRPS החזיר 62 משתתפים אמיתיים: 59 תלמידים ו־3 מורים.
+- ייבוא Participants אמיתי הצליח.
+- נקלטו 62 שורות.
+- עמוד תלמידים מציג שמות ומיילים אמיתיים.
+- סודר מקור אמת.
+- סודר סיווג קבצים.
+- `data/store.json` יצא ממקור tracked.
+- `docs/` אורגן לפי תפקיד.
+- `scripts/` אורגן לפי תפקיד.
+
+### מבנה עבודה מחייב
+
+- `PROJECT_RULES.md` — מקור אמת עליון.
+- `README.md` — שער כניסה קצר.
+- `STATE/project-status.md` — סטטוס עדכני.
+- `STATE/evidence-log.md` — הוכחות aggregate בלבד.
+- `STATE/file-classification/` — מפת סיווג קבצים.
+- `docs/` — תיעוד לפי תחומים.
+- `scripts/` — אוטומציות לפי תפקיד.
+- `src/` — קוד פעיל.
+- `supabase/` — שכבת persistence עתידית לבדיקה.
+- `data/` — runtime/local בלבד, לא source.
+
+### מה נשאר להמשך
+
+1. לאמת גיבוי מקומי לתלמידים שיובאו.
+2. למזג את שרשרת PRs רק אחרי בדיקה ובסדר הנכון.
+3. לבנות persistence קבוע.
+4. לבנות מיפוי NRPS ↔ Participants.
+5. לבנות Gradebook.
+6. לבנות Logs וזמן תרגול.
+7. לבנות דוחות וייצוא.
+
+אין לסמן ציונים, לוגים, זמן תרגול או דוחות כעובדים עד שיש מקור נתונים אמיתי ואימות.
+<!-- MTH_REPO_ORGANIZATION_MASTER_20260510_END -->
