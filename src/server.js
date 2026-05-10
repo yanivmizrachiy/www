@@ -6,6 +6,7 @@ import path from "path";
 import crypto from "crypto";
 import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
+import { persistenceStatus, persistParticipantsImportIfConfigured } from "./persistence/supabasePersistence.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -582,6 +583,9 @@ app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 app.use("/public", express.static(path.join(ROOT, "public")));
 
+app.get("/api/persistence/status", (_req, res) => {
+  res.json(persistenceStatus());
+});
 app.get("/health", (_req, res) => {
   res.json({
     ok: true,
@@ -2188,6 +2192,7 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`moodle-teacher-hub running on port ${PORT}`);
   console.log(`canonical LTI endpoint: ${CANONICAL_LTI_ENDPOINT}`);
 });
+
 
 
 

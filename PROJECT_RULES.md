@@ -471,3 +471,28 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 
 כל שימוש בפועל דורש אישור, בדיקת Supabase project, בדיקת RLS, ונתיב כתיבה server-side בלבד.
 <!-- MTH_SCHEMA_ONLY_PERSISTENCE_20260510_END -->
+
+<!-- MTH_PERSISTENCE_WRITE_PATH_20260510_START -->
+## Persistence Write Path — 2026-05-10
+
+נוספה שכבת קוד ראשונה ל-persistence בצד השרת.
+
+היא בטוחה כי:
+- היא לא מריצה SQL.
+- היא לא מוסיפה secrets.
+- היא לא מוסיפה נתוני תלמידים.
+- היא לא שוברת את runtime store הקיים.
+- היא כותבת ל-Supabase רק אם ההגדרות קיימות בסביבת השרת.
+
+נוסף endpoint:
+- /api/persistence/status
+
+בשלב זה חיבור import התלמידים לשמירה בפועל עדיין לא בוצע, כי לא נמצא pattern בטוח להזרקה אוטומטית. זה יבוצע ב-PR נפרד וממוקד.
+
+המשך חובה:
+1. לבדוק status ב-Render.
+2. לחבר Participants import ל-persistence ב-PR נפרד.
+3. להגדיר Supabase בסביבת Render רק אחרי אישור.
+4. להריץ schema ידנית רק אחרי אישור.
+5. לבדוק שמירה אמיתית עם ראיות aggregate בלבד.
+<!-- MTH_PERSISTENCE_WRITE_PATH_20260510_END -->
