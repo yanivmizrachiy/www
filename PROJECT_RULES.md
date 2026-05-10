@@ -447,3 +447,27 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 
 אין להכניס secrets, service-role keys, exports או נתוני תלמידים לגיט.
 <!-- MTH_SUPABASE_REVIEW_20260510_END -->
+
+<!-- MTH_SCHEMA_ONLY_PERSISTENCE_20260510_START -->
+## Schema Only Persistence — 2026-05-10
+
+נוסף קובץ migration מוצע ל־Supabase עבור persistence קבוע.
+
+הקובץ הוא schema-only:
+- לא מריצים SQL אוטומטית.
+- לא עושים database deploy.
+- לא מוסיפים secrets.
+- לא מוסיפים נתוני תלמידים.
+- לא משנים קוד אפליקציה.
+- לא מסמנים persistence כעובד.
+
+הטבלאות המוצעות:
+- `mth_teachers`
+- `mth_courses`
+- `mth_import_batches`
+- `mth_students`
+- `mth_nrps_members`
+- `mth_student_matches`
+
+כל שימוש בפועל דורש אישור, בדיקת Supabase project, בדיקת RLS, ונתיב כתיבה server-side בלבד.
+<!-- MTH_SCHEMA_ONLY_PERSISTENCE_20260510_END -->
