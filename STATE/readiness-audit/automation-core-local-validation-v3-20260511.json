@@ -1,0 +1,35 @@
+{
+  "generated_at": "2026-05-11T23:02:37.6683108+03:00",
+  "branch": "feature/automation-core-sync-status-20260511-225022",
+  "result": "passed",
+  "npm_check": "passed",
+  "npm_build": "passed",
+  "local_server": "passed",
+  "sync_status": "passed",
+  "privacy": {
+    "no_student_names_returned": true,
+    "no_emails_returned": true,
+    "no_tokens_returned": true,
+    "aggregate_only": true
+  },
+  "counts": {
+    "students": 0,
+    "tasks": 0,
+    "grades": 0,
+    "log_events": 0
+  },
+  "capabilities": [
+    "lti_session",
+    "nrps_participants",
+    "participants_names_emails",
+    "course_sections",
+    "course_tasks",
+    "grade_items",
+    "grade_results",
+    "logs",
+    "practice_time",
+    "reports",
+    "export",
+    "persistence"
+  ]
+}
