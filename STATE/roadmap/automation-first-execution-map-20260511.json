@@ -1,0 +1,58 @@
+{
+  "project": "Moodle Teacher Hub",
+  "mode": "automation-first",
+  "do_not_restart": true,
+  "teacher_action_budget": {
+    "ideal_actions": [
+      "open_from_moodle",
+      "click_sync_course"
+    ],
+    "allowed_fallback_actions": [
+      "upload_one_exact_report_when_automation_is_blocked"
+    ],
+    "forbidden_teacher_burdens": [
+      "understand_nrps",
+      "understand_ags",
+      "understand_supabase",
+      "handle_github",
+      "manually_map_columns_when_auto_mapping_is_possible",
+      "guess_which_report_is_needed"
+    ]
+  },
+  "next_code_pr": {
+    "name": "Automation Core",
+    "items": [
+      "Capability Detector",
+      "Sync Engine",
+      "Sync Status Endpoint",
+      "Frontend Sync Hook",
+      "Premium Dashboard Button Model",
+      "Feature Gates",
+      "Hebrew Missing Data Explanations"
+    ]
+  },
+  "main_buttons": [
+    "סנכרן מרחב",
+    "משימות",
+    "משתתפים",
+    "ציונים",
+    "זמנים",
+    "דוחות",
+    "ייצוא",
+    "מה חסר?"
+  ],
+  "truth_rules": {
+    "no_demo": true,
+    "no_fake_data": true,
+    "no_fake_buttons": true,
+    "missing_grade_is_not_zero": true,
+    "logs_required_for_practice_time": true
+  },
+  "progress_estimate": {
+    "moodle_lti_nrps_participants": 70,
+    "final_product": 30,
+    "broad_teacher_ready": 20,
+    "automation_first": 25,
+    "premium_ui": 15
+  }
+}
