@@ -1,4 +1,4 @@
-# Automation-First Execution Plan ΓÇö 2026-05-11
+# Automation-First Execution Plan — 2026-05-11
 
 Mode: planning/governance only.
 
@@ -27,6 +27,6 @@ Automation Core implementation:
 2. Sync status endpoint.
 3. Frontend sync hook.
 4. Premium dashboard button model.
-5. `╫í╫á╫¢╫¿╫ƒ ╫₧╫¿╫ù╫æ`.
+5. `סנכרן מרחב`.
 6. Feature gates.
 7. Hebrew missing-data explanations.
