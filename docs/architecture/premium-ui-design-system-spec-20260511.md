@@ -1,4 +1,4 @@
-# Premium UI Design System Spec ΓÇö Moodle Teacher Hub
+# Premium UI Design System Spec — Moodle Teacher Hub
 
 ## Goal
 
@@ -23,14 +23,14 @@ The UI should use:
 
 Main dashboard buttons:
 
-- `╫í╫á╫¢╫¿╫ƒ ╫₧╫¿╫ù╫æ`
-- `╫₧╫⌐╫Ö╫₧╫ò╫¬`
-- `╫₧╫⌐╫¬╫¬╫ñ╫Ö╫¥`
-- `╫ª╫Ö╫ò╫á╫Ö╫¥`
-- `╫û╫₧╫á╫Ö╫¥`
-- `╫ô╫ò╫ù╫ò╫¬`
-- `╫Ö╫Ö╫ª╫ò╫É`
-- `╫₧╫ö ╫ù╫í╫¿?`
+- `סנכרן מרחב`
+- `משימות`
+- `משתתפים`
+- `ציונים`
+- `זמנים`
+- `דוחות`
+- `ייצוא`
+- `מה חסר?`
 
 ## Button states
 
