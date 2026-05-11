@@ -1,4 +1,4 @@
-# Next Code PR Spec ΓÇö Automation Core
+# Next Code PR Spec — Automation Core
 
 ## Purpose
 
@@ -48,7 +48,7 @@ Create a hook for sync status.
 
 Upgrade the dashboard with:
 
-- `╫í╫á╫¢╫¿╫ƒ ╫₧╫¿╫ù╫æ`
+- `סנכרן מרחב`
 - premium feature buttons
 - feature gates
 - missing data explanations
