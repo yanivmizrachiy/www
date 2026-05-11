@@ -625,6 +625,324 @@ app.get("/health", (_req, res) => {
   });
 });
 
+// MTH_AUTOMATION_CORE_SYNC_STATUS_START
+function countStoreArray(name) {
+  const value = store?.[name];
+  return Array.isArray(value) ? value.length : 0;
+}
+
+function automationCapability(key, label_he, status, source, count, teacher_message_he, next_action_he, required_report_type = null, confidence = "medium") {
+  return {
+    key,
+    label_he,
+    status,
+    source,
+    count,
+    confidence,
+    last_checked_at: new Date().toISOString(),
+    teacher_message_he,
+    next_action_he,
+    required_report_type
+  };
+}
+
+function countBasedCapability(key, label_he, count, source, missingReport, activeMessage, missingMessage) {
+  if (count > 0) {
+    return automationCapability(
+      key,
+      label_he,
+      "available_from_import",
+      source,
+      count,
+      activeMessage,
+      "אפשר לפתוח את המסך ולהמשיך לעבוד עם הנתונים שנקלטו.",
+      null,
+      "high"
+    );
+  }
+
+  return automationCapability(
+    key,
+    label_he,
+    "missing_required_report",
+    source,
+    count,
+    missingMessage,
+    `נדרש להעלות דוח Moodle אמיתי: ${missingReport}.`,
+    missingReport,
+    "high"
+  );
+}
+
+function latestLti13SessionSummary() {
+  const values = Array.from(tokenSessions.values()).filter(item => item && item.source === "lti13");
+  return values.length ? values[values.length - 1] : null;
+}
+
+function buildAutomationSyncStatus(req, action = "status") {
+  const session = sessionFromRequest(req);
+  const latestLti13 = latestLti13SessionSummary();
+
+  const counts = {
+    students: countStoreArray("students"),
+    tasks: countStoreArray("tasks"),
+    chapters: countStoreArray("chapters"),
+    grade_items: countStoreArray("gradeItems"),
+    grades: countStoreArray("grades"),
+    log_events: countStoreArray("logEvents"),
+    activity_sessions: countStoreArray("activitySessions"),
+    import_batches: countStoreArray("importBatches")
+  };
+
+  const ltiSession = session
+    ? automationCapability(
+        "lti_session",
+        "כניסה מתוך Moodle",
+        "automatic",
+        session.source || "lti",
+        1,
+        "זוהתה כניסה אמיתית מתוך Moodle.",
+        "אפשר להמשיך לסנכרון נתוני המרחב.",
+        null,
+        "high"
+      )
+    : automationCapability(
+        "lti_session",
+        "כניסה מתוך Moodle",
+        "missing_required_report",
+        "session",
+        0,
+        "עדיין לא זוהתה כניסה פעילה מתוך Moodle.",
+        "פתח את הכלי מתוך מרחב Moodle כדי לקבל הקשר מורה/קורס אמיתי.",
+        "LTI launch",
+        "high"
+      );
+
+  const nrpsAvailable = Boolean(
+    latestLti13?.service_claims?.has_nrps ||
+    latestLti13?.serviceClaims?.has_nrps ||
+    latestLti13?.nrps?.available ||
+    latestLti13?.source === "lti13"
+  );
+
+  const nrpsParticipants = nrpsAvailable
+    ? automationCapability(
+        "nrps_participants",
+        "משתתפים מ־NRPS",
+        "automatic",
+        "LTI 1.3 NRPS",
+        null,
+        "NRPS זמין לפי סשן LTI 1.3 האחרון.",
+        "אפשר להשתמש ב־NRPS לזיהוי משתתפים ותפקידים, בלי לחשוף שמות בדוח הסטטוס.",
+        null,
+        "medium"
+      )
+    : automationCapability(
+        "nrps_participants",
+        "משתתפים מ־NRPS",
+        "blocked_no_permission",
+        "LTI 1.3 NRPS",
+        0,
+        "NRPS לא זמין כרגע או שלא נפתח סשן LTI 1.3 מתאים.",
+        "פתח את הכלי מתוך Moodle ואז בדוק שוב. אם עדיין חסום, נדרש Participants import.",
+        "Participants report",
+        "medium"
+      );
+
+  const capabilities = {
+    lti_session: ltiSession,
+    nrps_participants: nrpsParticipants,
+    participants_names_emails: countBasedCapability(
+      "participants_names_emails",
+      "שמות ומיילים של תלמידים",
+      counts.students,
+      "Participants import",
+      "Participants",
+      "קיימים תלמידים שיובאו מדוח Participants אמיתי.",
+      "עדיין אין שמות/מיילים זמינים. NRPS לבדו לא מספק אותם במרחב הזה."
+    ),
+    course_sections: countBasedCapability(
+      "course_sections",
+      "פרקים / נושאים",
+      counts.chapters,
+      "Course structure / Activity Completion import",
+      "Course structure או Activity Completion",
+      "קיימים פרקים/נושאים שיובאו ממקור Moodle אמיתי.",
+      "עדיין חסרים פרקים אמיתיים מהמרחב."
+    ),
+    course_tasks: countBasedCapability(
+      "course_tasks",
+      "משימות",
+      counts.tasks,
+      "Course structure / Activity Completion import",
+      "Activity Completion או Course report",
+      "קיימות משימות שיובאו ממקור Moodle אמיתי.",
+      "עדיין חסרות משימות אמיתיות מהמרחב."
+    ),
+    grade_items: countBasedCapability(
+      "grade_items",
+      "פריטי ציון",
+      counts.grade_items,
+      "Gradebook import / AGS / Moodle WS",
+      "Gradebook",
+      "קיימים פריטי ציון אמיתיים.",
+      "עדיין חסרים פריטי ציון אמיתיים."
+    ),
+    grade_results: countBasedCapability(
+      "grade_results",
+      "ציונים",
+      counts.grades,
+      "Gradebook import / AGS / Moodle WS",
+      "Gradebook",
+      "קיימים ציונים אמיתיים.",
+      "עדיין אין ציונים אמיתיים. חסר Gradebook או AGS/WS מאומת."
+    ),
+    logs: countBasedCapability(
+      "logs",
+      "לוגים",
+      counts.log_events,
+      "Logs import",
+      "Logs",
+      "קיימים אירועי לוג אמיתיים.",
+      "עדיין אין לוגים אמיתיים לחישוב פעילות."
+    ),
+    practice_time: (counts.log_events > 0 || counts.activity_sessions > 0)
+      ? automationCapability(
+          "practice_time",
+          "זמן תרגול",
+          "available_from_import",
+          "Logs / Activity sessions",
+          counts.log_events + counts.activity_sessions,
+          "יש בסיס אמיתי לחישוב זמן תרגול.",
+          "אפשר לפתוח את מסך זמנים ולבדוק את החישוב.",
+          null,
+          "medium"
+        )
+      : automationCapability(
+          "practice_time",
+          "זמן תרגול",
+          "missing_required_report",
+          "Logs",
+          0,
+          "לא ניתן לחשב זמן תרגול ללא Logs או מקור זמן רשמי.",
+          "נדרש דוח Logs ממודל.",
+          "Logs",
+          "high"
+        ),
+    reports: (counts.students > 0 || counts.grades > 0 || counts.log_events > 0)
+      ? automationCapability(
+          "reports",
+          "דוחות",
+          "available_from_import",
+          "Imported Moodle data",
+          counts.students + counts.grades + counts.log_events,
+          "יש נתונים אמיתיים לחלק מהדוחות.",
+          "אפשר לפתוח דוחות. דוחות חסרים יסבירו איזה מקור נתונים נדרש.",
+          null,
+          "medium"
+        )
+      : automationCapability(
+          "reports",
+          "דוחות",
+          "missing_required_report",
+          "Imported Moodle data",
+          0,
+          "אין עדיין מספיק נתונים אמיתיים לדוחות.",
+          "ייבא Participants, Gradebook או Logs לפי הדוח הרצוי.",
+          "Participants / Gradebook / Logs",
+          "high"
+        ),
+    export: (counts.students > 0 || counts.grades > 0 || counts.log_events > 0)
+      ? automationCapability(
+          "export",
+          "ייצוא",
+          "available_from_import",
+          "Imported Moodle data",
+          counts.students + counts.grades + counts.log_events,
+          "יש נתונים אמיתיים שניתן לייצא.",
+          "פתח את מסך ייצוא ובחר דוח קיים.",
+          null,
+          "medium"
+        )
+      : automationCapability(
+          "export",
+          "ייצוא",
+          "missing_required_report",
+          "Imported Moodle data",
+          0,
+          "אין עדיין נתונים אמיתיים לייצוא.",
+          "ייבא קודם נתוני Moodle אמיתיים.",
+          "Participants / Gradebook / Logs",
+          "high"
+        ),
+    persistence: (() => {
+      const status = persistenceStatus();
+      const configured = Boolean(status?.configured || status?.supabaseConfigured || status?.ok === true && status?.mode);
+      return configured
+        ? automationCapability(
+            "persistence",
+            "שמירה קבועה",
+            "automatic",
+            "Supabase",
+            null,
+            "קיימת שכבת persistence מוגדרת או מוכנה לבדיקה.",
+            "יש לוודא שמירת תלמידים לאחר refresh/restart.",
+            null,
+            "medium"
+          )
+        : automationCapability(
+            "persistence",
+            "שמירה קבועה",
+            "not_implemented_yet",
+            "Supabase",
+            0,
+            "שמירה קבועה עדיין לא מאומתת.",
+            "השלב הבא לאחר Automation Core הוא persistence אמיתי.",
+            "Persistence schema",
+            "high"
+          );
+    })()
+  };
+
+  const next_required = Object.values(capabilities)
+    .filter(item => item.status === "missing_required_report" || item.status === "blocked_no_permission" || item.status === "not_implemented_yet")
+    .slice(0, 6);
+
+  return {
+    ok: true,
+    mode: "automation-core-sync-status",
+    action,
+    no_fake_success: true,
+    session_present: Boolean(session),
+    counts,
+    teacher_action_budget: {
+      ideal_actions: ["open_from_moodle", "click_sync_course"],
+      allowed_fallback_actions: ["upload_one_exact_report_when_automation_is_blocked"],
+      forbidden_teacher_burdens: ["understand_nrps", "understand_ags", "understand_supabase", "handle_github", "guess_which_report_is_needed"]
+    },
+    capabilities,
+    next_required,
+    privacy: {
+      no_student_names_returned: true,
+      no_emails_returned: true,
+      no_tokens_returned: true,
+      aggregate_only: true
+    },
+    now: new Date().toISOString()
+  };
+}
+
+app.get("/api/sync/status", (req, res) => {
+  noStore(res);
+  res.json(buildAutomationSyncStatus(req, "status"));
+});
+
+app.post("/api/sync/run", (req, res) => {
+  noStore(res);
+  res.json(buildAutomationSyncStatus(req, "run"));
+});
+// MTH_AUTOMATION_CORE_SYNC_STATUS_END
+
 app.get("/lti11/config", (req, res) => {
   const launch = `${publicBaseUrl(req)}${CANONICAL_LTI_ENDPOINT}`;
   res.setHeader("Content-Type", "application/xml; charset=utf-8");
