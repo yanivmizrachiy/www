@@ -1,0 +1,36 @@
+{
+  "generated_at": "2026-05-11T22:29:16.8036273+03:00",
+  "project": "Moodle Teacher Hub",
+  "do_not_restart": true,
+  "broad_teacher_release_ready": false,
+  "current_readiness": {
+    "moodle_lti_nrps_participants": 70,
+    "repo_governance": 88,
+    "automation_first": 25,
+    "persistence": 15,
+    "premium_ui": 18,
+    "broad_teacher_release": 23
+  },
+  "achieved": [
+    "LTI 1.3 works",
+    "NRPS works",
+    "62 real members via NRPS",
+    "Participants import succeeded",
+    "Students page displays real imported names/emails",
+    "Core routes exist",
+    "Repo governance stack prepared"
+  ],
+  "blockers_before_teacher_release": [
+    "Durable persistence",
+    "Automation Core",
+    "Capability Detector",
+    "Feature Gates",
+    "Premium dashboard",
+    "Tasks/chapters automation",
+    "Grades workflow",
+    "Logs/practice time",
+    "PDF/WhatsApp helper",
+    "Teacher installation flow"
+  ],
+  "next_real_code_pr": "Automation Core"
+}
