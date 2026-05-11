@@ -582,6 +582,141 @@ app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 app.use("/public", express.static(path.join(ROOT, "public")));
 
+
+const MTH_AUTOMATION_CORE_SYNC_STATUS_V1 = true;
+
+function capabilityStatus(status, source, teacherMessageHe, nextActionHe, extra = {}) {
+  return {
+    status,
+    source,
+    confidence: extra.confidence ?? 0,
+    teacher_message_he: teacherMessageHe,
+    next_action_he: nextActionHe,
+    required_report_type: extra.required_report_type ?? null,
+    count: extra.count ?? null,
+    last_checked_at: new Date().toISOString()
+  };
+}
+
+function buildSyncStatus(req) {
+  const session = sessionFromRequest(req);
+  const latestLti13 = latestLti13SessionForWs ? latestLti13SessionForWs() : null;
+  const activeSession = session || latestLti13 || null;
+
+  const studentsCount = Array.isArray(store.students) ? store.students.length : 0;
+  const importBatchesCount = Array.isArray(store.importBatches) ? store.importBatches.length : 0;
+  const tasksCount = Array.isArray(store.tasks) ? store.tasks.length : 0;
+  const chaptersCount = Array.isArray(store.chapters) ? store.chapters.length : 0;
+  const gradeItemsCount = Array.isArray(store.gradeItems) ? store.gradeItems.length : 0;
+  const gradesCount = Array.isArray(store.grades) ? store.grades.length : 0;
+  const logEventsCount = Array.isArray(store.logEvents) ? store.logEvents.length : 0;
+
+  const hasLtiSession = Boolean(activeSession);
+  const hasNrpsClaim = Boolean(latestLti13?.serviceClaims?.nrps || latestLti13?.nrps || latestLti13?.claims?.["https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice"]);
+  const hasMoodleWsToken = Boolean(env("MOODLE_WS_TOKEN"));
+  const hasSupabasePersistence = Boolean(env("VITE_SUPABASE_URL") && env("SUPABASE_SERVICE_ROLE_KEY"));
+
+  const capabilities = {
+    lti_session: hasLtiSession
+      ? capabilityStatus("automatic", "lti-session", "הכניסה מתוך Moodle זוהתה.", "אפשר להמשיך לסנכרון מרחב.", { confidence: 95 })
+      : capabilityStatus("missing_required_report", "none", "לא זוהתה כניסה פעילה מתוך Moodle.", "פתח את הכלי מתוך מרחב Moodle.", { confidence: 20 }),
+
+    nrps_participants: hasNrpsClaim
+      ? capabilityStatus("automatic", "lti13-nrps", "שירות משתתפים NRPS זמין מה־Launch.", "אפשר לבדוק/לסנכרן משתתפים.", { confidence: 90 })
+      : capabilityStatus("blocked_no_permission", "lti13-nrps", "NRPS לא זמין בסשן הנוכחי או שלא נפתח Launch מתאים.", "פתח את הכלי מתוך Moodle ובדוק הרשאות LTI.", { confidence: 45 }),
+
+    participants_names_emails: studentsCount > 0
+      ? capabilityStatus("available_from_import", "moodle-participants-import", "קיימת רשימת תלמידים שיובאה ממודל.", "אפשר לעבוד עם מסך משתתפים/תלמידים.", { confidence: 90, count: studentsCount })
+      : capabilityStatus("missing_required_report", "moodle-participants-import", "עדיין חסרים שמות ומיילים של תלמידים.", "נדרש דוח Participants ממודל.", { confidence: 60, required_report_type: "participants" }),
+
+    course_sections: chaptersCount > 0
+      ? capabilityStatus("available_from_import", "moodle-activity-completion-or-course-structure", "קיימים פרקים/נושאים שיובאו.", "אפשר לפתוח משימות לפי פרקים.", { confidence: 80, count: chaptersCount })
+      : capabilityStatus("missing_required_report", "moodle-activity-completion-or-course-structure", "חסרים פרקים/נושאים אמיתיים של הקורס.", "נדרש דוח Activity Completion או Course structure ממודל.", { confidence: 50, required_report_type: "activity_completion_or_course_structure" }),
+
+    course_tasks: tasksCount > 0
+      ? capabilityStatus("available_from_import", "moodle-activity-completion-or-course-structure", "קיימות משימות אמיתיות שיובאו.", "אפשר לפתוח מסך משימות.", { confidence: 80, count: tasksCount })
+      : capabilityStatus("missing_required_report", "moodle-activity-completion-or-course-structure", "חסרות משימות אמיתיות של הקורס.", "נדרש דוח Activity Completion או Course structure ממודל.", { confidence: 50, required_report_type: "activity_completion_or_course_structure" }),
+
+    grade_items: gradeItemsCount > 0
+      ? capabilityStatus("available_from_import", "moodle-gradebook", "קיימים פריטי ציון אמיתיים.", "אפשר לפתוח ציונים.", { confidence: 80, count: gradeItemsCount })
+      : capabilityStatus("missing_required_report", "moodle-gradebook", "חסרים פריטי ציון.", "נדרש Gradebook ממודל או AGS/Web Services אם זמינים.", { confidence: 50, required_report_type: "gradebook" }),
+
+    grade_results: gradesCount > 0
+      ? capabilityStatus("available_from_import", "moodle-gradebook", "קיימים ציונים אמיתיים.", "אפשר להציג דוחות ציונים.", { confidence: 80, count: gradesCount })
+      : capabilityStatus("missing_required_report", "moodle-gradebook", "חסרים ציונים אמיתיים.", "נדרש Gradebook ממודל או AGS/Web Services אם זמינים.", { confidence: 50, required_report_type: "gradebook" }),
+
+    logs: logEventsCount > 0
+      ? capabilityStatus("available_from_import", "moodle-logs", "קיימים לוגים אמיתיים.", "אפשר לחשב פעילות וזמן בזהירות.", { confidence: 75, count: logEventsCount })
+      : capabilityStatus("missing_required_report", "moodle-logs", "חסרים לוגים. אי אפשר לחשב זמן תרגול.", "נדרש דוח Logs ממודל.", { confidence: 55, required_report_type: "logs" }),
+
+    practice_time: logEventsCount > 0
+      ? capabilityStatus("available_from_import", "calculated-from-logs", "אפשר לחשב זמן תרגול מתוך לוגים.", "פתח את מסך זמנים.", { confidence: 70 })
+      : capabilityStatus("missing_required_report", "moodle-logs", "לא ניתן לחשב זמן תרגול ללא לוגים.", "נדרש דוח Logs ממודל.", { confidence: 55, required_report_type: "logs" }),
+
+    reports: studentsCount > 0
+      ? capabilityStatus("available_from_import", "imported-data", "אפשר להפיק דוחות בסיסיים מהנתונים הקיימים.", "לציונים/זמנים מלאים נדרשים Gradebook ו־Logs.", { confidence: 65 })
+      : capabilityStatus("missing_required_report", "none", "אין מספיק נתונים לדוחות.", "קודם נדרש ייבוא Participants.", { confidence: 40, required_report_type: "participants" }),
+
+    export: studentsCount > 0
+      ? capabilityStatus("available_from_import", "imported-data", "ייצוא בסיסי זמין לנתונים שיובאו.", "פתח את מסך ייצוא.", { confidence: 70 })
+      : capabilityStatus("missing_required_report", "none", "אין נתונים לייצוא.", "קודם נדרש ייבוא נתוני Moodle אמיתיים.", { confidence: 40 }),
+
+    persistence: hasSupabasePersistence
+      ? capabilityStatus("automatic", "supabase-env", "הגדרות Supabase קיימות בסביבה.", "נדרש אימות שמירה/טעינה לפני סימון Done.", { confidence: 60 })
+      : capabilityStatus("not_implemented_yet", "runtime-store", "שמירה קבועה עדיין לא מאומתת.", "השלב הבא הוא Persistence.", { confidence: 35 })
+  };
+
+  return {
+    ok: true,
+    mode: "automation-core-sync-status",
+    version: "MTH_AUTOMATION_CORE_SYNC_STATUS_V1",
+    teacher_action_budget: {
+      ideal_actions: ["open_from_moodle", "click_sync_course"],
+      allowed_fallback_actions: ["upload_one_exact_moodle_report_when_automation_is_blocked"],
+      forbidden_teacher_burdens: ["understand_nrps", "understand_ags", "understand_supabase", "use_github", "guess_required_report"]
+    },
+    context: {
+      has_lti_session: hasLtiSession,
+      has_nrps_claim: hasNrpsClaim,
+      has_moodle_ws_token: hasMoodleWsToken,
+      has_supabase_persistence_env: hasSupabasePersistence
+    },
+    counts: {
+      students: studentsCount,
+      import_batches: importBatchesCount,
+      chapters: chaptersCount,
+      tasks: tasksCount,
+      grade_items: gradeItemsCount,
+      grades: gradesCount,
+      log_events: logEventsCount
+    },
+    capabilities,
+    main_buttons: [
+      { label: "סנכרן מרחב", capability: "lti_session", path: "/", primary: true },
+      { label: "משימות", capability: "course_tasks", path: "/tasks" },
+      { label: "משתתפים", capability: "participants_names_emails", path: "/students" },
+      { label: "ציונים", capability: "grade_results", path: "/grades" },
+      { label: "זמנים", capability: "practice_time", path: "/activity" },
+      { label: "דוחות", capability: "reports", path: "/reports" },
+      { label: "ייצוא", capability: "export", path: "/export" },
+      { label: "מה חסר?", capability: "lti_session", path: "/import" }
+    ],
+    privacy: {
+      no_student_names_returned: true,
+      no_emails_returned: true,
+      no_tokens_returned: true,
+      aggregate_only: true
+    },
+    next_real_milestone: "durable-persistence-and-full-sync-engine",
+    now: new Date().toISOString()
+  };
+}
+
+app.get("/api/sync/status", (req, res) => {
+  noStore(res);
+  res.json(buildSyncStatus(req));
+});
+
 app.get("/health", (_req, res) => {
   res.json({
     ok: true,
@@ -2188,6 +2323,7 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`moodle-teacher-hub running on port ${PORT}`);
   console.log(`canonical LTI endpoint: ${CANONICAL_LTI_ENDPOINT}`);
 });
+
 
 
 

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, GraduationCap, ClipboardList, Database, Calendar, Import, ArrowRight, AlertCircle } from "lucide-react";
 import { motion } from "motion/react";
+import { AutomationCommandCenter } from "@/components/AutomationCommandCenter";
 
 function StatCard({ label, value, icon: Icon, delay = 0 }: { label: string, value: number | string, icon: any, delay?: number }) {
   return (
@@ -96,6 +97,8 @@ export default function Dashboard() {
         <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-accent/20 blur-3xl" />
       </section>
 
+      <AutomationCommandCenter />
+
       {error && (
         <div className="rounded-xl border border-status-blocked/30 bg-status-blocked-bg/10 p-4 flex gap-3 text-sm text-status-blocked items-start">
           <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />
@@ -171,3 +174,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
