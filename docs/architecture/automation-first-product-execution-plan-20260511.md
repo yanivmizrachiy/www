@@ -1,4 +1,4 @@
-# Automation-First Product Execution Plan ΓÇö Moodle Teacher Hub
+# Automation-First Product Execution Plan — Moodle Teacher Hub
 
 ## Core decision
 
@@ -36,7 +36,7 @@ Manual teacher action is considered a product problem unless Moodle permissions 
 Ideal teacher flow:
 
 1. Teacher opens the tool from Moodle.
-2. Teacher clicks `╫í╫á╫¢╫¿╫ƒ ╫₧╫¿╫ù╫æ`.
+2. Teacher clicks `סנכרן מרחב`.
 3. Teacher sees what the system collected automatically.
 4. If blocked, teacher receives one exact instruction for one exact Moodle report.
 
@@ -102,7 +102,7 @@ Every status must include:
 
 ## Sync Engine
 
-The `╫í╫á╫¢╫¿╫ƒ ╫₧╫¿╫ù╫æ` button must run the sync engine.
+The `סנכרן מרחב` button must run the sync engine.
 
 Order:
 
@@ -123,14 +123,14 @@ Every main button must ask the Capability Detector before acting.
 
 Main buttons:
 
-- `╫í╫á╫¢╫¿╫ƒ ╫₧╫¿╫ù╫æ`
-- `╫₧╫⌐╫Ö╫₧╫ò╫¬`
-- `╫₧╫⌐╫¬╫¬╫ñ╫Ö╫¥`
-- `╫ª╫Ö╫ò╫á╫Ö╫¥`
-- `╫û╫₧╫á╫Ö╫¥`
-- `╫ô╫ò╫ù╫ò╫¬`
-- `╫Ö╫Ö╫ª╫ò╫É`
-- `╫₧╫ö ╫ù╫í╫¿?`
+- `סנכרן מרחב`
+- `משימות`
+- `משתתפים`
+- `ציונים`
+- `זמנים`
+- `דוחות`
+- `ייצוא`
+- `מה חסר?`
 
 Button behavior:
 
@@ -172,7 +172,7 @@ Must support:
 - filters
 - profile
 - reports
-- NRPS Γåö Participants matching
+- NRPS ↔ Participants matching
 
 ### Tasks and chapters
 
@@ -229,7 +229,7 @@ Must support:
 - student time report
 - class time report
 
-If logs are missing: `╫á╫ô╫¿╫⌐ ╫ô╫ò╫ù Logs ╫₧╫₧╫ò╫ô╫£`.
+If logs are missing: `נדרש דוח Logs ממודל`.
 
 ## Done rules
 
@@ -261,7 +261,7 @@ The next code PR must implement:
 2. `/api/sync/status` or equivalent.
 3. Sync status hook.
 4. Premium dashboard button model.
-5. `╫í╫á╫¢╫¿╫ƒ ╫₧╫¿╫ù╫æ` button.
+5. `סנכרן מרחב` button.
 6. Feature gates.
 7. Hebrew missing-data explanations.
 
