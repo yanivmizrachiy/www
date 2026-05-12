@@ -10,7 +10,8 @@
     "dev:server": "node scripts/maintenance/fix-lti-routing-redirect-cache.cjs && node scripts/maintenance/add-lti13-readiness.cjs && node --check src/server.js && node src/server.js",
     "build": "node scripts/maintenance/fix-lti-routing-redirect-cache.cjs && node scripts/maintenance/add-lti13-readiness.cjs && node --check src/server.js && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "typecheck": "tsc -b --pretty false"
+    "typecheck": "tsc -b --pretty false",
+    "doctor": "node scripts/checks/repo-doctor.cjs"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",

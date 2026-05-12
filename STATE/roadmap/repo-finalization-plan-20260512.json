@@ -1,8 +1,14 @@
 {
   "plan": "Repo Cleanup & Finalization",
-  "progress_percent": 18,
+  "progress_percent": 52,
   "automation_core_live_supabase_percent": 92,
   "teacher_product_readiness_percent": 72,
   "teacher_release_ready": false,
-  "next": "stale_pr_cleanup_and_repo_doctor"
+  "next": "real_moodle_e2e_launch_validation",
+  "completed_phase_3_5": [
+    "stale_pr_cleanup_attempt",
+    "repo_doctor_added",
+    "termux_live_check_added",
+    "github_actions_ci_added"
+  ]
 }
