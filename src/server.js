@@ -918,6 +918,55 @@ function buildReleaseReadiness(req) {
   };
 }
 
+
+
+// >>> MTH_LTI_SAFE_DIAGNOSTICS_V1 >>>
+app.get("/api/lti/diagnostics", (req, res) => {
+  noStore(res);
+  const session = sessionFromRequest(req);
+
+  res.json({
+    ok: true,
+    mode: "lti-safe-diagnostics",
+    version: "MTH_LTI_SAFE_DIAGNOSTICS_V1",
+    teacher_release_ready: false,
+    canonical_lti_endpoint: CANONICAL_LTI_ENDPOINT,
+    active_runtime: env("NODE_ENV", "development"),
+    app_base_url_configured: Boolean(env("APP_BASE_URL")),
+    lti_configured: Boolean(env("LTI_SHARED_SECRET") && env("LTI_CONSUMER_KEY")),
+    cookie_present: Boolean(req.cookies?.sid),
+    session_exists_for_this_browser: Boolean(session),
+    safe_counts: {
+      memory_sessions: sessions instanceof Map ? sessions.size : 0,
+      token_sessions: tokenSessions instanceof Map ? tokenSessions.size : 0,
+      store_launches: Array.isArray(store.launches) ? store.launches.length : 0,
+      moodle_captures: Array.isArray(store.moodleCaptures) ? store.moodleCaptures.length : 0,
+      teachers: Array.isArray(store.teachers) ? store.teachers.length : 0,
+      spaces: Array.isArray(store.spaces) ? store.spaces.length : 0,
+      students: Array.isArray(store.students) ? store.students.length : 0,
+      import_batches: Array.isArray(store.importBatches) ? store.importBatches.length : 0
+    },
+    last_capture_safe: Array.isArray(store.moodleCaptures) && store.moodleCaptures.length
+      ? {
+          source: store.moodleCaptures[store.moodleCaptures.length - 1].source || null,
+          verificationCode: store.moodleCaptures[store.moodleCaptures.length - 1].verificationCode || null,
+          createdAt: store.moodleCaptures[store.moodleCaptures.length - 1].createdAt || null,
+          rawCount: store.moodleCaptures[store.moodleCaptures.length - 1].rawCount || 0,
+          keys_count: Array.isArray(store.moodleCaptures[store.moodleCaptures.length - 1].keys)
+            ? store.moodleCaptures[store.moodleCaptures.length - 1].keys.length
+            : 0
+        }
+      : null,
+    safety: {
+      no_secret_values_returned: true,
+      no_student_rows_returned: true,
+      no_names_or_emails_returned: true,
+      aggregate_counts_only: true
+    }
+  });
+});
+// <<< MTH_LTI_SAFE_DIAGNOSTICS_V1 >>>
+
 app.get("/api/release/readiness", (req, res) => {
   noStore(res);
   res.json(buildReleaseReadiness(req));
