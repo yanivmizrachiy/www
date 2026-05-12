@@ -1,0 +1,15 @@
+{
+  "milestone": "Release Readiness Runtime Smoke",
+  "runtime_smoke_passed": true,
+  "release_readiness_endpoint_ok": true,
+  "teacher_release_ready": false,
+  "broad_release_ready": false,
+  "no_fake_release_claim": true,
+  "no_secret_values_returned": true,
+  "no_student_rows_returned": true,
+  "automation_core_percent": 80,
+  "teacher_release_readiness_percent": 62,
+  "deploy": false,
+  "secrets_added": false,
+  "student_data_added": false
+}

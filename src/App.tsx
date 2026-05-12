@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AppLayout from "@/components/AppLayout";
 import Dashboard from "./pages/Dashboard";
+import MissingData from "./pages/MissingData";
 import Sites from "./pages/Sites";
 import Students from "./pages/Students";
 import StudentProfile from "./pages/StudentProfile";
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="/export" element={<Export />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/import" element={<Import />} />
+            <Route path="/missing-data" element={<MissingData />} />
             <Route path="/setup" element={<Setup />} />
           </Route>
           <Route path="*" element={<NotFound />} />

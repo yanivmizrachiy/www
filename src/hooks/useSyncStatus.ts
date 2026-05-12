@@ -1,69 +1,95 @@
 import { useCallback, useEffect, useState } from "react";
-import type { SyncStatusResponse } from "@/shared/capabilities";
+import { getLtiToken } from "@/hooks/useLtiSession";
 
-function syncStatusUrl(path: "/api/sync/status" | "/api/sync/run") {
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get("t");
-  return token ? `${path}?t=${encodeURIComponent(token)}` : path;
+export interface SyncStatus {
+  ok: boolean;
+  version: string;
+  teacher_release_ready: boolean;
+  no_fake_data: boolean;
+  no_private_rows_returned: boolean;
+  session_exists: boolean;
+  counts: {
+    students: number;
+    chapters: number;
+    tasks: number;
+    grade_items: number;
+    grades: number;
+    log_events: number;
+    import_batches: number;
+  };
+  next_actions_he: string[];
+  capability_details?: Array<{
+    key: string;
+    label_he: string;
+    status: string;
+    priority: number;
+    required_report_he: string | null;
+    target_href: string;
+    teacher_message_he: string;
+  }>;
+  capabilities: {
+    participants: string;
+    tasks: string;
+    grades: string;
+    logs: string;
+  };
+  sync_run?: {
+    ok: boolean;
+    mode: string;
+    note_he: string;
+  };
+}
+
+async function requestSyncStatus(method: "GET" | "POST"): Promise<SyncStatus> {
+  const token = getLtiToken();
+  const endpoint = method === "POST" ? "/api/sync/run" : "/api/sync/status";
+  const url = token ? `${endpoint}?t=${encodeURIComponent(token)}` : endpoint;
+
+  const res = await fetch(url, {
+    method,
+    credentials: "include",
+    headers: token ? { "x-lti-session": token } : undefined,
+  });
+
+  if (!res.ok) throw new Error(`sync_status_http_${res.status}`);
+  return (await res.json()) as SyncStatus;
 }
 
 export function useSyncStatus() {
-  const [data, setData] = useState<SyncStatusResponse | null>(null);
+  const [data, setData] = useState<SyncStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const refresh = useCallback(async () => {
     setLoading(true);
-    setError("");
-
     try {
-      const response = await fetch(syncStatusUrl("/api/sync/status"), {
-        headers: { Accept: "application/json" }
-      });
-      const json = await response.json();
-
-      if (!response.ok || !json?.ok) {
-        throw new Error(json?.error || "SYNC_STATUS_FAILED");
-      }
-
-      setData(json);
+      const payload = await requestSyncStatus("GET");
+      setData(payload);
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "SYNC_STATUS_FAILED");
+      setError(err instanceof Error ? err.message : "sync_status_failed");
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const run = useCallback(async () => {
+  const runSync = useCallback(async () => {
     setRunning(true);
-    setError("");
-
     try {
-      const response = await fetch(syncStatusUrl("/api/sync/run"), {
-        method: "POST",
-        headers: { Accept: "application/json" }
-      });
-      const json = await response.json();
-
-      if (!response.ok || !json?.ok) {
-        throw new Error(json?.error || "SYNC_RUN_FAILED");
-      }
-
-      setData(json);
-      return json as SyncStatusResponse;
+      const payload = await requestSyncStatus("POST");
+      setData(payload);
+      setError(null);
+      return payload;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "SYNC_RUN_FAILED";
-      setError(message);
-      throw err;
+      setError(err instanceof Error ? err.message : "sync_run_failed");
+      return null;
     } finally {
       setRunning(false);
     }
   }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useEffect(() => { refresh(); }, [refresh]);
 
-  return { data, loading, running, error, reload: load, run };
+  return { data, loading, running, error, refresh, runSync };
 }

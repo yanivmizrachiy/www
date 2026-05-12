@@ -1,0 +1,19 @@
+{
+  "sourceType": "google-sheet",
+  "sheetId": "1bG6RsGZK39lNogtTBS5_voJz0WVcRu2D",
+  "gid": "970211231",
+  "candidateGids": ["970211231", "0"],
+  "csvUrl": "https://docs.google.com/spreadsheets/d/1bG6RsGZK39lNogtTBS5_voJz0WVcRu2D/gviz/tq?tqx=out:csv&gid=970211231",
+  "jsonUrl": "https://docs.google.com/spreadsheets/d/1bG6RsGZK39lNogtTBS5_voJz0WVcRu2D/gviz/tq?gid=970211231&tqx=out:json",
+  "isPrimarySource": true,
+  "requiresPublicReadAccess": true,
+  "fallbackFile": "data/events.json",
+  "displayMode": "event-stream-mobile-first",
+  "sheetLayout": "excel-like-calendar-grid-all-known-tabs",
+  "syncPolicy": {
+    "mode": "live-public-sheet-event-stream-known-tabs",
+    "cacheBusting": true,
+    "autoRefreshMs": 180000,
+    "truthRule": "Use only real events extracted from the Google Sheet file. Show no demo blocks, no fake stats, and no monthly calendar view."
+  }
+}

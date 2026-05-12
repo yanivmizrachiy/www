@@ -1,0 +1,10 @@
+{
+  "title": "הצעה לניהול הלו״ז של חטיבת הביניים",
+  "pdf": "hazaa-luz-teddy.pdf",
+  "liveSiteUrl": "https://yanivmizrachiy.github.io/www/luz-teddy/clean.html?v=1511f59",
+  "publicPdfUrl": "https://yanivmizrachiy.github.io/www/downloads/hazaa-luz-teddy/hazaa-luz-teddy.pdf",
+  "createdAt": "2026-05-03T13:01:22",
+  "pdfSizeBytes": 218489,
+  "method": "librsvg-pango-rtl-svg-render-plus-clickable-pdf",
+  "rtlQuality": "uses librsvg/pango instead of manual Hebrew reversal"
+}

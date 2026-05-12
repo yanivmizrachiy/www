@@ -1,26 +1,45 @@
-/**
- * Formats seconds into Hebrew HMS format (e.g., 2ש 30ד 15ש)
- */
-export function secondsToHebrewHms(seconds: number): string {
-  if (seconds <= 0) return "0ש";
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
+export function formatDuration(seconds: number | null | undefined): string {
+  if (seconds == null || Number.isNaN(seconds) || seconds < 0) return "—";
+  const total = Math.floor(seconds);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
 
-  const parts = [];
-  if (h > 0) parts.push(`${h}ש`);
-  if (m > 0) parts.push(`${m}ד`);
-  if (s > 0 || parts.length === 0) parts.push(`${s}ש`);
-
-  return parts.join(" ");
+  if (hours > 0) {
+    return `${hours} שעות ${minutes} דקות`;
+  }
+  if (minutes > 0) {
+    return `${minutes} דקות${secs > 0 ? ` ${secs} שניות` : ""}`;
+  }
+  return `${secs} שניות`;
 }
 
-/**
- * Formats seconds into HH:MM:SS
- */
-export function secondsToDisplay(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  return [h, m, s].map(v => v.toString().padStart(2, '0')).join(':');
+export function formatDurationCompact(seconds: number | null | undefined): string {
+  if (seconds == null || Number.isNaN(seconds) || seconds < 0) return "—";
+  const total = Math.floor(seconds);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+  if (hours > 0) return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  return `${minutes}:${secs.toString().padStart(2, "0")}`;
+}
+
+export function toIsoDate(value: string | Date | null | undefined): string | null {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString().slice(0, 10);
+}
+
+export function secondsToHebrewHms(value: number | null | undefined): string {
+  const totalSeconds = Math.max(0, Math.floor(Number(value) || 0));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0 && minutes > 0) return `${hours} שעות ו־${minutes} דקות`;
+  if (hours > 0) return `${hours} שעות`;
+  if (minutes > 0 && seconds > 0) return `${minutes} דקות ו־${seconds} שניות`;
+  if (minutes > 0) return `${minutes} דקות`;
+  return `${seconds} שניות`;
 }
