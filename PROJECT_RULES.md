@@ -620,3 +620,23 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 - האם הוא שומר על פרטיות?
 - האם הוא תועד ב־STATE?
 <!-- MTH_PRODUCTION_REALITY_HARDENING_20260511_END -->
+
+<!-- MTH_HEBREW_NO_RESTART_MARKER_20260512_START -->
+## כלל עברי מחייב — לא מתחילים מחדש
+
+לא מתחילים מחדש.
+
+ממשיכים מהקיים בלבד.
+
+לא בונים דמו.
+
+לא מחליפים את האפליקציה הקיימת באפליקציה חדשה.
+
+לא מוחקים או עוקפים יכולות שכבר עובדות.
+
+כל פיתוח עתידי חייב להמשיך מהריפו הקיים, מהשרת הפעיל `src/server.js`, מה־Tailwind הפעיל `tailwind.config.cjs`, ומהמסכים הקיימים.
+
+אם יש מסך קיים, הוא אינו נחשב יכולת עובדת עד שיש מקור נתונים אמיתי, בדיקה, ותיעוד STATE.
+
+השלב הבא בקוד הוא Automation Core: Capability Detector, Sync Engine, Sync Status Endpoint, Feature Gates, וכפתור `סנכרן מרחב`.
+<!-- MTH_HEBREW_NO_RESTART_MARKER_20260512_END -->
