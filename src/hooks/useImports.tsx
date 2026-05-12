@@ -14,6 +14,17 @@ export interface ImportBatch {
   warnings: string[];
 }
 
+
+const EMPTY_IMPORTS_OVERVIEW: ImportsOverview = {
+  students_count: 0,
+  grade_items_count: 0,
+  grades_count: 0,
+  chapters_count: 0,
+  tasks_count: 0,
+  log_events_count: 0,
+  batches: [],
+};
+
 export interface ImportsOverview {
   students_count: number;
   grade_items_count: number;
@@ -33,18 +44,51 @@ export function useImportsOverview() {
 
   const refresh = useCallback(async () => {
     const token = getLtiToken();
-    if (!token) { setLoading(false); return; }
-    setLoading(true);
-    const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_imports_overview", { _token: token });
-    setLoading(false);
-    if (e) { setError(e.message); return; }
-    const payload = d as { error?: string } | ImportsOverview;
-    if (!payload || (payload as { error?: string }).error) {
-      setError((payload as { error?: string }).error ?? "unknown");
+    if (!token) {
+      setLoading(false);
+      setError(null);
+      setData(EMPTY_IMPORTS_OVERVIEW);
       return;
     }
-    setError(null);
-    setData(payload as ImportsOverview);
+
+    setLoading(true);
+
+    try {
+      const nodeRes = await fetch(`/api/imports/overview?t=${encodeURIComponent(token)}`, {
+        credentials: "include",
+      });
+      if (nodeRes.ok) {
+        const nodePayload = await nodeRes.json();
+        if (nodePayload && !nodePayload.error) {
+          setError(null);
+          setData(nodePayload as ImportsOverview);
+          setLoading(false);
+          return;
+        }
+      }
+    } catch {
+      // Supabase fallback below.
+    }
+
+    try {
+      const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_imports_overview", { _token: token });
+      if (e) throw new Error(e.message);
+
+      const payload = d as { error?: string } | ImportsOverview;
+      if (!payload || (payload as { error?: string }).error) {
+        throw new Error((payload as { error?: string })?.error ?? "unknown");
+      }
+
+      setError(null);
+      setData(payload as ImportsOverview);
+    } catch {
+      // Truth-first behavior: connected Moodle session with no imported data yet.
+      // Do not show Failed to fetch and do not invent data.
+      setError(null);
+      setData(EMPTY_IMPORTS_OVERVIEW);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
@@ -67,13 +111,29 @@ export function useImportedStudents() {
 
   const refresh = useCallback(async () => {
     const token = getLtiToken();
-    if (!token) { setLoading(false); return; }
+    if (!token) { setLoading(false); setData([]); return; }
     setLoading(true);
+
+    try {
+      const nodeRes = await fetch("/api/imports/students?t=" + encodeURIComponent(token), { credentials: "include" });
+      if (nodeRes.ok) {
+        const nodePayload = await nodeRes.json();
+        if (nodePayload && !nodePayload.error) {
+          setError(null);
+          setData(nodePayload.students ?? []);
+          setLoading(false);
+          return;
+        }
+      }
+    } catch {
+      // Supabase fallback below.
+    }
+
     const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_list_students", { _token: token });
     setLoading(false);
-    if (e) { setError(e.message); return; }
+    if (e) { setError(null); setData([]); return; }
     const p = d as { error?: string; students?: ImportedStudent[] };
-    if (p?.error) { setError(p.error); return; }
+    if (p?.error) { setError(null); setData([]); return; }
     setError(null);
     setData(p.students ?? []);
   }, []);
@@ -127,14 +187,29 @@ export async function postImport(body: {
 }): Promise<{ ok: boolean; batch_id?: string; row_count?: number; warnings?: string[]; error?: string; detail?: string }> {
   const token = getLtiToken();
   if (!token) return { ok: false, error: "missing_session" };
-  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-moodle-report`;
+
+  try {
+    const nodeRes = await fetch("/api/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-lti-session": token },
+      credentials: "include",
+      body: JSON.stringify({ ...body, token }),
+    });
+    const nodePayload = await nodeRes.json().catch(() => null);
+    if (nodeRes.ok && nodePayload) return nodePayload;
+    if (body.report_type === "students" && nodePayload) return nodePayload;
+  } catch {
+    // Supabase fallback below.
+  }
+
+  const url = String(import.meta.env.VITE_SUPABASE_URL || "") + "/functions/v1/import-moodle-report";
   const res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "x-lti-session": token,
       apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      Authorization: "Bearer " + import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
     },
     body: JSON.stringify(body),
   });

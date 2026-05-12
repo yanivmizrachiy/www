@@ -1,0 +1,220 @@
+{
+  "generated_at": "2026-05-12T06:55:40.985266+00:00",
+  "files": {
+    "server.ts": {
+      "exists": true,
+      "size": 7096,
+      "lines": 165,
+      "sha256": "58e8a47b023c16cb6267b2279aea6c440ed12d980f3b44d831f3c3304399d80b",
+      "referenced_by": [
+        "STATE/MOODLE_TEACHER_HUB_PRODUCTION_HARDENING.md",
+        "STATE/evidence-log.md",
+        "STATE/file-classification/repo-file-classification-20260510.md",
+        "STATE/local-audit/pr-branch-audit-20260501-065132.json",
+        "STATE/local-audit/pr-branch-audit-20260501-065132.md",
+        "STATE/local-audit/pr-branch-search-20260501-065132.txt",
+        "STATE/readiness-audit/central-coordinator-plan-20260503.md",
+        "STATE/roadmap/repo-cleanup-audit-20260512.json",
+        "STATE/roadmap/repo-cleanup-decisions-20260512.json",
+        "docs/architecture/repo-cleanup-audit-20260512.md",
+        "docs/architecture/repo-cleanup-decisions-20260512.md",
+        "scripts/audit/audit-moodle-readiness.mjs",
+        "supabase/functions/import-moodle-report/index.ts",
+        "supabase/functions/lti-launch/index.ts"
+      ],
+      "markers": [
+        "demo",
+        "fake",
+        "MISSING_OAUTH_SIGNATURE"
+      ],
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/health"
+        },
+        {
+          "method": "GET",
+          "path": "*"
+        }
+      ]
+    },
+    "src/server.js": {
+      "exists": true,
+      "size": 79140,
+      "lines": 2194,
+      "sha256": "6c58cc9ae8189800a4c518cbb5a990bacfcfe82a073632bf48c796da7ea0bb6c",
+      "referenced_by": [
+        ".github/workflows/build-termux-runtime.yml",
+        ".github/workflows/moodle-teacher-hub-safety-check.yml",
+        "STATE/MOODLE_TEACHER_HUB_PRODUCTION_HARDENING.md",
+        "STATE/deploy-triggers/force-render-lti-routing-fix-20260506.md",
+        "STATE/evidence-log.md",
+        "STATE/file-classification/repo-file-classification-20260510.md",
+        "STATE/local-audit/pr-branch-audit-20260501-065132.md",
+        "STATE/local-audit/pr-branch-search-20260501-065132.txt",
+        "STATE/readiness-audit/central-coordinator-plan-20260503.md",
+        "STATE/readiness-audit/error-audit-and-smarter-fixes-20260506.md",
+        "STATE/readiness-audit/lti-routing-automatic-fix-stack-20260506.md",
+        "STATE/readiness-audit/lti-routing-recovery-applied-20260506.md",
+        "STATE/readiness-audit/lti-session-bridge-pushed-20260503.md",
+        "STATE/readiness-audit/lti13-phase1-safe-oidc-20260507-161549.md",
+        "STATE/readiness-audit/moodle-launch-503-after-salon-runtime-20260503.md",
+        "STATE/readiness-audit/product-data-security-acceptance-workflow-handoff-20260508.md",
+        "STATE/readiness-audit/react-root-canonical-cleanup-20260506.md",
+        "STATE/readiness-audit/render-canonical-root-verified-20260506.md",
+        "STATE/readiness-audit/render-first-participants-import-v3-verified-20260506.md",
+        "STATE/readiness-audit/repo-alignment-check-20260506.md",
+        "STATE/readiness-audit/repo-contradiction-cleanup-20260506.md",
+        "STATE/readiness-audit/termux-runtime-package-20260505.md",
+        "STATE/roadmap/repo-cleanup-audit-20260512.json",
+        "STATE/roadmap/repo-cleanup-decisions-20260512.json",
+        "docs/architecture/repo-cleanup-audit-20260512.md",
+        "docs/architecture/repo-cleanup-decisions-20260512.md",
+        "docs/operations/work-plan.md",
+        "package.json",
+        "scripts/archive-candidates/render-first-participants-import/apply-render-first-participants-import-v2.cjs",
+        "scripts/archive-candidates/render-first-participants-import/apply-render-first-participants-import-v3.cjs",
+        "scripts/archive-candidates/render-first-participants-import/apply-render-first-participants-import-v3.py",
+        "scripts/archive-candidates/render-first-participants-import/apply-render-first-participants-import.cjs",
+        "scripts/audit/audit-moodle-readiness.mjs",
+        "scripts/audit/verify-lti-routing-fix.cjs",
+        "scripts/maintenance/add-lti13-readiness.cjs",
+        "scripts/maintenance/fix-lti-routing-redirect-cache.cjs",
+        "scripts/termux/run-runtime-package.sh",
+        "scripts/termux/termux-react-shell-autofix.sh",
+        "server.ts"
+      ],
+      "markers": [
+        "fake",
+        "MISSING_OAUTH_SIGNATURE"
+      ],
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/health"
+        },
+        {
+          "method": "GET",
+          "path": "/lti11/config"
+        },
+        {
+          "method": "GET",
+          "path": "/api/bootstrap"
+        },
+        {
+          "method": "POST",
+          "path": "/api/import"
+        },
+        {
+          "method": "GET",
+          "path": "/api/imports/students"
+        },
+        {
+          "method": "GET",
+          "path": "/api/imports/overview"
+        },
+        {
+          "method": "GET",
+          "path": "/api/moodle-ws/status"
+        },
+        {
+          "method": "GET",
+          "path": "/api/moodle-ws/site-info"
+        },
+        {
+          "method": "GET",
+          "path": "/api/moodle-ws/enrolled-users-preview"
+        },
+        {
+          "method": "GET",
+          "path": "/api/launches"
+        },
+        {
+          "method": "GET",
+          "path": "/api/students"
+        },
+        {
+          "method": "GET",
+          "path": "/api/tasks"
+        },
+        {
+          "method": "GET",
+          "path": "/api/grades"
+        },
+        {
+          "method": "GET",
+          "path": "/api/activity"
+        },
+        {
+          "method": "GET",
+          "path": "/api/settings"
+        },
+        {
+          "method": "GET",
+          "path": "/api/moodle-captures"
+        },
+        {
+          "method": "GET",
+          "path": "/api/moodle-summary"
+        },
+        {
+          "method": "GET",
+          "path": "/api/export/grades.csv"
+        },
+        {
+          "method": "GET",
+          "path": "/legacy-dashboard"
+        },
+        {
+          "method": "GET",
+          "path": "/api/lti13/token-matrix"
+        },
+        {
+          "method": "GET",
+          "path": "/api/lti13/nrps-preview"
+        },
+        {
+          "method": "GET",
+          "path": "/api/lti13/status"
+        },
+        {
+          "method": "GET",
+          "path": "/api/lti13/config"
+        },
+        {
+          "method": "GET",
+          "path": "/api/lti13/jwks"
+        },
+        {
+          "method": "ALL",
+          "path": "/api/lti13/login"
+        },
+        {
+          "method": "ALL",
+          "path": "/api/lti13/launch"
+        },
+        {
+          "method": "GET",
+          "path": "/api/lti13/services-status"
+        },
+        {
+          "method": "GET",
+          "path": "*"
+        }
+      ]
+    }
+  },
+  "package_scripts_use": {
+    "server_ts": false,
+    "src_server_js": true
+  },
+  "render_yaml_mentions": {
+    "server_ts": false,
+    "src_server_js": false
+  },
+  "decision": {
+    "src_server_js": "KEEP_ACTIVE",
+    "server_ts": "REVIEW_REQUIRED_BEFORE_ARCHIVE",
+    "reason": "package.json lifecycle uses src/server.js. server.ts exists and may be historical/reference code, but is not approved for deletion before comparison and build verification."
+  }
+}

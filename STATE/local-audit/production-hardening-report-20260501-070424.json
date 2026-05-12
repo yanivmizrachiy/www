@@ -1,0 +1,14 @@
+{
+  "timestamp": "20260501-070424",
+  "branch": "gemini/ai-studio-sync-20260428-193953",
+  "commit_before": "24cbc582b99676ed16866102a9c4e996d13fb069",
+  "canonical_endpoint": "/api/lti/launch",
+  "install_status": "SKIPPED_NODE_MODULES_EXISTS",
+  "node_check_status": "PASSED",
+  "typecheck_status": "FAILED",
+  "build_status": "BUILD_FAILED",
+  "no_sql_run": true,
+  "no_deploy": true,
+  "moodle_tool_url_changed_by_script": false,
+  "pattern_counts": {}
+}

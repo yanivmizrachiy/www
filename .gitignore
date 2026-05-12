@@ -2,7 +2,10 @@ node_modules/
 .env
 .env.local
 .env.*.local
+.env*
+!.env.example
 *.log
+*.tsbuildinfo
 server_err.log
 server_out.log
 mega-sync-*.log
@@ -12,7 +15,37 @@ phase2-fix-*.log
 backup-*/
 STATE/snapshot_*/
 STATE/backup_*/
+STATE/gemini-sync/backup-before-sync-*/
+build/
 dist/
 coverage/
 Thumbs.db
 .DS_Store
+
+# Moodle Teacher Hub runtime/private data
+# Never commit files that may contain real student names, emails, grades, logs, tokens, or runtime state.
+data/
+store.json
+**/store.json
+MOODLE_TEACHER_HUB_BACKUP_TOOLS/
+moodle-teacher-hub-students-backup-*.json
+*moodle*students*backup*.json
+*participants*.csv
+*participants*.xlsx
+*participants*.xls
+*participants*.ods
+*students*.csv
+*students*.xlsx
+*students*.xls
+*students*.ods
+*gradebook*.csv
+*gradebook*.xlsx
+*gradebook*.xls
+*logs*.csv
+*logs*.xlsx
+*logs*.xls
+
+# Explicit examples are allowed only when they are clearly synthetic and anonymized.
+!docs/**/*.example.csv
+!docs/**/*.example.json
+!STATE/**/*.example.json

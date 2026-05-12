@@ -1,0 +1,116 @@
+name: Build Termux Runtime Package
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - gemini/ai-studio-sync-20260428-193953
+    paths:
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.config.*"
+      - "index.html"
+      - ".github/workflows/build-termux-runtime.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        env:
+          VITE_SUPABASE_URL: https://ncoqanascubqkxxfvucfz.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY || 'termux-runtime-public-placeholder' }}
+        run: npm run build
+
+      - name: Verify runtime bridge
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d dist
+          test -f src/server.js
+          grep -q "getSessionFromToken" src/server.js
+          grep -q "/api/bootstrap" src/server.js
+          grep -q "/api/bootstrap?t=" src/hooks/useLtiSession.ts
+          grep -q "frame-ancestors" src/server.js
+          node --check src/server.js
+
+      - name: Assemble runtime package
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/moodle-runtime-package
+          mkdir -p /tmp/moodle-runtime-package/src
+          mkdir -p /tmp/moodle-runtime-package/STATE/runtime-package
+
+          cp -R dist /tmp/moodle-runtime-package/dist
+          cp src/server.js /tmp/moodle-runtime-package/src/server.js
+          cp package.json /tmp/moodle-runtime-package/package.json
+          cp package-lock.json /tmp/moodle-runtime-package/package-lock.json
+
+          cat > /tmp/moodle-runtime-package/STATE/runtime-package/manifest.json <<EOF
+          {
+            "repo": "yanivmizrachiy/www",
+            "source_branch": "${GITHUB_REF_NAME}",
+            "source_commit": "${GITHUB_SHA}",
+            "package": "moodle-teacher-hub-termux-runtime.tar.gz",
+            "contains_dist": true,
+            "contains_server": true,
+            "contains_no_secrets": true,
+            "created_at_utc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+
+          tar -czf /tmp/moodle-teacher-hub-termux-runtime.tar.gz -C /tmp/moodle-runtime-package .
+
+      - name: Publish runtime branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin termux-runtime || true
+          git switch --orphan termux-runtime
+
+          git rm -rf . >/dev/null 2>&1 || true
+          rm -rf ./* .github 2>/dev/null || true
+
+          cp /tmp/moodle-teacher-hub-termux-runtime.tar.gz .
+          mkdir -p STATE/runtime-package
+          tar -xOf moodle-teacher-hub-termux-runtime.tar.gz ./STATE/runtime-package/manifest.json > STATE/runtime-package/manifest.json
+
+          cat > README.md <<EOF
+          # Moodle Teacher Hub — Termux Runtime
+
+          This branch is generated automatically by GitHub Actions.
+
+          It contains a prebuilt runtime package for Termux:
+
+          \`\`\`text
+          moodle-teacher-hub-termux-runtime.tar.gz
+          \`\`\`
+
+          No secrets are included.
+          EOF
+
+          git add README.md moodle-teacher-hub-termux-runtime.tar.gz STATE/runtime-package/manifest.json
+          git commit -m "Publish Termux runtime package"
+          git push -f origin termux-runtime

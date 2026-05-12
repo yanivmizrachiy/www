@@ -1,0 +1,16 @@
+{
+  "generated_at": "2026-05-12T05:24:24.897170+00:00",
+  "project": "Moodle Teacher Hub",
+  "production_intent": true,
+  "demo_allowed": false,
+  "restart_from_scratch_allowed": false,
+  "critical_rules": {
+    "screen_is_not_capability": true,
+    "lti13_lti11_separation_required": true,
+    "feature_gate_required": true,
+    "persistence_required_before_broad_teacher_release": true,
+    "automation_core_next": true
+  },
+  "teacher_release_ready": false,
+  "next_code_milestone": "Automation Core"
+}

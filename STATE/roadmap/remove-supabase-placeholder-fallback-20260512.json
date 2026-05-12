@@ -1,0 +1,1 @@
+{"mode":"targeted_production_blocker_fix","fixed_blocker":"supabase_placeholder_fallback","changed_source_file":"src/integrations/supabase/client.ts","secrets_added":false,"student_data_added":false,"deploy":false,"database_change":false}

@@ -30,3 +30,16 @@ export function toIsoDate(value: string | Date | null | undefined): string | nul
   if (Number.isNaN(date.getTime())) return null;
   return date.toISOString().slice(0, 10);
 }
+
+export function secondsToHebrewHms(value: number | null | undefined): string {
+  const totalSeconds = Math.max(0, Math.floor(Number(value) || 0));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0 && minutes > 0) return `${hours} שעות ו־${minutes} דקות`;
+  if (hours > 0) return `${hours} שעות`;
+  if (minutes > 0 && seconds > 0) return `${minutes} דקות ו־${seconds} שניות`;
+  if (minutes > 0) return `${minutes} דקות`;
+  return `${seconds} שניות`;
+}
