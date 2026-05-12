@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, GraduationCap, ClipboardList, Database, Calendar, Import, ArrowRight, AlertCircle, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
+import SyncFeatureGates from "@/components/SyncFeatureGates";
 
 function StatCard({ label, value, icon: Icon, delay = 0 }: { label: string, value: number | string, icon: any, delay?: number }) {
   return (
@@ -139,6 +140,8 @@ export default function Dashboard() {
           </p>
         </section>
       ) : null}
+
+      <SyncFeatureGates status={syncStatus.data} loading={syncStatus.loading} />
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard label="תלמידים רשומים" value={v(data?.students_count)} icon={Users} delay={0.1} />
