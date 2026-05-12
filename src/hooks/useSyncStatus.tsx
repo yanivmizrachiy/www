@@ -98,3 +98,73 @@ export function useSyncStatus() {
 
   return { data, loading, refreshing, error, refresh };
 }
+
+
+export interface SyncRunAction {
+  id: string;
+  priority: number;
+  title_he: string;
+  detail_he: string;
+  required_report_type: string | null;
+  path: string | null;
+  created_at: string;
+}
+
+export interface SyncRunPayload {
+  ok: boolean;
+  mode: string;
+  version: string;
+  teacher_message_he: string;
+  readiness: {
+    ready_capabilities: number;
+    total_capabilities: number;
+    percent: number;
+  };
+  counts: SyncStatusPayload["counts"];
+  capabilities: SyncStatusPayload["capabilities"];
+  prioritized_next_actions: SyncRunAction[];
+  first_next_action: SyncRunAction | null;
+  privacy: SyncStatusPayload["privacy"];
+  now: string;
+}
+
+export function useSyncRun() {
+  const [data, setData] = useState<SyncRunPayload | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const run = useCallback(async () => {
+    const token = getLtiToken();
+    setLoading(true);
+
+    try {
+      const url = token
+        ? `/api/sync/run?t=${encodeURIComponent(token)}`
+        : "/api/sync/run";
+
+      const res = await fetch(url, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      const payload = await res.json();
+
+      if (!res.ok || !payload?.ok) {
+        throw new Error(payload?.error || "sync_run_failed");
+      }
+
+      setData(payload as SyncRunPayload);
+      setError(null);
+      return payload as SyncRunPayload;
+    } catch {
+      setError("לא ניתן להריץ כרגע סנכרון מרחב.");
+      setData(null);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { data, loading, error, run };
+}
+

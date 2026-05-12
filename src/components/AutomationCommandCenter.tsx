@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { isCapabilityReady, useSyncStatus, type SyncCapability } from "@/hooks/useSyncStatus";
+import { isCapabilityReady, useSyncRun, useSyncStatus, type SyncCapability } from "@/hooks/useSyncStatus";
 
 const iconMap: Record<string, typeof Users> = {
   "סנכרן מרחב": RefreshCcw,
@@ -57,6 +57,7 @@ function statusClass(capability?: SyncCapability) {
 
 export function AutomationCommandCenter() {
   const { data, loading, refreshing, error, refresh } = useSyncStatus();
+  const syncRun = useSyncRun();
 
   const missing = data
     ? Object.entries(data.capabilities)
@@ -80,12 +81,12 @@ export function AutomationCommandCenter() {
             </div>
 
             <Button
-              onClick={refresh}
-              disabled={refreshing}
+              onClick={async () => { await syncRun.run(); await refresh(); }}
+              disabled={refreshing || syncRun.loading}
               size="lg"
               className="rounded-2xl bg-white px-6 font-extrabold text-indigo-950 shadow-[0_12px_30px_rgba(255,255,255,0.25)] hover:bg-cyan-50"
             >
-              {refreshing ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="ml-2 h-4 w-4" />}
+              {refreshing || syncRun.loading ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="ml-2 h-4 w-4" />}
               סנכרן מרחב
             </Button>
           </div>
@@ -95,6 +96,29 @@ export function AutomationCommandCenter() {
           {error && (
             <div className="rounded-2xl border border-rose-300/30 bg-rose-500/15 p-3 text-sm text-rose-50">
               {error}
+            </div>
+          )}
+
+          {syncRun.error && (
+            <div className="rounded-2xl border border-rose-300/30 bg-rose-500/15 p-3 text-sm text-rose-50">
+              {syncRun.error}
+            </div>
+          )}
+
+          {syncRun.data && (
+            <div className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 p-4 text-sm text-cyan-50">
+              <div className="font-extrabold">{syncRun.data.teacher_message_he}</div>
+              <div className="mt-1 text-cyan-100">
+                מוכנות יכולות: {syncRun.data.readiness.ready_capabilities}/{syncRun.data.readiness.total_capabilities}
+                {" "}({syncRun.data.readiness.percent}%)
+              </div>
+              {syncRun.data.first_next_action && (
+                <div className="mt-2 rounded-xl bg-white/10 p-3">
+                  <div className="font-bold">הפעולה הבאה:</div>
+                  <div>{syncRun.data.first_next_action.title_he}</div>
+                  <div className="text-cyan-100">{syncRun.data.first_next_action.detail_he}</div>
+                </div>
+              )}
             </div>
           )}
 
@@ -191,3 +215,4 @@ export function AutomationCommandCenter() {
     </section>
   );
 }
+

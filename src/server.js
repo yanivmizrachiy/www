@@ -717,6 +717,180 @@ app.get("/api/sync/status", (req, res) => {
   res.json(buildSyncStatus(req));
 });
 
+
+const MTH_AUTOMATION_CORE_SYNC_RUN_V2 = true;
+
+function buildTeacherAction(id, priority, titleHe, detailHe, requiredReportType = null, path = null) {
+  return {
+    id,
+    priority,
+    title_he: titleHe,
+    detail_he: detailHe,
+    required_report_type: requiredReportType,
+    path,
+    created_at: new Date().toISOString()
+  };
+}
+
+function buildPrioritizedTeacherActions(syncStatus) {
+  const c = syncStatus.capabilities || {};
+  const actions = [];
+
+  if (c.lti_session?.status !== "automatic") {
+    actions.push(buildTeacherAction(
+      "open_from_moodle",
+      1,
+      "פתח את הכלי מתוך Moodle",
+      "כדי לזהות מורה, מרחב וקורס חייבים לפתוח את הכלי מתוך מרחב Moodle.",
+      null,
+      null
+    ));
+  }
+
+  if (c.participants_names_emails?.status === "missing_required_report") {
+    actions.push(buildTeacherAction(
+      "import_participants",
+      2,
+      "העלה דוח Participants",
+      "זה הדוח שמאפשר להציג שמות ומיילים אמיתיים של תלמידים. בלי זה לא מציגים תלמידים מזויפים.",
+      "participants",
+      "/import"
+    ));
+  }
+
+  if (c.course_tasks?.status === "missing_required_report" || c.course_sections?.status === "missing_required_report") {
+    actions.push(buildTeacherAction(
+      "import_activity_completion_or_course_structure",
+      3,
+      "העלה דוח פרקים/משימות",
+      "כדי לבנות כפתורי פרקים ומשימות אמיתיים נדרש דוח Activity Completion או Course structure ממודל.",
+      "activity_completion_or_course_structure",
+      "/import"
+    ));
+  }
+
+  if (c.grade_results?.status === "missing_required_report" || c.grade_items?.status === "missing_required_report") {
+    actions.push(buildTeacherAction(
+      "import_gradebook",
+      4,
+      "העלה Gradebook",
+      "כדי להציג ציונים, ממוצעים, ציונים גבוהים ונמוכים ודוחות לכל משימה נדרש מקור ציונים אמיתי.",
+      "gradebook",
+      "/import"
+    ));
+  }
+
+  if (c.logs?.status === "missing_required_report" || c.practice_time?.status === "missing_required_report") {
+    actions.push(buildTeacherAction(
+      "import_logs",
+      5,
+      "העלה דוח Logs",
+      "כדי לחשב זמן תרגול יומי ומצטבר נדרש דוח Logs אמיתי ממודל.",
+      "logs",
+      "/import"
+    ));
+  }
+
+  if (c.persistence?.status !== "automatic") {
+    actions.push(buildTeacherAction(
+      "enable_persistence",
+      6,
+      "להשלים שמירה קבועה",
+      "כדי שהנתונים יישמרו אחרי refresh/restart/deploy צריך Persistence מאומת.",
+      null,
+      null
+    ));
+  }
+
+  return actions.sort((a, b) => a.priority - b.priority);
+}
+
+function buildPersistenceStatus() {
+  const supabaseUrlConfigured = Boolean(env("VITE_SUPABASE_URL"));
+  const serviceRoleConfigured = Boolean(env("SUPABASE_SERVICE_ROLE_KEY"));
+  const configured = supabaseUrlConfigured && serviceRoleConfigured;
+
+  return {
+    ok: true,
+    mode: "persistence-status",
+    configured,
+    provider: configured ? "supabase" : "runtime-store-only",
+    current_stage: configured ? "env-present-not-yet-verified" : "not-configured",
+    required_next_step_he: configured
+      ? "צריך לאמת שמירה וטעינה מול Supabase לפני סימון Done."
+      : "צריך להשלים Persistence קבוע לפני הפצה רחבה למורים.",
+    required_tables: [
+      "teachers",
+      "courses",
+      "import_batches",
+      "students",
+      "nrps_members",
+      "student_matches",
+      "course_sections",
+      "course_tasks",
+      "grade_items",
+      "grade_results",
+      "log_events",
+      "practice_time_summaries"
+    ],
+    runtime_counts: {
+      students: Array.isArray(store.students) ? store.students.length : 0,
+      import_batches: Array.isArray(store.importBatches) ? store.importBatches.length : 0,
+      tasks: Array.isArray(store.tasks) ? store.tasks.length : 0,
+      grades: Array.isArray(store.grades) ? store.grades.length : 0,
+      log_events: Array.isArray(store.logEvents) ? store.logEvents.length : 0
+    },
+    privacy: {
+      no_student_names_returned: true,
+      no_emails_returned: true,
+      no_tokens_returned: true,
+      aggregate_only: true
+    },
+    now: new Date().toISOString()
+  };
+}
+
+app.post("/api/sync/run", (req, res) => {
+  noStore(res);
+
+  const syncStatus = buildSyncStatus(req);
+  const prioritizedActions = buildPrioritizedTeacherActions(syncStatus);
+  const readyCount = Object.values(syncStatus.capabilities || {}).filter(item =>
+    item.status === "automatic" || item.status === "available_from_import"
+  ).length;
+  const totalCount = Object.keys(syncStatus.capabilities || {}).length;
+
+  res.json({
+    ok: true,
+    mode: "automation-core-sync-run",
+    version: "MTH_AUTOMATION_CORE_SYNC_RUN_V2",
+    teacher_message_he: prioritizedActions.length
+      ? "המערכת בדקה את המרחב. נמצאו יכולות זמינות וגם נתונים חסרים להשלמה."
+      : "המערכת בדקה את המרחב. אין פעולה ידנית נוספת כרגע.",
+    readiness: {
+      ready_capabilities: readyCount,
+      total_capabilities: totalCount,
+      percent: totalCount ? Math.round((readyCount / totalCount) * 100) : 0
+    },
+    counts: syncStatus.counts,
+    capabilities: syncStatus.capabilities,
+    prioritized_next_actions: prioritizedActions,
+    first_next_action: prioritizedActions[0] || null,
+    privacy: {
+      no_student_names_returned: true,
+      no_emails_returned: true,
+      no_tokens_returned: true,
+      aggregate_only: true
+    },
+    now: new Date().toISOString()
+  });
+});
+
+app.get("/api/persistence/status", (_req, res) => {
+  noStore(res);
+  res.json(buildPersistenceStatus());
+});
+
 app.get("/health", (_req, res) => {
   res.json({
     ok: true,
@@ -2323,6 +2497,7 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`moodle-teacher-hub running on port ${PORT}`);
   console.log(`canonical LTI endpoint: ${CANONICAL_LTI_ENDPOINT}`);
 });
+
 
 
 
