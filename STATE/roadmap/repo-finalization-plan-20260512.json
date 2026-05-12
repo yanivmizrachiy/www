@@ -1,0 +1,8 @@
+{
+  "plan": "Repo Cleanup & Finalization",
+  "progress_percent": 18,
+  "automation_core_live_supabase_percent": 92,
+  "teacher_product_readiness_percent": 72,
+  "teacher_release_ready": false,
+  "next": "stale_pr_cleanup_and_repo_doctor"
+}

@@ -1,3 +1,29 @@
+<!-- MTH_CURRENT_VERIFIED_STATE_20260512_START -->
+## מצב אמת מאומת — 2026-05-12
+
+- ריפו: `yanivmizrachiy/www`.
+- ענף קנוני: `main`.
+- Runtime קבוע: `https://www-tijc.onrender.com`.
+- Teacher release: **NO**.
+
+עובד ומאומת:
+- Automation Core V1 מוזג ל־`main`.
+- `/api/release/readiness` עובד ב־Live.
+- `/api/persistence/validate` עובד ב־Live.
+- Supabase production persistence אומת.
+- אין החזרת סודות.
+- אין החזרת שורות תלמידים.
+
+עדיין לא מאומת:
+- Launch אמיתי מתוך Moodle אחרי השינויים האחרונים.
+- Import מלא אמיתי.
+- בדיקת שני מורים/שני מרחבים.
+- אי־ערבוב נתונים.
+
+כלי חכמים:
+בכל שלב יש לבדוק כלים שיכולים לעזור באמת: GitHub, Render, Supabase, Moodle, CI, UX, RTL, דוחות וייצוא. אין להתקין כלי שלא מקדם עבודה אמיתית.
+<!-- MTH_CURRENT_VERIFIED_STATE_20260512_END -->
+
 # PROJECT_RULES — www / Moodle Teacher Hub
 
 <!-- MTH_CURRENT_VERIFIED_STATE_20260510_START -->

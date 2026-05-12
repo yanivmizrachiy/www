@@ -1,3 +1,19 @@
+<!-- MTH_CURRENT_STATE_20260512_START -->
+## Current state — 2026-05-12
+
+Canonical branch: `main`
+Live runtime: `https://www-tijc.onrender.com`
+Teacher release: **NO**
+
+Verified live:
+- `/health`
+- `/api/release/readiness`
+- `/api/persistence/validate`
+
+Supabase production persistence is verified.
+Real Moodle E2E and multi-teacher isolation are still not verified.
+<!-- MTH_CURRENT_STATE_20260512_END -->
+
 # Moodle Teacher Hub — www
 
 <!-- MTH_README_CURRENT_STATUS_20260510_START -->

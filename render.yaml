@@ -3,7 +3,7 @@ services:
     name: www
     runtime: node
     plan: free
-    branch: gemini/ai-studio-sync-20260428-193953
+    branch: main
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npm run start
     healthCheckPath: /health
