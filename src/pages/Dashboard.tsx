@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
 import { useImportsOverview } from "@/hooks/useImports";
+import { useSyncStatus } from "@/hooks/useSyncStatus";
 import { useLtiSession } from "@/hooks/useLtiSession";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, GraduationCap, ClipboardList, Database, Calendar, Import, ArrowRight, AlertCircle } from "lucide-react";
+import { Users, GraduationCap, ClipboardList, Database, Calendar, Import, ArrowRight, AlertCircle, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
 
 function StatCard({ label, value, icon: Icon, delay = 0 }: { label: string, value: number | string, icon: any, delay?: number }) {
@@ -32,6 +33,7 @@ function StatCard({ label, value, icon: Icon, delay = 0 }: { label: string, valu
 export default function Dashboard() {
   const { session, site } = useLtiSession();
   const { data, loading, error } = useImportsOverview();
+  const syncStatus = useSyncStatus();
   const hasSession = Boolean(session);
   const v = (n: number | undefined) => hasSession && data ? n ?? 0 : "—";
 
@@ -71,10 +73,19 @@ export default function Dashboard() {
               transition={{ delay: 0.3 }}
               className="flex flex-wrap gap-4 pt-4"
             >
-              <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90 font-bold">
+              <Button
+                size="lg"
+                onClick={() => void syncStatus.runSync()}
+                disabled={syncStatus.running}
+                className="bg-white text-primary hover:bg-white/90 font-bold"
+              >
+                <RefreshCw className={syncStatus.running ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+                סנכרן מרחב
+              </Button>
+              <Button asChild size="lg" className="bg-white/15 text-white hover:bg-white/25 font-bold border border-white/20">
                 <Link to="/import" className="flex items-center gap-2">
                   <Import className="h-4 w-4" />
-                  ייבוא דוחות חדשים
+                  ייבוא דוחות
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10">
@@ -105,6 +116,29 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {syncStatus.error && (
+        <div className="rounded-xl border border-status-missing/30 bg-status-missing-bg/10 p-4 text-sm text-status-missing">
+          <div className="font-bold">בדיקת סנכרון לא הצליחה</div>
+          <p className="opacity-80 mt-1">{syncStatus.error}</p>
+        </div>
+      )}
+
+      {syncStatus.data?.next_actions_he?.length ? (
+        <section className="rounded-3xl border border-primary/10 bg-white/80 p-6 shadow-elegant">
+          <h2 className="mb-3 text-lg font-extrabold text-primary">מה חסר כדי להמשיך?</h2>
+          <div className="grid gap-2">
+            {syncStatus.data.next_actions_he.map((action, index) => (
+              <div key={`${action}-${index}`} className="rounded-xl bg-muted/50 p-3 text-sm font-medium">
+                {action}
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-xs text-muted-foreground">
+            אין כאן נתוני דמו. הכפתור בודק יכולות וחוסרים לפי הנתונים האמיתיים שקיימים כרגע.
+          </p>
+        </section>
+      ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard label="תלמידים רשומים" value={v(data?.students_count)} icon={Users} delay={0.1} />
