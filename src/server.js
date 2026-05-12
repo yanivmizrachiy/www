@@ -891,6 +891,211 @@ app.get("/api/persistence/status", (_req, res) => {
   res.json(buildPersistenceStatus());
 });
 
+
+const MTH_PERSISTENCE_V1_FOUNDATION = true;
+
+function persistenceV1Config() {
+  const hasUrl = Boolean(env("VITE_SUPABASE_URL"));
+  const hasServiceRole = Boolean(env("SUPABASE_SERVICE_ROLE_KEY"));
+
+  return {
+    configured: hasUrl && hasServiceRole,
+    has_url: hasUrl,
+    has_service_role: hasServiceRole,
+    provider: hasUrl && hasServiceRole ? "supabase" : "runtime-store-only",
+    required_tables: [
+      "mth_import_batches",
+      "mth_students",
+      "mth_nrps_members",
+      "mth_student_matches"
+    ],
+    privacy: {
+      no_student_names_returned: true,
+      no_emails_returned: true,
+      no_tokens_returned: true,
+      aggregate_only: true
+    }
+  };
+}
+
+function persistenceV1CourseKey(req) {
+  const session = sessionFromRequest(req) || (typeof latestLti13SessionForWs === "function" ? latestLti13SessionForWs() : null);
+  const issuer = session?.issuer || session?.siteUrl || "unknown-issuer";
+  const clientId = session?.clientId || session?.client_id || env("LTI13_CLIENT_ID", "unknown-client");
+  const deploymentId = session?.deployment_id || session?.deploymentId || env("LTI13_DEPLOYMENT_ID", "unknown-deployment");
+  const contextId = session?.contextId || session?.context_id || session?.courseId || session?.course_id || session?.spaceId || "unknown-context";
+
+  return crypto
+    .createHash("sha256")
+    .update([issuer, clientId, deploymentId, contextId].join("|"))
+    .digest("hex")
+    .slice(0, 32);
+}
+
+function persistenceV1AggregateCounts() {
+  return {
+    students: Array.isArray(store.students) ? store.students.length : 0,
+    import_batches: Array.isArray(store.importBatches) ? store.importBatches.length : 0,
+    nrps_members: 0,
+    student_matches: 0
+  };
+}
+
+function persistenceV1StudentRows(req, batchId) {
+  const courseContextKey = persistenceV1CourseKey(req);
+  const students = Array.isArray(store.students) ? store.students : [];
+
+  return students.map(student => ({
+    id: student.id || stableId("student", courseContextKey + "|" + (student.external_id || student.email || student.full_name || student.fullName || crypto.randomUUID())),
+    course_context_key: courseContextKey,
+    import_batch_id: batchId,
+    full_name: student.full_name || student.fullName || student.name || null,
+    email: student.email || null,
+    external_id: student.external_id || student.externalId || student.external_username || student.externalUsername || null,
+    moodle_user_id: student.moodle_user_id || student.moodleUserId || null,
+    lis_person_sourcedid: student.lis_person_sourcedid || student.lisPersonSourcedId || null,
+    id_number: student.id_number || student.idNumber || null,
+    source: student.source || "moodle-participants-import",
+    updated_at: new Date().toISOString(),
+    metadata: {
+      source_shape: "runtime-store-student-v1",
+      has_email: Boolean(student.email),
+      has_moodle_user_id: Boolean(student.moodle_user_id || student.moodleUserId),
+      has_lis_person_sourcedid: Boolean(student.lis_person_sourcedid || student.lisPersonSourcedId)
+    }
+  }));
+}
+
+async function persistenceV1SnapshotToSupabase(req) {
+  const config = persistenceV1Config();
+  const counts = persistenceV1AggregateCounts();
+  const courseContextKey = persistenceV1CourseKey(req);
+
+  if (!config.configured) {
+    return {
+      ok: true,
+      persisted: false,
+      reason: "SUPABASE_NOT_CONFIGURED",
+      provider: config.provider,
+      course_context_key_hash: courseContextKey,
+      counts,
+      privacy: config.privacy,
+      next_required_he: "יש להגדיר Supabase URL ו־Service Role בסביבת השרת בלבד, לא בגיטהאב ולא בצ׳אט."
+    };
+  }
+
+  const supabase = createClient(env("VITE_SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"), {
+    auth: { persistSession: false }
+  });
+
+  const now = new Date().toISOString();
+  const batchId = stableId("mth_import_batch", courseContextKey + "|runtime-snapshot|" + counts.students + "|" + now.slice(0, 16));
+
+  const batch = {
+    id: batchId,
+    course_context_key: courseContextKey,
+    source_type: "runtime-store-snapshot",
+    row_count: counts.students,
+    updated_at: now,
+    metadata: {
+      source: "MoodleTeacherHub runtime store",
+      aggregate_only_response: true
+    }
+  };
+
+  const { error: batchError } = await supabase
+    .from("mth_import_batches")
+    .upsert(batch, { onConflict: "id" });
+
+  if (batchError) {
+    return {
+      ok: false,
+      persisted: false,
+      reason: "IMPORT_BATCH_UPSERT_FAILED",
+      message: batchError.message,
+      provider: "supabase",
+      counts,
+      privacy: config.privacy
+    };
+  }
+
+  const rows = persistenceV1StudentRows(req, batchId);
+
+  if (rows.length > 0) {
+    const { error: studentsError } = await supabase
+      .from("mth_students")
+      .upsert(rows, { onConflict: "id" });
+
+    if (studentsError) {
+      return {
+        ok: false,
+        persisted: false,
+        reason: "STUDENTS_UPSERT_FAILED",
+        message: studentsError.message,
+        provider: "supabase",
+        counts,
+        privacy: config.privacy
+      };
+    }
+  }
+
+  return {
+    ok: true,
+    persisted: true,
+    reason: "PERSISTENCE_V1_SNAPSHOT_SAVED",
+    provider: "supabase",
+    course_context_key_hash: courseContextKey,
+    counts,
+    privacy: config.privacy,
+    now: new Date().toISOString()
+  };
+}
+
+app.get("/api/persistence/v1/status", (req, res) => {
+  noStore(res);
+  const config = persistenceV1Config();
+  res.json({
+    ok: true,
+    mode: "persistence-v1-status",
+    configured: config.configured,
+    provider: config.provider,
+    required_tables: config.required_tables,
+    counts: persistenceV1AggregateCounts(),
+    course_context_key_hash: persistenceV1CourseKey(req),
+    next_required_he: config.configured
+      ? "הגדרות Supabase קיימות. צריך להריץ snapshot ולוודא שהטבלאות קיימות."
+      : "Persistence קבוע עדיין לא פעיל. צריך להגדיר Supabase מחוץ לגיטהאב ולהריץ את migration אחרי בדיקה.",
+    privacy: config.privacy,
+    now: new Date().toISOString()
+  });
+});
+
+app.post("/api/persistence/snapshot", async (req, res) => {
+  noStore(res);
+  try {
+    const result = await persistenceV1SnapshotToSupabase(req);
+    res.status(result.ok ? 200 : 500).json({
+      ...result,
+      mode: "persistence-v1-snapshot",
+      no_private_data_returned: true
+    });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      mode: "persistence-v1-snapshot",
+      persisted: false,
+      reason: "PERSISTENCE_V1_UNHANDLED_ERROR",
+      message: error?.message || "unknown_error",
+      privacy: {
+        no_student_names_returned: true,
+        no_emails_returned: true,
+        no_tokens_returned: true,
+        aggregate_only: true
+      }
+    });
+  }
+});
+
 app.get("/health", (_req, res) => {
   res.json({
     ok: true,
@@ -2497,6 +2702,7 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`moodle-teacher-hub running on port ${PORT}`);
   console.log(`canonical LTI endpoint: ${CANONICAL_LTI_ENDPOINT}`);
 });
+
 
 
 
