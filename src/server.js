@@ -735,6 +735,108 @@ app.get("/api/persistence/status", (_req, res) => {
 
 
 
+
+// >>> MTH_PERSISTENCE_LIVE_VALIDATION_V1 >>>
+const PERSISTENCE_REQUIRED_TABLES_V1 = [
+  "teachers",
+  "courses",
+  "import_batches",
+  "students",
+  "nrps_members",
+  "student_matches",
+  "course_sections",
+  "course_tasks",
+  "grade_items",
+  "grade_results",
+  "log_events",
+  "practice_time_summaries"
+];
+
+function safeSupabaseHost(url) {
+  try {
+    return new URL(url).host;
+  } catch {
+    return "";
+  }
+}
+
+async function buildPersistenceLiveValidation() {
+  const url = env("VITE_SUPABASE_URL");
+  const key = env("SUPABASE_SERVICE_ROLE_KEY");
+
+  const result = {
+    ok: false,
+    mode: "persistence-live-validation",
+    version: "MTH_PERSISTENCE_LIVE_VALIDATION_V1",
+    provider: "supabase",
+    configured: Boolean(url && key),
+    supabase_host: safeSupabaseHost(url),
+    production_persistence_ready: false,
+    required_tables: PERSISTENCE_REQUIRED_TABLES_V1,
+    tables: [],
+    missing_tables: [],
+    checked_at: new Date().toISOString(),
+    safety: {
+      no_secret_values_returned: true,
+      no_student_rows_returned: true,
+      aggregate_counts_only: true
+    }
+  };
+
+  if (!url || !key) {
+    result.blocker = "SUPABASE_ENV_NOT_CONFIGURED";
+    return result;
+  }
+
+  const supabase = createClient(url, key, { auth: { persistSession: false } });
+
+  for (const table of PERSISTENCE_REQUIRED_TABLES_V1) {
+    const { error, count } = await supabase
+      .from(table)
+      .select("*", { count: "exact", head: true });
+
+    const ok = !error;
+    result.tables.push({
+      table,
+      ok,
+      count: ok ? (count ?? 0) : null,
+      error_code: error?.code || null,
+      error_message: error?.message ? String(error.message).slice(0, 180) : null
+    });
+
+    if (!ok) result.missing_tables.push(table);
+  }
+
+  result.ok = result.missing_tables.length === 0;
+  result.production_persistence_ready = result.ok;
+  result.blocker = result.ok ? null : "MISSING_OR_INACCESSIBLE_SUPABASE_TABLES";
+  return result;
+}
+
+app.get("/api/persistence/validate", async (_req, res) => {
+  noStore(res);
+  try {
+    res.json(await buildPersistenceLiveValidation());
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      mode: "persistence-live-validation",
+      version: "MTH_PERSISTENCE_LIVE_VALIDATION_V1",
+      provider: "supabase",
+      production_persistence_ready: false,
+      blocker: "PERSISTENCE_VALIDATION_EXCEPTION",
+      error_message: error?.message ? String(error.message).slice(0, 180) : "unknown error",
+      safety: {
+        no_secret_values_returned: true,
+        no_student_rows_returned: true,
+        aggregate_counts_only: true
+      }
+    });
+  }
+});
+// <<< MTH_PERSISTENCE_LIVE_VALIDATION_V1 >>>
+
+
 // >>> MTH_RELEASE_READINESS_GATE_V1 >>>
 function buildReleaseReadiness(req) {
   const sync = buildSyncStatus(req);
