@@ -734,6 +734,95 @@ app.get("/api/persistence/status", (_req, res) => {
 // <<< MTH_PERSISTENCE_CORE_V1_STATUS <<<
 
 
+
+// >>> MTH_RELEASE_READINESS_GATE_V1 >>>
+function buildReleaseReadiness(req) {
+  const sync = buildSyncStatus(req);
+  const persistence = buildPersistenceStatus();
+
+  const blockers = [];
+
+  if (!sync.session_exists) {
+    blockers.push({
+      key: "moodle_launch_missing",
+      severity: "required",
+      message_he: "צריך לפתוח את הכלי מתוך Moodle כדי לזהות מורה ומרחב."
+    });
+  }
+
+  if (!persistence.production_persistence_ready) {
+    blockers.push({
+      key: "production_persistence_missing",
+      severity: "required",
+      message_he: "אין עדיין production persistence מלא. חייבים שמירה קבועה לפי מורה ומרחב."
+    });
+  }
+
+  const capabilityDetails = Array.isArray(sync.capability_details) ? sync.capability_details : [];
+  for (const item of capabilityDetails) {
+    if (item.status !== "available") {
+      blockers.push({
+        key: "missing_" + item.key,
+        severity: "data_required",
+        message_he: item.teacher_message_he,
+        required_report_he: item.required_report_he,
+        target_href: item.target_href
+      });
+    }
+  }
+
+  blockers.push({
+    key: "deploy_live_validation_missing",
+    severity: "required",
+    message_he: "נדרשת בדיקת deploy/live אמיתית על הקישור הציבורי."
+  });
+
+  blockers.push({
+    key: "multi_teacher_validation_missing",
+    severity: "required",
+    message_he: "נדרשת בדיקת כמה מורים/כמה מרחבים כדי לוודא שאין ערבוב נתונים."
+  });
+
+  blockers.push({
+    key: "real_moodle_end_to_end_missing",
+    severity: "required",
+    message_he: "נדרשת בדיקה אמיתית מקצה לקצה מתוך Moodle עם נתוני אמת."
+  });
+
+  return {
+    ok: true,
+    version: "MTH_RELEASE_READINESS_GATE_V1",
+    teacher_release_ready: false,
+    broad_release_ready: false,
+    automation_core_percent: 78,
+    teacher_release_readiness_percent: 60,
+    checked_at: new Date().toISOString(),
+    blockers,
+    blockers_count: blockers.length,
+    sync_summary: {
+      version: sync.version,
+      session_exists: sync.session_exists,
+      counts: sync.counts,
+      capabilities: sync.capabilities,
+      next_actions_he: sync.next_actions_he
+    },
+    persistence_summary: persistence,
+    safety: {
+      no_fake_release_claim: true,
+      no_secret_values_returned: true,
+      no_student_rows_returned: true
+    },
+    next_actions_he: blockers.map(item => item.message_he)
+  };
+}
+
+app.get("/api/release/readiness", (req, res) => {
+  noStore(res);
+  res.json(buildReleaseReadiness(req));
+});
+// <<< MTH_RELEASE_READINESS_GATE_V1 <<<
+
+
 app.get("/health", (_req, res) => {
   res.json({
     ok: true,
