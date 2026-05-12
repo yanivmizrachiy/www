@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: www
+    runtime: node
+    plan: free
+    branch: gemini/ai-studio-sync-20260428-193953
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: LTI_CONSUMER_KEY
+        value: yaniv-lti-tool
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: APP_BASE_URL
+        value: https://www-tijc.onrender.com
+      - key: VITE_SUPABASE_URL
+        value: https://ncoqanascubqkxfvucfz.supabase.co
+      - key: LTI_SHARED_SECRET
+        sync: false
+      - key: VITE_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false

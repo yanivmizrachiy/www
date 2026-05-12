@@ -1,129 +1,281 @@
 # Project Status — www / Moodle Teacher Hub
 
-סטטוס אמת עדכני לריפו `yanivmizrachiy/www`.
+<!-- MTH_PROJECT_STATUS_20260510_START -->
+## Current verified status — 2026-05-10
 
----
+Repository: `yanivmizrachiy/www`
+Active branch: `gemini/ai-studio-sync-20260428-193953`
+Runtime: `https://www-tijc.onrender.com`
 
-## שם הריפו המחייב
+### Verified
+
+- LTI 1.3 launch/session is working from Moodle.
+- NRPS membership fetch is working.
+- NRPS returned 62 real course members: 59 Learners and 3 Instructors.
+- NRPS returned identifiers/roles/status, but not student names/emails.
+- Real Moodle Participants import succeeded.
+- Participants import accepted 62 rows, inserted 62, updated 0, skipped 0.
+- Students page displays imported real student names/emails.
+- Moodle Web Services diagnostics path exists, but full automatic roster sync still requires a real `MOODLE_WS_TOKEN`.
+
+### Current architecture decision
+
+- Pause feature expansion.
+- Clean repo governance first.
+- Do not push changes to the active Render branch until backup/persistence risk is handled.
+- Do not commit real student data, backup JSON, CSV, XLSX, ODS, or runtime `data/store.json`.
+
+### Next
+
+1. Local browser-session backup.
+2. Durable persistence plan and implementation.
+3. NRPS ↔ Participants matching report.
+4. Gradebook import.
+5. Logs and daily practice time.
+6. Reports/export.
+
+Updated: 2026-05-10T05:10:58Z
+<!-- MTH_PROJECT_STATUS_20260510_END -->
+
+Updated: 2026-05-06
+Repository: `yanivmizrachiy/www`
+Active work branch: `gemini/ai-studio-sync-20260428-193953`
+PR: #1 — Draft / not merged / not production-ready for all teachers
+
+## Current source-of-truth position
+
+Moodle Teacher Hub now has a permanent Render runtime URL and no longer depends on Termux or temporary Cloudflare/Localtunnel URLs for the main LTI launch path.
+
+Current preferred architecture:
 
 ```text
-yanivmizrachiy/www
+Moodle External Tool
+  -> Render permanent Node endpoint /api/lti/launch
+  -> React/Vite Moodle Teacher Hub UI
+  -> Supabase project moodle-teacher-hub for future persistence/import workflows
+  -> Manual Real Data Import until Moodle Web Services token is verified
 ```
 
-זהו הריפו שאליו יש להתייחס כמקור העבודה הנוכחי והיחיד לפרויקט Moodle Teacher Hub המשודרג.
+## Current permanent runtime
 
----
-
-## מה בוצע בפועל
-
-- אותר הריפו `yanivmizrachiy/www`.
-- נמצא README קיים המתאר Moodle Teacher Hub עם Node.js + Express, LTI 1.1, Dashboard בעברית, API בסיסי ו־data/store.json.
-- נמצא `.gitignore` שמחריג `.env`, לוגים, backups, dist, coverage וקבצי מערכת.
-- נוצר `PROJECT_RULES.md` כרובד כללים מרכזי ומחייב לריפו `www`.
-- נוצרו מסמכי governance ותכנון עומק:
-  - `docs/system-rules.md`
-  - `docs/requirements.md`
-  - `docs/repository-map.md`
-  - `docs/import-contract.md`
-  - `docs/lti-contract.md`
-  - `docs/testing-plan.md`
-  - `docs/legacy-moodle-teacher-hub-snapshot.md`
-- נוצר תיעוד איחוד ריפואים:
-  - `STATE/repo-consolidation.md`
-- הריפו `yanivmizrachiy/moodle-teacher-hub` סומן כ־legacy בלבד.
-- תועד שהדרישה הסופית כוללת מערכת Moodle מחוברת באמת, ללא דמו, עם SSO/LTI/API, דוחות, ייצוא ועריכה דו־כיוונית רק אם קיימות הרשאות Moodle אמיתיות.
-
----
-
-## דרישות מוצר מחייבות שנקלטו
-
-- הריפו חייב להיות נקי, מסודר וללא כפילויות.
-- חובה דף כללים מעודכן תמיד.
-- המערכת חייבת לעבוד ממחשבי חדר מחשב, מחשב אישי וטלפון נייד בלי בלבול state.
-- אין דמו ואין מידע מומצא.
-- כל מידע חייב להגיע מנתוני Moodle אמיתיים.
-- כל הניווט בעברית.
-- עמוד ראשי עם שם מורה ושם מרחב כאשר זמינים.
-- גישה מהירה לתלמידים, משימות, פרקים, דוחות, פעילות/זמנים, הגדרות וייצוא.
-- כניסה דרך Moodle / משרד החינוך ללא סיסמה נוספת כאשר SSO/LTI מוגדרים בפועל.
-- סינון תלמיד, קבוצה, כיתה וטווח תאריכים כאשר הנתונים קיימים.
-- הצגת משימות, ציונים, ניסיונות, ממוצעים ופעילות רק מנתוני אמת.
-- זמן תרגול מצטבר יומי רק אם ניתן להוכחה ממקור Moodle או מחישוב לוגים מסומן היטב.
-- משימות עם פרק/נושא, כמות שאלות אם קיימת, קישור ישיר אם מאומת.
-- דוחות: ציונים, משימות, זמנים, פעילות ושילובים.
-- ייצוא יעד: Excel, PDF, הדפסה ו־CSV כאשר קיים.
-- עריכה דו־כיוונית מול Moodle רק עם token והרשאות כתיבה אמיתיות.
-
----
-
-## סטטוס יכולות לפי אמת נוכחית
-
-| יכולת | סטטוס |
-|---|---|
-| ריפו `www` קיים | verified |
-| README קיים | verified |
-| `.gitignore` חוסם `.env` | verified |
-| `PROJECT_RULES.md` נוצר | verified |
-| `docs/system-rules.md` נוצר | verified |
-| `docs/requirements.md` נוצר | verified |
-| `docs/repository-map.md` נוצר | verified |
-| `docs/import-contract.md` נוצר | verified |
-| `docs/lti-contract.md` נוצר | verified |
-| `docs/testing-plan.md` נוצר | verified |
-| LTI 1.1 מתואר ב־README | described, requires current code verification |
-| Dashboard בעברית מתואר ב־README | described, requires current UI verification |
-| API בסיסי מתואר ב־README | described, requires current endpoint verification |
-| חיבור Moodle API חי | not verified |
-| SSO משרד החינוך מלא | not verified |
-| ייצוא Excel | planned / not verified |
-| ייצוא PDF | planned / not verified |
-| עריכה דו־כיוונית ב־Moodle | blocked until real token/write permission |
-| Production-ready | not verified |
-
----
-
-## מה אסור לטעון עדיין
-
-אין לטעון שהמערכת production-ready.
-
-אין לטעון שחיבור Moodle API חי עובד עד שתהיה הוכחה:
-
-- token אמיתי.
-- קריאת API אמיתית.
-- תוצאה אמיתית מ־Moodle.
-- תיעוד ב־evidence log.
-
-אין לטעון ש־Excel/PDF עובדים אם קיימים רק CSV/הדפסה.
-
-אין לטעון שעריכה מול Moodle עובדת בלי בדיקת כתיבה אמיתית.
-
----
-
-## חסרים להמשך אימות
-
-- מיפוי מלא של קבצי הריפו הנוכחי.
-- audit פיזי מלא מול הריפו legacy.
-- בדיקת `npm run check`.
-- בדיקת `npm run dev`.
-- בדיקת `/health`.
-- בדיקת `/dev/login`.
-- בדיקת `/lti/launch-1p1` עם launch אמיתי או payload בדיקה חוקי.
-- בדיקת APIs.
-- בדיקת Dashboard.
-- בדיקת ייצוא.
-- בדיקת שאין secrets בריפו.
-
----
-
-## סטטוס כולל
+Render Web Service:
 
 ```text
-Repository governance: active
-Canonical repo: yanivmizrachiy/www
-Legacy repo status: marked legacy
-Rules page: created
-Product requirements: captured
-Code verification: partial
-Moodle API live connection: not verified
-Production readiness: not verified
+https://www-tijc.onrender.com
+```
+
+Canonical LTI endpoint:
+
+```text
+https://www-tijc.onrender.com/api/lti/launch
+```
+
+Health endpoint:
+
+```text
+https://www-tijc.onrender.com/health
+```
+
+Render evidence from user screenshots showed:
+
+```text
+moodle-teacher-hub running on port 10000
+canonical LTI endpoint: /api/lti/launch
+Your service is live
+Available at your primary URL https://www-tijc.onrender.com
+```
+
+## Render build status
+
+An initial Render deploy failed with:
+
+```text
+sh: 1: vite: not found
+Exited with status 127
+```
+
+The build command was fixed to:
+
+```text
+npm ci --include=dev && npm run build
+```
+
+After the fix, Render logs showed:
+
+```text
+built in 4.49s
+Build successful
+Deploying
+Your service is live
+```
+
+The repository `render.yaml` was updated to match the working Render configuration.
+
+## Required Render environment variables
+
+Required:
+
+```text
+NODE_ENV=production
+PORT=10000
+COOKIE_SECURE=true
+LTI_CONSUMER_KEY=yaniv-lti-tool
+LTI_SHARED_SECRET=<same value as Moodle; never commit>
+APP_BASE_URL=https://www-tijc.onrender.com
+VITE_SUPABASE_URL=https://ncoqanascubqkxfvucfz.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<Supabase publishable/anon key>
+```
+
+Optional / only when persistence is implemented and verified:
+
+```text
+SUPABASE_SERVICE_ROLE_KEY=<server-only key; never expose to browser>
+```
+
+## Moodle configuration now recommended
+
+The current simple permanent LTI path should be direct Moodle -> Render.
+
+Moodle Tool URL should be:
+
+```text
+https://www-tijc.onrender.com/api/lti/launch
+```
+
+Moodle settings:
+
+```text
+LTI version: LTI 1.0/1.1
+Consumer key: yaniv-lti-tool
+Shared secret: must exactly match Render LTI_SHARED_SECRET
+```
+
+## Supabase status
+
+Correct project ref confirmed by user evidence:
+
+```text
+ncoqanascubqkxfvucfz
+```
+
+Supabase Gateway health was confirmed at:
+
+```text
+https://ncoqanascubqkxfvucfz.supabase.co/functions/v1/lti-launch
+```
+
+GET response showed:
+
+```json
+{"service":"LTI 1.1 Permanent Gateway","status":"ok","project":"moodle-teacher-hub","runtime_configured":true}
+```
+
+However, the Supabase Gateway is not the current recommended LTI launch path because the gateway-forwarded path produced:
+
+```text
+Moodle Teacher Hub blocked launch: MISSING_OAUTH_SIGNATURE
+```
+
+Decision: do not use Supabase Gateway as the active LTI launch route until gateway-to-runtime OAuth forwarding/signature behavior is fixed and verified.
+
+Supabase remains relevant for:
+
+- database persistence
+- imported Moodle report storage
+- future RPC/API workflows
+- possible future Web Services integration
+
+## Data truth
+
+The successful direct Render LTI connection verifies login/context only.
+
+It does not automatically provide:
+
+- student list
+- grades
+- logs
+- activity completion
+- practice time
+
+Until Moodle Web Services token or LTI 1.3 Advantage is available and verified, real data must come from Manual Real Data Import:
+
+1. Participants / Students report
+2. Gradebook report
+3. Logs report
+4. Activity completion report
+
+The Import page and parser exist, but real import end-to-end is not yet verified.
+
+## Current status table
+
+| Area | Status |
+|---|---|
+| Requirements | Strong / captured |
+| Source repo | Verified |
+| Active branch | Verified |
+| Render runtime | Live / verified by user screenshot |
+| Render build | Passed after build-command fix |
+| Permanent URL | `https://www-tijc.onrender.com` |
+| Canonical LTI endpoint | `/api/lti/launch` |
+| Direct Moodle -> Render LTI | User reported connected; should be treated as partially verified until evidence is added to evidence-log |
+| Supabase Gateway | Health OK, but not active LTI path due MISSING_OAUTH_SIGNATURE when forwarding |
+| Termux/Cloudflare | No longer required for active launch path |
+| Manual import end-to-end | Not verified |
+| Moodle Web Services token | Not verified / blocked-no-token |
+| Production readiness | Partial; not ready for all teachers until data import/persistence verified |
+
+## Current blockers
+
+1. Manual import end-to-end has not yet been verified with a real Moodle Participants report.
+2. Student names/grades/logs do not appear automatically from LTI 1.0/1.1.
+3. Moodle Web Services token is not verified.
+4. Supabase persistence/import storage still needs schema/RPC verification.
+5. Supabase Gateway should not be used as LTI forwarding route until signature forwarding is fixed and verified.
+
+## Do not do
+
+- Do not return to Termux/Cloudflare temporary URLs for the production launch path.
+- Do not use the Supabase Gateway as active LTI route unless it is fixed and verified.
+- Do not rebuild the app from scratch.
+- Do not create a new repo.
+- Do not merge PR #1 while Draft/diverged without review.
+- Do not run old AI SQL blindly.
+- Do not expose or commit secrets.
+- Do not use fake students, fake grades, fake activity, or fake practice time.
+- Do not claim full production-ready status.
+
+## Current next step
+
+Verify the first real data workflow:
+
+```text
+Moodle course -> Participants report export/copy -> Moodle Teacher Hub Import page -> confirm preview -> import -> Students page shows real names
+```
+
+After that, update:
+
+- `STATE/evidence-log.md`
+- `STATE/readiness-audit/*`
+- any relevant docs if the workflow changes
+
+## Related audit files
+
+- `STATE/readiness-audit/render-production-launch-20260506.md`
+- `STATE/readiness-audit/dashboard-data-fallback-20260505.md`
+- `STATE/readiness-audit/termux-prebuilt-runtime-ready-20260505.md`
+- `STATE/readiness-audit/central-coordinator-plan-20260503.md`
+- `STATE/readiness-audit/supabase-existing-state-audit-20260503.md`
+
+## Current readiness estimate
+
+```text
+Requirements clarity: 99%
+Repo governance: 95%
+Permanent runtime deployment: verified
+Direct LTI launch: likely working / needs final evidence-log entry
+Supabase Gateway: health OK but not active route
+Manual import: not verified end-to-end
+Moodle API/Web Services: blocked-no-token
+Overall execution readiness: 78%-82%
+Production-ready for broad teacher use: no
 ```

@@ -1,0 +1,92 @@
+
+teacher-demo :: data/store.json:25 :: "externalId": "teacher-demo",
+teacher-demo :: src/server.js:85 :: function upsertTeacher(name, externalId = "teacher-demo") {
+space-demo :: data/store.json:34 :: "externalId": "space-demo",
+space-demo :: src/server.js:103 :: function upsertSpace(title, externalId = "space-demo") {
+/dev/login :: README.md:90 :: http://127.0.0.1:3000/dev/login
+/dev/login :: STATE/evidence-log.md:27 :: - `/dev/login`.
+/dev/login :: STATE/project-status.md:109 :: - בדיקת `/dev/login`.
+/dev/login :: docs/GPT_OPERATING_MANUAL.md:25 :: - /dev/login
+/dev/login :: docs/api/notes.md:5 :: - GET /dev/login
+/dev/login :: docs/implementation-plan.md:50 :: http://127.0.0.1:3000/dev/login
+/dev/login :: docs/testing-plan.md:32 :: http://127.0.0.1:3000/dev/login
+/dev/login :: scripts/open-dev-login.ps1:2 :: Start-Process "http://127.0.0.1:3000/dev/login"
+/dev/login :: scripts/run-all.ps1:9 :: Start-Process "http://127.0.0.1:3000/dev/login"
+/dev/login :: src/server.js:227 :: app.get("/dev/login", (_req, res) => {
+/dev/login :: src/ui/dashboard/dashboard.html:48 :: <a href="/dev/login">כניסת פיתוח</a>
+/dev/login :: src/ui/dashboard/dashboard.html:57 :: <a class="btn" href="/dev/login">כניסת בדיקה</a>
+מורה לדוגמה :: data/store.json:7 :: "teacherName": "מורה לדוגמה",
+מורה לדוגמה :: data/store.json:16 :: "teacherName": "מורה לדוגמה",
+מורה לדוגמה :: data/store.json:26 :: "name": "מורה לדוגמה",
+מורה לדוגמה :: src/server.js:228 :: const teacher = upsertTeacher("מורה לדוגמה");
+מרחב לדוגמה :: data/store.json:8 :: "spaceTitle": "מרחב לדוגמה",
+מרחב לדוגמה :: data/store.json:17 :: "spaceTitle": "מרחב לדוגמה",
+מרחב לדוגמה :: data/store.json:35 :: "title": "מרחב לדוגמה",
+מרחב לדוגמה :: src/server.js:229 :: const space = upsertSpace("מרחב לדוגמה");
+/api/lti/launch :: server.ts:19 :: app.post("/api/lti/launch", async (req, res) => {
+/lti/launch-1p1 :: README.md:42 :: - `/lti/launch-1p1`.
+/lti/launch-1p1 :: STATE/evidence-log.md:28 :: - `/lti/launch-1p1` מול Moodle אמיתי.
+/lti/launch-1p1 :: STATE/project-status.md:110 :: - בדיקת `/lti/launch-1p1` עם launch אמיתי או payload בדיקה חוקי.
+/lti/launch-1p1 :: docs/GPT_OPERATING_MANUAL.md:26 :: - /lti/launch-1p1
+/lti/launch-1p1 :: docs/api/notes.md:6 :: - POST /lti/launch-1p1
+/lti/launch-1p1 :: docs/deployment/lti-tool-setup.md:7 :: - Launch URL: `http://127.0.0.1:3000/lti/launch-1p1` for local testing only
+/lti/launch-1p1 :: docs/implementation-plan.md:97 :: - האם `/lti/launch-1p1` קיים.
+/lti/launch-1p1 :: src/server.js:193 :: launch_url: `${APP_BASE_URL}/lti/launch-1p1`
+/lti/launch-1p1 :: src/server.js:217 :: <blti:launch_url>${APP_BASE_URL}/lti/launch-1p1</blti:launch_url>
+/lti/launch-1p1 :: src/server.js:218 :: <blti:secure_launch_url>${APP_BASE_URL}/lti/launch-1p1</blti:secure_launch_url>
+/lti/launch-1p1 :: src/server.js:241 :: app.post("/lti/launch-1p1", (req, res) => {
+HMAC-SHA1 :: STATE/evidence-log.md:184 :: - **LTI hardening**: `supabase/functions/lti-launch/index.ts` was changed to a safe blocked implementation. It no longer pretends OAuth verification works, does not create teacher sessions, and does not log launch success before real OAuth1 HMAC-SHA1 verification is implemented and tested.
+HMAC-SHA1 :: STATE/recovery-complete.md:14 :: - The LTI Edge Function is intentionally blocked and returns a truthful not-implemented response until real OAuth1 HMAC-SHA1 verification is implemented and tested.
+HMAC-SHA1 :: STATE/recovery-complete.md:20 :: - Real OAuth1 HMAC-SHA1 verification is not implemented.
+HMAC-SHA1 :: docs/google-ai-studio-execution-prompt.md:167 :: LTI must support OAuth1 HMAC-SHA1.
+HMAC-SHA1 :: docs/implementation-plan.md:98 :: - האם OAuth1 HMAC-SHA1 מאומת.
+HMAC-SHA1 :: docs/lovable-handoff-report.md:25 :: - `lti-launch` מאמת OAuth1 HMAC-SHA1.
+HMAC-SHA1 :: docs/lti-contract.md:59 :: - OAuth1 HMAC-SHA1 verification.
+HMAC-SHA1 :: docs/work-plan.md:211 :: - OAuth1 HMAC-SHA1 מאומת.
+HMAC-SHA1 :: supabase/functions/lti-launch/index.ts:36 :: // 2. Verify OAuth1 Signature (HMAC-SHA1)
+oauth_signature :: supabase/functions/lti-launch/index.ts:46 :: debug_received_signature: params.oauth_signature
+const is_valid = true :: supabase/functions/lti-launch/index.ts:39 :: const is_valid = true; // Placeholder for real crypto logic
+production-ready :: README.md:37 :: - אין לטעון production-ready בלי בדיקות.
+production-ready :: README.md:105 :: הריפו מאוחד תיעודית תחת `www`. עדיין נדרש אימות קוד מלא לפני סימון production-ready.
+production-ready :: STATE/evidence-log.md:41 :: Production-ready: no
+production-ready :: STATE/evidence-log.md:189 :: - **Production-ready**: no.
+production-ready :: STATE/project-status.md:81 :: | Production-ready | not verified |
+production-ready :: STATE/project-status.md:87 :: אין לטעון שהמערכת production-ready.
+production-ready :: STATE/recovery-complete.md:26 :: - The app is not production-ready.
+production-ready :: docs/google-ai-studio-execution-prompt.md:361 :: Do not claim production-ready.
+production-ready :: docs/testing-plan.md:3 :: תוכנית בדיקות חובה לפני שמסמנים את האתר כעובד, pilot-ready או production-ready.
+production-ready :: docs/testing-plan.md:118 :: | הכל נבדק | production-ready |
+production-ready :: docs/work-plan.md:294 :: לפני production-ready:
+server running :: server.ts:67 :: console.log(`Server running on http://localhost:${PORT}`);
+real data :: PROJECT_RULES.md:66 :: אם אין token מאומת, מצב העבודה האמיתי הוא Manual Real Data Import בלבד, בשילוב אוטומציות מקסימליות אפשריות סביב דוחות Moodle, טבלאות Moodle מועתקות, קבצי CSV/XLSX/ODS/TXT, או נתונים אמיתיים שהמורה מקבל מתוך המרחב.
+real data :: README.md:34 :: - אם אין token — עובדים במצב Manual Real Data Import בלבד.
+real data :: STATE/TODO-NEXT.md:10 :: 8. Populate students/tasks/grades/activity from real data
+real data :: STATE/evidence-log.md:130 :: Active data mode: Manual Real Data Import + maximum automation from real Moodle reports/tables
+real data :: docs/google-ai-studio-execution-prompt.md:100 :: Every teacher opens the app from inside Moodle and sees only the real data of that exact Moodle course/space.
+real data :: docs/google-ai-studio-execution-prompt.md:150 :: Manual Real Data Import + maximum possible automation from real Moodle reports, exports, copied tables, pasted tables, CSV, XLSX, ODS, TXT, and real teacher-accessible Moodle data.
+real data :: docs/google-ai-studio-strict-qa-prompt.md:23 :: Your job is to verify whether the current repo satisfies all user requirements, especially the requirement that every teacher performs the minimum possible manual actions inside Moodle to receive the maximum possible real data in the app.
+real data :: docs/google-ai-studio-strict-qa-prompt.md:166 :: - Reports must be generated from imported real data only.
+real data :: docs/google-ai-studio-strict-qa-prompt.md:209 :: - Does it use real data or truthful empty state?
+real data :: docs/lovable-handoff-report.md:31 :: - Manual Real Data Import.
+real data :: docs/lovable-handoff-request.md:34 :: Each teacher sees only real data from their own Moodle course/space.
+real data :: metadata.json:3 :: "description": "A premium Hebrew RTL teacher dashboard for Moodle courses, using real data imports and LTI integration.",
+SUPABASE_SERVICE_ROLE_KEY :: docs/lovable-handoff-report.md:175 :: SUPABASE_SERVICE_ROLE_KEY
+SUPABASE_SERVICE_ROLE_KEY :: server.ts:30 :: const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+SUPABASE_SERVICE_ROLE_KEY :: supabase/functions/lti-launch/index.ts:11 :: const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+SUPABASE_SERVICE_ROLE_KEY :: supabase/functions/lti-launch/index.ts:23 :: const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+LTI_SHARED_SECRET :: server.ts:24 :: const sharedSecret = process.env.LTI_SHARED_SECRET || "teacher_hub_secret_2026";
+LTI_CONSUMER_KEY :: docs/lovable-handoff-report.md:177 :: LTI_CONSUMER_KEY
+LTI_CONSUMER_KEY :: src/integrations/supabase/types.ts:634 :: lti_consumer_key: string | null
+LTI_CONSUMER_KEY :: src/integrations/supabase/types.ts:649 :: lti_consumer_key?: string | null
+LTI_CONSUMER_KEY :: src/integrations/supabase/types.ts:664 :: lti_consumer_key?: string | null
+LTI_CONSUMER_KEY :: supabase/functions/lti-launch/index.ts:29 :: .eq("lti_consumer_key", consumer_key)
+LTI_CONSUMER_KEY :: supabase/migrations/20240428_initial_reconstruction_DRAFT_DO_NOT_RUN.sql:19 :: lti_consumer_key TEXT,
+LTI_CONSUMER_KEY :: supabase/migrations/20240428_initial_reconstruction_DRAFT_DO_NOT_RUN.sql:179 :: (lti_consumer_key IS NOT NULL) as lti_configured,
+ייבוא נתוני Moodle :: docs/legacy-moodle-teacher-hub-snapshot.md:41 :: - אשף ייבוא בשם `ייבוא נתוני Moodle אמיתיים`.
+זמן תרגול יומי :: docs/lovable-handoff-report.md:313 :: ## 11. זמן תרגול יומי
+זמן תרגול יומי :: docs/system-rules.md:86 :: - זמן תרגול יומי.
+זמן תרגול יומי :: src/components/PracticeTimeSection.tsx:23 :: export function PracticeTimeSection({ studentId = null, title = "זמן תרגול יומי" }: PracticeTimeSectionProps) {
+ייצוא לאקסל :: src/ui/dashboard/dashboard.html:58 :: <a class="btn secondary" href="/api/export/grades.csv" target="_blank" rel="noopener noreferrer">ייצוא לאקסל/CSV</a>
+דוח פערים :: docs/data-acquisition-and-teacher-workflows.md:216 :: - דוח פערים.
+דוח פערים :: src/pages/Dashboard.tsx:135 :: הצג דוח פערים
+דוח פערים :: src/pages/reports/GapReport.tsx:20 :: title="דוח פערים"
