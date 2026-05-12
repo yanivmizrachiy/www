@@ -1229,6 +1229,92 @@ app.get("/api/moodle-captures", (_req, res) => res.json([...store.moodleCaptures
 app.get("/api/moodle-summary", (_req, res) => res.json({ capturesCount: store.moodleCaptures.length, lastCaptureAt: store.moodleCaptures.at(-1)?.createdAt ?? null, lastSource: store.moodleCaptures.at(-1)?.source ?? null, availableKeys: store.moodleCaptures.at(-1)?.keys ?? [] }));
 app.get("/api/export/grades.csv", (_req, res) => { res.setHeader("Content-Type", "text/csv; charset=utf-8"); res.setHeader("Content-Disposition", "attachment; filename=grades-export.csv"); res.send(buildGradesCsv()); });
 
+
+// >>> MTH_RELEASE_READINESS_GATE_LIVE_HOTFIX_V1 >>>
+function buildLiveReleaseReadiness(req) {
+  const sync = buildSyncStatus(req);
+  const persistence = buildPersistenceStatus();
+  const blockers = [];
+
+  if (!sync.context?.has_lti_session && !sync.session_exists) {
+    blockers.push({
+      key: "moodle_launch_missing",
+      severity: "required",
+      message_he: "צריך לפתוח את הכלי מתוך Moodle כדי לזהות מורה ומרחב."
+    });
+  }
+
+  if (!persistence.production_persistence_ready && persistence.current_stage !== "verified") {
+    blockers.push({
+      key: "production_persistence_missing",
+      severity: "required",
+      message_he: "צריך לאמת שמירה וטעינה מול Supabase לפני סימון מוכן."
+    });
+  }
+
+  const details = Array.isArray(sync.capability_details) ? sync.capability_details : [];
+  for (const item of details) {
+    if (item.status && item.status !== "available") {
+      blockers.push({
+        key: "missing_" + item.key,
+        severity: "data_required",
+        message_he: item.teacher_message_he || "חסר מקור נתונים אמיתי.",
+        required_report_he: item.required_report_he || null,
+        target_href: item.target_href || "/missing-data"
+      });
+    }
+  }
+
+  blockers.push({
+    key: "real_moodle_end_to_end_missing",
+    severity: "required",
+    message_he: "נדרשת בדיקה אמיתית מקצה לקצה מתוך Moodle עם נתוני אמת."
+  });
+
+  blockers.push({
+    key: "multi_teacher_validation_missing",
+    severity: "required",
+    message_he: "נדרשת בדיקת כמה מורים/כמה מרחבים כדי לוודא שאין ערבוב נתונים."
+  });
+
+  return {
+    ok: true,
+    mode: "release-readiness",
+    version: "MTH_RELEASE_READINESS_GATE_LIVE_HOTFIX_V1",
+    teacher_release_ready: false,
+    broad_release_ready: false,
+    checked_at: new Date().toISOString(),
+    blockers,
+    blockers_count: blockers.length,
+    sync_summary: {
+      ok: sync.ok,
+      mode: sync.mode,
+      version: sync.version,
+      counts: sync.counts || null
+    },
+    persistence_summary: {
+      ok: persistence.ok,
+      mode: persistence.mode,
+      configured: persistence.configured,
+      provider: persistence.provider,
+      current_stage: persistence.current_stage,
+      production_persistence_ready: persistence.production_persistence_ready
+    },
+    safety: {
+      no_fake_release_claim: true,
+      no_secret_values_returned: true,
+      no_student_rows_returned: true
+    }
+  };
+}
+
+app.get("/api/release/readiness", (req, res) => {
+  noStore(res);
+  res.json(buildLiveReleaseReadiness(req));
+});
+// <<< MTH_RELEASE_READINESS_GATE_LIVE_HOTFIX_V1 >>>
+
+
 app.get("/legacy-dashboard", (_req, res) => {
   const dashboardPath = path.join(ROOT, "src", "ui", "dashboard", "dashboard.html");
   if (fs.existsSync(dashboardPath)) return res.sendFile(dashboardPath);
