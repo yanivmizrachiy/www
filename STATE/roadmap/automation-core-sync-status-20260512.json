@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-05-12T11:40:25.956877+00:00",
+  "mode": "automation_core_first_implementation",
+  "implemented": [
+    "/api/sync/status",
+    "/api/sync/run",
+    "useSyncStatus",
+    "dashboard_sync_button",
+    "basic_feature_gates",
+    "hebrew_missing_data_explanations"
+  ],
+  "not_implemented_yet": [
+    "full_moodle_ws_sync",
+    "ags_grade_sync",
+    "production_persistence",
+    "multi_teacher_validation"
+  ],
+  "teacher_release_ready": false,
+  "source_code_changed": true,
+  "secrets_added": false,
+  "student_data_added": false
+}

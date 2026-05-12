@@ -756,6 +756,183 @@ app.get("/api/imports/students", (req, res) => {
   res.json({ ok: true, students });
 });
 
+
+// >>> MTH_AUTOMATION_CORE_SYNC_STATUS_20260512 >>>
+function capabilityDomain(id, labelHe, status, source, confidence, teacherMessageHe, nextActionHe, requiredReportType = null, counts = {}) {
+  return {
+    id,
+    label_he: labelHe,
+    status,
+    source,
+    confidence,
+    teacher_message_he: teacherMessageHe,
+    next_action_he: nextActionHe,
+    required_report_type: requiredReportType,
+    counts
+  };
+}
+
+function rowsForSpace(rows, session) {
+  if (!Array.isArray(rows)) return [];
+  if (!session?.spaceId) return rows;
+  return rows.filter(item => {
+    const itemSpace = item.space_id || item.spaceId || item.space || "";
+    return !itemSpace || itemSpace === session.spaceId;
+  });
+}
+
+function buildAutomationCoreSyncStatus(req) {
+  const session = importSessionFromRequest(req) || sessionFromRequest(req);
+  const now = new Date().toISOString();
+
+  const students = rowsForSpace(store.students, session);
+  const chapters = rowsForSpace(store.chapters, session);
+  const tasks = rowsForSpace(store.tasks, session);
+  const gradeItems = rowsForSpace(store.gradeItems, session);
+  const grades = rowsForSpace(store.grades, session);
+  const logs = rowsForSpace(store.logEvents, session);
+  const batches = rowsForSpace(store.importBatches, session);
+
+  const hasSession = Boolean(session);
+  const hasStudents = students.length > 0;
+  const hasTasks = tasks.length > 0 || chapters.length > 0;
+  const hasGradeItems = gradeItems.length > 0;
+  const hasGrades = grades.length > 0;
+  const hasLogs = logs.length > 0;
+
+  const domains = [
+    capabilityDomain(
+      "lti_session",
+      "כניסה מתוך Moodle",
+      hasSession ? "automatic" : "missing_required_report",
+      hasSession ? (session.source || "lti") : "none",
+      hasSession ? 1 : 0,
+      hasSession ? "זוהתה כניסה מאומתת מתוך Moodle." : "עדיין לא זוהתה כניסה מאומתת מתוך Moodle.",
+      hasSession ? "אפשר להמשיך לסנכרון מרחב." : "פתח את הכלי מתוך מרחב Moodle."
+    ),
+    capabilityDomain(
+      "participants_names_emails",
+      "משתתפים ושמות תלמידים",
+      hasStudents ? "available_from_import" : "missing_required_report",
+      hasStudents ? "moodle-participants-import" : "none",
+      hasStudents ? 0.95 : 0,
+      hasStudents ? "רשימת תלמידים אמיתית קיימת במערכת." : "חסרה רשימת תלמידים עם שמות/מיילים.",
+      hasStudents ? "אפשר לפתוח משתתפים ודוחות תלמידים." : "ייבא דוח Participants ממודל.",
+      hasStudents ? null : "participants",
+      { students: students.length }
+    ),
+    capabilityDomain(
+      "course_tasks",
+      "פרקים ומשימות",
+      hasTasks ? "available_from_import" : "missing_required_report",
+      hasTasks ? "moodle-completion-or-course-structure-import" : "none",
+      hasTasks ? 0.8 : 0,
+      hasTasks ? "קיימים פרקים/משימות אמיתיים." : "עדיין אין פרקים/משימות אמיתיים.",
+      hasTasks ? "אפשר לפתוח מסך משימות." : "ייבא דוח Activity Completion או מבנה קורס ממודל.",
+      hasTasks ? null : "completion",
+      { chapters: chapters.length, tasks: tasks.length }
+    ),
+    capabilityDomain(
+      "grade_results",
+      "ציונים",
+      hasGrades || hasGradeItems ? "available_from_import" : "missing_required_report",
+      hasGrades || hasGradeItems ? "moodle-gradebook-import" : "none",
+      hasGrades ? 0.9 : hasGradeItems ? 0.65 : 0,
+      hasGrades ? "ציונים אמיתיים קיימים במערכת." : hasGradeItems ? "יש פריטי ציון, אבל חסרים ציוני תלמידים מלאים." : "עדיין אין נתוני ציונים אמיתיים.",
+      hasGrades ? "אפשר לפתוח דוחות ציונים." : "ייבא Gradebook ממודל.",
+      hasGrades ? null : "grades",
+      { grade_items: gradeItems.length, grades: grades.length }
+    ),
+    capabilityDomain(
+      "logs_practice_time",
+      "זמנים ולוגים",
+      hasLogs ? "available_from_import" : "missing_required_report",
+      hasLogs ? "moodle-logs-import" : "none",
+      hasLogs ? 0.85 : 0,
+      hasLogs ? "קיימים לוגים לחישוב זמן תרגול." : "אי אפשר לחשב זמן תרגול ללא לוגים אמיתיים.",
+      hasLogs ? "אפשר לפתוח מסך זמנים." : "ייבא דוח Logs ממודל.",
+      hasLogs ? null : "logs",
+      { log_events: logs.length }
+    ),
+    capabilityDomain(
+      "persistence",
+      "שמירה קבועה",
+      "available_from_import",
+      "local-runtime-store",
+      0.35,
+      "קיימת שמירה מקומית runtime, אבל זה עדיין לא persistence production מלא.",
+      "השלב הבא אחרי Automation Core הוא persistence production עם הפרדה מלאה בין מורים/מרחבים.",
+      null,
+      { import_batches: batches.length }
+    )
+  ];
+
+  const missing = domains.filter(item => item.status === "missing_required_report");
+  const blocked = domains.filter(item => item.status === "blocked_no_permission");
+
+  return {
+    ok: true,
+    automation_core_version: "2026-05-12-sync-status-v1",
+    generated_at: now,
+    no_fake_success: true,
+    teacher_release_ready: false,
+    session: hasSession ? {
+      source: session.source || null,
+      course_title: session.courseTitle || session.spaceTitle || null,
+      teacher_name: session.teacherName || session.moodleUsername || null,
+      launched_at: session.createdAt || null
+    } : null,
+    counts: {
+      students: students.length,
+      chapters: chapters.length,
+      tasks: tasks.length,
+      grade_items: gradeItems.length,
+      grades: grades.length,
+      log_events: logs.length,
+      import_batches: batches.length
+    },
+    domains,
+    next_actions_he: missing.length
+      ? missing.map(item => item.next_action_he)
+      : ["המקורות הזמינים סונכרנו. עדיין נדרש persistence production ובדיקות מורים לפני הפצה רחבה."],
+    teacher_action_budget: {
+      ideal_actions_he: ["פתיחת הכלי מתוך Moodle", "לחיצה על סנכרן מרחב"],
+      fallback_allowed_he: ["ייבוא דוח Moodle אחד שהמערכת ביקשה במפורש"],
+      forbidden_burdens_he: ["לא לבקש מהמורה להבין NRPS", "לא לבקש מהמורה להבין Supabase", "לא לבקש מהמורה לנחש איזה דוח חסר"]
+    },
+    safety: {
+      no_demo_data: true,
+      no_fake_counts: true,
+      no_private_rows_returned: true,
+      blockers_count: blocked.length,
+      missing_count: missing.length
+    }
+  };
+}
+
+app.get("/api/sync/status", (req, res) => {
+  noStore(res);
+  res.json(buildAutomationCoreSyncStatus(req));
+});
+
+app.post("/api/sync/run", (req, res) => {
+  noStore(res);
+  const status = buildAutomationCoreSyncStatus(req);
+  store.settings.lastSyncAt = new Date().toISOString();
+  saveStore();
+  res.json({
+    ...status,
+    sync_run: {
+      ok: true,
+      mode: "capability-detection-only",
+      performed_at: store.settings.lastSyncAt,
+      note_he: "בוצעה בדיקת יכולות וסיכום חוסרים. לא נוצרו נתונים מזויפים ולא בוצע ייבוא אוטומטי ללא מקור אמיתי."
+    }
+  });
+});
+// <<< MTH_AUTOMATION_CORE_SYNC_STATUS_20260512 <<<
+
+
 app.get("/api/imports/overview", (req, res) => {
   noStore(res);
   if (!sessionFromRequest(req)) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });

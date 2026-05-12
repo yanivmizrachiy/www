@@ -1,11 +1,38 @@
 import { Link } from "react-router-dom";
 import { useImportsOverview } from "@/hooks/useImports";
+import { useSyncStatus, type CapabilityDomain } from "@/hooks/useSyncStatus";
 import { useLtiSession } from "@/hooks/useLtiSession";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, GraduationCap, ClipboardList, Database, Calendar, Import, ArrowRight, AlertCircle } from "lucide-react";
+import { Users, GraduationCap, ClipboardList, Database, Calendar, Import, ArrowRight, AlertCircle, RefreshCw, ShieldCheck, ListChecks } from "lucide-react";
 import { motion } from "motion/react";
+
+
+function capabilityStatusLabel(status: CapabilityDomain["status"]) {
+  switch (status) {
+    case "automatic": return "אוטומטי";
+    case "available_from_import": return "זמין מייבוא";
+    case "missing_required_report": return "חסר דוח";
+    case "blocked_no_permission": return "חסום הרשאה";
+    case "not_implemented_yet": return "מתוכנן";
+    default: return status;
+  }
+}
+
+function capabilityStatusClass(status: CapabilityDomain["status"]) {
+  switch (status) {
+    case "automatic":
+    case "available_from_import":
+      return "border-status-proven/30 bg-status-proven-bg/20 text-status-proven";
+    case "missing_required_report":
+      return "border-status-missing/30 bg-status-missing-bg/20 text-status-missing";
+    case "blocked_no_permission":
+      return "border-status-blocked/30 bg-status-blocked-bg/20 text-status-blocked";
+    default:
+      return "border-muted bg-muted/40 text-muted-foreground";
+  }
+}
 
 function StatCard({ label, value, icon: Icon, delay = 0 }: { label: string, value: number | string, icon: any, delay?: number }) {
   return (
@@ -32,8 +59,11 @@ function StatCard({ label, value, icon: Icon, delay = 0 }: { label: string, valu
 export default function Dashboard() {
   const { session, site } = useLtiSession();
   const { data, loading, error } = useImportsOverview();
+  const syncStatus = useSyncStatus();
   const hasSession = Boolean(session);
   const v = (n: number | undefined) => hasSession && data ? n ?? 0 : "—";
+  const domains = syncStatus.data?.domains ?? [];
+  const nextActions = syncStatus.data?.next_actions_he ?? [];
 
   return (
     <div className="space-y-8" dir="rtl">
@@ -71,10 +101,19 @@ export default function Dashboard() {
               transition={{ delay: 0.3 }}
               className="flex flex-wrap gap-4 pt-4"
             >
-              <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90 font-bold">
+              <Button
+                size="lg"
+                onClick={() => void syncStatus.runSync()}
+                disabled={syncStatus.running}
+                className="bg-white text-primary hover:bg-white/90 font-bold shadow-xl"
+              >
+                <RefreshCw className={syncStatus.running ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+                סנכרן מרחב
+              </Button>
+              <Button asChild size="lg" className="bg-white/15 text-white hover:bg-white/25 font-bold border border-white/20">
                 <Link to="/import" className="flex items-center gap-2">
                   <Import className="h-4 w-4" />
-                  ייבוא דוחות חדשים
+                  ייבוא דוחות
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10">
@@ -105,6 +144,61 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <Card className="border-none bg-white/80 shadow-elegant backdrop-blur">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              מרכז סנכרון מרחב
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {syncStatus.error && (
+              <div className="rounded-xl border border-status-missing/30 bg-status-missing-bg/10 p-3 text-xs text-status-missing">
+                בדיקת הסנכרון לא הצליחה כרגע: {syncStatus.error}
+              </div>
+            )}
+            <div className="grid gap-3 sm:grid-cols-2">
+              {domains.map((domain) => (
+                <div key={domain.id} className={`rounded-2xl border p-4 ${capabilityStatusClass(domain.status)}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-sm font-extrabold">{domain.label_he}</div>
+                    <span className="rounded-full bg-white/60 px-2 py-1 text-[10px] font-bold">
+                      {capabilityStatusLabel(domain.status)}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs leading-relaxed opacity-90">{domain.teacher_message_he}</p>
+                  <p className="mt-2 text-[11px] font-bold opacity-80">{domain.next_action_he}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-none bg-muted/30 shadow-elegant">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <ListChecks className="h-5 w-5 text-primary" />
+              מה המורה צריך לעשות?
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {nextActions.length ? nextActions.map((action, index) => (
+              <div key={`${action}-${index}`} className="rounded-xl bg-background/70 p-3 text-sm font-medium">
+                {action}
+              </div>
+            )) : (
+              <div className="rounded-xl bg-background/70 p-3 text-sm font-medium">
+                לחץ סנכרן מרחב כדי לבדוק מה קיים ומה חסר.
+              </div>
+            )}
+            <div className="rounded-xl border border-primary/10 bg-primary/5 p-3 text-[11px] leading-relaxed text-muted-foreground">
+              עקרון המוצר: המורה עושה מינימום. המערכת בודקת קודם מה אפשר למשוך, ורק אם חסר מקור אמיתי היא מבקשת דוח Moodle מדויק.
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard label="תלמידים רשומים" value={v(data?.students_count)} icon={Users} delay={0.1} />
