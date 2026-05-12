@@ -1,0 +1,49 @@
+{
+  "generated_at": "2026-05-12T11:29:56.762585+00:00",
+  "project": "Moodle Teacher Hub",
+  "purpose": "final readiness snapshot before Automation Core",
+  "missing_required_files": [],
+  "risky_tracked_files": [],
+  "root_conflicts": {
+    "server_ts_at_root": false,
+    "tailwind_ts_at_root": false,
+    "data_store_json_tracked": false
+  },
+  "supabase_placeholder_present": false,
+  "supabase_config_flag_present": true,
+  "rules_missing_needles": [
+    "לא מתחילים מחדש"
+  ],
+  "routes": {
+    "/": true,
+    "/students": true,
+    "/tasks": true,
+    "/chapters": true,
+    "/grades": true,
+    "/activity": true,
+    "/reports": true,
+    "/export": true,
+    "/import": true,
+    "/settings": true
+  },
+  "readiness_percent": {
+    "moodle_lti_nrps_participants": 70,
+    "repo_cleanup_before_implementation": 96,
+    "source_of_truth_governance": 92,
+    "automation_core": 0,
+    "persistence": 15,
+    "premium_ui": 18,
+    "teacher_release_readiness": 25
+  },
+  "broad_teacher_release_ready": false,
+  "next_code_milestone": "Automation Core",
+  "automation_core_scope": [
+    "Capability Detector",
+    "Sync Engine",
+    "Sync Status Endpoint",
+    "Feature Gates",
+    "סנכרן מרחב",
+    "Hebrew missing-data explanations"
+  ],
+  "decision": "Ready to start Automation Core only if npm check/build pass and no blocker is present."
+}
