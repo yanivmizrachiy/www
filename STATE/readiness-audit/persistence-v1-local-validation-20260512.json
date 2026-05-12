@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-05-12T06:21:39.1746120+03:00",
+  "branch": "feature/persistence-v1-foundation-20260512-061950",
+  "result": "passed",
+  "npm_check": "passed",
+  "npm_build": "passed",
+  "local_server": "passed",
+  "persistence_status": "passed",
+  "persistence_snapshot_safe_mode": "passed",
+  "privacy": {
+    "no_student_names_returned": true,
+    "no_emails_returned": true,
+    "no_tokens_returned": true,
+    "aggregate_only": true
+  },
+  "counts": {
+    "students": 0,
+    "import_batches": 0
+  },
+  "provider": "runtime-store-only",
+  "configured": false
+}
