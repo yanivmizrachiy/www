@@ -587,6 +587,16 @@ app.use("/public", express.static(path.join(ROOT, "public")));
 function buildSyncStatus(req) {
   const session = importSessionFromRequest(req) || sessionFromRequest(req);
   const hasSession = Boolean(session);
+  const hasStudents = Array.isArray(store.students) && store.students.length > 0;
+  const hasTasks = (Array.isArray(store.tasks) && store.tasks.length > 0) || (Array.isArray(store.chapters) && store.chapters.length > 0);
+  const hasGrades = Array.isArray(store.grades) && store.grades.length > 0;
+  const hasLogs = Array.isArray(store.logEvents) && store.logEvents.length > 0;
+  const missingActions = [
+    !hasStudents ? "ייבא דוח Participants ממודל כדי להציג רשימת תלמידים אמיתית." : null,
+    !hasTasks ? "ייבא דוח Activity Completion או מבנה קורס כדי להציג פרקים ומשימות אמיתיים." : null,
+    !hasGrades ? "ייבא Gradebook ממודל כדי להציג ציונים ודוחות ציונים אמיתיים." : null,
+    !hasLogs ? "ייבא דוח Logs ממודל כדי לחשב זמני תרגול אמיתיים." : null
+  ].filter(Boolean);
 
   return {
     ok: true,
@@ -605,13 +615,51 @@ function buildSyncStatus(req) {
       import_batches: Array.isArray(store.importBatches) ? store.importBatches.length : 0
     },
     next_actions_he: hasSession
-      ? ["בדיקת יכולות בוצעה. אם חסרים נתונים, יש לייבא דוח Moodle מתאים."]
+      ? (missingActions.length ? missingActions : ["כל מקורות הנתונים הבסיסיים זמינים. אפשר להמשיך לעבודה ודוחות, ועדיין נדרשת בדיקת מורה אמיתית לפני הפצה רחבה."])
       : ["פתח את הכלי מתוך Moodle כדי להתחיל סנכרון אמת."],
+    capability_details: [
+      {
+        key: "participants",
+        label_he: "משתתפים",
+        status: hasStudents ? "available" : "missing_required_report",
+        priority: 1,
+        required_report_he: hasStudents ? null : "Participants / משתתפים",
+        target_href: hasStudents ? "/students" : "/missing-data",
+        teacher_message_he: hasStudents ? "רשימת תלמידים אמיתית קיימת." : "חסרה רשימת תלמידים אמיתית."
+      },
+      {
+        key: "tasks",
+        label_he: "פרקים ומשימות",
+        status: hasTasks ? "available" : "missing_required_report",
+        priority: 2,
+        required_report_he: hasTasks ? null : "Activity Completion או מבנה קורס",
+        target_href: hasTasks ? "/tasks" : "/missing-data",
+        teacher_message_he: hasTasks ? "קיימים פרקים או משימות מנתוני אמת." : "חסר מקור נתונים אמיתי לפרקים ומשימות."
+      },
+      {
+        key: "grades",
+        label_he: "ציונים",
+        status: hasGrades ? "available" : "missing_required_report",
+        priority: 3,
+        required_report_he: hasGrades ? null : "Gradebook / גיליון ציונים",
+        target_href: hasGrades ? "/grades" : "/missing-data",
+        teacher_message_he: hasGrades ? "ציונים אמיתיים קיימים במערכת." : "חסר Gradebook אמיתי."
+      },
+      {
+        key: "logs",
+        label_he: "זמנים ולוגים",
+        status: hasLogs ? "available" : "missing_required_report",
+        priority: 4,
+        required_report_he: hasLogs ? null : "Logs / לוגים",
+        target_href: hasLogs ? "/activity" : "/missing-data",
+        teacher_message_he: hasLogs ? "קיימים לוגים לחישוב זמן תרגול." : "חסרים לוגים ולכן אי אפשר לחשב זמן תרגול."
+      }
+    ],
     capabilities: {
-      participants: Array.isArray(store.students) && store.students.length > 0 ? "available" : "missing_participants_report",
-      tasks: Array.isArray(store.tasks) && store.tasks.length > 0 ? "available" : "missing_completion_or_course_report",
-      grades: Array.isArray(store.grades) && store.grades.length > 0 ? "available" : "missing_gradebook_report",
-      logs: Array.isArray(store.logEvents) && store.logEvents.length > 0 ? "available" : "missing_logs_report"
+      participants: hasStudents ? "available" : "missing_participants_report",
+      tasks: hasTasks ? "available" : "missing_completion_or_course_report",
+      grades: hasGrades ? "available" : "missing_gradebook_report",
+      logs: hasLogs ? "available" : "missing_logs_report"
     }
   };
 }

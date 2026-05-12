@@ -18,6 +18,15 @@ export interface SyncStatus {
     import_batches: number;
   };
   next_actions_he: string[];
+  capability_details?: Array<{
+    key: string;
+    label_he: string;
+    status: string;
+    priority: number;
+    required_report_he: string | null;
+    target_href: string;
+    teacher_message_he: string;
+  }>;
   capabilities: {
     participants: string;
     tasks: string;
