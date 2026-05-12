@@ -602,6 +602,7 @@ function buildSyncStatus(req) {
     ok: true,
     version: "MTH_SYNC_STATUS_API_V1",
     teacher_release_ready: false,
+    persistence: buildPersistenceStatus(),
     no_fake_data: true,
     no_private_rows_returned: true,
     session_exists: hasSession,
@@ -683,6 +684,54 @@ app.post("/api/sync/run", (req, res) => {
   });
 });
 // <<< MTH_SYNC_STATUS_API_V1 <<<
+
+
+
+// >>> MTH_PERSISTENCE_CORE_V1_STATUS >>>
+function buildPersistenceStatus() {
+  const hasSupabaseUrl = Boolean(env("VITE_SUPABASE_URL"));
+  const hasServiceRole = Boolean(env("SUPABASE_SERVICE_ROLE_KEY"));
+  const hasLocalRuntimeStore = fs.existsSync(STORE_PATH);
+
+  const productionReady = hasSupabaseUrl && hasServiceRole;
+
+  return {
+    ok: true,
+    version: "MTH_PERSISTENCE_CORE_V1_STATUS",
+    production_persistence_ready: productionReady,
+    active_mode: productionReady ? "supabase-production-candidate" : "local-runtime-store",
+    local_runtime_store_present: hasLocalRuntimeStore,
+    local_runtime_store_tracked_in_git: false,
+    supabase_url_configured: hasSupabaseUrl,
+    supabase_service_role_configured: hasServiceRole,
+    teacher_release_blocker: !productionReady,
+    teacher_message_he: productionReady
+      ? "קיימת תצורת Supabase ל־production persistence, אך עדיין נדרשת בדיקת שמירה אמיתית למורה/מרחב."
+      : "כרגע השמירה אינה production persistence מלא. לפני הפצה למורים צריך לאמת שמירה קבועה לפי מורה ומרחב.",
+    next_actions_he: productionReady
+      ? [
+          "להריץ בדיקת כתיבה/קריאה בטוחה מול Supabase ללא נתוני תלמידים אמיתיים.",
+          "לאמת הפרדה בין מורה למורה ובין מרחב למרחב.",
+          "לתעד תוצאת בדיקה ב־STATE."
+        ]
+      : [
+          "להגדיר Supabase production persistence בסביבת השרת בלבד.",
+          "לא להכניס service role key לגיטהאב או לצ׳אט.",
+          "להוסיף בדיקת כתיבה/קריאה בטוחה לפני הפצה למורים."
+        ],
+    safety: {
+      no_secret_values_returned: true,
+      no_student_rows_returned: true,
+      no_fake_persistence_claim: true
+    }
+  };
+}
+
+app.get("/api/persistence/status", (_req, res) => {
+  noStore(res);
+  res.json(buildPersistenceStatus());
+});
+// <<< MTH_PERSISTENCE_CORE_V1_STATUS <<<
 
 
 app.get("/health", (_req, res) => {
