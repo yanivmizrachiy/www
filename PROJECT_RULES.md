@@ -448,69 +448,6 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 אין להכניס secrets, service-role keys, exports או נתוני תלמידים לגיט.
 <!-- MTH_SUPABASE_REVIEW_20260510_END -->
 
-<!-- MTH_SCHEMA_ONLY_PERSISTENCE_20260510_START -->
-## Schema Only Persistence — 2026-05-10
-
-נוסף קובץ migration מוצע ל־Supabase עבור persistence קבוע.
-
-הקובץ הוא schema-only:
-- לא מריצים SQL אוטומטית.
-- לא עושים database deploy.
-- לא מוסיפים secrets.
-- לא מוסיפים נתוני תלמידים.
-- לא משנים קוד אפליקציה.
-- לא מסמנים persistence כעובד.
-
-הטבלאות המוצעות:
-- `mth_teachers`
-- `mth_courses`
-- `mth_import_batches`
-- `mth_students`
-- `mth_nrps_members`
-- `mth_student_matches`
-
-כל שימוש בפועל דורש אישור, בדיקת Supabase project, בדיקת RLS, ונתיב כתיבה server-side בלבד.
-<!-- MTH_SCHEMA_ONLY_PERSISTENCE_20260510_END -->
-
-<!-- MTH_PERSISTENCE_WRITE_PATH_20260510_START -->
-## Persistence Write Path — 2026-05-10
-
-נוספה שכבת קוד ראשונה ל-persistence בצד השרת.
-
-היא בטוחה כי:
-- היא לא מריצה SQL.
-- היא לא מוסיפה secrets.
-- היא לא מוסיפה נתוני תלמידים.
-- היא לא שוברת את runtime store הקיים.
-- היא כותבת ל-Supabase רק אם ההגדרות קיימות בסביבת השרת.
-
-נוסף endpoint:
-- /api/persistence/status
-
-בשלב זה חיבור import התלמידים לשמירה בפועל עדיין לא בוצע, כי לא נמצא pattern בטוח להזרקה אוטומטית. זה יבוצע ב-PR נפרד וממוקד.
-
-המשך חובה:
-1. לבדוק status ב-Render.
-2. לחבר Participants import ל-persistence ב-PR נפרד.
-3. להגדיר Supabase בסביבת Render רק אחרי אישור.
-4. להריץ schema ידנית רק אחרי אישור.
-5. לבדוק שמירה אמיתית עם ראיות aggregate בלבד.
-<!-- MTH_PERSISTENCE_WRITE_PATH_20260510_END -->
-
-<!-- MTH_PARTICIPANTS_IMPORT_PERSISTENCE_CONNECTION_20260510_START -->
-## Participants Import Persistence Connection — 2026-05-10
-
-ייבוא Participants מחובר לשכבת persistence באופן בטוח.
-
-- אם Supabase לא מוגדר, הייבוא ממשיך לעבוד והכתיבה מדולגת.
-- אין SQL.
-- אין secrets.
-- אין נתוני תלמידים ב-Git.
-- הראיות חוזרות aggregate-only.
-
-לא להגדיר SUPABASE_SERVICE_ROLE_KEY ולא להריץ schema בלי אישור נפרד.
-<!-- MTH_PARTICIPANTS_IMPORT_PERSISTENCE_CONNECTION_20260510_END -->
-
 <!-- MTH_AUTOMATION_FIRST_EXECUTION_20260511_START -->
 ## Automation-First Execution Rule — 2026-05-11
 
@@ -586,3 +523,120 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 - Export קיים → Excel/PDF/WhatsApp helper.
 - Import קיים → fallback חכם לדוחות Moodle אמיתיים.
 <!-- MTH_AUTOMATION_FIRST_EXECUTION_20260511_END -->
+
+<!-- MTH_PRODUCTION_REALITY_HARDENING_20260511_START -->
+## Production Reality / No-Demo Hardening — 2026-05-11
+
+הפרויקט הזה נבנה כמוצר אמיתי לשימוש אמיתי, ואולי גם כמוצר מסחרי עתידי. הוא אינו דמו.
+
+### כלל יסוד
+
+אין להתחיל מחדש. אין למחוק או לעקוף יכולות שכבר עובדות. כל פיתוח ממשיך מהריפו הקיים ומהמסכים הקיימים בלבד, אלא אם יש החלטה מתועדת ומנומקת אחרת.
+
+### מסך קיים אינו הוכחה שיכולת עובדת
+
+קיום route או מסך אינו מספיק כדי לסמן יכולת כעובדת.
+
+דוגמאות:
+- אם יש מסך `Grades`, זה לא אומר שציונים עובדים.
+- אם יש מסך `Activity`, זה לא אומר שזמני תרגול עובדים.
+- אם יש מסך `Tasks`, זה לא אומר שכל פרקי Moodle וכל המשימות נשלפים אוטומטית.
+- אם יש מסך `Reports`, זה לא אומר שדוחות production מוכנים.
+
+יכולת נחשבת עובדת רק אם יש:
+1. מקור נתונים אמיתי.
+2. קוד שמחובר למקור הזה.
+3. בדיקת build.
+4. בדיקת התנהגות בפועל.
+5. תיעוד ב־STATE.
+6. מצב חסר נתונים ברור.
+7. בלי demo fallback ובלי נתונים מומצאים.
+
+### הפרדה בין LTI 1.3 לבין LTI 1.0/1.1
+
+אסור לערבב מסלולי LTI.
+
+- LTI 1.3 הוא המסלול שבו אומת NRPS.
+- LTI 1.0/1.1 נשמר רק אם הוא נדרש לתאימות.
+- OAuth1 HMAC-SHA1 שייך למסלול LTI 1.0/1.1.
+- NRPS/AGS שייכים למסלול LTI 1.3 Advantage.
+- אין להסיק שהצלחה במסלול אחד מוכיחה את השני.
+
+כל endpoint, בדיקה, מסמך או UI חייבים לציין לאיזה מסלול LTI הם שייכים.
+
+### מוצר אמיתי / שימוש רחב
+
+לפני שליחת קישור למורים, חובה שהמערכת תעמוד בתנאים הבאים:
+
+1. persistence קבוע.
+2. הפרדה מלאה בין מורים, קורסים ומרחבים.
+3. כפתור `סנכרן מרחב` אמיתי.
+4. Capability Detector.
+5. Feature Gates לכל כפתור ראשי.
+6. מסך שמסביר מה חסר.
+7. אין כפתורי דמו.
+8. אין נתונים מומצאים.
+9. build עובר.
+10. בדיקה עם יותר ממורה/מרחב אחד.
+11. תיעוד התקנה ברור למורה.
+12. מדיניות פרטיות בסיסית לנתוני תלמידים.
+
+### אוטומציה מקסימלית
+
+כל פעולה ידנית מצד המורה נחשבת בעיית מוצר, אלא אם הוכח ש־Moodle או הרשאות חוסמות אוטומציה.
+
+המערכת חייבת לנסות קודם:
+
+1. LTI session.
+2. NRPS.
+3. Moodle Web Services אם יש token והרשאות.
+4. AGS אם זמין.
+5. persistence קיים.
+6. ייבוא דוח Moodle אמיתי.
+7. העלאה/הדבקה ידנית רק כמוצא אחרון.
+
+### המשך עבודה מחייב
+
+השלב הבא בקוד אינו עוד מסך יפה ואינו התחלה מחדש.
+
+השלב הבא בקוד הוא:
+
+1. Automation Core.
+2. Capability Detector.
+3. Sync Engine.
+4. Sync Status Endpoint.
+5. כפתור `סנכרן מרחב`.
+6. Feature Gates.
+7. Premium Dashboard שמציג רק יכולות אמת.
+
+### כלל מוצר
+
+כל PR עתידי חייב לענות:
+
+- האם הוא ממשיך מהקיים?
+- האם הוא מסיר דמו?
+- האם הוא מפחית פעולה ידנית מהמורה?
+- האם הוא מבדיל בין עובד / חסר דוח / חסום הרשאה / מתוכנן?
+- האם הוא שומר על פרטיות?
+- האם הוא תועד ב־STATE?
+<!-- MTH_PRODUCTION_REALITY_HARDENING_20260511_END -->
+
+<!-- MTH_HEBREW_NO_RESTART_MARKER_20260512_START -->
+## כלל עברי מחייב — לא מתחילים מחדש
+
+לא מתחילים מחדש.
+
+ממשיכים מהקיים בלבד.
+
+לא בונים דמו.
+
+לא מחליפים את האפליקציה הקיימת באפליקציה חדשה.
+
+לא מוחקים או עוקפים יכולות שכבר עובדות.
+
+כל פיתוח עתידי חייב להמשיך מהריפו הקיים, מהשרת הפעיל `src/server.js`, מה־Tailwind הפעיל `tailwind.config.cjs`, ומהמסכים הקיימים.
+
+אם יש מסך קיים, הוא אינו נחשב יכולת עובדת עד שיש מקור נתונים אמיתי, בדיקה, ותיעוד STATE.
+
+השלב הבא בקוד הוא Automation Core: Capability Detector, Sync Engine, Sync Status Endpoint, Feature Gates, וכפתור `סנכרן מרחב`.
+<!-- MTH_HEBREW_NO_RESTART_MARKER_20260512_END -->

@@ -1,0 +1,27 @@
+{
+  "timestamp": "20260501-092132",
+  "computer": "מחשב חדר מחשב",
+  "repo": "yanivmizrachiy/www",
+  "appDir": "luz-teddy",
+  "siteUrl": "https://yanivmizrachiy.github.io/www/luz-teddy/",
+  "sheetId": "1bG6RsGZK39lNogtTBS5_voJz0WVcRu2D",
+  "csvUrl": "https://docs.google.com/spreadsheets/d/1bG6RsGZK39lNogtTBS5_voJz0WVcRu2D/gviz/tq?tqx=out:csv&gid=0&cb=20260501-092132",
+  "sheetReadable": false,
+  "sheetHttp": 200,
+  "siteHttp": null,
+  "headers": [
+    "  הערה -כל שכבה לכתוב בצבע אחר אם יש צורך ביותר משורה ללחוץ בסרגל הכלים על עיצוב- גלישת טקסט- גלישה לשורה חדשה יום א׳",
+    "לוח מבחנים וארועים שנתי גודל גופן 10 יום ב׳",
+    "- כל חודש מופיע בלשונית נפרדת יום ג׳",
+    "חופש ז' ח' ט' יום ד׳",
+    "שלומית כללי יום ה׳",
+    "יום ו׳",
+    "שבת"
+  ],
+  "rowCount": 9,
+  "issues": [
+    "חסרה עמודת תאריך/date",
+    "חסרה עמודת שם אירוע/title",
+    "Site error: Response status code does not indicate success: 404 (Not Found)."
+  ]
+}

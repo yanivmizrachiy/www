@@ -1,0 +1,26 @@
+{
+  "source": "לו״ז מחצית ב׳",
+  "sourceType": "real-events-provided-by-user-from-file",
+  "months": [5, 6],
+  "count": 17,
+  "events": [
+    {"date":"2026-05-03","dateLabel":"3/5","dayLabel":"א׳","title":"מפגש חדר מורים — שש שנתי — sell","startTime":"","endTime":"","type":"meeting"},
+    {"date":"2026-05-05","dateLabel":"5/5","dayLabel":"ג׳","title":"חופשת ל״ג בעומר","startTime":"","endTime":"","type":"vacation"},
+    {"date":"2026-05-10","dateLabel":"10/5","dayLabel":"א׳","title":"יום הורים — רבעון","startTime":"","endTime":"","type":"community"},
+    {"date":"2026-05-13","dateLabel":"13/5","dayLabel":"ד׳","title":"גיחה ט׳ נעלה לירושלים","startTime":"","endTime":"","type":"trip"},
+    {"date":"2026-05-14","dateLabel":"14/5","dayLabel":"ה׳","title":"יום ישראל","startTime":"","endTime":"","type":"activity"},
+    {"date":"2026-05-17","dateLabel":"17/5","dayLabel":"א׳","title":"מפגש חדר מורים","startTime":"","endTime":"","type":"meeting"},
+    {"date":"2026-05-18","endDate":"2026-05-19","dateLabel":"18–19/5","dayLabel":"ב׳–ג׳","title":"טיול שנתי ז׳","startTime":"","endTime":"","type":"trip"},
+    {"date":"2026-05-21","endDate":"2026-05-23","dateLabel":"21–23/5","dayLabel":"ה׳–ש׳","title":"חופשת שבועות","startTime":"","endTime":"","type":"vacation"},
+    {"date":"2026-05-24","dateLabel":"24/5","dayLabel":"א׳","title":"פנוי לתעודות","startTime":"","endTime":"","type":"deadline"},
+    {"date":"2026-05-26","endDate":"2026-05-27","dateLabel":"26–27/5","dayLabel":"ג׳–ד׳","title":"מסע תקומה שכבת ט׳","startTime":"","endTime":"","type":"trip"},
+    {"date":"2026-05-31","dateLabel":"31/5","dayLabel":"א׳","title":"מיפוי שכבת ט׳ / מסיבת סיום י״ב","startTime":"","endTime":"","type":"activity"},
+    {"date":"2026-06-07","dateLabel":"7/6","dayLabel":"א׳","title":"סיכום פדגוגי שש שנתי","startTime":"","endTime":"","type":"meeting"},
+    {"date":"2026-06-09","dateLabel":"9/6","dayLabel":"ג׳","title":"יום שיא גשרים","startTime":"","endTime":"","type":"activity"},
+    {"date":"2026-06-10","dateLabel":"10/6","dayLabel":"ד׳","title":"גיחה שכבת ח׳","startTime":"","endTime":"","type":"trip"},
+    {"date":"2026-06-10","dateLabel":"10/6","dayLabel":"ד׳","title":"מסיבת סיום ט׳","startTime":"","endTime":"","type":"ceremony"},
+    {"date":"2026-06-14","dateLabel":"14/6","dayLabel":"א׳","title":"מפגש חדר מורים פרידה","startTime":"","endTime":"","type":"meeting"},
+    {"date":"2026-06-18","dateLabel":"18/6","dayLabel":"ה׳","title":"חלוקת תעודות","startTime":"","endTime":"","type":"ceremony"}
+  ],
+  "notes": ["חסר ערב שורשים ז׳"]
+}

@@ -1,0 +1,17 @@
+{
+  "milestone": "Automation Core V1 runtime smoke",
+  "generated_at": "2026-05-12T15:04:34+03:00",
+  "runtime_smoke_passed": true,
+  "npm_check": true,
+  "npm_build": true,
+  "health_ok": true,
+  "sync_status_ok": true,
+  "sync_run_ok": true,
+  "no_fake_data": true,
+  "no_private_rows_returned": true,
+  "automation_core_percent": 70,
+  "teacher_release_readiness_percent": 50,
+  "deploy": false,
+  "secrets_added": false,
+  "student_data_added": false
+}

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>בדיקת מקור - לוז טדי</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .doctorOutput{direction:ltr;text-align:left;white-space:pre-wrap;overflow:auto;max-height:62vh;background:#101827;color:#f8fafc;border-radius:18px;padding:16px;font-size:.92rem;line-height:1.55;border:1px solid rgba(255,255,255,.12)}
+    .buttonLink{min-height:48px;border-radius:999px;padding:0 18px;font-weight:900;display:inline-grid;place-items:center;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.22)}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brandWrap">
+      <div class="brandMeta">
+        <div class="brandOverline">בדיקת מקור נתונים</div>
+        <h1>לוז טדי</h1>
+        <p>בדיקה חיה של הטאב המדויק בגיליון.</p>
+      </div>
+    </div>
+  </header>
+  <section class="hero">
+    <div class="heroText">
+      <div class="heroBadge" id="doctorStatus">טוען</div>
+      <h2>בדיקת שאיבה מהגיליון</h2>
+      <p id="doctorText">בודק את source.json ואת הטאב המדויק.</p>
+    </div>
+    <div class="heroActions">
+      <button id="runDoctor" type="button">בדוק שוב</button>
+      <a class="buttonLink secondary" href="index.html">חזרה לאתר</a>
+    </div>
+  </section>
+  <section class="panel">
+    <h2>תוצאה</h2>
+    <pre id="doctorOutput" class="doctorOutput">טוען...</pre>
+  </section>
+  <script src="doctor.js" defer></script>
+</body>
+</html>

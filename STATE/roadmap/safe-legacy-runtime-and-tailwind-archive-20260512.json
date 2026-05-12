@@ -1,0 +1,10 @@
+{
+  "mode": "safe_legacy_runtime_and_tailwind_archive",
+  "active_server": "src/server.js",
+  "active_tailwind_config": "tailwind.config.cjs",
+  "source_code_changed": false,
+  "package_json_changed": false,
+  "render_yaml_changed": false,
+  "deleted_files": [],
+  "validation": ["npm run check", "npm run build"]
+}

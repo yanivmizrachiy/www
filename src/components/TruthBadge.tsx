@@ -1,53 +1,35 @@
-import { ShieldCheck, ShieldAlert, ShieldX } from "lucide-react";
+import { CheckCircle2, CircleHelp, Sigma, TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type TruthStatus = "proven" | "calculated" | "imported" | "missing" | "blocked";
+type TruthStatus = "proven" | "missing" | "calculated" | "blocked";
 
-interface TruthBadgeProps {
-  status: TruthStatus;
-  className?: string;
-  showLabel?: boolean;
-}
+const labels: Record<TruthStatus, string> = {
+  proven: "נתון אמיתי",
+  missing: "חסר נתון",
+  calculated: "מחושב מלוגים",
+  blocked: "חסום",
+};
 
-export function TruthBadge({ status, className, showLabel = true }: TruthBadgeProps) {
-  const config = {
-    proven: {
-      icon: ShieldCheck,
-      text: "נתוני אמת",
-      color: "text-status-proven bg-status-proven-bg border-status-proven/20",
-    },
-    calculated: {
-      icon: ShieldCheck,
-      text: "מחושב מלוגים",
-      color: "text-status-active bg-status-active-bg border-status-active/20",
-    },
-    imported: {
-      icon: ShieldAlert,
-      text: "יובא ידנית",
-      color: "text-status-pending bg-status-pending-bg border-status-pending/20",
-    },
-    missing: {
-      icon: ShieldX,
-      text: "חסר בנתונים",
-      color: "text-status-blocked bg-status-blocked-bg border-status-blocked/20",
-    },
-    blocked: {
-      icon: ShieldX,
-      text: "חסום",
-      color: "text-status-blocked bg-status-blocked-bg border-status-blocked/20",
-    },
-  };
+const styles: Record<TruthStatus, string> = {
+  proven: "bg-status-proven-bg text-status-proven",
+  missing: "bg-status-missing-bg text-status-missing",
+  calculated: "bg-accent text-accent-foreground",
+  blocked: "bg-status-blocked-bg text-status-blocked",
+};
 
-  const { icon: Icon, text, color } = config[status];
+const icons = {
+  proven: CheckCircle2,
+  missing: CircleHelp,
+  calculated: Sigma,
+  blocked: TriangleAlert,
+};
 
+export function TruthBadge({ status, label, className }: { status: TruthStatus; label?: string; className?: string }) {
+  const Icon = icons[status];
   return (
-    <div className={cn(
-      "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors",
-      color,
-      className
-    )}>
-      <Icon className="h-3 w-3" />
-      {showLabel && <span>{text}</span>}
-    </div>
+    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium", styles[status], className)}>
+      <Icon className="h-3.5 w-3.5" />
+      {label ?? labels[status]}
+    </span>
   );
 }
