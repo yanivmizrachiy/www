@@ -1,0 +1,80 @@
+{
+  "generated_at": "2026-05-12T07:04:51.373247+00:00",
+  "files": {
+    "tailwind.config.ts": {
+      "exists": true,
+      "sha256": "b57f8273c15f85552b871f2c5a15be30e4a6a8362919e6be62e49ba9938ccf08",
+      "bytes": 2029,
+      "contains_primary_glow": true,
+      "contains_sidebar": true,
+      "contains_fade_in": true,
+      "contains_gradient_hero": false,
+      "referenced_by": [
+        "STATE/file-classification/repo-file-classification-20260510.md",
+        "STATE/gemini-sync/copied-files-20260428-193953.txt",
+        "STATE/lovable-intake.md",
+        "STATE/roadmap/repo-cleanup-audit-20260512.json",
+        "STATE/roadmap/repo-cleanup-decisions-20260512.json",
+        "docs/ai-handoff/lovable-handoff-request.md",
+        "docs/architecture/repo-cleanup-decisions-20260512.md",
+        "scripts/termux/termux-react-shell-autofix.sh"
+      ]
+    },
+    "tailwind.config.cjs": {
+      "exists": true,
+      "sha256": "f26fb7fb794f65b3d0b2b2033d575273003237a056625246aa6ddf6cb67e9323",
+      "bytes": 2785,
+      "contains_gradient_hero": true,
+      "contains_gradient_primary": true,
+      "contains_accordion_down": true,
+      "contains_primary_glow": false,
+      "referenced_by": [
+        "STATE/file-classification/repo-file-classification-20260510.md",
+        "STATE/gemini-ai-studio-run-2026-04-28.md",
+        "STATE/gemini-sync/copied-files-20260428-193953.txt",
+        "STATE/roadmap/repo-cleanup-audit-20260512.json",
+        "STATE/roadmap/repo-cleanup-decisions-20260512.json",
+        "docs/architecture/repo-cleanup-decisions-20260512.md"
+      ]
+    },
+    "postcss.config.js": {
+      "exists": true,
+      "content": "export default { plugins: { tailwindcss: {}, autoprefixer: {} } };"
+    }
+  },
+  "runtime_detection": {
+    "default": {
+      "has_gradient_hero": true,
+      "has_gradient_primary": true,
+      "has_primary_glow": false,
+      "has_sidebar_background": false,
+      "has_accordion_down": true,
+      "has_fade_in": false,
+      "ok": true
+    },
+    "explicit_cjs": {
+      "ok": true,
+      "has_gradient_hero": true,
+      "has_primary_glow": false,
+      "has_accordion_down": true,
+      "has_fade_in": false
+    },
+    "explicit_ts": {
+      "ok": true,
+      "has_gradient_hero": false,
+      "has_primary_glow": true,
+      "has_accordion_down": false,
+      "has_fade_in": true
+    }
+  },
+  "package_mentions": {
+    "tailwind_config_ts": false,
+    "tailwind_config_cjs": false
+  },
+  "decision": {
+    "canonical_candidate": "tailwind.config.cjs",
+    "confidence": "high",
+    "do_not_archive_yet": true,
+    "next_action": "If canonical is confirmed, create a later safe PR that archives the unused config only after npm run check and npm run build pass."
+  }
+}
