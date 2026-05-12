@@ -582,6 +582,61 @@ app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 app.use("/public", express.static(path.join(ROOT, "public")));
 
+
+// >>> MTH_SYNC_STATUS_API_V1 >>>
+function buildSyncStatus(req) {
+  const session = importSessionFromRequest(req) || sessionFromRequest(req);
+  const hasSession = Boolean(session);
+
+  return {
+    ok: true,
+    version: "MTH_SYNC_STATUS_API_V1",
+    teacher_release_ready: false,
+    no_fake_data: true,
+    no_private_rows_returned: true,
+    session_exists: hasSession,
+    counts: {
+      students: Array.isArray(store.students) ? store.students.length : 0,
+      chapters: Array.isArray(store.chapters) ? store.chapters.length : 0,
+      tasks: Array.isArray(store.tasks) ? store.tasks.length : 0,
+      grade_items: Array.isArray(store.gradeItems) ? store.gradeItems.length : 0,
+      grades: Array.isArray(store.grades) ? store.grades.length : 0,
+      log_events: Array.isArray(store.logEvents) ? store.logEvents.length : 0,
+      import_batches: Array.isArray(store.importBatches) ? store.importBatches.length : 0
+    },
+    next_actions_he: hasSession
+      ? ["בדיקת יכולות בוצעה. אם חסרים נתונים, יש לייבא דוח Moodle מתאים."]
+      : ["פתח את הכלי מתוך Moodle כדי להתחיל סנכרון אמת."],
+    capabilities: {
+      participants: Array.isArray(store.students) && store.students.length > 0 ? "available" : "missing_participants_report",
+      tasks: Array.isArray(store.tasks) && store.tasks.length > 0 ? "available" : "missing_completion_or_course_report",
+      grades: Array.isArray(store.grades) && store.grades.length > 0 ? "available" : "missing_gradebook_report",
+      logs: Array.isArray(store.logEvents) && store.logEvents.length > 0 ? "available" : "missing_logs_report"
+    }
+  };
+}
+
+app.get("/api/sync/status", (req, res) => {
+  noStore(res);
+  res.json(buildSyncStatus(req));
+});
+
+app.post("/api/sync/run", (req, res) => {
+  noStore(res);
+  store.settings.lastSyncAt = new Date().toISOString();
+  saveStore();
+  res.json({
+    ...buildSyncStatus(req),
+    sync_run: {
+      ok: true,
+      mode: "capability-detection-only",
+      note_he: "לא נוצרו נתונים מזויפים. בוצעה רק בדיקת יכולות וחוסרים."
+    }
+  });
+});
+// <<< MTH_SYNC_STATUS_API_V1 <<<
+
+
 app.get("/health", (_req, res) => {
   res.json({
     ok: true,
