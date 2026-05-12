@@ -36,7 +36,7 @@ export default function SyncFeatureGates({ status, loading }: { status: SyncStat
                 </div>
                 <p className="text-xs leading-relaxed text-muted-foreground">{available ? "אפשר לפתוח ולעבוד עם הנתונים שנקלטו." : missing}</p>
                 <Button asChild variant={available ? "default" : "outline"} className="w-full">
-                  <Link to={available ? href : "/import"}>{available ? "פתח" : "ייבא דוח מתאים"}</Link>
+                  <Link to={available ? href : "/missing-data"}>{available ? "פתח" : "מה חסר?"}</Link>
                 </Button>
               </CardContent>
             </Card>
