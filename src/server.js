@@ -2457,7 +2457,26 @@ app.all("/api/lti13/launch", async (req, res) => {
   const { sessionToken, session, courseTitle, courseId, teacherName } = built;
 
   try {
-    if (typeof recordSupabaseSession === "function") {
+    // MTH_LTI13_CAPTURE_FIX — capture LTI 1.3 launches into store like LTI 1.1 does
+try {
+  if (typeof recordLaunchCapture === "function") {
+    recordLaunchCapture(req.body || {}, "LTI13_VERIFIED");
+  }
+  if (Array.isArray(store.launches)) {
+    store.launches.push({
+      id: crypto.randomUUID(),
+      type: "lti13",
+      ok: true,
+      verificationCode: "LTI13_VERIFIED",
+      createdAt: new Date().toISOString()
+    });
+    if (typeof saveStore === "function") saveStore();
+  }
+} catch (captureErr) {
+  console.warn("MTH_LTI13_CAPTURE_WARN", captureErr?.message || String(captureErr));
+}
+
+if (typeof recordSupabaseSession === "function") {
       await recordSupabaseSession({
         session_token: sessionToken,
         course_id: courseId,
