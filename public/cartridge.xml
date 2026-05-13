@@ -1,20 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  HOLD / LEGACY ONLY — DO NOT USE FOR NEW TEACHER INSTALLS YET.
+
+  This cartridge is LTI 1.1 and launches /api/lti/launch.
+  It must not be used as the default installation artifact until Tool Inventory confirms
+  that production Moodle should use LTI 1.1 rather than LTI 1.3.
+
+  If the active Moodle tool is LTI 1.3 (/api/lti13/launch), using this file can create
+  a second parallel LTI 1.1 tool and split launch/session evidence.
+-->
 <cartridge_basiclti_link xmlns="http://www.imsglobal.org/xsd/imslticc_v1p0"
     xmlns:blti="http://www.imsglobal.org/xsd/imsbasiclti_v1p0"
     xmlns:lticm="http://www.imsglobal.org/xsd/imslticm_v1p0"
     xmlns:lticp="http://www.imsglobal.org/xsd/imslticp_v1p0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <blti:title>Moodle Teacher Hub</blti:title>
-  <blti:description>Teacher tool for Moodle data - students, grades, activity, reports. Full RTL Hebrew.</blti:description>
+  <blti:title>Moodle Teacher Hub — LEGACY LTI 1.1 HOLD</blti:title>
+  <blti:description>Legacy LTI 1.1 cartridge. Do not use for production teacher installs until Tool Inventory confirms LTI 1.1 is canonical.</blti:description>
   <blti:launch_url>https://www-tijc.onrender.com/api/lti/launch</blti:launch_url>
   <blti:secure_launch_url>https://www-tijc.onrender.com/api/lti/launch</blti:secure_launch_url>
   <blti:vendor>
-    <lticp:code>moodle-teacher-hub</lticp:code>
-    <lticp:name>Moodle Teacher Hub</lticp:name>
+    <lticp:code>moodle-teacher-hub-legacy-lti11-hold</lticp:code>
+    <lticp:name>Moodle Teacher Hub — Legacy LTI 1.1 Hold</lticp:name>
     <lticp:url>https://www-tijc.onrender.com</lticp:url>
   </blti:vendor>
   <blti:extensions platform="moodle.org">
-    <lticm:property name="tool_id">moodle_teacher_hub</lticm:property>
+    <lticm:property name="tool_id">moodle_teacher_hub_legacy_lti11_hold</lticm:property>
     <lticm:property name="privacy_level">name_only</lticm:property>
   </blti:extensions>
 </cartridge_basiclti_link>
