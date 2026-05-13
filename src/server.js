@@ -6,6 +6,7 @@ import path from "path";
 import crypto from "crypto";
 import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
+import { buildPracticeTimeGate } from "./practiceTime.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -972,6 +973,26 @@ app.get("/api/release/readiness", (req, res) => {
   res.json(buildReleaseReadiness(req));
 });
 // <<< MTH_RELEASE_READINESS_GATE_V1 <<<
+
+// >>> MTH_PRACTICE_TIME_TRUTH_GATE_V1 >>>
+app.get("/api/practice-time/status", (_req, res) => {
+  noStore(res);
+  const gate = buildPracticeTimeGate(store.logEvents, store.activitySessions, store.importBatches);
+  res.json({
+    ok: true,
+    version: "MTH_PRACTICE_TIME_TRUTH_GATE_V1",
+    teacher_release_ready: false,
+    ...gate,
+    safety: {
+      no_student_rows_returned: true,
+      no_synthetic_time: true,
+      no_fake_logs: true,
+      aggregate_only: true
+    },
+    checked_at: new Date().toISOString()
+  });
+});
+// <<< MTH_PRACTICE_TIME_TRUTH_GATE_V1 <<<
 
 
 app.get("/health", (_req, res) => {
