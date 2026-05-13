@@ -837,7 +837,7 @@ app.get("/api/persistence/validate", async (_req, res) => {
 // <<< MTH_PERSISTENCE_LIVE_VALIDATION_V1 >>>
 
 
-// >>> MTH_RELEASE_READINESS_GATE_V1 >>>
+// >>> MTH_RELEASE_READINESS_GATE_V2 >>>
 function buildReleaseReadiness(req) {
   const sync = buildSyncStatus(req);
   const persistence = buildPersistenceStatus();
@@ -873,6 +873,32 @@ function buildReleaseReadiness(req) {
     }
   }
 
+  // Reports must enter through the real import flow — not just exist in memory
+  if (!Array.isArray(store.importBatches) || store.importBatches.length === 0) {
+    blockers.push({
+      key: "no_real_import_batch",
+      severity: "data_required",
+      message_he: "לא בוצע ייבוא אמיתי של דוחות. נדרש ייבוא Participants, Gradebook ו-Logs מ-Moodle."
+    });
+  }
+
+  // Logs exist but carry no duration field — practice time cannot be computed
+  const releaseGateLogEvents = Array.isArray(store.logEvents) ? store.logEvents : [];
+  if (releaseGateLogEvents.length > 0) {
+    const logsHaveDuration = releaseGateLogEvents.some(ev => {
+      const raw = ev.duration_seconds ?? ev.duration ?? ev.timeDiff ?? null;
+      return raw !== null && Number.isFinite(Number(raw)) && Number(raw) > 0;
+    });
+    if (!logsHaveDuration) {
+      blockers.push({
+        key: "practice_time_no_duration_field",
+        severity: "data_required",
+        message_he: "קיימים לוגים אך אין שדה משך זמן — לא ניתן לחשב זמן תרגול אמיתי."
+      });
+    }
+  }
+
+  // Always-on hardcoded gates — require explicit human sign-off
   blockers.push({
     key: "deploy_live_validation_missing",
     severity: "required",
@@ -880,9 +906,9 @@ function buildReleaseReadiness(req) {
   });
 
   blockers.push({
-    key: "multi_teacher_validation_missing",
+    key: "multi_teacher_isolation_not_validated",
     severity: "required",
-    message_he: "נדרשת בדיקת כמה מורים/כמה מרחבים כדי לוודא שאין ערבוב נתונים."
+    message_he: "נדרש אימות בידוד נתונים: לפחות שני מורים או שני מרחבים שונים, ללא ערבוב נתונים."
   });
 
   blockers.push({
@@ -891,9 +917,15 @@ function buildReleaseReadiness(req) {
     message_he: "נדרשת בדיקה אמיתית מקצה לקצה מתוך Moodle עם נתוני אמת."
   });
 
+  blockers.push({
+    key: "repo_and_infra_manual_check_required",
+    severity: "required",
+    message_he: "נדרשת בדיקה ידנית של repo ו-infra: ללא סודות, ללא נתוני תלמידים, ללא ערכי env ב-code."
+  });
+
   return {
     ok: true,
-    version: "MTH_RELEASE_READINESS_GATE_V1",
+    version: "MTH_RELEASE_READINESS_GATE_V2",
     teacher_release_ready: false,
     broad_release_ready: false,
     automation_core_percent: 78,
@@ -971,7 +1003,7 @@ app.get("/api/release/readiness", (req, res) => {
   noStore(res);
   res.json(buildReleaseReadiness(req));
 });
-// <<< MTH_RELEASE_READINESS_GATE_V1 <<<
+// <<< MTH_RELEASE_READINESS_GATE_V2 <<<
 
 
 app.get("/health", (_req, res) => {
