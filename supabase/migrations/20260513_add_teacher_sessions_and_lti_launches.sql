@@ -2,6 +2,7 @@
 -- Status: REVIEWED SOURCE ONLY. Apply via Supabase Studio after human review.
 -- Purpose: persist LTI 1.1 and LTI 1.3 launches so store_launches/moodle_captures
 --          stop being ephemeral memory-only counters on Render.
+-- Privacy rule: do not store teacher display names or raw launch payloads here.
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
@@ -37,19 +38,20 @@ ALTER TABLE teacher_sessions ENABLE ROW LEVEL SECURITY;
 -- Used by /api/lti/diagnostics safe_counts.store_launches
 -- ============================================================
 CREATE TABLE IF NOT EXISTS lti_launches (
-  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  lti_version       TEXT NOT NULL,   -- '1.1' or '1.3'
-  ok                BOOLEAN NOT NULL DEFAULT false,
-  verification_code TEXT,
-  course_id         TEXT,
-  teacher_name      TEXT,            -- DISPLAY ONLY, no PII pattern
-  space_title       TEXT,
-  source            TEXT,            -- e.g. 'lti11', 'lti13'
-  raw_keys_count    INTEGER,         -- aggregate only, never the values
-  created_at        TIMESTAMPTZ DEFAULT now()
+  id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  lti_version             TEXT NOT NULL,   -- '1.1' or '1.3'
+  ok                      BOOLEAN NOT NULL DEFAULT false,
+  verification_code       TEXT,
+  course_id               TEXT,
+  teacher_identifier_hash TEXT,            -- hashed/internal teacher identifier only; no display name
+  space_title             TEXT,
+  source                  TEXT,            -- e.g. 'lti11', 'lti13'
+  raw_keys_count          INTEGER,         -- aggregate only, never the values
+  created_at              TIMESTAMPTZ DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS lti_launches_course_idx ON lti_launches(course_id);
+CREATE INDEX IF NOT EXISTS lti_launches_teacher_hash_idx ON lti_launches(teacher_identifier_hash);
 CREATE INDEX IF NOT EXISTS lti_launches_created_idx ON lti_launches(created_at);
 
 ALTER TABLE lti_launches ENABLE ROW LEVEL SECURITY;
