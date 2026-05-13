@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cartridge_basiclti_link xmlns="http://www.imsglobal.org/xsd/imslticc_v1p0"
+    xmlns:blti="http://www.imsglobal.org/xsd/imsbasiclti_v1p0"
+    xmlns:lticm="http://www.imsglobal.org/xsd/imslticm_v1p0"
+    xmlns:lticp="http://www.imsglobal.org/xsd/imslticp_v1p0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <blti:title>Moodle Teacher Hub</blti:title>
+  <blti:description>Teacher tool for Moodle data - students, grades, activity, reports. Full RTL Hebrew.</blti:description>
+  <blti:launch_url>https://www-tijc.onrender.com/api/lti/launch</blti:launch_url>
+  <blti:secure_launch_url>https://www-tijc.onrender.com/api/lti/launch</blti:secure_launch_url>
+  <blti:vendor>
+    <lticp:code>moodle-teacher-hub</lticp:code>
+    <lticp:name>Moodle Teacher Hub</lticp:name>
+    <lticp:url>https://www-tijc.onrender.com</lticp:url>
+  </blti:vendor>
+  <blti:extensions platform="moodle.org">
+    <lticm:property name="tool_id">moodle_teacher_hub</lticm:property>
+    <lticm:property name="privacy_level">name_only</lticm:property>
+  </blti:extensions>
+</cartridge_basiclti_link>
