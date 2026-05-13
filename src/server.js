@@ -1027,6 +1027,84 @@ app.get("/api/teacher/dashboard-context", (req, res) => {
 });
 // <<< MTH_TEACHER_DASHBOARD_CONTEXT_V1 <<<
 
+// >>> MTH_CAPABILITY_DETECTOR_V1 >>>
+app.get("/api/capabilities/status", (req, res) => {
+  noStore(res);
+
+  const lti11Configured = !!(env("LTI_SHARED_SECRET") && env("LTI_CONSUMER_KEY"));
+  const lti13Env = lti13EnvStatus();
+  const moodleWsConfigured = !!env("MOODLE_WS_TOKEN");
+
+  const session = importSessionFromRequest(req) || sessionFromRequest(req);
+  const lti13Sessions = lti13DiagnosticSessionsSnapshot();
+  const latestLti13 = lti13Sessions.length ? lti13Sessions[lti13Sessions.length - 1] : null;
+  const services = latestLti13?.automaticServices || { has_nrps: false, has_ags: false };
+
+  const hasStudents = Array.isArray(store.students) && store.students.length > 0;
+  const hasGrades = Array.isArray(store.grades) && store.grades.length > 0;
+  const hasLogs = Array.isArray(store.logEvents) && store.logEvents.length > 0;
+  const hasImportBatches = Array.isArray(store.importBatches) && store.importBatches.length > 0;
+
+  const lti11Status = lti11Configured ? "configured" : "missing";
+  const lti13Status = lti13Env.configured ? "configured" : (lti13Env.missing.length === lti13Env.required.length ? "missing" : "partial");
+  const moodleWsStatus = moodleWsConfigured ? "configured" : "missing";
+  const nrpsStatus = !!services.has_nrps ? "available" : (latestLti13 ? "unavailable" : "unknown");
+  const agsStatus = !!services.has_ags ? "available" : (latestLti13 ? "unavailable" : "unknown");
+  const gradebookStatus = hasGrades ? "available" : (hasImportBatches ? "partial" : "missing");
+  const logsStatus = hasLogs ? "available" : "missing";
+  const manualReportImportStatus = "available";
+
+  const capabilityMap = {
+    lti11: lti11Status,
+    lti13: lti13Status,
+    moodle_ws: moodleWsStatus,
+    nrps: nrpsStatus,
+    ags: agsStatus,
+    gradebook: gradebookStatus,
+    logs: logsStatus,
+    manual_report_import: manualReportImportStatus
+  };
+
+  const availableCapabilities = Object.entries(capabilityMap)
+    .filter(([, v]) => v === "available" || v === "configured")
+    .map(([k]) => k);
+
+  const missingCapabilities = Object.entries(capabilityMap)
+    .filter(([, v]) => v === "missing")
+    .map(([k]) => k);
+
+  const blockerKeys = [];
+  if (!lti11Configured && !lti13Env.configured) blockerKeys.push("no_lti_configured");
+  if (!moodleWsConfigured) blockerKeys.push("moodle_ws_token_missing");
+  if (!hasStudents) blockerKeys.push("missing_participants_report");
+  if (!hasGrades) blockerKeys.push("missing_gradebook_report");
+  if (!hasLogs) blockerKeys.push("missing_logs_report");
+
+  res.json({
+    ok: true,
+    version: "MTH_CAPABILITY_DETECTOR_V1",
+    teacher_release_ready: false,
+    lti11_status: lti11Status,
+    lti13_status: lti13Status,
+    moodle_ws_status: moodleWsStatus,
+    nrps_status: nrpsStatus,
+    ags_status: agsStatus,
+    gradebook_status: gradebookStatus,
+    logs_status: logsStatus,
+    manual_report_import_status: manualReportImportStatus,
+    available_capabilities: availableCapabilities,
+    missing_capabilities: missingCapabilities,
+    blocker_keys: blockerKeys,
+    safety: {
+      no_secrets_returned: true,
+      no_fake_nrps_ags: true,
+      teacher_release_ready: false
+    },
+    checked_at: new Date().toISOString()
+  });
+});
+// <<< MTH_CAPABILITY_DETECTOR_V1 <<<
+
 
 app.get("/health", (_req, res) => {
   res.json({
