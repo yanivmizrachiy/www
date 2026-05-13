@@ -1,41 +1,68 @@
-# Moodle Teacher Hub - Installation Guide
+# Moodle Teacher Hub — מדריך התקנה / HOLD
 
-Time: 5 minutes. No technical knowledge required.
+סטטוס: **לא להשתמש עדיין להתקנת מורים חדשים**.
 
-## Step 1 - Copy this link
+המדריך הזה נשמר כמסמך עבודה בלבד עד לסיום Tool Inventory והכרעה האם ההתקנה הקנונית היא LTI 1.3 או LTI 1.1.
 
-https://www-tijc.onrender.com/public/cartridge.xml
+## למה המדריך בהשהיה
 
-## Step 2 - Enter your Moodle course
+ב־Moodle ייתכן שכבר קיימים שני כלים או שני מסלולים:
 
-1. Select your course
-2. Turn on editing
-3. Add resource or activity
-4. Choose External Tool
+- כלי LTI 1.3 שמפעיל את `/api/lti13/launch`
+- כלי LTI 1.1 ישן שמפעיל את `/api/lti/launch`
 
-## Step 3 - Enter details
+הקובץ `public/cartridge.xml` הוא **LTI 1.1 בלבד**. אם מורה או מנהל Moodle ישתמש בו בזמן שהכלי הפעיל הוא LTI 1.3, עלול להיווצר כלי שני שמפצל פתיחות, sessions, diagnostics ו־provenance.
 
-- Activity name: Moodle Teacher Hub
-- Tool URL: paste link from step 1
-- Click Save
+לכן: **לא יוצרים כלי Moodle חדש עד שמוכרע הכלי הפעיל.**
 
-## Step 4 - Verify it works
+## Tool Inventory — חובה לפני התקנה
 
-1. Click on the activity you created
-2. If a Hebrew dashboard opens with buttons - success!
-3. Otherwise see Troubleshooting
+לפני כל התקנה או פרסום למורים, יש למפות עבור כל כלי Moodle קיים:
 
-## Troubleshooting
+| שדה | מה לבדוק |
+|---|---|
+| שם הכלי | השם שמופיע בקורס/מרחב Moodle |
+| גרסת LTI | LTI 1.3 או LTI 1.1 |
+| Launch URL | למשל `/api/lti13/launch` או `/api/lti/launch` |
+| Client ID / Consumer Key | לפי סוג הכלי |
+| Deployment ID | חובה אם זה LTI 1.3 וזמין בהגדרות |
+| האם פותח את האפליקציה הנכונה | כן/לא |
+| האם פתיחה משנה Diagnostics | לבדוק `/api/lti/diagnostics` אחרי פתיחה אמיתית |
 
-### LTI Error / missing oauth_signature
-Moodle admin needs to set Tool Type with:
-- Consumer Key: yaniv-lti-tool
-- Shared Secret: (contact Yaniv)
+## בדיקת תקינות אחרי פתיחה אמיתית
 
-### Students not showing
-Moodle for Ministry of Education does not release names via NRPS.
-Solution: go to Import, upload Participants report.
+אחרי שמורה פותח את הכלי מתוך Moodle אמיתי, יש לבדוק:
 
-### No API permission
-This is normal for new teacher.
-Use manual import in the meantime.
+```txt
+https://www-tijc.onrender.com/api/lti/diagnostics
+```
+
+סימן התקדמות אמיתי:
+
+```txt
+store_launches >= 1
+```
+
+או עלייה ב־:
+
+```txt
+moodle_captures
+```
+
+אין להשתמש בפתיחה מזויפת או בנתוני דמו כדי לסמן הצלחה.
+
+## החלטת התקנה עתידית
+
+רק אחרי Tool Inventory:
+
+1. אם LTI 1.3 הוא הכלי הקנוני — מדריך ההתקנה צריך לכוון רק למסלול LTI 1.3 ולא להשתמש ב־`cartridge.xml` של LTI 1.1.
+2. אם LTI 1.1 הוא הכלי הקנוני — ניתן להשאיר `cartridge.xml`, אבל הוא חייב להיות מסומן כ־LTI 1.1 בלבד.
+3. אם קיימים שני כלים — לא מוחקים מיד. מסתירים/מבטלים רק אחרי הוכחה מי מהם פעיל ומי מהם legacy.
+
+## הודעה למורה / מנהל Moodle
+
+עד לסיום הבדיקה, ההנחיה היא:
+
+> אין ליצור כלי Moodle חדש למורים. קודם מזהים איזה כלי קיים, איזו גרסת LTI פעילה, והאם פתיחה אמיתית מעלה את diagnostics.
+
+Teacher Release נשאר **NO**.
