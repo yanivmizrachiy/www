@@ -6,6 +6,7 @@ import path from "path";
 import crypto from "crypto";
 import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
+import { buildBatchProvenance } from "./provenance.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1114,17 +1115,21 @@ app.post("/api/import", (req, res) => {
   const result = upsertImportedStudents(Array.isArray(body.payload) ? body.payload : [], session);
 
   if (!Array.isArray(store.importBatches)) store.importBatches = [];
+  const batchId = crypto.randomUUID();
+  const batchStatus = result.skipped > 0 ? "partial" : "completed";
+  const batchSourceKind = body.source_kind || "unknown";
   const batch = {
-    id: crypto.randomUUID(),
+    id: batchId,
     report_type: "students",
     file_name: body.file_name || null,
     row_count: result.row_count,
-    status: result.skipped > 0 ? "partial" : "completed",
+    status: batchStatus,
     imported_by_username: session.moodleUsername || session.teacherName || null,
     detection_confidence: typeof body.detection_confidence === "number" ? body.detection_confidence : null,
-    source_kind: body.source_kind || "unknown",
+    source_kind: batchSourceKind,
     warnings: result.warnings,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    ...buildBatchProvenance({ import_batch_id: batchId, source_kind: batchSourceKind, source_name: body.file_name || null, status: batchStatus, row_count: result.row_count }, session)
   };
 
   store.importBatches.push(batch);
