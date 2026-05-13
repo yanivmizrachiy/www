@@ -973,6 +973,60 @@ app.get("/api/release/readiness", (req, res) => {
 });
 // <<< MTH_RELEASE_READINESS_GATE_V1 <<<
 
+// >>> MTH_TEACHER_DASHBOARD_CONTEXT_V1 >>>
+app.get("/api/teacher/dashboard-context", (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req) || sessionFromRequest(req);
+  const hasSession = Boolean(session);
+
+  const hasStudents = Array.isArray(store.students) && store.students.length > 0;
+  const hasTasks = (Array.isArray(store.tasks) && store.tasks.length > 0) || (Array.isArray(store.chapters) && store.chapters.length > 0);
+  const hasGrades = Array.isArray(store.grades) && store.grades.length > 0;
+  const hasLogs = Array.isArray(store.logEvents) && store.logEvents.length > 0;
+
+  const availableSections = [];
+  const missingSections = [];
+  if (hasStudents) availableSections.push("participants");
+  else missingSections.push("participants");
+  if (hasTasks) availableSections.push("tasks");
+  else missingSections.push("tasks");
+  if (hasGrades) availableSections.push("grades");
+  else missingSections.push("grades");
+  if (hasLogs) availableSections.push("logs");
+  else missingSections.push("logs");
+
+  const blockerKeys = [];
+  if (!hasSession) blockerKeys.push("missing_moodle_launch");
+  if (!hasStudents) blockerKeys.push("missing_participants_report");
+  if (!hasGrades) blockerKeys.push("missing_gradebook_report");
+  if (!hasLogs) blockerKeys.push("missing_logs_report");
+
+  const lastLaunch = Array.isArray(store.launches) ? store.launches.at(-1) : null;
+
+  res.json({
+    ok: true,
+    version: "MTH_TEACHER_DASHBOARD_CONTEXT_V1",
+    teacher_release_ready: false,
+    teacher_context_status: hasSession ? "session_active" : "no_moodle_session",
+    course_context_status: (hasStudents && hasTasks) ? "partial" : "missing_required_data",
+    connection_status: hasSession ? "connected" : "not_connected",
+    last_sync_at: lastLaunch?.createdAt ?? null,
+    available_sections: availableSections,
+    missing_sections: missingSections,
+    safe_counts: {
+      students: Array.isArray(store.students) ? store.students.length : 0,
+      tasks: Array.isArray(store.tasks) ? store.tasks.length : 0,
+      chapters: Array.isArray(store.chapters) ? store.chapters.length : 0,
+      grades: Array.isArray(store.grades) ? store.grades.length : 0,
+      log_events: Array.isArray(store.logEvents) ? store.logEvents.length : 0,
+      launches: Array.isArray(store.launches) ? store.launches.length : 0
+    },
+    blocker_key: blockerKeys.length > 0 ? blockerKeys[0] : null,
+    blocker_keys: blockerKeys
+  });
+});
+// <<< MTH_TEACHER_DASHBOARD_CONTEXT_V1 <<<
+
 
 app.get("/health", (_req, res) => {
   res.json({
