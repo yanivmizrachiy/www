@@ -327,11 +327,10 @@ function buildStudentSupabaseRow(student, batchId) {
   };
 }
 
-function buildImportBatchSupabaseRow(batch, session, siteId) {
+function buildImportBatchSupabaseRow(batch, session) {
   const rawKind = String(batch.source_kind || "upload");
   return {
     id: batch.id,
-    site_id: siteId,
     course_id: String(session?.courseId || "0"),
     report_type: batch.report_type || "students",
     source_kind: ["upload", "paste"].includes(rawKind) ? rawKind : "upload",
@@ -345,51 +344,49 @@ function buildImportBatchSupabaseRow(batch, session, siteId) {
   };
 }
 
-async function ensureMoodleSiteId(supabase, session) {
-  const consumerKey = env("LTI_CONSUMER_KEY") || null;
-  const siteUrl = session?.siteUrl || null;
-  const siteName = session?.siteName || null;
+async function ensureTeacher(supabase, session) {
+  const moodleUserId = String(session?.moodleUserId || "");
+  const username = String(session?.moodleUsername || "");
+  if (!moodleUserId && !username) return { ok: true, skipped: true };
+  const teacherId = stableUuidFromText("teacher|" + (moodleUserId || username));
+  const now = new Date().toISOString();
+  const row = { id: teacherId, moodle_user_id: moodleUserId || null, username: username || null, created_at: now, updated_at: now };
+  const { error } = await supabase.from("teachers").upsert(row, { onConflict: "id" });
+  if (error) return { ok: false, reason: "TEACHER_UPSERT_FAILED", detail: String(error.message || "").slice(0, 200) };
+  return { ok: true, teacher_id: teacherId };
+}
 
-  if (consumerKey) {
-    const { data, error } = await supabase
-      .from("moodle_sites")
-      .upsert({ lti_consumer_key: consumerKey, site_url: siteUrl, site_name: siteName }, { onConflict: "lti_consumer_key" })
-      .select("id")
-      .single();
-    if (!error && data?.id) return { ok: true, site_id: data.id };
-  }
-
-  const { data: found } = await supabase.from("moodle_sites").select("id").limit(1).maybeSingle();
-  if (found?.id) return { ok: true, site_id: found.id };
-
-  const { data: inserted, error: insertErr } = await supabase
-    .from("moodle_sites")
-    .insert({ site_url: siteUrl, site_name: siteName })
-    .select("id")
-    .single();
-  if (insertErr) return { ok: false, reason: "MOODLE_SITE_INSERT_FAILED", detail: String(insertErr.message || "").slice(0, 300) };
-  return { ok: true, site_id: inserted.id };
+async function ensureCourse(supabase, session) {
+  const moodleCourseId = String(session?.courseId || "");
+  if (!moodleCourseId) return { ok: true, skipped: true };
+  const courseId = stableUuidFromText("course|" + moodleCourseId);
+  const row = { id: courseId, moodle_course_id: moodleCourseId, title: session?.courseTitle || session?.spaceTitle || null, created_at: new Date().toISOString() };
+  const { error } = await supabase.from("courses").upsert(row, { onConflict: "id" });
+  if (error) return { ok: false, reason: "COURSE_UPSERT_FAILED", detail: String(error.message || "").slice(0, 200) };
+  return { ok: true, course_id: courseId };
 }
 
 async function writeImportToSupabase(batch, students, session) {
   const supabase = getSupabaseClient();
   if (!supabase) return { ok: false, skipped: true, reason: "SUPABASE_NOT_CONFIGURED" };
 
-  const siteResult = await ensureMoodleSiteId(supabase, session);
-  if (!siteResult.ok) return { ok: false, skipped: false, reason: siteResult.reason, detail: siteResult.detail };
+  const [teacherResult, courseResult] = await Promise.all([
+    ensureTeacher(supabase, session),
+    ensureCourse(supabase, session)
+  ]);
 
-  const batchRow = buildImportBatchSupabaseRow(batch, session, siteResult.site_id);
+  const batchRow = buildImportBatchSupabaseRow(batch, session);
   const { error: batchErr } = await supabase.from("import_batches").insert(batchRow);
   if (batchErr) {
     return { ok: false, skipped: false, reason: "IMPORT_BATCH_INSERT_FAILED", detail: String(batchErr.message || "").slice(0, 300), code: batchErr.code || null };
   }
-  if (!students.length) return { ok: true, skipped: false, students_written: 0 };
+  if (!students.length) return { ok: true, skipped: false, students_written: 0, teacher_result: teacherResult.ok ? "ok" : teacherResult.reason, course_result: courseResult.ok ? "ok" : courseResult.reason };
   const studentRows = students.map(s => buildStudentSupabaseRow(s, batch.id));
   const { error: stuErr } = await supabase.from("students").upsert(studentRows, { onConflict: "id" });
   if (stuErr) {
     return { ok: false, skipped: false, reason: "STUDENTS_UPSERT_FAILED", detail: String(stuErr.message || "").slice(0, 300), code: stuErr.code || null };
   }
-  return { ok: true, skipped: false, students_written: studentRows.length };
+  return { ok: true, skipped: false, students_written: studentRows.length, teacher_result: teacherResult.ok ? "ok" : teacherResult.reason, course_result: courseResult.ok ? "ok" : courseResult.reason };
 }
 
 function recordLaunchCapture(body, verificationCode) {
