@@ -1,33 +1,20 @@
-import { Link } from "react-router-dom";
 import { useMemo, useRef, useState } from "react";
-import { SafePage, EmptyTruth } from "@/components/SafePage";
-import { ImportEmptyState } from "@/components/ImportEmptyState";
-import { TruthBadge } from "@/components/TruthBadge";
 import { MoodleImportResult, parseMoodleFile, parsePastedTable } from "@/lib/moodleImport";
 import { postImport } from "@/hooks/useImports";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  AlertCircle,
-  CheckCircle2,
-  Clipboard,
-  Loader2,
-  ShieldCheck,
-  Upload,
-  Users,
-} from "lucide-react";
-import { toast } from "sonner";
 
-const YANIV_PARTICIPANTS_IMPORT_TRUTH_V1 = true;
+const MARKER = "YANIV_IMPORT_NATIVE_STABLE_V1";
+
+type ImportResponse = {
+  ok: boolean;
+  batch_id?: string;
+  row_count?: number;
+  inserted?: number;
+  updated?: number;
+  skipped?: number;
+  warnings?: string[];
+  error?: string;
+  detail?: string;
+};
 
 function normalizeHeader(value: string): string {
   return String(value || "")
@@ -43,17 +30,8 @@ function hasHeader(headers: string[], candidates: string[]): boolean {
   return candidates.some((candidate) => normalized.has(normalizeHeader(candidate)));
 }
 
-function reportTypeLabel(type: string) {
-  if (type === "students") return "Participants / תלמידים";
-  if (type === "grades") return "ציונים — חסום כרגע";
-  if (type === "logs") return "לוגים — חסום כרגע";
-  if (type === "completion") return "השלמת פעילות — חסום כרגע";
-  return "לא זוהה";
-}
-
 function mappingSummary(result: MoodleImportResult | null) {
   const headers = result?.headers || [];
-
   return {
     hasFullName: hasHeader(headers, ["שם מלא", "Full name", "Name", "שם"]),
     hasSplitName:
@@ -81,16 +59,73 @@ function mappingSummary(result: MoodleImportResult | null) {
   };
 }
 
+function reportTypeLabel(type: string) {
+  if (type === "students") return "Participants / תלמידים";
+  if (type === "grades") return "ציונים — חסום כרגע";
+  if (type === "logs") return "לוגים — חסום כרגע";
+  if (type === "completion") return "השלמת פעילות — חסום כרגע";
+  return "לא זוהה";
+}
+
+function friendlyError(error: unknown): string {
+  const raw = error instanceof Error ? error.message : String(error || "שגיאה לא ידועה");
+  if (raw === "missing_session" || raw === "NO_VERIFIED_MOODLE_SESSION") {
+    return "לא נמצאה פתיחה מאומתת מתוך Moodle. פתח את Teacher Hub מתוך Moodle עצמו ואז נסה שוב.";
+  }
+  return raw;
+}
+
+const box: React.CSSProperties = {
+  border: "1px solid #e5e7eb",
+  borderRadius: 18,
+  padding: 18,
+  background: "#ffffff",
+  boxShadow: "0 10px 28px rgba(15,23,42,0.06)",
+};
+
+const button: React.CSSProperties = {
+  border: "0",
+  borderRadius: 999,
+  padding: "12px 20px",
+  fontWeight: 800,
+  cursor: "pointer",
+  background: "#0ea5e9",
+  color: "white",
+};
+
+const mutedButton: React.CSSProperties = {
+  ...button,
+  background: "#eef2ff",
+  color: "#1e3a8a",
+};
+
+const dangerBox: React.CSSProperties = {
+  border: "1px solid #fecaca",
+  borderRadius: 16,
+  padding: 14,
+  background: "#fef2f2",
+  color: "#7f1d1d",
+  fontWeight: 700,
+};
+
+const successBox: React.CSSProperties = {
+  border: "1px solid #bbf7d0",
+  borderRadius: 16,
+  padding: 14,
+  background: "#f0fdf4",
+  color: "#14532d",
+  fontWeight: 700,
+};
+
 export default function Import() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [result, setResult] = useState<MoodleImportResult | null>(null);
   const [pastedText, setPastedText] = useState("");
-  const [isUploading, setIsUploading] = useState(false);
-  const [serverResult, setServerResult] = useState<any>(null);
-  const [importError, setImportError] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [serverResult, setServerResult] = useState<ImportResponse | null>(null);
 
   const mapping = useMemo(() => mappingSummary(result), [result]);
-  const isStudentsReport = result?.reportType === "students";
   const hasNameForImport = mapping.hasFullName || mapping.hasSplitName;
   const hasIdentityForImport =
     mapping.hasEmail ||
@@ -99,72 +134,52 @@ export default function Import() {
     mapping.hasLisPersonSourcedId ||
     mapping.hasIdNumber;
 
-  const canSubmit = Boolean(result && isStudentsReport && hasNameForImport && hasIdentityForImport);
+  const canSubmit = Boolean(result && result.reportType === "students" && hasNameForImport && hasIdentityForImport);
+
+  const blockingReason = useMemo(() => {
+    if (!result) return "";
+    if (result.reportType !== "students") {
+      return "השרת מאשר כרגע רק Participants / תלמידים. ציונים, לוגים והשלמת פעילות ייבנו אחרי שתלמידים יאומתו.";
+    }
+    if (!hasNameForImport) return "חסרה עמודת שם תלמיד. נדרש שם מלא או שם פרטי + שם משפחה.";
+    if (!hasIdentityForImport) return "חסר מזהה תלמיד. נדרש לפחות מייל, שם משתמש, user_id, lis_person_sourcedid או ID number.";
+    return "";
+  }, [result, hasNameForImport, hasIdentityForImport]);
 
   const openFilePicker = () => {
-    setImportError("");
+    setError("");
+    setServerResult(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
       fileInputRef.current.click();
     }
   };
 
-  const blockingReason = useMemo(() => {
-    if (!result) return "";
-    if (result.reportType !== "students") {
-      return "השרת מאשר כרגע רק Participants / תלמידים. ציונים, לוגים והשלמת פעילות ייבנו רק אחרי שתלמידים עם שמות יאומתו.";
-    }
-    if (!hasNameForImport) {
-      return "חסרה עמודת שם תלמיד. נדרש שם מלא או שם פרטי + שם משפחה.";
-    }
-    if (!hasIdentityForImport) {
-      return "חסר מזהה תלמיד. נדרש לפחות מייל, שם משתמש, user_id, lis_person_sourcedid או ID number.";
-    }
-    return "";
-  }, [result, hasNameForImport, hasIdentityForImport]);
-
   const handleFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     try {
-      setIsUploading(true);
+      setBusy(true);
+      setError("");
       setServerResult(null);
-      setImportError("");
       const parsed = await parseMoodleFile(file);
       setResult(parsed);
-
-      if (parsed.reportType === "students") {
-        toast.success("זוהה דוח Participants / תלמידים");
-      } else {
-        toast.warning("הדוח זוהה, אך כרגע ניתן לשמור רק Participants / תלמידים");
-      }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "שגיאה בטעינת הקובץ";
-      setImportError(message);
-      toast.error(message);
+      setError(friendlyError(err));
     } finally {
-      setIsUploading(false);
+      setBusy(false);
     }
   };
 
   const handlePaste = () => {
     try {
-      if (!pastedText.trim()) throw new Error("יש להדביק תוכן");
+      setError("");
       setServerResult(null);
-      setImportError("");
       const parsed = parsePastedTable(pastedText);
       setResult(parsed);
-
-      if (parsed.reportType === "students") {
-        toast.success("זוהתה טבלת Participants / תלמידים");
-      } else {
-        toast.warning("הטבלה זוהתה, אך כרגע ניתן לשמור רק Participants / תלמידים");
-      }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "שגיאה בניתוח התוכן";
-      setImportError(message);
-      toast.error(message);
+      setError(friendlyError(err));
     }
   };
 
@@ -172,15 +187,15 @@ export default function Import() {
     if (!result) return;
 
     if (!canSubmit) {
-      const message = blockingReason || "לא ניתן לשמור את הדוח הזה כרגע";
-      setImportError(message);
-      toast.error(message);
+      setError(blockingReason || "לא ניתן לשמור את הדוח הזה כרגע.");
       return;
     }
 
     try {
-      setImportError("");
-      setIsUploading(true);
+      setBusy(true);
+      setError("");
+      setServerResult(null);
+
       const response = await postImport({
         report_type: "students",
         file_name: result.fileName,
@@ -189,238 +204,149 @@ export default function Import() {
         payload: result.data,
       });
 
-      if (response.ok) {
-        setServerResult(response);
-        toast.success(`ייבוא Participants הושלם: ${response.row_count} שורות נקלטו`);
-      } else {
-        throw new Error(response.error || "שגיאה בשרת");
+      if (!response.ok) {
+        throw new Error(response.error || response.detail || "שגיאה בשרת בזמן הייבוא");
       }
+
+      setServerResult(response as ImportResponse);
     } catch (err) {
-      const rawMessage = err instanceof Error ? err.message : "שגיאה בייבוא";
-      const message =
-        rawMessage === "missing_session" || rawMessage === "NO_VERIFIED_MOODLE_SESSION"
-          ? "לא נמצאה פתיחה מאומתת מתוך Moodle. פתח את הכלי מתוך Moodle ואז נסה שוב."
-          : rawMessage;
-      setImportError(message);
-      toast.error(message);
+      setError(friendlyError(err));
     } finally {
-      setIsUploading(false);
+      setBusy(false);
     }
   };
 
+  const previewRows = (result?.data || []).slice(0, 12) as Array<Record<string, unknown>>;
+  const previewHeaders = (result?.headers || []).slice(0, 8);
+
   return (
-    <SafePage
-      title="ייבוא נתוני Moodle אמיתיים"
-      description="שלב ראשון מאומת: Participants / תלמידים בלבד. ציונים, לוגים וזמני פעילות לא נשמרים עד שייבוא תלמידים עם שמות יאומת."
-    >
-      <div className="mx-auto max-w-5xl space-y-6" dir="rtl">
-        <input
-          type="file"
-          className="hidden"
-          ref={fileInputRef}
-          onClick={(event) => { event.currentTarget.value = ""; }}
-          onChange={handleFile}
-          accept=".csv,.xlsx,.xls,.ods"
-        />
+    <main dir="rtl" data-version={MARKER} style={{ maxWidth: 1100, margin: "0 auto", padding: 20, fontFamily: "Heebo, Assistant, Arial, sans-serif" }}>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv,.xlsx,.xls,.ods"
+        style={{ display: "none" }}
+        onClick={(event) => { event.currentTarget.value = ""; }}
+        onChange={handleFile}
+      />
 
-        <Card className="border-blue-100 bg-blue-50/60">
-          <CardContent className="flex gap-3 p-5 text-sm leading-7 text-blue-950">
-            <ShieldCheck className="mt-1 h-5 w-5 shrink-0" />
-            <div>
-              <div className="font-extrabold">אמת לפני נוחות</div>
-              <div>
-                NRPS כבר מאמת שיש תלמידים אמיתיים במרחב, אך Moodle לא שולח שמות דרך NRPS.
-                לכן השלב הנכון הוא ייבוא דוח Participants אמיתי ממודל כדי להשלים שמות — בלי דמו ובלי המצאות.
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-
-        {importError && (
-          <Card className="border-red-200 bg-red-50/90">
-            <CardContent className="flex gap-3 p-4 text-sm leading-7 text-red-950">
-              <AlertCircle className="mt-1 h-5 w-5 shrink-0" />
-              <div>
-                <div className="font-extrabold">הייבוא לא התקדם</div>
-                <div>{importError}</div>
-                <div className="mt-1 text-xs text-red-800">
-                  אם זו הודעת Session — פתח את Teacher Hub מתוך Moodle עצמו ולא מקישור ישיר.
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <div>
-          {!result ? (
-            <div
-              key="empty"
-              className="space-y-8"
-            >
-              <div
-                className="cursor-pointer transition-transform hover:scale-[1.01]"
-                onClick={openFilePicker}
-              >
-                <ImportEmptyState />
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-[220px_1fr]">
-                <Button
-                  onClick={openFilePicker}
-                  variant="outline"
-                  size="lg"
-                  className="h-14 gap-2"
-                >
-                  <Upload className="h-5 w-5" />
-                  בחר קובץ Participants
-                </Button>
-
-                <Card>
-                  <CardContent className="flex gap-2 p-2">
-                    <Textarea
-                      placeholder="או הדבק כאן טבלת Participants ממודל כולל שורת כותרות..."
-                      className="min-h-[72px] py-2 text-xs"
-                      value={pastedText}
-                      onChange={(event) => setPastedText(event.target.value)}
-                    />
-                    <Button
-                      onClick={handlePaste}
-                      disabled={!pastedText.trim()}
-                      size="icon"
-                      className="h-[72px] shrink-0"
-                      title="נתח טבלה מודבקת"
-                    >
-                      <Clipboard className="h-4 w-4" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="rounded-2xl border bg-muted/30 p-5 text-sm leading-7">
-                <div className="flex gap-3">
-                  <AlertCircle className="mt-1 h-5 w-5 shrink-0 text-primary" />
-                  <div>
-                    <h4 className="font-extrabold">מה להעתיק ממודל?</h4>
-                    <p className="text-muted-foreground">
-                      דוח Participants / משתתפים אמיתי בלבד, כולל שורת הכותרות. מומלץ שיהיו בו שם מלא או שם פרטי+משפחה,
-                      וגם לפחות מזהה אחד: מייל, שם משתמש, user_id, lis_person_sourcedid או ID number.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div
-              key="preview"
-              className="space-y-6"
-            >
-              <Card className={canSubmit ? "border-green-200 bg-green-50/60" : "border-orange-200 bg-orange-50/70"}>
-                <CardHeader className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                  <div className="flex gap-4">
-                    <div className={canSubmit ? "rounded-full bg-green-100 p-3 text-green-700" : "rounded-full bg-orange-100 p-3 text-orange-700"}>
-                      {canSubmit ? <CheckCircle2 className="h-6 w-6" /> : <AlertCircle className="h-6 w-6" />}
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">זוהה דוח: {reportTypeLabel(result.reportType)}</CardTitle>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {result.fileName ? `קובץ: ${result.fileName}` : "טבלה שהודבקה"} · {result.rowCount} שורות · רמת זיהוי {Math.round(result.confidence * 100)}%
-                      </p>
-                      {blockingReason && <p className="mt-2 text-sm font-bold text-orange-900">{blockingReason}</p>}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => { setResult(null); setServerResult(null); }} disabled={isUploading}>
-                      ביטול
-                    </Button>
-                    <Button size="sm" onClick={handleSubmit} disabled={isUploading || !canSubmit} className="gap-2 shadow-lg">
-                      {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                      אשר וייבא Participants
-                    </Button>
-                    {serverResult?.ok && (
-                      <Button asChild size="sm" variant="outline">
-                        <Link to="/students">פתח תלמידים</Link>
-                      </Button>
-                    )}
-                  </div>
-                </CardHeader>
-
-                <CardContent className="space-y-4">
-                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                    <div className="rounded-xl border bg-white p-3">
-                      <div className="text-xs font-bold text-muted-foreground">שם תלמיד</div>
-                      <div className="mt-1 font-extrabold">{hasNameForImport ? "קיים" : "חסר"}</div>
-                    </div>
-                    <div className="rounded-xl border bg-white p-3">
-                      <div className="text-xs font-bold text-muted-foreground">מייל</div>
-                      <div className="mt-1 font-extrabold">{mapping.hasEmail ? "קיים" : "לא התקבל"}</div>
-                    </div>
-                    <div className="rounded-xl border bg-white p-3">
-                      <div className="text-xs font-bold text-muted-foreground">user_id</div>
-                      <div className="mt-1 font-extrabold">{mapping.hasMoodleUserId ? "קיים" : "לא התקבל"}</div>
-                    </div>
-                    <div className="rounded-xl border bg-white p-3">
-                      <div className="text-xs font-bold text-muted-foreground">lis_person_sourcedid</div>
-                      <div className="mt-1 font-extrabold">{mapping.hasLisPersonSourcedId ? "קיים" : "לא התקבל"}</div>
-                    </div>
-                  </div>
-
-                  {serverResult?.ok && (
-                    <div className="rounded-2xl border border-green-200 bg-green-50 p-4 text-sm leading-7 text-green-950">
-                      <div className="mb-1 flex items-center gap-2 font-extrabold">
-                        <Users className="h-4 w-4" />
-                        ייבוא Participants הושלם
-                      </div>
-                      <div>
-                        נקלטו {serverResult.row_count} שורות · נוספו {serverResult.inserted} · עודכנו {serverResult.updated} · נדחו {serverResult.skipped}.
-                      </div>
-                      {Array.isArray(serverResult.warnings) && serverResult.warnings.length > 0 && (
-                        <div className="mt-2 font-bold">אזהרות: {serverResult.warnings.join(" | ")}</div>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="overflow-hidden rounded-2xl border bg-background">
-                    <div className="max-h-[380px] overflow-auto">
-                      <Table dir="rtl">
-                        <TableHeader className="sticky top-0 z-10 bg-muted/70">
-                          <TableRow>
-                            {result.headers.slice(0, 8).map((header) => (
-                              <TableHead key={header} className="whitespace-nowrap text-right text-[11px]">
-                                {header}
-                              </TableHead>
-                            ))}
-                            {result.headers.length > 8 && <TableHead className="text-right">...</TableHead>}
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {result.data.slice(0, 12).map((row, index) => (
-                            <TableRow key={index}>
-                              {result.headers.slice(0, 8).map((header) => (
-                                <TableCell key={header} className="max-w-[160px] overflow-hidden text-ellipsis whitespace-nowrap text-[11px]">
-                                  {String(row[header] || "")}
-                                </TableCell>
-                              ))}
-                              {result.headers.length > 8 && <TableCell className="text-muted-foreground">...</TableCell>}
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                    <div className="border-t bg-muted/10 p-3 text-center">
-                      <div className="inline-flex items-center gap-2 text-[11px] font-bold text-muted-foreground">
-                        <TruthBadge status="imported" />
-                        תצוגה מקדימה בלבד — מוצגות 12 שורות ראשונות מתוך {result.rowCount}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+      <section style={{ marginBottom: 18 }}>
+        <div style={{ fontSize: 12, fontWeight: 900, color: "#0369a1", letterSpacing: "0.08em" }}>
+          ייבוא נתוני Moodle אמיתיים
         </div>
-      </div>
-    </SafePage>
+        <h1 style={{ margin: "6px 0", fontSize: 30, fontWeight: 950, color: "#0f172a" }}>
+          ייבוא Participants / תלמידים
+        </h1>
+        <p style={{ margin: 0, color: "#475569", lineHeight: 1.8 }}>
+          גרסה יציבה ללא רכיבי אנימציה או רכיבי UI חיצוניים. אין דמו, אין תלמידים מומצאים, ואין שמירת נתונים לפני אישור.
+        </p>
+        <div style={{ marginTop: 6, fontSize: 11, color: "#94a3b8" }}>{MARKER}</div>
+      </section>
+
+      {error && (
+        <section style={{ ...dangerBox, marginBottom: 16 }}>
+          <div style={{ fontSize: 16, marginBottom: 4 }}>הייבוא לא התקדם</div>
+          <div>{error}</div>
+        </section>
+      )}
+
+      {serverResult?.ok && (
+        <section style={{ ...successBox, marginBottom: 16 }}>
+          ייבוא Participants הושלם: {serverResult.row_count ?? 0} שורות נקלטו.
+          {" "}נוספו: {serverResult.inserted ?? 0}, עודכנו: {serverResult.updated ?? 0}, נדחו: {serverResult.skipped ?? 0}.
+        </section>
+      )}
+
+      {!result ? (
+        <section style={{ display: "grid", gap: 16 }}>
+          <div style={box}>
+            <h2 style={{ marginTop: 0 }}>בחר קובץ Participants</h2>
+            <p style={{ color: "#475569", lineHeight: 1.8 }}>
+              בחר קובץ XLSX / CSV / ODS אמיתי שהורדת ממודל. המערכת תציג בדיקה ותצוגה מקדימה לפני שמירה.
+            </p>
+            <button type="button" style={button} onClick={openFilePicker} disabled={busy}>
+              {busy ? "בודק קובץ..." : "בחר קובץ Participants"}
+            </button>
+          </div>
+
+          <div style={box}>
+            <h2 style={{ marginTop: 0 }}>או הדבק טבלה</h2>
+            <textarea
+              value={pastedText}
+              onChange={(event) => setPastedText(event.target.value)}
+              placeholder="הדבק כאן טבלת Participants ממודל כולל שורת כותרות..."
+              style={{ width: "100%", minHeight: 110, borderRadius: 12, border: "1px solid #cbd5e1", padding: 12, fontSize: 14 }}
+            />
+            <div style={{ marginTop: 10 }}>
+              <button type="button" style={mutedButton} onClick={handlePaste} disabled={busy || !pastedText.trim()}>
+                בדיקת טבלה
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : (
+        <section style={box}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "start" }}>
+            <div>
+              <h2 style={{ margin: 0 }}>זוהה דוח: {reportTypeLabel(result.reportType)}</h2>
+              <p style={{ color: "#475569", margin: "8px 0 0" }}>
+                {result.fileName ? `קובץ: ${result.fileName}` : "טבלה שהודבקה"} · {result.rowCount} שורות · רמת זיהוי {Math.round(result.confidence * 100)}%
+              </p>
+              {blockingReason && <p style={{ color: "#9a3412", fontWeight: 800 }}>{blockingReason}</p>}
+            </div>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button type="button" style={mutedButton} onClick={() => { setResult(null); setServerResult(null); setError(""); }}>
+                ביטול
+              </button>
+              <button type="button" style={button} onClick={handleSubmit} disabled={busy || !canSubmit}>
+                {busy ? "מייבא..." : "אשר וייבא Participants"}
+              </button>
+              {serverResult?.ok && (
+                <a href="/students" style={{ ...mutedButton, textDecoration: "none", display: "inline-block" }}>
+                  פתח תלמידים
+                </a>
+              )}
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginTop: 16 }}>
+            <div style={{ ...box, boxShadow: "none" }}>שם תלמיד: <b>{hasNameForImport ? "קיים" : "חסר"}</b></div>
+            <div style={{ ...box, boxShadow: "none" }}>מייל: <b>{mapping.hasEmail ? "קיים" : "לא התקבל"}</b></div>
+            <div style={{ ...box, boxShadow: "none" }}>שם משתמש: <b>{mapping.hasUsername ? "קיים" : "לא התקבל"}</b></div>
+            <div style={{ ...box, boxShadow: "none" }}>מזהה נוסף: <b>{mapping.hasMoodleUserId || mapping.hasLisPersonSourcedId || mapping.hasIdNumber ? "קיים" : "לא התקבל"}</b></div>
+          </div>
+
+          <div style={{ marginTop: 18, overflowX: "auto", border: "1px solid #e5e7eb", borderRadius: 14 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead style={{ background: "#f8fafc" }}>
+                <tr>
+                  {previewHeaders.map((header) => (
+                    <th key={header} style={{ padding: 10, borderBottom: "1px solid #e5e7eb", textAlign: "right", whiteSpace: "nowrap" }}>
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {previewRows.map((row, index) => (
+                  <tr key={index}>
+                    {previewHeaders.map((header) => (
+                      <td key={header} style={{ padding: 9, borderBottom: "1px solid #f1f5f9", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {String(row[header] ?? "")}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p style={{ color: "#64748b", fontSize: 12, textAlign: "center", marginTop: 10 }}>
+            תצוגה מקדימה בלבד — מוצגות 12 שורות ראשונות מתוך {result.rowCount}
+          </p>
+        </section>
+      )}
+    </main>
   );
 }
