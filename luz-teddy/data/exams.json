@@ -46,6 +46,7 @@
     {"date":"2026-05-24","dateLabel":"24/5","dayLabel":"א׳","title":"מבחן במדעים — ח׳3","subject":"מדעים","className":"ח׳3","type":"exam"},
     {"date":"2026-05-25","dateLabel":"25/5","dayLabel":"ב׳","title":"מבחן בתרבות יהודית ישראלית — ז׳4","subject":"תרבות יהודית ישראלית","className":"ז׳4","type":"exam"},
     {"date":"2026-05-25","dateLabel":"25/5","dayLabel":"ב׳","title":"מבחן בשל״ח — ט׳1, ט׳2, ט׳3, ט׳4, ט׳5","subject":"של״ח","className":"ט׳1, ט׳2, ט׳3, ט׳4, ט׳5","type":"exam"},
+    {"date":"2026-05-25","dateLabel":"25/5","dayLabel":"ב׳","title":"מבחן במתמטיקה — שכבת ז׳","subject":"מתמטיקה","className":"שכבת ז׳","type":"exam"},
     {"date":"2026-05-27","dateLabel":"27/5","dayLabel":"ד׳","title":"מבחן במדעים — ז׳1","subject":"מדעים","className":"ז׳1","type":"exam"}
   ]
 }
