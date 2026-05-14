@@ -6,6 +6,8 @@ import path from "path";
 import crypto from "crypto";
 import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
+import { buildBatchProvenance } from "./provenance.js";
+import { buildPracticeTimeGate } from "./practiceTime.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -749,7 +751,9 @@ const PERSISTENCE_REQUIRED_TABLES_V1 = [
   "grade_items",
   "grade_results",
   "log_events",
-  "practice_time_summaries"
+  "practice_time_summaries",
+  "teacher_sessions",
+  "lti_launches"
 ];
 
 function safeSupabaseHost(url) {
@@ -837,7 +841,7 @@ app.get("/api/persistence/validate", async (_req, res) => {
 // <<< MTH_PERSISTENCE_LIVE_VALIDATION_V1 >>>
 
 
-// >>> MTH_RELEASE_READINESS_GATE_V1 >>>
+// >>> MTH_RELEASE_READINESS_GATE_V2 >>>
 function buildReleaseReadiness(req) {
   const sync = buildSyncStatus(req);
   const persistence = buildPersistenceStatus();
@@ -873,6 +877,32 @@ function buildReleaseReadiness(req) {
     }
   }
 
+  // Reports must enter through the real import flow — not just exist in memory
+  if (!Array.isArray(store.importBatches) || store.importBatches.length === 0) {
+    blockers.push({
+      key: "no_real_import_batch",
+      severity: "data_required",
+      message_he: "לא בוצע ייבוא אמיתי של דוחות. נדרש ייבוא Participants, Gradebook ו-Logs מ-Moodle."
+    });
+  }
+
+  // Logs exist but carry no duration field — practice time cannot be computed
+  const releaseGateLogEvents = Array.isArray(store.logEvents) ? store.logEvents : [];
+  if (releaseGateLogEvents.length > 0) {
+    const logsHaveDuration = releaseGateLogEvents.some(ev => {
+      const raw = ev.duration_seconds ?? ev.duration ?? ev.timeDiff ?? null;
+      return raw !== null && Number.isFinite(Number(raw)) && Number(raw) > 0;
+    });
+    if (!logsHaveDuration) {
+      blockers.push({
+        key: "practice_time_no_duration_field",
+        severity: "data_required",
+        message_he: "קיימים לוגים אך אין שדה משך זמן — לא ניתן לחשב זמן תרגול אמיתי."
+      });
+    }
+  }
+
+  // Always-on hardcoded gates — require explicit human sign-off
   blockers.push({
     key: "deploy_live_validation_missing",
     severity: "required",
@@ -880,9 +910,9 @@ function buildReleaseReadiness(req) {
   });
 
   blockers.push({
-    key: "multi_teacher_validation_missing",
+    key: "multi_teacher_isolation_not_validated",
     severity: "required",
-    message_he: "נדרשת בדיקת כמה מורים/כמה מרחבים כדי לוודא שאין ערבוב נתונים."
+    message_he: "נדרש אימות בידוד נתונים: לפחות שני מורים או שני מרחבים שונים, ללא ערבוב נתונים."
   });
 
   blockers.push({
@@ -891,9 +921,15 @@ function buildReleaseReadiness(req) {
     message_he: "נדרשת בדיקה אמיתית מקצה לקצה מתוך Moodle עם נתוני אמת."
   });
 
+  blockers.push({
+    key: "repo_and_infra_manual_check_required",
+    severity: "required",
+    message_he: "נדרשת בדיקה ידנית של repo ו-infra: ללא סודות, ללא נתוני תלמידים, ללא ערכי env ב-code."
+  });
+
   return {
     ok: true,
-    version: "MTH_RELEASE_READINESS_GATE_V1",
+    version: "MTH_RELEASE_READINESS_GATE_V2",
     teacher_release_ready: false,
     broad_release_ready: false,
     automation_core_percent: 78,
@@ -971,7 +1007,159 @@ app.get("/api/release/readiness", (req, res) => {
   noStore(res);
   res.json(buildReleaseReadiness(req));
 });
-// <<< MTH_RELEASE_READINESS_GATE_V1 <<<
+// <<< MTH_RELEASE_READINESS_GATE_V2 <<<
+
+// >>> MTH_TEACHER_DASHBOARD_CONTEXT_V1 >>>
+app.get("/api/teacher/dashboard-context", (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req) || sessionFromRequest(req);
+  const hasSession = Boolean(session);
+
+  const hasStudents = Array.isArray(store.students) && store.students.length > 0;
+  const hasTasks = (Array.isArray(store.tasks) && store.tasks.length > 0) || (Array.isArray(store.chapters) && store.chapters.length > 0);
+  const hasGrades = Array.isArray(store.grades) && store.grades.length > 0;
+  const hasLogs = Array.isArray(store.logEvents) && store.logEvents.length > 0;
+
+  const availableSections = [];
+  const missingSections = [];
+  if (hasStudents) availableSections.push("participants");
+  else missingSections.push("participants");
+  if (hasTasks) availableSections.push("tasks");
+  else missingSections.push("tasks");
+  if (hasGrades) availableSections.push("grades");
+  else missingSections.push("grades");
+  if (hasLogs) availableSections.push("logs");
+  else missingSections.push("logs");
+
+  const blockerKeys = [];
+  if (!hasSession) blockerKeys.push("missing_moodle_launch");
+  if (!hasStudents) blockerKeys.push("missing_participants_report");
+  if (!hasGrades) blockerKeys.push("missing_gradebook_report");
+  if (!hasLogs) blockerKeys.push("missing_logs_report");
+
+  const lastLaunch = Array.isArray(store.launches) ? store.launches.at(-1) : null;
+
+  res.json({
+    ok: true,
+    version: "MTH_TEACHER_DASHBOARD_CONTEXT_V1",
+    teacher_release_ready: false,
+    teacher_context_status: hasSession ? "session_active" : "no_moodle_session",
+    course_context_status: (hasStudents && hasTasks) ? "partial" : "missing_required_data",
+    connection_status: hasSession ? "connected" : "not_connected",
+    last_sync_at: lastLaunch?.createdAt ?? null,
+    available_sections: availableSections,
+    missing_sections: missingSections,
+    safe_counts: {
+      students: Array.isArray(store.students) ? store.students.length : 0,
+      tasks: Array.isArray(store.tasks) ? store.tasks.length : 0,
+      chapters: Array.isArray(store.chapters) ? store.chapters.length : 0,
+      grades: Array.isArray(store.grades) ? store.grades.length : 0,
+      log_events: Array.isArray(store.logEvents) ? store.logEvents.length : 0,
+      launches: Array.isArray(store.launches) ? store.launches.length : 0
+    },
+    blocker_key: blockerKeys.length > 0 ? blockerKeys[0] : null,
+    blocker_keys: blockerKeys
+  });
+});
+// <<< MTH_TEACHER_DASHBOARD_CONTEXT_V1 <<<
+
+// >>> MTH_CAPABILITY_DETECTOR_V1 >>>
+app.get("/api/capabilities/status", (req, res) => {
+  noStore(res);
+
+  const lti11Configured = !!(env("LTI_SHARED_SECRET") && env("LTI_CONSUMER_KEY"));
+  const lti13Env = lti13EnvStatus();
+  const moodleWsConfigured = !!env("MOODLE_WS_TOKEN");
+
+  const session = importSessionFromRequest(req) || sessionFromRequest(req);
+  const lti13Sessions = lti13DiagnosticSessionsSnapshot();
+  const latestLti13 = lti13Sessions.length ? lti13Sessions[lti13Sessions.length - 1] : null;
+  const services = latestLti13?.automaticServices || { has_nrps: false, has_ags: false };
+
+  const hasStudents = Array.isArray(store.students) && store.students.length > 0;
+  const hasGrades = Array.isArray(store.grades) && store.grades.length > 0;
+  const hasLogs = Array.isArray(store.logEvents) && store.logEvents.length > 0;
+  const hasImportBatches = Array.isArray(store.importBatches) && store.importBatches.length > 0;
+
+  const lti11Status = lti11Configured ? "configured" : "missing";
+  const lti13Status = lti13Env.configured ? "configured" : (lti13Env.missing.length === lti13Env.required.length ? "missing" : "partial");
+  const moodleWsStatus = moodleWsConfigured ? "configured" : "missing";
+  const nrpsStatus = !!services.has_nrps ? "available" : (latestLti13 ? "unavailable" : "unknown");
+  const agsStatus = !!services.has_ags ? "available" : (latestLti13 ? "unavailable" : "unknown");
+  const gradebookStatus = hasGrades ? "available" : (hasImportBatches ? "partial" : "missing");
+  const logsStatus = hasLogs ? "available" : "missing";
+  const manualReportImportStatus = "available";
+
+  const capabilityMap = {
+    lti11: lti11Status,
+    lti13: lti13Status,
+    moodle_ws: moodleWsStatus,
+    nrps: nrpsStatus,
+    ags: agsStatus,
+    gradebook: gradebookStatus,
+    logs: logsStatus,
+    manual_report_import: manualReportImportStatus
+  };
+
+  const availableCapabilities = Object.entries(capabilityMap)
+    .filter(([, v]) => v === "available" || v === "configured")
+    .map(([k]) => k);
+
+  const missingCapabilities = Object.entries(capabilityMap)
+    .filter(([, v]) => v === "missing")
+    .map(([k]) => k);
+
+  const blockerKeys = [];
+  if (!lti11Configured && !lti13Env.configured) blockerKeys.push("no_lti_configured");
+  if (!moodleWsConfigured) blockerKeys.push("moodle_ws_token_missing");
+  if (!hasStudents) blockerKeys.push("missing_participants_report");
+  if (!hasGrades) blockerKeys.push("missing_gradebook_report");
+  if (!hasLogs) blockerKeys.push("missing_logs_report");
+
+  res.json({
+    ok: true,
+    version: "MTH_CAPABILITY_DETECTOR_V1",
+    teacher_release_ready: false,
+    lti11_status: lti11Status,
+    lti13_status: lti13Status,
+    moodle_ws_status: moodleWsStatus,
+    nrps_status: nrpsStatus,
+    ags_status: agsStatus,
+    gradebook_status: gradebookStatus,
+    logs_status: logsStatus,
+    manual_report_import_status: manualReportImportStatus,
+    available_capabilities: availableCapabilities,
+    missing_capabilities: missingCapabilities,
+    blocker_keys: blockerKeys,
+    safety: {
+      no_secrets_returned: true,
+      no_fake_nrps_ags: true,
+      teacher_release_ready: false
+    },
+    checked_at: new Date().toISOString()
+  });
+});
+// <<< MTH_CAPABILITY_DETECTOR_V1 <<<
+
+// >>> MTH_PRACTICE_TIME_TRUTH_GATE_V1 >>>
+app.get("/api/practice-time/status", (_req, res) => {
+  noStore(res);
+  const gate = buildPracticeTimeGate(store.logEvents, store.activitySessions, store.importBatches);
+  res.json({
+    ok: true,
+    version: "MTH_PRACTICE_TIME_TRUTH_GATE_V1",
+    teacher_release_ready: false,
+    ...gate,
+    safety: {
+      no_student_rows_returned: true,
+      no_synthetic_time: true,
+      no_fake_logs: true,
+      aggregate_only: true
+    },
+    checked_at: new Date().toISOString()
+  });
+});
+// <<< MTH_PRACTICE_TIME_TRUTH_GATE_V1 <<<
 
 
 app.get("/health", (_req, res) => {
@@ -1114,17 +1302,21 @@ app.post("/api/import", (req, res) => {
   const result = upsertImportedStudents(Array.isArray(body.payload) ? body.payload : [], session);
 
   if (!Array.isArray(store.importBatches)) store.importBatches = [];
+  const batchId = crypto.randomUUID();
+  const batchStatus = result.skipped > 0 ? "partial" : "completed";
+  const batchSourceKind = body.source_kind || "unknown";
   const batch = {
-    id: crypto.randomUUID(),
+    id: batchId,
     report_type: "students",
     file_name: body.file_name || null,
     row_count: result.row_count,
-    status: result.skipped > 0 ? "partial" : "completed",
+    status: batchStatus,
     imported_by_username: session.moodleUsername || session.teacherName || null,
     detection_confidence: typeof body.detection_confidence === "number" ? body.detection_confidence : null,
-    source_kind: body.source_kind || "unknown",
+    source_kind: batchSourceKind,
     warnings: result.warnings,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    ...buildBatchProvenance({ import_batch_id: batchId, source_kind: batchSourceKind, source_name: body.file_name || null, status: batchStatus, row_count: result.row_count }, session)
   };
 
   store.importBatches.push(batch);

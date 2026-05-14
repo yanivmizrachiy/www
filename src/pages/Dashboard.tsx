@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useImportsOverview } from "@/hooks/useImports";
+import TeacherStatusPanel from "@/components/TeacherStatusPanel";
 import { useSyncStatus } from "@/hooks/useSyncStatus";
 import { useLtiSession } from "@/hooks/useLtiSession";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -142,6 +143,8 @@ export default function Dashboard() {
       ) : null}
 
       <SyncFeatureGates status={syncStatus.data} loading={syncStatus.loading} />
+
+      <TeacherStatusPanel />
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard label="תלמידים רשומים" value={v(data?.students_count)} icon={Users} delay={0.1} />
