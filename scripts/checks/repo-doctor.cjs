@@ -69,4 +69,11 @@ if (!rules.includes("MTH_CURRENT_VERIFIED_STATE_20260512_START")) fail("rules_cu
 if (!rules.includes("Teacher release")) fail("rules_release_state_missing");
 ok("PROJECT_RULES_OK");
 
+
+// MTH_AUDIT_TS_LTI — added 2026-05-13
+// Verify required server-side tables are tracked in /api/persistence/validate
+if (!server.includes("teacher_sessions") && !server.includes("lti_launches")) {
+  console.warn("REPO_DOCTOR_WARN=teacher_sessions or lti_launches not referenced in server.js");
+}
+
 console.log("REPO_DOCTOR_OK");

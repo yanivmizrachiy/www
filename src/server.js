@@ -751,7 +751,9 @@ const PERSISTENCE_REQUIRED_TABLES_V1 = [
   "grade_items",
   "grade_results",
   "log_events",
-  "practice_time_summaries"
+  "practice_time_summaries",
+  "teacher_sessions",
+  "lti_launches"
 ];
 
 function safeSupabaseHost(url) {
