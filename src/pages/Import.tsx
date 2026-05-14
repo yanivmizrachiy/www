@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { MoodleImportResult, parseMoodleFile, parsePastedTable } from "@/lib/moodleImport";
 import { postImport } from "@/hooks/useImports";
 
-const MARKER = "YANIV_IMPORT_NATIVE_STABLE_V1";
+const MARKER = "YANIV_IMPORT_NATIVE_STABLE_V1 YANIV_IMPORT_ERROR_DETAILS_V2";
 
 type ImportResponse = {
   ok: boolean;
@@ -14,6 +14,17 @@ type ImportResponse = {
   warnings?: string[];
   error?: string;
   detail?: string;
+  code?: string | null;
+  reason?: string;
+  supabase?: {
+    written?: boolean;
+    reason?: string;
+    students_written?: number;
+  };
+  teacher_result?: string;
+  course_result?: string;
+  import_batch_variant?: string;
+  students_variant?: string;
 };
 
 function normalizeHeader(value: string): string {
@@ -73,6 +84,29 @@ function friendlyError(error: unknown): string {
     return "לא נמצאה פתיחה מאומתת מתוך Moodle. פתח את Teacher Hub מתוך Moodle עצמו ואז נסה שוב.";
   }
   return raw;
+}
+
+function safeImportErrorText(response: ImportResponse | null): string {
+  if (!response || response.ok) return "";
+  const parts = [
+    response.error || response.reason || "IMPORT_FAILED",
+    response.detail ? `detail: ${response.detail}` : "",
+    response.code ? `code: ${response.code}` : "",
+    response.supabase?.reason ? `supabase: ${response.supabase.reason}` : "",
+    response.teacher_result ? `teacher_result: ${response.teacher_result}` : "",
+    response.course_result ? `course_result: ${response.course_result}` : "",
+    response.import_batch_variant ? `import_batch_variant: ${response.import_batch_variant}` : "",
+    response.students_variant ? `students_variant: ${response.students_variant}` : "",
+  ].filter(Boolean);
+  return parts.join(" | ");
+}
+
+function copyText(text: string) {
+  try {
+    navigator.clipboard?.writeText(text);
+  } catch {
+    // Clipboard may be blocked in iframe; visible text remains on screen.
+  }
 }
 
 const box: React.CSSProperties = {
@@ -204,11 +238,11 @@ export default function Import() {
         payload: result.data,
       });
 
-      if (!response.ok) {
-        throw new Error(response.error || response.detail || "שגיאה בשרת בזמן הייבוא");
-      }
-
       setServerResult(response as ImportResponse);
+
+      if (!response.ok) {
+        throw new Error(safeImportErrorText(response as ImportResponse) || "שגיאה בשרת בזמן הייבוא");
+      }
     } catch (err) {
       setError(friendlyError(err));
     } finally {
@@ -246,7 +280,37 @@ export default function Import() {
       {error && (
         <section style={{ ...dangerBox, marginBottom: 16 }}>
           <div style={{ fontSize: 16, marginBottom: 4 }}>הייבוא לא התקדם</div>
-          <div>{error}</div>
+          <div style={{ lineHeight: 1.8 }}>{error}</div>
+          {serverResult && !serverResult.ok && (
+            <div style={{ marginTop: 12 }}>
+              <button
+                type="button"
+                style={{ ...mutedButton, padding: "8px 14px", fontSize: 12 }}
+                onClick={() => copyText(JSON.stringify(serverResult, null, 2))}
+              >
+                העתק פרטי שגיאה בטוחים
+              </button>
+              <pre
+                dir="ltr"
+                style={{
+                  marginTop: 10,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  background: "#fff7ed",
+                  border: "1px solid #fed7aa",
+                  borderRadius: 12,
+                  padding: 12,
+                  color: "#7c2d12",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  maxHeight: 260,
+                  overflow: "auto"
+                }}
+              >
+                {JSON.stringify(serverResult, null, 2)}
+              </pre>
+            </div>
+          )}
         </section>
       )}
 
@@ -254,6 +318,8 @@ export default function Import() {
         <section style={{ ...successBox, marginBottom: 16 }}>
           ייבוא Participants הושלם: {serverResult.row_count ?? 0} שורות נקלטו.
           {" "}נוספו: {serverResult.inserted ?? 0}, עודכנו: {serverResult.updated ?? 0}, נדחו: {serverResult.skipped ?? 0}.
+          {" "}Supabase: {serverResult.supabase?.written ? "נשמר" : "לא אושר"}.
+          {typeof serverResult.supabase?.students_written === "number" ? ` תלמידים שנכתבו: ${serverResult.supabase.students_written}.` : ""}
         </section>
       )}
 
