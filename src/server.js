@@ -309,9 +309,23 @@ function stableUuidFromText(value) {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-${"89ab"[parseInt(h[16], 16) & 3]}${h.slice(17, 20)}-${h.slice(20, 32)}`;
 }
 
-function buildStudentSupabaseRow(student, batchId) {
-  return {
-    id: stableUuidFromText(student.id),
+
+function compactRow(row) {
+  return Object.fromEntries(Object.entries(row || {}).filter(([, value]) => value !== undefined));
+}
+
+function mapImportSourceKind(value) {
+  const raw = String(value || "file").toLowerCase();
+  if (raw === "paste") return "paste";
+  if (raw === "upload") return "file";
+  if (raw === "file") return "file";
+  return "file";
+}
+
+function buildStudentSupabaseRow(student, batchId, session = null, variant = "full") {
+  const baseId = stableUuidFromText(student.id);
+  const base = {
+    id: baseId,
     full_name: student.full_name,
     email: student.email || null,
     external_id: student.external_id || null,
@@ -319,51 +333,197 @@ function buildStudentSupabaseRow(student, batchId) {
     moodle_user_id: student.moodle_user_id || null,
     lis_person_sourcedid: student.lis_person_sourcedid || null,
     id_number: student.id_number || null,
-    space_id: student.space_id || null,
+    space_id: student.space_id || session?.spaceId || null,
     source: student.source || "moodle-participants-import",
     import_batch_id: batchId || null,
     created_at: student.updated_at || new Date().toISOString(),
     updated_at: student.updated_at || new Date().toISOString()
   };
+
+  if (variant === "minimal") {
+    return compactRow({
+      id: base.id,
+      full_name: base.full_name,
+      email: base.email,
+      external_id: base.external_id,
+      external_username: base.external_username,
+      import_batch_id: base.import_batch_id,
+      created_at: base.created_at,
+      updated_at: base.updated_at
+    });
+  }
+
+  if (variant === "ultra_minimal") {
+    return compactRow({
+      id: base.id,
+      full_name: base.full_name,
+      email: base.email,
+      created_at: base.created_at,
+      updated_at: base.updated_at
+    });
+  }
+
+  return compactRow(base);
 }
 
-function buildImportBatchSupabaseRow(batch, session) {
-  const rawKind = String(batch.source_kind || "upload");
-  return {
+function buildImportBatchSupabaseRow(batch, session, teacherResult = null, courseResult = null, variant = "full") {
+  const now = batch.created_at || new Date().toISOString();
+  const courseIdCandidate =
+    courseResult?.course_id ||
+    session?.courseId ||
+    session?.course_id ||
+    session?.contextId ||
+    "0";
+
+  const base = {
     id: batch.id,
-    course_id: String(session?.courseId || "0"),
+    course_id: String(courseIdCandidate || "0"),
+    teacher_id: teacherResult?.teacher_id || null,
     report_type: batch.report_type || "students",
-    source_kind: ["upload", "paste"].includes(rawKind) ? rawKind : "upload",
+    source_kind: mapImportSourceKind(batch.source_kind),
     status: batch.status || "completed",
     row_count: batch.row_count || 0,
     file_name: batch.file_name || null,
     detection_confidence: typeof batch.detection_confidence === "number" ? batch.detection_confidence : null,
     warnings: Array.isArray(batch.warnings) ? batch.warnings : [],
-    imported_by_username: batch.imported_by_username || null,
-    created_at: batch.created_at || new Date().toISOString()
+    imported_by_username: batch.imported_by_username || session?.moodleUsername || null,
+    created_at: now
   };
+
+  if (variant === "no_teacher") {
+    const { teacher_id, ...rest } = base;
+    return compactRow(rest);
+  }
+
+  if (variant === "minimal") {
+    return compactRow({
+      id: base.id,
+      course_id: base.course_id,
+      report_type: base.report_type,
+      source_kind: base.source_kind,
+      status: base.status,
+      row_count: base.row_count,
+      file_name: base.file_name,
+      created_at: base.created_at
+    });
+  }
+
+  if (variant === "ultra_minimal") {
+    return compactRow({
+      id: base.id,
+      report_type: base.report_type,
+      source_kind: base.source_kind,
+      status: base.status,
+      row_count: base.row_count,
+      created_at: base.created_at
+    });
+  }
+
+  return compactRow(base);
 }
 
 async function ensureTeacher(supabase, session) {
-  const moodleUserId = String(session?.moodleUserId || "");
-  const username = String(session?.moodleUsername || "");
+  const moodleUserId = String(session?.moodleUserId || session?.moodle_user_id || "");
+  const username = String(session?.moodleUsername || session?.teacherName || "");
   if (!moodleUserId && !username) return { ok: true, skipped: true };
+
   const teacherId = stableUuidFromText("teacher|" + (moodleUserId || username));
   const now = new Date().toISOString();
-  const row = { id: teacherId, moodle_user_id: moodleUserId || null, username: username || null, created_at: now, updated_at: now };
-  const { error } = await supabase.from("teachers").upsert(row, { onConflict: "id" });
-  if (error) return { ok: false, reason: "TEACHER_UPSERT_FAILED", detail: String(error.message || "").slice(0, 200) };
-  return { ok: true, teacher_id: teacherId };
+
+  const variants = [
+    { id: teacherId, moodle_user_id: moodleUserId || null, username: username || null, created_at: now, updated_at: now },
+    { id: teacherId, username: username || null, created_at: now, updated_at: now },
+    { id: teacherId, created_at: now, updated_at: now }
+  ];
+
+  let lastError = null;
+  for (const row of variants) {
+    const { error } = await supabase.from("teachers").upsert(compactRow(row), { onConflict: "id" });
+    if (!error) return { ok: true, teacher_id: teacherId };
+    lastError = error;
+  }
+
+  return {
+    ok: false,
+    reason: "TEACHER_UPSERT_FAILED",
+    detail: String(lastError?.message || "").slice(0, 300),
+    code: lastError?.code || null
+  };
 }
 
 async function ensureCourse(supabase, session) {
-  const moodleCourseId = String(session?.courseId || "");
+  const moodleCourseId = String(session?.courseId || session?.course_id || session?.contextId || "");
   if (!moodleCourseId) return { ok: true, skipped: true };
+
   const courseId = stableUuidFromText("course|" + moodleCourseId);
-  const row = { id: courseId, moodle_course_id: moodleCourseId, title: session?.courseTitle || session?.spaceTitle || null, created_at: new Date().toISOString() };
-  const { error } = await supabase.from("courses").upsert(row, { onConflict: "id" });
-  if (error) return { ok: false, reason: "COURSE_UPSERT_FAILED", detail: String(error.message || "").slice(0, 200) };
-  return { ok: true, course_id: courseId };
+  const now = new Date().toISOString();
+  const title = session?.courseTitle || session?.spaceTitle || null;
+
+  const variants = [
+    { id: courseId, moodle_course_id: moodleCourseId, title, created_at: now, updated_at: now },
+    { id: courseId, title, created_at: now, updated_at: now },
+    { id: courseId, created_at: now, updated_at: now }
+  ];
+
+  let lastError = null;
+  for (const row of variants) {
+    const { error } = await supabase.from("courses").upsert(compactRow(row), { onConflict: "id" });
+    if (!error) return { ok: true, course_id: courseId };
+    lastError = error;
+  }
+
+  return {
+    ok: false,
+    reason: "COURSE_UPSERT_FAILED",
+    detail: String(lastError?.message || "").slice(0, 300),
+    code: lastError?.code || null
+  };
+}
+
+async function tryInsertImportBatch(supabase, batch, session, teacherResult, courseResult) {
+  const variants = ["full", "no_teacher", "minimal", "ultra_minimal"];
+  let lastError = null;
+  let lastVariant = null;
+
+  for (const variant of variants) {
+    const row = buildImportBatchSupabaseRow(batch, session, teacherResult, courseResult, variant);
+    const { error } = await supabase.from("import_batches").upsert(row, { onConflict: "id" });
+    if (!error) return { ok: true, variant };
+    lastError = error;
+    lastVariant = variant;
+  }
+
+  return {
+    ok: false,
+    reason: "IMPORT_BATCH_INSERT_FAILED",
+    detail: String(lastError?.message || "").slice(0, 700),
+    code: lastError?.code || null,
+    variant: lastVariant
+  };
+}
+
+async function tryUpsertStudents(supabase, students, batchId, session) {
+  if (!students.length) return { ok: true, students_written: 0, variant: "none" };
+
+  const variants = ["full", "minimal", "ultra_minimal"];
+  let lastError = null;
+  let lastVariant = null;
+
+  for (const variant of variants) {
+    const rows = students.map(s => buildStudentSupabaseRow(s, batchId, session, variant));
+    const { error } = await supabase.from("students").upsert(rows, { onConflict: "id" });
+    if (!error) return { ok: true, students_written: rows.length, variant };
+    lastError = error;
+    lastVariant = variant;
+  }
+
+  return {
+    ok: false,
+    reason: "STUDENTS_UPSERT_FAILED",
+    detail: String(lastError?.message || "").slice(0, 700),
+    code: lastError?.code || null,
+    variant: lastVariant
+  };
 }
 
 async function writeImportToSupabase(batch, students, session) {
@@ -375,18 +535,21 @@ async function writeImportToSupabase(batch, students, session) {
     ensureCourse(supabase, session)
   ]);
 
-  const batchRow = buildImportBatchSupabaseRow(batch, session);
-  const { error: batchErr } = await supabase.from("import_batches").insert(batchRow);
-  if (batchErr) {
-    return { ok: false, skipped: false, reason: "IMPORT_BATCH_INSERT_FAILED", detail: String(batchErr.message || "").slice(0, 300), code: batchErr.code || null };
-  }
-  if (!students.length) return { ok: true, skipped: false, students_written: 0, teacher_result: teacherResult.ok ? "ok" : teacherResult.reason, course_result: courseResult.ok ? "ok" : courseResult.reason };
-  const studentRows = students.map(s => buildStudentSupabaseRow(s, batch.id));
-  const { error: stuErr } = await supabase.from("students").upsert(studentRows, { onConflict: "id" });
-  if (stuErr) {
-    return { ok: false, skipped: false, reason: "STUDENTS_UPSERT_FAILED", detail: String(stuErr.message || "").slice(0, 300), code: stuErr.code || null };
-  }
-  return { ok: true, skipped: false, students_written: studentRows.length, teacher_result: teacherResult.ok ? "ok" : teacherResult.reason, course_result: courseResult.ok ? "ok" : courseResult.reason };
+  const batchWrite = await tryInsertImportBatch(supabase, batch, session, teacherResult, courseResult);
+  if (!batchWrite.ok) return { ok: false, skipped: false, ...batchWrite };
+
+  const studentsWrite = await tryUpsertStudents(supabase, students, batch.id, session);
+  if (!studentsWrite.ok) return { ok: false, skipped: false, ...studentsWrite };
+
+  return {
+    ok: true,
+    skipped: false,
+    students_written: studentsWrite.students_written,
+    import_batch_variant: batchWrite.variant,
+    students_variant: studentsWrite.variant,
+    teacher_result: teacherResult.ok ? "ok" : teacherResult.reason,
+    course_result: courseResult.ok ? "ok" : courseResult.reason
+  };
 }
 
 function recordLaunchCapture(body, verificationCode) {
