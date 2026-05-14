@@ -87,6 +87,7 @@ export default function Import() {
   const [pastedText, setPastedText] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [serverResult, setServerResult] = useState<any>(null);
+  const [importError, setImportError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const mapping = useMemo(() => mappingSummary(result), [result]);
@@ -100,6 +101,14 @@ export default function Import() {
     mapping.hasIdNumber;
 
   const canSubmit = Boolean(result && isStudentsReport && hasNameForImport && hasIdentityForImport);
+
+  const openFilePicker = () => {
+    setImportError("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+      fileInputRef.current.click();
+    }
+  };
 
   const blockingReason = useMemo(() => {
     if (!result) return "";
@@ -122,6 +131,7 @@ export default function Import() {
     try {
       setIsUploading(true);
       setServerResult(null);
+      setImportError("");
       const parsed = await parseMoodleFile(file);
       setResult(parsed);
 
@@ -131,7 +141,9 @@ export default function Import() {
         toast.warning("הדוח זוהה, אך כרגע ניתן לשמור רק Participants / תלמידים");
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "שגיאה בטעינת הקובץ");
+      const message = err instanceof Error ? err.message : "שגיאה בטעינת הקובץ";
+      setImportError(message);
+      toast.error(message);
     } finally {
       setIsUploading(false);
     }
@@ -141,6 +153,7 @@ export default function Import() {
     try {
       if (!pastedText.trim()) throw new Error("יש להדביק תוכן");
       setServerResult(null);
+      setImportError("");
       const parsed = parsePastedTable(pastedText);
       setResult(parsed);
 
@@ -150,7 +163,9 @@ export default function Import() {
         toast.warning("הטבלה זוהתה, אך כרגע ניתן לשמור רק Participants / תלמידים");
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "שגיאה בניתוח התוכן");
+      const message = err instanceof Error ? err.message : "שגיאה בניתוח התוכן";
+      setImportError(message);
+      toast.error(message);
     }
   };
 
@@ -158,11 +173,14 @@ export default function Import() {
     if (!result) return;
 
     if (!canSubmit) {
-      toast.error(blockingReason || "לא ניתן לשמור את הדוח הזה כרגע");
+      const message = blockingReason || "לא ניתן לשמור את הדוח הזה כרגע";
+      setImportError(message);
+      toast.error(message);
       return;
     }
 
     try {
+      setImportError("");
       setIsUploading(true);
       const response = await postImport({
         report_type: "students",
@@ -179,7 +197,13 @@ export default function Import() {
         throw new Error(response.error || "שגיאה בשרת");
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "שגיאה בייבוא");
+      const rawMessage = err instanceof Error ? err.message : "שגיאה בייבוא";
+      const message =
+        rawMessage === "missing_session" || rawMessage === "NO_VERIFIED_MOODLE_SESSION"
+          ? "לא נמצאה פתיחה מאומתת מתוך Moodle. פתח את הכלי מתוך Moodle ואז נסה שוב."
+          : rawMessage;
+      setImportError(message);
+      toast.error(message);
     } finally {
       setIsUploading(false);
     }
@@ -195,6 +219,7 @@ export default function Import() {
           type="file"
           className="hidden"
           ref={fileInputRef}
+          onClick={(event) => { event.currentTarget.value = ""; }}
           onChange={handleFile}
           accept=".csv,.xlsx,.xls,.ods"
         />
@@ -212,6 +237,22 @@ export default function Import() {
           </CardContent>
         </Card>
 
+
+        {importError && (
+          <Card className="border-red-200 bg-red-50/90">
+            <CardContent className="flex gap-3 p-4 text-sm leading-7 text-red-950">
+              <AlertCircle className="mt-1 h-5 w-5 shrink-0" />
+              <div>
+                <div className="font-extrabold">הייבוא לא התקדם</div>
+                <div>{importError}</div>
+                <div className="mt-1 text-xs text-red-800">
+                  אם זו הודעת Session — פתח את Teacher Hub מתוך Moodle עצמו ולא מקישור ישיר.
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <AnimatePresence mode="wait">
           {!result ? (
             <motion.div
@@ -223,14 +264,14 @@ export default function Import() {
             >
               <div
                 className="cursor-pointer transition-transform hover:scale-[1.01]"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={openFilePicker}
               >
                 <ImportEmptyState />
               </div>
 
               <div className="grid gap-4 md:grid-cols-[220px_1fr]">
                 <Button
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={openFilePicker}
                   variant="outline"
                   size="lg"
                   className="h-14 gap-2"
