@@ -1095,6 +1095,167 @@ async function buildPersistenceLiveValidation() {
   return result;
 }
 
+
+
+// >>> MTH_SAFE_IMPORT_SCHEMA_DIAGNOSTICS_V1 >>>
+async function probeSupabaseSelect(table, columns) {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return {
+      table,
+      ok: false,
+      configured: false,
+      columns,
+      error_code: "SUPABASE_NOT_CONFIGURED",
+      error_message: "Supabase client is not configured"
+    };
+  }
+
+  try {
+    const { error, count } = await supabase
+      .from(table)
+      .select(columns.join(","), { count: "exact", head: true })
+      .limit(0);
+
+    return {
+      table,
+      ok: !error,
+      configured: true,
+      columns,
+      count: count ?? null,
+      error_code: error?.code || null,
+      error_message: error?.message || null
+    };
+  } catch (error) {
+    return {
+      table,
+      ok: false,
+      configured: true,
+      columns,
+      count: null,
+      error_code: "PROBE_THROWN",
+      error_message: String(error?.message || error).slice(0, 500)
+    };
+  }
+}
+
+async function buildImportSchemaDiagnostics() {
+  const probes = [];
+
+  probes.push(await probeSupabaseSelect("import_batches", [
+    "id",
+    "course_id",
+    "teacher_id",
+    "report_type",
+    "source_kind",
+    "status",
+    "row_count",
+    "file_name",
+    "detection_confidence",
+    "warnings",
+    "imported_by_username",
+    "created_at"
+  ]));
+
+  probes.push(await probeSupabaseSelect("import_batches", [
+    "id",
+    "course_id",
+    "report_type",
+    "source_kind",
+    "status",
+    "row_count",
+    "file_name",
+    "created_at"
+  ]));
+
+  probes.push(await probeSupabaseSelect("import_batches", [
+    "id",
+    "report_type",
+    "source_kind",
+    "status",
+    "row_count",
+    "created_at"
+  ]));
+
+  probes.push(await probeSupabaseSelect("students", [
+    "id",
+    "full_name",
+    "email",
+    "external_id",
+    "external_username",
+    "moodle_user_id",
+    "lis_person_sourcedid",
+    "id_number",
+    "space_id",
+    "source",
+    "import_batch_id",
+    "created_at",
+    "updated_at"
+  ]));
+
+  probes.push(await probeSupabaseSelect("students", [
+    "id",
+    "full_name",
+    "email",
+    "external_id",
+    "external_username",
+    "import_batch_id",
+    "created_at",
+    "updated_at"
+  ]));
+
+  probes.push(await probeSupabaseSelect("students", [
+    "id",
+    "full_name",
+    "email",
+    "created_at",
+    "updated_at"
+  ]));
+
+  probes.push(await probeSupabaseSelect("teachers", [
+    "id",
+    "moodle_user_id",
+    "username",
+    "created_at",
+    "updated_at"
+  ]));
+
+  probes.push(await probeSupabaseSelect("courses", [
+    "id",
+    "moodle_course_id",
+    "title",
+    "created_at",
+    "updated_at"
+  ]));
+
+  return {
+    ok: true,
+    mode: "safe-import-schema-diagnostics",
+    version: "MTH_SAFE_IMPORT_SCHEMA_DIAGNOSTICS_V1",
+    probes,
+    summary: {
+      import_batches_any_ok: probes.filter(p => p.table === "import_batches").some(p => p.ok),
+      students_any_ok: probes.filter(p => p.table === "students").some(p => p.ok),
+      teachers_any_ok: probes.filter(p => p.table === "teachers").some(p => p.ok),
+      courses_any_ok: probes.filter(p => p.table === "courses").some(p => p.ok)
+    },
+    safety: {
+      no_writes_performed: true,
+      no_deletes_performed: true,
+      no_sql_executed: true,
+      no_student_rows_returned: true,
+      aggregate_or_schema_only: true
+    },
+    checked_at: new Date().toISOString()
+  };
+}
+
+app.get("/api/import/schema-diagnostics", async (req, res) => {
+  noStore(res);
+  res.json(await buildImportSchemaDiagnostics());
+});
+// <<< MTH_SAFE_IMPORT_SCHEMA_DIAGNOSTICS_V1 <<<
+
 app.get("/api/persistence/validate", async (_req, res) => {
   noStore(res);
   try {
