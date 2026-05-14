@@ -26,7 +26,6 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
-import { motion, AnimatePresence } from "motion/react";
 
 const YANIV_PARTICIPANTS_IMPORT_TRUTH_V1 = true;
 
@@ -253,13 +252,10 @@ export default function Import() {
           </Card>
         )}
 
-        <AnimatePresence mode="wait">
+        <div>
           {!result ? (
-            <motion.div
+            <div
               key="empty"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96 }}
               className="space-y-8"
             >
               <div
@@ -313,12 +309,10 @@ export default function Import() {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           ) : (
-            <motion.div
+            <div
               key="preview"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
               className="space-y-6"
             >
               <Card className={canSubmit ? "border-green-200 bg-green-50/60" : "border-orange-200 bg-orange-50/70"}>
@@ -423,9 +417,9 @@ export default function Import() {
                   </div>
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
+        </div>
       </div>
     </SafePage>
   );

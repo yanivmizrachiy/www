@@ -1,6 +1,5 @@
 import { Import, UploadCloud, Copy, FileSpreadsheet } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { motion } from "motion/react";
 
 export function ImportEmptyState() {
   const steps = [
@@ -23,11 +22,8 @@ export function ImportEmptyState() {
 
       <div className="grid gap-3 sm:grid-cols-3">
         {steps.map((item, i) => (
-          <motion.div
+          <div
             key={item.label}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.06 }}
           >
             <Card className="h-full border-primary/10 bg-background/70 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/25 hover:bg-background">
               <CardContent className="flex items-center gap-3 p-4 text-right sm:flex-col sm:items-center sm:text-center">
@@ -40,7 +36,7 @@ export function ImportEmptyState() {
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
+          </div>
         ))}
       </div>
 
