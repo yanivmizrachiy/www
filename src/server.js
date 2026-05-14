@@ -327,10 +327,12 @@ function buildStudentSupabaseRow(student, batchId) {
   };
 }
 
-function buildImportBatchSupabaseRow(batch, session) {
+function buildImportBatchSupabaseRow(batch, session, siteId) {
   const rawKind = String(batch.source_kind || "upload");
   return {
     id: batch.id,
+    site_id: siteId,
+    course_id: String(session?.courseId || "0"),
     report_type: batch.report_type || "students",
     source_kind: ["upload", "paste"].includes(rawKind) ? rawKind : "upload",
     status: batch.status || "completed",
@@ -339,15 +341,44 @@ function buildImportBatchSupabaseRow(batch, session) {
     detection_confidence: typeof batch.detection_confidence === "number" ? batch.detection_confidence : null,
     warnings: Array.isArray(batch.warnings) ? batch.warnings : [],
     imported_by_username: batch.imported_by_username || null,
-    course_id: session?.courseId ? String(session.courseId) : null,
     created_at: batch.created_at || new Date().toISOString()
   };
+}
+
+async function ensureMoodleSiteId(supabase, session) {
+  const consumerKey = env("LTI_CONSUMER_KEY") || null;
+  const siteUrl = session?.siteUrl || null;
+  const siteName = session?.siteName || null;
+
+  if (consumerKey) {
+    const { data, error } = await supabase
+      .from("moodle_sites")
+      .upsert({ lti_consumer_key: consumerKey, site_url: siteUrl, site_name: siteName }, { onConflict: "lti_consumer_key" })
+      .select("id")
+      .single();
+    if (!error && data?.id) return { ok: true, site_id: data.id };
+  }
+
+  const { data: found } = await supabase.from("moodle_sites").select("id").limit(1).maybeSingle();
+  if (found?.id) return { ok: true, site_id: found.id };
+
+  const { data: inserted, error: insertErr } = await supabase
+    .from("moodle_sites")
+    .insert({ site_url: siteUrl, site_name: siteName })
+    .select("id")
+    .single();
+  if (insertErr) return { ok: false, reason: "MOODLE_SITE_INSERT_FAILED", detail: String(insertErr.message || "").slice(0, 300) };
+  return { ok: true, site_id: inserted.id };
 }
 
 async function writeImportToSupabase(batch, students, session) {
   const supabase = getSupabaseClient();
   if (!supabase) return { ok: false, skipped: true, reason: "SUPABASE_NOT_CONFIGURED" };
-  const batchRow = buildImportBatchSupabaseRow(batch, session);
+
+  const siteResult = await ensureMoodleSiteId(supabase, session);
+  if (!siteResult.ok) return { ok: false, skipped: false, reason: siteResult.reason, detail: siteResult.detail };
+
+  const batchRow = buildImportBatchSupabaseRow(batch, session, siteResult.site_id);
   const { error: batchErr } = await supabase.from("import_batches").insert(batchRow);
   if (batchErr) {
     return { ok: false, skipped: false, reason: "IMPORT_BATCH_INSERT_FAILED", detail: String(batchErr.message || "").slice(0, 300), code: batchErr.code || null };
