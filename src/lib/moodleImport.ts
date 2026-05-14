@@ -123,7 +123,8 @@ export async function parseMoodleFile(file: File): Promise<MoodleImportResult> {
     reader.onload = (event) => {
       try {
         const data = event.target?.result;
-        const workbook = XLSX.read(data, { type: "binary", cellDates: true });
+        if (!data) throw new Error("לא התקבל תוכן מהקובץ");
+        const workbook = XLSX.read(data, { type: "array", cellDates: true });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const json = XLSX.utils.sheet_to_json(worksheet, { defval: null });
@@ -149,7 +150,7 @@ export async function parseMoodleFile(file: File): Promise<MoodleImportResult> {
     };
 
     reader.onerror = () => reject(new Error("שגיאה בקריאת הקובץ"));
-    reader.readAsBinaryString(file);
+    reader.readAsArrayBuffer(file);
   });
 }
 
