@@ -279,6 +279,88 @@ async function recordSupabaseSession(record) {
   return error ? { ok: false, skipped: false, reason: error.message } : { ok: true, skipped: false, reason: "" };
 }
 
+function getSupabaseClient() {
+  const url = env("VITE_SUPABASE_URL");
+  const key = env("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key) return null;
+  return createClient(url, key, { auth: { persistSession: false } });
+}
+
+async function getSupabaseCounts() {
+  const supabase = getSupabaseClient();
+  if (!supabase) return null;
+  try {
+    const [studentsRes, batchesRes] = await Promise.allSettled([
+      supabase.from("students").select("*", { count: "exact", head: true }),
+      supabase.from("import_batches").select("*", { count: "exact", head: true })
+    ]);
+    const students = studentsRes.status === "fulfilled" && !studentsRes.value.error
+      ? (studentsRes.value.count ?? 0) : null;
+    const import_batches = batchesRes.status === "fulfilled" && !batchesRes.value.error
+      ? (batchesRes.value.count ?? 0) : null;
+    return { students, import_batches };
+  } catch {
+    return null;
+  }
+}
+
+function stableUuidFromText(value) {
+  const h = crypto.createHash("sha256").update(String(value || "")).digest("hex");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-${"89ab"[parseInt(h[16], 16) & 3]}${h.slice(17, 20)}-${h.slice(20, 32)}`;
+}
+
+function buildStudentSupabaseRow(student, batchId) {
+  return {
+    id: stableUuidFromText(student.id),
+    full_name: student.full_name,
+    email: student.email || null,
+    external_id: student.external_id || null,
+    external_username: student.external_username || null,
+    moodle_user_id: student.moodle_user_id || null,
+    lis_person_sourcedid: student.lis_person_sourcedid || null,
+    id_number: student.id_number || null,
+    space_id: student.space_id || null,
+    source: student.source || "moodle-participants-import",
+    import_batch_id: batchId || null,
+    created_at: student.updated_at || new Date().toISOString(),
+    updated_at: student.updated_at || new Date().toISOString()
+  };
+}
+
+function buildImportBatchSupabaseRow(batch, session) {
+  const rawKind = String(batch.source_kind || "upload");
+  return {
+    id: batch.id,
+    report_type: batch.report_type || "students",
+    source_kind: ["upload", "paste"].includes(rawKind) ? rawKind : "upload",
+    status: batch.status || "completed",
+    row_count: batch.row_count || 0,
+    file_name: batch.file_name || null,
+    detection_confidence: typeof batch.detection_confidence === "number" ? batch.detection_confidence : null,
+    warnings: Array.isArray(batch.warnings) ? batch.warnings : [],
+    imported_by_username: batch.imported_by_username || null,
+    course_id: session?.courseId ? String(session.courseId) : null,
+    created_at: batch.created_at || new Date().toISOString()
+  };
+}
+
+async function writeImportToSupabase(batch, students, session) {
+  const supabase = getSupabaseClient();
+  if (!supabase) return { ok: false, skipped: true, reason: "SUPABASE_NOT_CONFIGURED" };
+  const batchRow = buildImportBatchSupabaseRow(batch, session);
+  const { error: batchErr } = await supabase.from("import_batches").insert(batchRow);
+  if (batchErr) {
+    return { ok: false, skipped: false, reason: "IMPORT_BATCH_INSERT_FAILED", detail: String(batchErr.message || "").slice(0, 300), code: batchErr.code || null };
+  }
+  if (!students.length) return { ok: true, skipped: false, students_written: 0 };
+  const studentRows = students.map(s => buildStudentSupabaseRow(s, batch.id));
+  const { error: stuErr } = await supabase.from("students").upsert(studentRows, { onConflict: "id" });
+  if (stuErr) {
+    return { ok: false, skipped: false, reason: "STUDENTS_UPSERT_FAILED", detail: String(stuErr.message || "").slice(0, 300), code: stuErr.code || null };
+  }
+  return { ok: true, skipped: false, students_written: studentRows.length };
+}
+
 function recordLaunchCapture(body, verificationCode) {
   store.moodleCaptures.push({
     id: crypto.randomUUID(),
@@ -360,6 +442,7 @@ function normalizeImportedStudent(row, session) {
 function upsertImportedStudents(rows, session) {
   const input = Array.isArray(rows) ? rows : [];
   const warnings = [];
+  const normalizedStudents = [];
   let inserted = 0;
   let updated = 0;
   let skipped = 0;
@@ -372,7 +455,7 @@ function upsertImportedStudents(rows, session) {
       skipped += 1;
       continue;
     }
-
+    normalizedStudents.push(student);
     const index = store.students.findIndex(item => item.id === student.id);
     if (index >= 0) {
       store.students[index] = { ...store.students[index], ...student };
@@ -384,7 +467,7 @@ function upsertImportedStudents(rows, session) {
   }
 
   if (skipped > 0) warnings.push("Skipped " + skipped + " rows without a usable student name/identity.");
-  return { row_count: inserted + updated, inserted, updated, skipped, warnings };
+  return { row_count: inserted + updated, inserted, updated, skipped, warnings, students: normalizedStudents };
 }
 
 function importedStudentDto(student) {
@@ -586,10 +669,12 @@ app.use("/public", express.static(path.join(ROOT, "public")));
 
 
 // >>> MTH_SYNC_STATUS_API_V1 >>>
-function buildSyncStatus(req) {
+function buildSyncStatus(req, sbCounts) {
   const session = importSessionFromRequest(req) || sessionFromRequest(req);
   const hasSession = Boolean(session);
-  const hasStudents = Array.isArray(store.students) && store.students.length > 0;
+  const studentCount = sbCounts?.students != null ? sbCounts.students : (Array.isArray(store.students) ? store.students.length : 0);
+  const batchCount = sbCounts?.import_batches != null ? sbCounts.import_batches : (Array.isArray(store.importBatches) ? store.importBatches.length : 0);
+  const hasStudents = studentCount > 0;
   const hasTasks = (Array.isArray(store.tasks) && store.tasks.length > 0) || (Array.isArray(store.chapters) && store.chapters.length > 0);
   const hasGrades = Array.isArray(store.grades) && store.grades.length > 0;
   const hasLogs = Array.isArray(store.logEvents) && store.logEvents.length > 0;
@@ -609,13 +694,13 @@ function buildSyncStatus(req) {
     no_private_rows_returned: true,
     session_exists: hasSession,
     counts: {
-      students: Array.isArray(store.students) ? store.students.length : 0,
+      students: studentCount,
       chapters: Array.isArray(store.chapters) ? store.chapters.length : 0,
       tasks: Array.isArray(store.tasks) ? store.tasks.length : 0,
       grade_items: Array.isArray(store.gradeItems) ? store.gradeItems.length : 0,
       grades: Array.isArray(store.grades) ? store.grades.length : 0,
       log_events: Array.isArray(store.logEvents) ? store.logEvents.length : 0,
-      import_batches: Array.isArray(store.importBatches) ? store.importBatches.length : 0
+      import_batches: batchCount
     },
     next_actions_he: hasSession
       ? (missingActions.length ? missingActions : ["כל מקורות הנתונים הבסיסיים זמינים. אפשר להמשיך לעבודה ודוחות, ועדיין נדרשת בדיקת מורה אמיתית לפני הפצה רחבה."])
@@ -667,17 +752,19 @@ function buildSyncStatus(req) {
   };
 }
 
-app.get("/api/sync/status", (req, res) => {
+app.get("/api/sync/status", async (req, res) => {
   noStore(res);
-  res.json(buildSyncStatus(req));
+  const sbCounts = await getSupabaseCounts();
+  res.json(buildSyncStatus(req, sbCounts));
 });
 
-app.post("/api/sync/run", (req, res) => {
+app.post("/api/sync/run", async (req, res) => {
   noStore(res);
   store.settings.lastSyncAt = new Date().toISOString();
   saveStore();
+  const sbCounts = await getSupabaseCounts();
   res.json({
-    ...buildSyncStatus(req),
+    ...buildSyncStatus(req, sbCounts),
     sync_run: {
       ok: true,
       mode: "capability-detection-only",
@@ -842,8 +929,8 @@ app.get("/api/persistence/validate", async (_req, res) => {
 
 
 // >>> MTH_RELEASE_READINESS_GATE_V2 >>>
-function buildReleaseReadiness(req) {
-  const sync = buildSyncStatus(req);
+function buildReleaseReadiness(req, sbCounts) {
+  const sync = buildSyncStatus(req, sbCounts);
   const persistence = buildPersistenceStatus();
 
   const blockers = [];
@@ -878,7 +965,8 @@ function buildReleaseReadiness(req) {
   }
 
   // Reports must enter through the real import flow — not just exist in memory
-  if (!Array.isArray(store.importBatches) || store.importBatches.length === 0) {
+  const durableBatchCount = sbCounts?.import_batches != null ? sbCounts.import_batches : (Array.isArray(store.importBatches) ? store.importBatches.length : 0);
+  if (durableBatchCount === 0) {
     blockers.push({
       key: "no_real_import_batch",
       severity: "data_required",
@@ -957,9 +1045,10 @@ function buildReleaseReadiness(req) {
 
 
 // >>> MTH_LTI_SAFE_DIAGNOSTICS_V1 >>>
-app.get("/api/lti/diagnostics", (req, res) => {
+app.get("/api/lti/diagnostics", async (req, res) => {
   noStore(res);
   const session = sessionFromRequest(req);
+  const sbCounts = await getSupabaseCounts();
 
   res.json({
     ok: true,
@@ -979,8 +1068,8 @@ app.get("/api/lti/diagnostics", (req, res) => {
       moodle_captures: Array.isArray(store.moodleCaptures) ? store.moodleCaptures.length : 0,
       teachers: Array.isArray(store.teachers) ? store.teachers.length : 0,
       spaces: Array.isArray(store.spaces) ? store.spaces.length : 0,
-      students: Array.isArray(store.students) ? store.students.length : 0,
-      import_batches: Array.isArray(store.importBatches) ? store.importBatches.length : 0
+      students: sbCounts?.students != null ? sbCounts.students : (Array.isArray(store.students) ? store.students.length : 0),
+      import_batches: sbCounts?.import_batches != null ? sbCounts.import_batches : (Array.isArray(store.importBatches) ? store.importBatches.length : 0)
     },
     last_capture_safe: Array.isArray(store.moodleCaptures) && store.moodleCaptures.length
       ? {
@@ -1003,9 +1092,10 @@ app.get("/api/lti/diagnostics", (req, res) => {
 });
 // <<< MTH_LTI_SAFE_DIAGNOSTICS_V1 >>>
 
-app.get("/api/release/readiness", (req, res) => {
+app.get("/api/release/readiness", async (req, res) => {
   noStore(res);
-  res.json(buildReleaseReadiness(req));
+  const sbCounts = await getSupabaseCounts();
+  res.json(buildReleaseReadiness(req, sbCounts));
 });
 // <<< MTH_RELEASE_READINESS_GATE_V2 <<<
 
@@ -1064,7 +1154,7 @@ app.get("/api/teacher/dashboard-context", (req, res) => {
 // <<< MTH_TEACHER_DASHBOARD_CONTEXT_V1 <<<
 
 // >>> MTH_CAPABILITY_DETECTOR_V1 >>>
-app.get("/api/capabilities/status", (req, res) => {
+app.get("/api/capabilities/status", async (req, res) => {
   noStore(res);
 
   const lti11Configured = !!(env("LTI_SHARED_SECRET") && env("LTI_CONSUMER_KEY"));
@@ -1076,10 +1166,13 @@ app.get("/api/capabilities/status", (req, res) => {
   const latestLti13 = lti13Sessions.length ? lti13Sessions[lti13Sessions.length - 1] : null;
   const services = latestLti13?.automaticServices || { has_nrps: false, has_ags: false };
 
-  const hasStudents = Array.isArray(store.students) && store.students.length > 0;
+  const sbCounts = await getSupabaseCounts();
+  const studentCount = sbCounts?.students != null ? sbCounts.students : (Array.isArray(store.students) ? store.students.length : 0);
+  const batchCount = sbCounts?.import_batches != null ? sbCounts.import_batches : (Array.isArray(store.importBatches) ? store.importBatches.length : 0);
+  const hasStudents = studentCount > 0;
   const hasGrades = Array.isArray(store.grades) && store.grades.length > 0;
   const hasLogs = Array.isArray(store.logEvents) && store.logEvents.length > 0;
-  const hasImportBatches = Array.isArray(store.importBatches) && store.importBatches.length > 0;
+  const hasImportBatches = batchCount > 0;
 
   const lti11Status = lti11Configured ? "configured" : "missing";
   const lti13Status = lti13Env.configured ? "configured" : (lti13Env.missing.length === lti13Env.required.length ? "missing" : "partial");
@@ -1284,7 +1377,7 @@ app.get("/api/bootstrap", (req, res) => {
   });
 });
 
-app.post("/api/import", (req, res) => {
+app.post("/api/import", async (req, res) => {
   noStore(res);
   const session = importSessionFromRequest(req);
   if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
@@ -1319,11 +1412,33 @@ app.post("/api/import", (req, res) => {
     ...buildBatchProvenance({ import_batch_id: batchId, source_kind: batchSourceKind, source_name: body.file_name || null, status: batchStatus, row_count: result.row_count }, session)
   };
 
+  const sbWrite = await writeImportToSupabase(batch, result.students, session);
+  if (!sbWrite.ok && !sbWrite.skipped) {
+    return res.status(502).json({
+      ok: false,
+      error: sbWrite.reason,
+      detail: sbWrite.detail || null,
+      code: sbWrite.code || null,
+      note: "Import was NOT persisted to durable storage. Retry or contact admin."
+    });
+  }
+
   store.importBatches.push(batch);
   store.settings.lastSyncAt = new Date().toISOString();
   saveStore();
 
-  res.json({ ok: true, batch_id: batch.id, row_count: result.row_count, inserted: result.inserted, updated: result.updated, skipped: result.skipped, warnings: result.warnings });
+  res.json({
+    ok: true,
+    batch_id: batch.id,
+    row_count: result.row_count,
+    inserted: result.inserted,
+    updated: result.updated,
+    skipped: result.skipped,
+    warnings: result.warnings,
+    supabase: sbWrite.skipped
+      ? { written: false, reason: sbWrite.reason }
+      : { written: true, students_written: sbWrite.students_written }
+  });
 });
 
 app.get("/api/imports/students", (req, res) => {
