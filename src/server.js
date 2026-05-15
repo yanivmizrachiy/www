@@ -289,16 +289,34 @@ function getSupabaseClient() {
 async function getSupabaseCounts() {
   const supabase = getSupabaseClient();
   if (!supabase) return null;
+
+  const tableNames = [
+    "students",
+    "import_batches",
+    "grade_items",
+    "grade_results",
+    "log_events",
+    "teachers",
+    "courses",
+    "teacher_sessions",
+    "lti_launches"
+  ];
+
   try {
-    const [studentsRes, batchesRes] = await Promise.allSettled([
-      supabase.from("students").select("*", { count: "exact", head: true }),
-      supabase.from("import_batches").select("*", { count: "exact", head: true })
-    ]);
-    const students = studentsRes.status === "fulfilled" && !studentsRes.value.error
-      ? (studentsRes.value.count ?? 0) : null;
-    const import_batches = batchesRes.status === "fulfilled" && !batchesRes.value.error
-      ? (batchesRes.value.count ?? 0) : null;
-    return { students, import_batches };
+    const settled = await Promise.allSettled(
+      tableNames.map(table => supabase.from(table).select("*", { count: "exact", head: true }))
+    );
+
+    const counts = {};
+    for (let i = 0; i < tableNames.length; i += 1) {
+      const result = settled[i];
+      counts[tableNames[i]] =
+        result.status === "fulfilled" && !result.value.error
+          ? (result.value.count ?? 0)
+          : null;
+    }
+
+    return counts;
   } catch {
     return null;
   }
@@ -551,6 +569,248 @@ async function writeImportToSupabase(batch, students, session) {
     course_result: courseResult.ok ? "ok" : courseResult.reason
   };
 }
+
+
+// >>> MTH_WIDE_GRADEBOOK_IMPORT_V1 >>>
+function isWideGradebookStudentHeader(header) {
+  const h = String(header || "").trim();
+  return [
+    "שם פרטי",
+    "שם משפחה",
+    "שם מלא",
+    "מספר זיהוי",
+    "מספר זהות",
+    "מספר מזהה",
+    "מוסד",
+    "מחלקה",
+    "דוא\"ל",
+    "דוא״ל",
+    "Email",
+    "Email address"
+  ].some(name => normalizeImportKey(name) === normalizeImportKey(h));
+}
+
+function isWideGradebookIgnoredHeader(header) {
+  const h = String(header || "");
+  return isWideGradebookStudentHeader(h)
+    || /תאריך הפקת הדוח/i.test(h)
+    || /report generated/i.test(h)
+    || !h.trim();
+}
+
+function isWideGradebookGradeHeader(header) {
+  const h = String(header || "").trim();
+  if (isWideGradebookIgnoredHeader(h)) return false;
+  return /^(בוחן|תוכן אינטראקטיבי H5P|דפי עבודה):/.test(h)
+    || /^Quiz:/i.test(h)
+    || /^Assignment:/i.test(h)
+    || /^H5P:/i.test(h)
+    || /סך הכל של מרחב/.test(h);
+}
+
+function gradebookItemTypeFromHeader(header) {
+  const h = String(header || "");
+  if (/^בוחן:/.test(h) || /^Quiz:/i.test(h)) return "quiz";
+  if (/^תוכן אינטראקטיבי H5P:/.test(h) || /^H5P:/i.test(h)) return "h5p";
+  if (/^דפי עבודה:/.test(h) || /^Assignment:/i.test(h)) return "worksheet";
+  if (/סך הכל של מרחב/.test(h)) return "course_total";
+  return "grade_item";
+}
+
+function cleanGradebookItemName(header) {
+  return String(header || "")
+    .replace(/^בוחן:/, "")
+    .replace(/^תוכן אינטראקטיבי H5P:/, "")
+    .replace(/^דפי עבודה:/, "")
+    .replace(/\(מספרי\)/g, "")
+    .trim();
+}
+
+function parseWideGradeValue(value) {
+  if (value === null || value === undefined) return null;
+  const raw = String(value).trim();
+  if (!raw) return null;
+  if (/^[-–—]+$/.test(raw)) return null;
+  if (/לא\s*זמין|לא\s*הוגש|חסר|missing|n\/a/i.test(raw)) return null;
+
+  const normalized = raw
+    .replace(/[,%]/g, match => match === "," ? "." : "")
+    .replace(/[^\d.\-]/g, "");
+
+  if (!normalized || normalized === "-" || normalized === "." || normalized === "-.") return null;
+  const num = Number(normalized);
+  return Number.isFinite(num) ? num : null;
+}
+
+function gradebookCourseId(session) {
+  return String(session?.courseId || session?.course_id || session?.contextId || "0");
+}
+
+function gradebookStudentFromRow(row, session) {
+  const firstName = pickImportValue(row, ["שם פרטי", "First name", "Firstname", "first_name"]);
+  const lastName = pickImportValue(row, ["שם משפחה", "Surname", "Last name", "lastname", "last_name"]);
+  const fullName = pickImportValue(row, ["שם מלא", "Full name", "Name", "שם"]) || [firstName, lastName].filter(Boolean).join(" ").trim();
+  const email = pickImportValue(row, ["דוא\"ל", "דוא״ל", "דואל", "כתובת דואל", "כתובת דוא״ל", "Email address", "Email"]);
+  const idNumber = pickImportValue(row, ["מספר זיהוי", "מספר זהות", "מספר מזהה", "ID number", "idnumber"]);
+  const username = pickImportValue(row, ["שם משתמש", "Username", "User name"]);
+  const identity = idNumber || email || username || fullName;
+  const spaceId = session?.spaceId || "unknown-space";
+
+  if (!fullName || !identity) return null;
+
+  const importedStudentId = stableId("student", spaceId + "|" + identity);
+  return {
+    full_name: fullName,
+    email: email || null,
+    id_number: idNumber || null,
+    username: username || null,
+    identifier: identity,
+    student_id: stableUuidFromText(importedStudentId)
+  };
+}
+
+function buildWideGradebookImport(rows, session, meta = {}) {
+  const input = Array.isArray(rows) ? rows : [];
+  const headers = Array.from(new Set(input.flatMap(row => Object.keys(row || {}))));
+  const gradeHeaders = headers.filter(isWideGradebookGradeHeader);
+  const now = new Date().toISOString();
+  const courseId = gradebookCourseId(session);
+  const batchId = crypto.randomUUID();
+
+  const warnings = [];
+  if (!input.length) warnings.push("Gradebook payload is empty.");
+  if (!gradeHeaders.length) warnings.push("No wide grade columns were detected.");
+
+  const gradeItems = gradeHeaders.map((header, index) => ({
+    id: stableUuidFromText("grade_item|" + courseId + "|" + header),
+    course_id: courseId,
+    import_batch_id: batchId,
+    name: cleanGradebookItemName(header),
+    raw_header: header,
+    item_type: gradebookItemTypeFromHeader(header),
+    position: index + 1,
+    max_grade: null,
+    created_at: now
+  }));
+
+  const gradeResults = [];
+  let skipped_students = 0;
+  let skipped_empty_grades = 0;
+
+  for (const row of input) {
+    const student = gradebookStudentFromRow(row, session);
+    if (!student) {
+      skipped_students += 1;
+      continue;
+    }
+
+    for (const item of gradeItems) {
+      const rawValue = row[item.raw_header];
+      const numeric = parseWideGradeValue(rawValue);
+      if (numeric === null) {
+        skipped_empty_grades += 1;
+        continue;
+      }
+
+      gradeResults.push({
+        id: stableUuidFromText("grade_result|" + courseId + "|" + student.identifier + "|" + item.raw_header + "|" + batchId),
+        grade_item_id: item.id,
+        import_batch_id: batchId,
+        course_id: courseId,
+        student_id: student.student_id,
+        student_full_name: student.full_name,
+        student_email: student.email,
+        student_identifier: student.identifier,
+        grade: numeric,
+        raw_value: String(rawValue ?? ""),
+        source: "moodle-wide-gradebook-import",
+        created_at: now
+      });
+    }
+  }
+
+  if (!gradeResults.length) warnings.push("No numeric grade cells were found. Empty/missing cells were not converted to 0.");
+
+  return {
+    ok: input.length > 0 && gradeHeaders.length > 0,
+    batch: {
+      id: batchId,
+      report_type: "grades",
+      file_name: meta.file_name || null,
+      row_count: gradeResults.length,
+      status: gradeResults.length ? "completed" : "partial",
+      imported_by_username: session?.moodleUsername || session?.teacherName || null,
+      detection_confidence: typeof meta.detection_confidence === "number" ? meta.detection_confidence : null,
+      source_kind: meta.source_kind || "file",
+      warnings,
+      created_at: now,
+      ...buildBatchProvenance({
+        import_batch_id: batchId,
+        source_kind: meta.source_kind || "file",
+        source_name: meta.file_name || null,
+        status: gradeResults.length ? "completed" : "partial",
+        row_count: gradeResults.length
+      }, session)
+    },
+    headers,
+    grade_headers: gradeHeaders,
+    grade_items: gradeItems,
+    grade_results: gradeResults,
+    warnings,
+    skipped_students,
+    skipped_empty_grades
+  };
+}
+
+async function upsertChunked(supabase, table, rows, options = {}) {
+  if (!rows.length) return { ok: true, written: 0 };
+  let written = 0;
+  for (let i = 0; i < rows.length; i += 500) {
+    const chunk = rows.slice(i, i + 500);
+    const { error } = await supabase.from(table).upsert(chunk, options);
+    if (error) {
+      return {
+        ok: false,
+        reason: table.toUpperCase() + "_UPSERT_FAILED",
+        detail: String(error.message || "").slice(0, 700),
+        code: error.code || null,
+        written
+      };
+    }
+    written += chunk.length;
+  }
+  return { ok: true, written };
+}
+
+async function writeWideGradebookToSupabase(gradebook, session) {
+  const supabase = getSupabaseClient();
+  if (!supabase) return { ok: false, skipped: true, reason: "SUPABASE_NOT_CONFIGURED" };
+
+  const [teacherResult, courseResult] = await Promise.all([
+    ensureTeacher(supabase, session),
+    ensureCourse(supabase, session)
+  ]);
+
+  const batchWrite = await tryInsertImportBatch(supabase, gradebook.batch, session, teacherResult, courseResult);
+  if (!batchWrite.ok) return { ok: false, skipped: false, ...batchWrite };
+
+  const itemsWrite = await upsertChunked(supabase, "grade_items", gradebook.grade_items, { onConflict: "id" });
+  if (!itemsWrite.ok) return { ok: false, skipped: false, ...itemsWrite };
+
+  const resultsWrite = await upsertChunked(supabase, "grade_results", gradebook.grade_results, { onConflict: "id" });
+  if (!resultsWrite.ok) return { ok: false, skipped: false, ...resultsWrite };
+
+  return {
+    ok: true,
+    skipped: false,
+    import_batch_variant: batchWrite.variant,
+    grade_items_written: itemsWrite.written,
+    grade_results_written: resultsWrite.written,
+    teacher_result: teacherResult.ok ? "ok" : teacherResult.reason,
+    course_result: courseResult.ok ? "ok" : courseResult.reason
+  };
+}
+// <<< MTH_WIDE_GRADEBOOK_IMPORT_V1 <<<
 
 function recordLaunchCapture(body, verificationCode) {
   store.moodleCaptures.push({
@@ -865,10 +1125,13 @@ function buildSyncStatus(req, sbCounts) {
   const hasSession = Boolean(session);
   const studentCount = sbCounts?.students != null ? sbCounts.students : (Array.isArray(store.students) ? store.students.length : 0);
   const batchCount = sbCounts?.import_batches != null ? sbCounts.import_batches : (Array.isArray(store.importBatches) ? store.importBatches.length : 0);
+  const gradeItemsCount = sbCounts?.grade_items != null ? sbCounts.grade_items : (Array.isArray(store.gradeItems) ? store.gradeItems.length : 0);
+  const gradeResultsCount = sbCounts?.grade_results != null ? sbCounts.grade_results : (Array.isArray(store.grades) ? store.grades.length : 0);
+  const logEventsCount = sbCounts?.log_events != null ? sbCounts.log_events : (Array.isArray(store.logEvents) ? store.logEvents.length : 0);
   const hasStudents = studentCount > 0;
   const hasTasks = (Array.isArray(store.tasks) && store.tasks.length > 0) || (Array.isArray(store.chapters) && store.chapters.length > 0);
-  const hasGrades = Array.isArray(store.grades) && store.grades.length > 0;
-  const hasLogs = Array.isArray(store.logEvents) && store.logEvents.length > 0;
+  const hasGrades = gradeItemsCount > 0 || gradeResultsCount > 0;
+  const hasLogs = logEventsCount > 0;
   const missingActions = [
     !hasStudents ? "ייבא דוח Participants ממודל כדי להציג רשימת תלמידים אמיתית." : null,
     !hasTasks ? "ייבא דוח Activity Completion או מבנה קורס כדי להציג פרקים ומשימות אמיתיים." : null,
@@ -888,9 +1151,9 @@ function buildSyncStatus(req, sbCounts) {
       students: studentCount,
       chapters: Array.isArray(store.chapters) ? store.chapters.length : 0,
       tasks: Array.isArray(store.tasks) ? store.tasks.length : 0,
-      grade_items: Array.isArray(store.gradeItems) ? store.gradeItems.length : 0,
-      grades: Array.isArray(store.grades) ? store.grades.length : 0,
-      log_events: Array.isArray(store.logEvents) ? store.logEvents.length : 0,
+      grade_items: gradeItemsCount,
+      grades: gradeResultsCount,
+      log_events: logEventsCount,
       import_batches: batchCount
     },
     next_actions_he: hasSession
@@ -1459,8 +1722,8 @@ app.get("/api/teacher/dashboard-context", (req, res) => {
 
   const hasStudents = Array.isArray(store.students) && store.students.length > 0;
   const hasTasks = (Array.isArray(store.tasks) && store.tasks.length > 0) || (Array.isArray(store.chapters) && store.chapters.length > 0);
-  const hasGrades = Array.isArray(store.grades) && store.grades.length > 0;
-  const hasLogs = Array.isArray(store.logEvents) && store.logEvents.length > 0;
+  const hasGrades = gradeItemsCount > 0 || gradeResultsCount > 0;
+  const hasLogs = logEventsCount > 0;
 
   const availableSections = [];
   const missingSections = [];
@@ -1521,9 +1784,12 @@ app.get("/api/capabilities/status", async (req, res) => {
   const sbCounts = await getSupabaseCounts();
   const studentCount = sbCounts?.students != null ? sbCounts.students : (Array.isArray(store.students) ? store.students.length : 0);
   const batchCount = sbCounts?.import_batches != null ? sbCounts.import_batches : (Array.isArray(store.importBatches) ? store.importBatches.length : 0);
+  const gradeItemsCount = sbCounts?.grade_items != null ? sbCounts.grade_items : (Array.isArray(store.gradeItems) ? store.gradeItems.length : 0);
+  const gradeResultsCount = sbCounts?.grade_results != null ? sbCounts.grade_results : (Array.isArray(store.grades) ? store.grades.length : 0);
+  const logEventsCount = sbCounts?.log_events != null ? sbCounts.log_events : (Array.isArray(store.logEvents) ? store.logEvents.length : 0);
   const hasStudents = studentCount > 0;
-  const hasGrades = Array.isArray(store.grades) && store.grades.length > 0;
-  const hasLogs = Array.isArray(store.logEvents) && store.logEvents.length > 0;
+  const hasGrades = gradeItemsCount > 0 || gradeResultsCount > 0;
+  const hasLogs = logEventsCount > 0;
   const hasImportBatches = batchCount > 0;
 
   const lti11Status = lti11Configured ? "configured" : "missing";
@@ -1736,11 +2002,106 @@ app.post("/api/import", async (req, res) => {
 
   const body = req.body || {};
   const reportType = body.report_type || body.reportType;
+  if (reportType === "grades") {
+    const gradebook = buildWideGradebookImport(Array.isArray(body.payload) ? body.payload : [], session, {
+      file_name: body.file_name || null,
+      source_kind: body.source_kind || "file",
+      detection_confidence: typeof body.detection_confidence === "number" ? body.detection_confidence : null
+    });
+
+    if (!gradebook.ok) {
+      return res.status(400).json({
+        ok: false,
+        error: "GRADEBOOK_WIDE_IMPORT_NOT_READY",
+        detail: gradebook.warnings.join(" | "),
+        grade_headers_detected: gradebook.grade_headers.length,
+        rows_seen: Array.isArray(body.payload) ? body.payload.length : 0,
+        safety: {
+          no_missing_grades_as_zero: true,
+          no_fake_grades: true,
+          no_teacher_release_change: true
+        }
+      });
+    }
+
+    const sbWrite = await writeWideGradebookToSupabase(gradebook, session);
+    if (!sbWrite.ok && !sbWrite.skipped) {
+      return res.status(502).json({
+        ok: false,
+        error: sbWrite.reason,
+        detail: sbWrite.detail || null,
+        code: sbWrite.code || null,
+        note: "Gradebook import was NOT persisted to durable storage.",
+        safety: {
+          no_missing_grades_as_zero: true,
+          no_fake_grades: true,
+          no_teacher_release_change: true
+        }
+      });
+    }
+
+    if (!Array.isArray(store.importBatches)) store.importBatches = [];
+    if (!Array.isArray(store.gradeItems)) store.gradeItems = [];
+    if (!Array.isArray(store.grades)) store.grades = [];
+
+    store.importBatches.push(gradebook.batch);
+    store.gradeItems = [
+      ...store.gradeItems.filter(item => !gradebook.grade_items.some(next => next.id === item.id)),
+      ...gradebook.grade_items
+    ];
+    store.grades = [
+      ...store.grades.filter(item => !gradebook.grade_results.some(next => next.id === item.id)),
+      ...gradebook.grade_results.map(result => ({
+        id: result.id,
+        student_id: result.student_id,
+        studentId: result.student_id,
+        grade_item_id: result.grade_item_id,
+        task_id: result.grade_item_id,
+        taskId: result.grade_item_id,
+        raw_value: result.raw_value,
+        grade: result.grade,
+        numeric_value: result.grade,
+        updated_at: result.created_at,
+        updatedAt: result.created_at
+      }))
+    ];
+
+    store.settings.lastSyncAt = new Date().toISOString();
+    saveStore();
+
+    return res.json({
+      ok: true,
+      mode: "wide-gradebook-import",
+      version: "MTH_WIDE_GRADEBOOK_IMPORT_V1",
+      batch_id: gradebook.batch.id,
+      rows_seen: Array.isArray(body.payload) ? body.payload.length : 0,
+      grade_columns_detected: gradebook.grade_headers.length,
+      grade_items_written: sbWrite.skipped ? 0 : sbWrite.grade_items_written,
+      grade_results_written: sbWrite.skipped ? 0 : sbWrite.grade_results_written,
+      skipped_students: gradebook.skipped_students,
+      skipped_empty_grades: gradebook.skipped_empty_grades,
+      warnings: gradebook.warnings,
+      supabase: sbWrite.skipped
+        ? { written: false, reason: sbWrite.reason }
+        : {
+            written: true,
+            grade_items_written: sbWrite.grade_items_written,
+            grade_results_written: sbWrite.grade_results_written,
+            import_batch_variant: sbWrite.import_batch_variant
+          },
+      safety: {
+        no_missing_grades_as_zero: true,
+        no_fake_grades: true,
+        no_teacher_release_change: true
+      }
+    });
+  }
+
   if (reportType !== "students") {
     return res.status(400).json({
       ok: false,
       error: "UNSUPPORTED_REPORT_TYPE_FOR_RENDER_IMPORT",
-      detail: "Render-first import currently supports Participants/Students only. Grades, logs and completion are intentionally blocked until students import is verified."
+      detail: "Supported now: Participants/Students and wide Gradebook. Logs and completion are still intentionally blocked until implemented from real Moodle exports."
     });
   }
 
