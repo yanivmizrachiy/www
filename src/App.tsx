@@ -22,6 +22,7 @@ import GapReport from "./pages/reports/GapReport";
 import Export from "./pages/Export";
 import SettingsPage from "./pages/SettingsPage";
 import Import from "./pages/Import";
+import GradebookImport from "./pages/GradebookImport";
 
 import Setup from "./pages/Setup";
 import LtiBootstrap from "./pages/LtiBootstrap";
@@ -63,6 +64,7 @@ const App = () => (
             <Route path="/export" element={<Export />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/import" element={<Import />} />
+            <Route path="/gradebook-import" element={<GradebookImport />} />
             <Route path="/missing-data" element={<MissingData />} />
             <Route path="/setup" element={<Setup />} />
           </Route>
