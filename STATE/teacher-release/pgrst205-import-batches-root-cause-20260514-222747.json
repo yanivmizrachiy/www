@@ -1,0 +1,12 @@
+{
+  "sql_fix_file": "supabase\\manual_sql\\20260514_fix_pgrst205_import_batches_students.sql",
+  "ok": true,
+  "no_sql_executed_by_powershell": true,
+  "failing_table": "public.import_batches",
+  "error": "PGRST205",
+  "checked_at": "2026-05-14T22:27:47.8168852+03:00",
+  "mode": "pgrst205-import-batches-root-cause",
+  "teacher_release_changed": false,
+  "next_manual": "Run generated SQL in Supabase SQL Editor, wait 30-60 seconds, retry Participants import",
+  "no_student_rows_committed": true
+}

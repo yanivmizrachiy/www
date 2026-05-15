@@ -15,7 +15,8 @@
     "validate:lti:live": "node scripts/checks/validate-lti-live.cjs",
     "validate:teacher-release:live": "node scripts/checks/teacher-release-live-gate.cjs",
     "validate:imports:live": "node scripts/checks/final-import-readiness.cjs",
-    "validate:finish:live": "node scripts/checks/final-import-readiness.cjs && node scripts/checks/teacher-release-live-gate.cjs"
+    "validate:finish:live": "node scripts/checks/final-import-readiness.cjs && node scripts/checks/teacher-release-live-gate.cjs",
+    "diagnose:pgrst205:live": "node scripts/checks/pgrst205-import-schema-diagnose.cjs"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
