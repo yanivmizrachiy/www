@@ -1,8 +1,9 @@
 import { useMemo, useRef, useState } from "react";
 import type { ChangeEvent, CSSProperties } from "react";
 import { parseMoodleFile, parsePastedTable } from "@/lib/moodleImport";
+import { getLtiToken } from "@/hooks/useLtiSession";
 
-const MARKER = "YANIV_GRADEBOOK_PREFLIGHT_UI_V1";
+const MARKER = "YANIV_GRADEBOOK_PREFLIGHT_UI_V1 MTH_WIDE_GRADEBOOK_IMPORT_UI_V1";
 
 type ParseResult = {
   fileName?: string;
@@ -13,6 +14,25 @@ type ParseResult = {
   rows?: Array<Record<string, unknown>>;
 };
 
+type ImportResult = {
+  ok: boolean;
+  error?: string;
+  detail?: string;
+  batch_id?: string;
+  grade_columns_detected?: number;
+  grade_items_written?: number;
+  grade_results_written?: number;
+  skipped_students?: number;
+  skipped_empty_grades?: number;
+  warnings?: string[];
+  supabase?: {
+    written?: boolean;
+    reason?: string;
+    grade_items_written?: number;
+    grade_results_written?: number;
+  };
+};
+
 function normalize(value: string): string {
   return String(value || "")
     .toLowerCase()
@@ -20,6 +40,18 @@ function normalize(value: string): string {
     .replace(/\s+/g, "")
     .replace(/[._\-:()[\]{}]/g, "")
     .trim();
+}
+
+function isIdentityHeader(header: string): boolean {
+  const h = normalize(header);
+  return ["שםפרטי", "שםמשפחה", "שםמלא", "מספרזיהוי", "מספרזהות", "מספרמזהה", "מוסד", "מחלקה", "דואל", "email", "emailaddress"].includes(h);
+}
+
+function isGradeColumn(header: string): boolean {
+  const raw = String(header || "").trim();
+  if (!raw || isIdentityHeader(raw)) return false;
+  if (/תאריך הפקת הדוח/i.test(raw)) return false;
+  return /^(בוחן|תוכן אינטראקטיבי H5P|דפי עבודה):/.test(raw) || /סך הכל של מרחב/.test(raw);
 }
 
 function findHeader(headers: string[], candidates: string[]): string | null {
@@ -33,36 +65,39 @@ function findHeader(headers: string[], candidates: string[]): string | null {
 
 function buildProfile(result: ParseResult | null) {
   const headers = result?.headers || [];
+  const gradeColumns = headers.filter(isGradeColumn);
   const checks = [
-    { key: "student_name", label: "שם תלמיד", candidates: ["שם מלא", "Full name", "Name", "שם פרטי", "First name", "שם משפחה", "Surname", "Last name"] },
-    { key: "identity", label: "מזהה תלמיד", candidates: ["Email", "Email address", "דואל", "דוא״ל", "שם משתמש", "Username", "ID number", "idnumber"] },
-    { key: "grade_item", label: "פריט ציון / פעילות", candidates: ["Grade item", "Item name", "Activity", "Assignment", "Quiz", "מטלה", "פעילות", "פריט ציון"] },
-    { key: "grade", label: "ציון", candidates: ["Grade", "Final grade", "Raw grade", "ציון", "ציון סופי", "ניקוד", "score"] },
-    { key: "max_grade", label: "ציון מרבי", candidates: ["Max grade", "Maximum grade", "Out of", "ציון מרבי", "מתוך", "max"] },
-    { key: "updated_at", label: "תאריך עדכון", candidates: ["Last modified", "Modified", "Updated", "תאריך עדכון", "עודכן לאחרונה"] },
+    { key: "first_name", label: "שם פרטי", candidates: ["שם פרטי", "First name"] },
+    { key: "last_name", label: "שם משפחה", candidates: ["שם משפחה", "Surname", "Last name"] },
+    { key: "id_number", label: "מספר זיהוי", candidates: ["מספר זיהוי", "מספר זהות", "מספר מזהה", "ID number", "idnumber"] },
+    { key: "email", label: "דוא״ל", candidates: ["דוא\"ל", "דוא״ל", "דואל", "Email", "Email address"] },
   ].map((c) => {
     const matchedHeader = findHeader(headers, c.candidates);
     return { ...c, found: Boolean(matchedHeader), matchedHeader };
   });
 
-  const requiredOk =
-    Boolean(checks.find((c) => c.key === "student_name")?.found) &&
-    Boolean(checks.find((c) => c.key === "identity")?.found) &&
-    Boolean(checks.find((c) => c.key === "grade")?.found);
+  const hasStudentIdentity =
+    Boolean(checks.find((c) => c.key === "email")?.found) ||
+    Boolean(checks.find((c) => c.key === "id_number")?.found);
+
+  const hasStudentName =
+    Boolean(checks.find((c) => c.key === "first_name")?.found) &&
+    Boolean(checks.find((c) => c.key === "last_name")?.found);
 
   return {
     marker: MARKER,
-    report_type: "gradebook-preflight-only",
+    report_type: "wide-gradebook",
     file_name: result?.fileName || null,
     rows_seen: result?.rowCount || 0,
     confidence: result?.confidence || 0,
-    headers,
+    headers_count: headers.length,
+    grade_columns_count: gradeColumns.length,
+    grade_columns_preview: gradeColumns.slice(0, 20),
     checks,
-    required_ok: requiredOk,
+    required_ok: hasStudentName && hasStudentIdentity && gradeColumns.length > 0,
     safety: {
-      no_grades_saved: true,
-      no_students_saved: true,
-      no_supabase_write: true,
+      no_grades_saved_until_import_button: true,
+      no_missing_grades_as_zero: true,
       no_sql: true,
       no_teacher_release_change: true,
     },
@@ -75,6 +110,30 @@ function copyText(text: string) {
   } catch {
     // Clipboard may be blocked inside Moodle iframe.
   }
+}
+
+async function postWideGradebookImport(result: ParseResult): Promise<ImportResult> {
+  const token = getLtiToken();
+  if (!token) return { ok: false, error: "NO_VERIFIED_MOODLE_SESSION", detail: "פתח את הכלי מתוך Moodle ואז נסה שוב." };
+
+  const rows = (result.data || result.rows || []) as Array<Record<string, unknown>>;
+  const res = await fetch("/api/import", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-lti-session": token },
+    credentials: "include",
+    body: JSON.stringify({
+      token,
+      report_type: "grades",
+      file_name: result.fileName,
+      source_kind: result.fileName ? "upload" : "paste",
+      detection_confidence: result.confidence,
+      payload: rows,
+    }),
+  });
+
+  const payload = await res.json().catch(() => null);
+  if (!payload) return { ok: false, error: "INVALID_SERVER_RESPONSE" };
+  return payload as ImportResult;
 }
 
 const box: CSSProperties = {
@@ -101,12 +160,31 @@ const mutedButton: CSSProperties = {
   color: "#1e3a8a",
 };
 
+const successBox: CSSProperties = {
+  border: "1px solid #bbf7d0",
+  borderRadius: 16,
+  padding: 14,
+  background: "#f0fdf4",
+  color: "#14532d",
+  fontWeight: 700,
+};
+
+const errorBox: CSSProperties = {
+  border: "1px solid #fecaca",
+  borderRadius: 16,
+  padding: 14,
+  background: "#fef2f2",
+  color: "#7f1d1d",
+  fontWeight: 700,
+};
+
 export default function GradebookImport() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [result, setResult] = useState<ParseResult | null>(null);
   const [pastedText, setPastedText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
   const profile = useMemo(() => buildProfile(result), [result]);
   const rows = ((result?.data || result?.rows || []) as Array<Record<string, unknown>>).slice(0, 8);
@@ -118,6 +196,7 @@ export default function GradebookImport() {
     try {
       setBusy(true);
       setError("");
+      setImportResult(null);
       const parsed = (await parseMoodleFile(file)) as unknown as ParseResult;
       setResult(parsed);
     } catch (err) {
@@ -130,10 +209,34 @@ export default function GradebookImport() {
   function handlePaste() {
     try {
       setError("");
+      setImportResult(null);
       const parsed = parsePastedTable(pastedText) as unknown as ParseResult;
       setResult(parsed);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err || "שגיאה לא ידועה"));
+    }
+  }
+
+  async function handleImport() {
+    if (!result) return;
+    if (!profile.required_ok) {
+      setError("לא ניתן לייבא עדיין: חסר שם תלמיד / מזהה תלמיד / עמודות ציון רחבות.");
+      return;
+    }
+
+    try {
+      setBusy(true);
+      setError("");
+      setImportResult(null);
+      const response = await postWideGradebookImport(result);
+      setImportResult(response);
+      if (!response.ok) {
+        throw new Error([response.error, response.detail].filter(Boolean).join(" | ") || "ייבוא Gradebook נכשל");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err || "שגיאה לא ידועה"));
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -142,26 +245,27 @@ export default function GradebookImport() {
       <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls,.ods" style={{ display: "none" }} onChange={handleFile} onClick={(e) => { e.currentTarget.value = ""; }} />
 
       <section style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 12, fontWeight: 900, color: "#0369a1" }}>בדיקת Gradebook לפני ייבוא</div>
-        <h1 style={{ margin: "6px 0", fontSize: 30, fontWeight: 950, color: "#0f172a" }}>הכנת ייבוא ציונים ממודל</h1>
+        <div style={{ fontSize: 12, fontWeight: 900, color: "#0369a1" }}>בדיקת Gradebook וייבוא ציונים אמיתי</div>
+        <h1 style={{ margin: "6px 0", fontSize: 30, fontWeight: 950, color: "#0f172a" }}>ייבוא ציונים ממודל</h1>
         <p style={{ margin: 0, color: "#475569", lineHeight: 1.8 }}>
-          מסך זה בודק מבנה של Gradebook אמיתי בלבד. הוא לא שומר ציונים, לא כותב ל־Supabase, ולא משנה Teacher Release.
+          המסך מזהה Gradebook רחב: כל תלמיד הוא שורה וכל בוחן/פעילות היא עמודת ציון. תאים ריקים לא נשמרים כ־0.
         </p>
         <div style={{ marginTop: 6, fontSize: 11, color: "#94a3b8" }}>{MARKER}</div>
       </section>
 
-      {error && (
-        <section style={{ border: "1px solid #fecaca", borderRadius: 16, padding: 14, background: "#fef2f2", color: "#7f1d1d", fontWeight: 700, marginBottom: 16 }}>
-          {error}
+      {error && <section style={errorBox}>{error}</section>}
+      {importResult?.ok && (
+        <section style={{ ...successBox, marginBottom: 16 }}>
+          ייבוא Gradebook הצליח · פריטי ציון: {importResult.grade_items_written ?? 0} · ציונים: {importResult.grade_results_written ?? 0}
         </section>
       )}
 
       <section style={{ display: "grid", gap: 16 }}>
         <div style={box}>
           <h2 style={{ marginTop: 0 }}>בחר קובץ Gradebook</h2>
-          <p style={{ color: "#475569", lineHeight: 1.8 }}>בחר קובץ XLSX / CSV / ODS אמיתי שיוצא ממודל. כרגע זו בדיקת מבנה בלבד.</p>
+          <p style={{ color: "#475569", lineHeight: 1.8 }}>בחר קובץ XLSX / CSV / ODS אמיתי שיוצא ממודל.</p>
           <button type="button" style={button} onClick={() => fileRef.current?.click()} disabled={busy}>
-            {busy ? "בודק קובץ..." : "בחר קובץ Gradebook"}
+            {busy ? "מעבד..." : "בחר קובץ Gradebook"}
           </button>
         </div>
 
@@ -183,25 +287,25 @@ export default function GradebookImport() {
         <section style={{ ...box, marginTop: 16 }}>
           <h2 style={{ marginTop: 0 }}>תוצאת בדיקת Gradebook</h2>
           <p style={{ color: "#475569", lineHeight: 1.8 }}>
-            {result.fileName ? `קובץ: ${result.fileName}` : "טבלה שהודבקה"} · {result.rowCount || 0} שורות · {(result.headers || []).length} עמודות.
+            {result.fileName ? `קובץ: ${result.fileName}` : "טבלה שהודבקה"} · {result.rowCount || 0} שורות · {(result.headers || []).length} עמודות · עמודות ציון: {profile.grade_columns_count}
           </p>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginTop: 12 }}>
-            {profile.checks.map((check) => (
-              <div key={check.key} style={{ border: `1px solid ${check.found ? "#bbf7d0" : "#fed7aa"}`, borderRadius: 14, padding: 12, background: check.found ? "#f0fdf4" : "#fff7ed" }}>
-                <div style={{ fontWeight: 900 }}>{check.label}</div>
-                <div style={{ fontSize: 12, color: "#475569", marginTop: 4 }}>{check.found ? `זוהה: ${check.matchedHeader}` : "לא זוהה אוטומטית"}</div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
             <button type="button" style={mutedButton} onClick={() => copyText(JSON.stringify(profile, null, 2))}>העתק פרופיל Gradebook בטוח</button>
+            <button type="button" style={button} onClick={handleImport} disabled={busy || !profile.required_ok}>
+              {busy ? "מייבא..." : "ייבא Gradebook אמיתי"}
+            </button>
             <a href="/import" style={{ ...mutedButton, textDecoration: "none", display: "inline-block" }}>חזור לייבוא Participants</a>
           </div>
 
+          {!profile.required_ok && (
+            <div style={{ ...errorBox, marginTop: 12 }}>
+              זוהה מבנה חלקי בלבד. נדרש שם תלמיד, מזהה תלמיד ועמודת ציון אחת לפחות.
+            </div>
+          )}
+
           <pre dir="ltr" style={{ marginTop: 12, whiteSpace: "pre-wrap", wordBreak: "break-word", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, color: "#334155", fontSize: 12, maxHeight: 300, overflow: "auto" }}>
-            {JSON.stringify(profile, null, 2)}
+            {JSON.stringify(importResult || profile, null, 2)}
           </pre>
 
           {headers.length > 0 && (
@@ -221,7 +325,9 @@ export default function GradebookImport() {
             </div>
           )}
 
-          <p style={{ color: "#64748b", fontSize: 12, textAlign: "center", marginTop: 10 }}>תצוגה מקדימה בלבד — לא נשמרים ציונים בשלב זה.</p>
+          <p style={{ color: "#64748b", fontSize: 12, textAlign: "center", marginTop: 10 }}>
+            תאים ריקים / חסרים לא נשמרים כ־0. Teacher Release לא משתנה.
+          </p>
         </section>
       )}
     </main>
