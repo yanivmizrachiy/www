@@ -10,7 +10,7 @@
     {"date":"2026-05-13","dateLabel":"13/5","dayLabel":"ד׳","title":"גיחה ט׳ נעלה לירושלים","startTime":"","endTime":"","type":"trip"},
     {"date":"2026-05-14","dateLabel":"14/5","dayLabel":"ה׳","title":"יום ישראל","startTime":"","endTime":"","type":"activity"},
     {"date":"2026-05-17","dateLabel":"17/5","dayLabel":"א׳","title":"מפגש חדר מורים","startTime":"","endTime":"","type":"meeting"},
-    {"date":"2026-05-18","endDate":"2026-05-19","dateLabel":"18–19/5","dayLabel":"ב׳–ג׳","title":"טיול שנתי ז׳","startTime":"","endTime":"","type":"trip"},
+    {"date":"2026-05-18","endDate":"2026-05-19","dateLabel":"18–19/5","dayLabel":"ב׳–ג׳","title":"טיול שנתי לשכבת ז׳","startTime":"","endTime":"","type":"trip"},
     {"date":"2026-05-21","endDate":"2026-05-23","dateLabel":"21–23/5","dayLabel":"ה׳–ש׳","title":"חופשת שבועות","startTime":"","endTime":"","type":"vacation"},
     {"date":"2026-05-24","dateLabel":"24/5","dayLabel":"א׳","title":"פנוי לתעודות","startTime":"","endTime":"","type":"deadline"},
     {"date":"2026-05-26","endDate":"2026-05-27","dateLabel":"26–27/5","dayLabel":"ג׳–ד׳","title":"מסע תקומה שכבת ט׳","startTime":"","endTime":"","type":"trip"},
