@@ -1,0 +1,35 @@
+
+> moodle-teacher-hub@0.2.0 validate:gradebook:file
+> node scripts/checks/gradebook-real-file-readiness.cjs
+
+{
+  "ok": true,
+  "mode": "gradebook-real-file-schema-readiness",
+  "version": "MTH_GRADEBOOK_REAL_FILE_SCHEMA_READINESS_V1",
+  "live_base_url": "https://www-tijc.onrender.com",
+  "checked_at": "2026-05-15T04:14:15.565Z",
+  "participants_ready": true,
+  "gradebook_schema_ready": true,
+  "gradebook_imported": false,
+  "counts": {
+    "students": 62,
+    "import_batches": 1,
+    "grade_items": 0,
+    "grade_results": 0,
+    "log_events": 0
+  },
+  "next_action_he": "להריץ SQL Gradebook בטוח אם צריך, ואז לממש/להפעיל ייבוא ציונים אמיתי.",
+  "readiness": {
+    "teacher_release_ready": false,
+    "teacher_release_readiness_percent": 60,
+    "blockers_count": 8
+  },
+  "safety": {
+    "no_writes_performed": true,
+    "no_sql_executed": true,
+    "no_student_rows_returned": true,
+    "no_grade_rows_returned": true,
+    "no_secret_values_returned": true,
+    "no_release_flag_changed": true
+  }
+}
