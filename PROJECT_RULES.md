@@ -666,3 +666,37 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 
 השלב הבא בקוד הוא Automation Core: Capability Detector, Sync Engine, Sync Status Endpoint, Feature Gates, וכפתור `סנכרן מרחב`.
 <!-- MTH_HEBREW_NO_RESTART_MARKER_20260512_END -->
+
+MTH_CURRENT_VERIFIED_STATE_AFTER_PR79_START
+
+## Current verified state after PR #79
+
+Checked at: 20260515-182922
+
+Live:
+- Base URL: https://www-tijc.onrender.com
+- Gradebook preflight route: `/gradebook-import`
+- Gradebook UI marker found: `True`
+
+Persisted real data:
+- students: 62
+- import_batches: 1
+- teachers: 1
+- courses: 1
+- teacher_sessions: 39
+
+Still missing:
+- grade_items / grade_results
+- log_events
+- multi-teacher or multi-course isolation validation
+- Teacher Release YES
+
+Rules:
+- Do not repeat Participants as the main blocker unless live counts fall back to 0.
+- Next main blocker is Gradebook, then Logs.
+- Do not fake grades.
+- Do not commit student rows or grade rows.
+- Do not run destructive SQL.
+- Teacher Release remains NO until all gates pass.
+
+MTH_CURRENT_VERIFIED_STATE_AFTER_PR79_END
