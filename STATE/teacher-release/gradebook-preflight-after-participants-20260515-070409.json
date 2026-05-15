@@ -1,0 +1,61 @@
+
+> moodle-teacher-hub@0.2.0 validate:gradebook:live
+> node scripts/checks/gradebook-preflight-live.cjs
+
+{
+  "ok": true,
+  "mode": "gradebook-preflight-after-participants",
+  "version": "MTH_GRADEBOOK_PREFLIGHT_AFTER_PARTICIPANTS_V1",
+  "live_base_url": "https://www-tijc.onrender.com",
+  "checked_at": "2026-05-15T04:04:14.013Z",
+  "participants_ready": true,
+  "gradebook_schema_ready": true,
+  "gradebook_imported": false,
+  "counts": {
+    "teachers": 1,
+    "courses": 1,
+    "students": 62,
+    "import_batches": 1,
+    "grade_items": 0,
+    "grade_results": 0,
+    "log_events": 0,
+    "teacher_sessions": 38
+  },
+  "next_action_he": "לייצא Gradebook אמיתי ממודל ולהשתמש בו כדי לממש/לאמת ייבוא ציונים.",
+  "implementation_gate": {
+    "do_not_fake_grades": true,
+    "do_not_import_without_real_gradebook_file": true,
+    "do_not_set_teacher_release_yes": true,
+    "require_real_headers_from_moodle_gradebook": true
+  },
+  "readiness_summary": {
+    "version": "MTH_SYNC_STATUS_API_V1",
+    "session_exists": false,
+    "counts": {
+      "students": 62,
+      "chapters": 0,
+      "tasks": 0,
+      "grade_items": 0,
+      "grades": 0,
+      "log_events": 0,
+      "import_batches": 1
+    },
+    "capabilities": {
+      "participants": "available",
+      "tasks": "missing_completion_or_course_report",
+      "grades": "missing_gradebook_report",
+      "logs": "missing_logs_report"
+    },
+    "next_actions_he": [
+      "פתח את הכלי מתוך Moodle כדי להתחיל סנכרון אמת."
+    ]
+  },
+  "safety": {
+    "no_writes_performed": true,
+    "no_sql_executed": true,
+    "no_student_rows_returned": true,
+    "no_secret_values_returned": true,
+    "aggregate_counts_only": true,
+    "no_release_flag_changed": true
+  }
+}
