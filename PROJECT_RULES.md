@@ -742,3 +742,24 @@ Rules:
 - Teacher Release remains NO until all gates pass.
 
 MTH_CURRENT_VERIFIED_STATE_AFTER_PR81_END
+
+MTH_AFTER_REAL_GRADEBOOK_IMPORT_START
+
+## After real Gradebook import
+
+Verified result:
+- students: 62
+- grade_items_written: 243
+- grade_results_written: 1693
+- skipped_students: 0
+- skipped_empty_grades: 12644
+- empty grade cells were not saved as zero
+- Teacher Release remains NO
+
+Remaining blockers:
+- real Moodle Logs import
+- practice-time validation
+- multi-teacher or multi-course isolation validation
+- final Teacher Release gate
+
+MTH_AFTER_REAL_GRADEBOOK_IMPORT_END
