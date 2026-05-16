@@ -59,4 +59,3 @@ fi
 
 echo "PUBLISH_LUZ_TO_OLD_URL_SAFE_OK"
 echo "OldPublicUrl=$OLD_PUBLIC_URL"
-EOM
