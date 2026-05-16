@@ -700,3 +700,45 @@ Rules:
 - Teacher Release remains NO until all gates pass.
 
 MTH_CURRENT_VERIFIED_STATE_AFTER_PR79_END
+
+MTH_CURRENT_VERIFIED_STATE_AFTER_PR81_START
+
+## Current verified state after PR #81
+
+Checked at: 20260516-222400
+
+Live:
+- Base URL: https://www-tijc.onrender.com
+- Gradebook route: /gradebook-import
+- Wide Gradebook UI marker found: True
+
+Persisted real data:
+- students: 62
+- import_batches: 1
+- teachers: 1
+- courses: 1
+- teacher_sessions: 39
+
+Wide Gradebook status:
+- Code implemented: true
+- UI deployed: true
+- report_type=grades enabled: true
+- grade_items currently: 0
+- grade_results currently: 0
+
+Still missing:
+- Actual Gradebook import button click after uploading grad.ods
+- log_events
+- multi-teacher or multi-course isolation validation
+- Teacher Release YES
+
+Rules:
+- Do not repeat Participants as the main blocker unless live counts fall back to 0.
+- Next main action is clicking ייבא Gradebook אמיתי using the real grad.ods file.
+- Do not fake grades.
+- Do not convert missing grades to 0.
+- Do not commit student rows or grade rows.
+- Do not run destructive SQL.
+- Teacher Release remains NO until all gates pass.
+
+MTH_CURRENT_VERIFIED_STATE_AFTER_PR81_END

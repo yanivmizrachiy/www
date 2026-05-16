@@ -1,33 +1,47 @@
-# CURRENT — Moodle Teacher Hub
+# Moodle Teacher Hub — Current State
 
-Updated: 2026-05-12
-Repository: `yanivmizrachiy/www`
-Canonical branch: `main`
-Live runtime: `https://www-tijc.onrender.com`
-Teacher release: **NO**
+Canonical branch: main
 
-## Verified
+Teacher release: NO
 
-- Automation Core V1 is merged into `main`.
-- Render should deploy from `main`.
-- Live `/health` returns JSON.
-- Live `/api/release/readiness` returns JSON.
-- Live `/api/persistence/validate` returns JSON.
-- Supabase production persistence validation passed.
-- Required Supabase tables are accessible.
-- No secret values are returned.
-- No student rows are returned.
+Last synchronized: 20260516-222400
 
-## Still not verified
+## Current verified state after PR #81
 
-- Real Moodle launch after latest live changes.
-- Real Moodle import end-to-end.
-- Multi-teacher / multi-course isolation.
-- Final teacher runbook.
+Participants import is persisted.
 
-## Percentages
+students = 62
+import_batches = 1
+teachers = 1
+courses = 1
+teacher_sessions = 39
 
-- Repo Cleanup & Finalization Plan: 18%
-- Automation Core + Live + Supabase: 92%
-- Teacher product readiness: 72%
-- Teacher release: NO
+Wide Gradebook import code is implemented and deployed.
+
+route = /gradebook-import
+wide_gradebook_ui_marker_found = True
+report_type_grades_enabled = true
+
+## Current blockers
+
+grade_items = 0
+grade_results = 0
+log_events = 0
+teacher_release_ready = false
+
+## Next action
+
+Open:
+
+https://www-tijc.onrender.com/gradebook-import
+
+Upload grad.ods again and click: ייבא Gradebook אמיתי
+
+After success, confirm:
+
+grade_items > 0
+grade_results > 0
+
+## Safety
+
+No student rows, grade rows, secrets, or destructive SQL belong in this repository.
