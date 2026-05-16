@@ -1,4 +1,4 @@
-# Moodle Teacher Hub - After Real Logs Import
+# Moodle Teacher Hub — After Real Logs Import
 
 This document records the first successful real Moodle Logs / יומני מעקב import.
 

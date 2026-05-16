@@ -1,8 +1,8 @@
-# Moodle Teacher Hub - Current State
+# Moodle Teacher Hub — Current State
 
 Teacher release: **NO**
 
-Last synchronized: 20260516-233828
+Last synchronized: 20260516-233902
 
 ## Verified real imports
 
