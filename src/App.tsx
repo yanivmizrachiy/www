@@ -23,6 +23,7 @@ import Export from "./pages/Export";
 import SettingsPage from "./pages/SettingsPage";
 import Import from "./pages/Import";
 import GradebookImport from "./pages/GradebookImport";
+import LogsImport from "./pages/LogsImport";
 
 import Setup from "./pages/Setup";
 import LtiBootstrap from "./pages/LtiBootstrap";
@@ -65,6 +66,7 @@ const App = () => (
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/import" element={<Import />} />
             <Route path="/gradebook-import" element={<GradebookImport />} />
+            <Route path="/logs-import" element={<LogsImport />} />
             <Route path="/missing-data" element={<MissingData />} />
             <Route path="/setup" element={<Setup />} />
           </Route>

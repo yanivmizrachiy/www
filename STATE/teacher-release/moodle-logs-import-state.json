@@ -1,0 +1,31 @@
+{
+  "ok": true,
+  "mode": "moodle-logs-import-implemented",
+  "version": "MTH_MOODLE_LOGS_IMPORT_V1",
+  "checked_at": "2026-05-16T20:01:55.831052+00:00",
+  "route": "/logs-import",
+  "source_profile": {
+    "file_name": "מעקב.xlsx",
+    "rows_seen": 89995,
+    "columns_seen": 9,
+    "columns": [
+      "זמן",
+      "שם מלא",
+      "משתמש מושפע",
+      "הארוע מתייחס ל:",
+      "רכיב",
+      "שם האירוע",
+      "תיאור",
+      "מקור",
+      "כתובת IP"
+    ]
+  },
+  "safety": {
+    "no_fake_logs": true,
+    "no_practice_time_invented": true,
+    "no_sql_executed_by_app": true,
+    "teacher_release_changed": false,
+    "source_file_committed": false
+  },
+  "next_manual": "Open /logs-import, upload מעקב.xlsx, click ייבא יומני מעקב אמיתי, then confirm log_events_written > 0."
+}
