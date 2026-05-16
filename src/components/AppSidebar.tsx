@@ -16,6 +16,7 @@ const navItems = [
   { title: "מרכז המורה", url: "/", icon: LayoutDashboard },
   { title: "ייבוא נתונים", url: "/import", icon: Upload },
   { title: "בדיקת Gradebook", url: "/gradebook-import", icon: GraduationCap },
+  { title: "ייבוא יומני מעקב", url: "/logs-import", icon: Activity },
   { title: "תלמידים", url: "/students", icon: Users },
   { title: "משימות", url: "/tasks", icon: ListChecks },
   { title: "פרקים", url: "/chapters", icon: BookOpen },

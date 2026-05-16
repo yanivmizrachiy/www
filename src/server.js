@@ -812,6 +812,204 @@ async function writeWideGradebookToSupabase(gradebook, session) {
 }
 // <<< MTH_WIDE_GRADEBOOK_IMPORT_V1 <<<
 
+
+// >>> MTH_MOODLE_LOGS_IMPORT_V1 >>>
+function parseMoodleLogTime(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+
+  const match = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}),\s*(\d{1,2}):(\d{2}):(\d{2})$/);
+  if (match) {
+    const [, dd, mm, yyyy, hh, min, ss] = match;
+    const date = new Date(Date.UTC(Number(yyyy), Number(mm) - 1, Number(dd), Number(hh), Number(min), Number(ss)));
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+  }
+
+  const fallback = new Date(raw);
+  return Number.isNaN(fallback.getTime()) ? null : fallback.toISOString();
+}
+
+function extractMoodleUserIdFromDescription(value) {
+  const text = String(value || "");
+  const match = text.match(/user with id '([^']+)'/i) || text.match(/userid[=:]\s*([0-9]+)/i);
+  return match ? String(match[1]) : null;
+}
+
+function buildMoodleLogEvent(row, session, batchId, index) {
+  const rawTime = pickImportValue(row, ["זמן", "Time", "Date", "תאריך", "תאריך ושעה"]);
+  const eventTime = parseMoodleLogTime(rawTime);
+  if (!eventTime) return null;
+
+  const actor = pickImportValue(row, ["שם מלא", "Full name", "User full name", "שם המשתמש"]);
+  const affectedUser = pickImportValue(row, ["משתמש מושפע", "Affected user"]);
+  const context = pickImportValue(row, ["הארוע מתייחס ל:", "האירוע מתייחס ל:", "Event context", "Context"]);
+  const component = pickImportValue(row, ["רכיב", "Component"]);
+  const eventName = pickImportValue(row, ["שם האירוע", "Event name"]);
+  const description = pickImportValue(row, ["תיאור", "Description"]);
+  const origin = pickImportValue(row, ["מקור", "Origin", "Source"]);
+  const ipAddress = pickImportValue(row, ["כתובת IP", "IP address", "IP"]);
+
+  if (!actor && !eventName && !description) return null;
+
+  const courseId = String(session?.courseId || session?.course_id || session?.contextId || "0");
+  const moodleUserId = extractMoodleUserIdFromDescription(description);
+  const identity = actor || affectedUser || moodleUserId || "unknown-user";
+  const uniqueText = [
+    courseId,
+    rawTime,
+    identity,
+    affectedUser,
+    context,
+    component,
+    eventName,
+    description,
+    origin,
+    ipAddress,
+    index
+  ].join("|");
+
+  return compactRow({
+    id: stableUuidFromText("log_event|" + uniqueText),
+    course_id: courseId,
+    import_batch_id: batchId,
+    event_time: eventTime,
+    raw_time: rawTime,
+    actor_full_name: actor || null,
+    affected_user: affectedUser && affectedUser !== "-" ? affectedUser : null,
+    context: context || null,
+    component: component || null,
+    event_name: eventName || null,
+    description: description || null,
+    origin: origin || null,
+    ip_address: ipAddress || null,
+    moodle_user_id: moodleUserId,
+    source: "moodle-logs-import",
+    created_at: new Date().toISOString()
+  });
+}
+
+function buildMoodleLogsImport(rows, session, meta = {}) {
+  const input = Array.isArray(rows) ? rows : [];
+  const batchId = crypto.randomUUID();
+  const now = new Date().toISOString();
+  const warnings = [];
+
+  const events = [];
+  let skipped = 0;
+
+  input.forEach((row, index) => {
+    const ev = buildMoodleLogEvent(row, session, batchId, index);
+    if (ev) events.push(ev);
+    else skipped += 1;
+  });
+
+  if (!input.length) warnings.push("Logs payload is empty.");
+  if (!events.length) warnings.push("No valid Moodle log events were detected.");
+
+  const batch = {
+    id: batchId,
+    report_type: "logs",
+    file_name: meta.file_name || null,
+    row_count: events.length,
+    status: events.length ? "completed" : "partial",
+    imported_by_username: session?.moodleUsername || session?.teacherName || null,
+    detection_confidence: typeof meta.detection_confidence === "number" ? meta.detection_confidence : null,
+    source_kind: meta.source_kind || "file",
+    warnings,
+    created_at: now,
+    ...buildBatchProvenance({
+      import_batch_id: batchId,
+      source_kind: meta.source_kind || "file",
+      source_name: meta.file_name || null,
+      status: events.length ? "completed" : "partial",
+      row_count: events.length
+    }, session)
+  };
+
+  return {
+    ok: events.length > 0,
+    batch,
+    log_events: events,
+    skipped_rows: skipped,
+    warnings
+  };
+}
+
+async function writeMoodleLogsToSupabase(logsImport, session) {
+  const supabase = getSupabaseClient();
+  if (!supabase) return { ok: false, skipped: true, reason: "SUPABASE_NOT_CONFIGURED" };
+
+  const [teacherResult, courseResult] = await Promise.all([
+    ensureTeacher(supabase, session),
+    ensureCourse(supabase, session)
+  ]);
+
+  const batchWrite = await tryInsertImportBatch(supabase, logsImport.batch, session, teacherResult, courseResult);
+  if (!batchWrite.ok) return { ok: false, skipped: false, ...batchWrite };
+
+  const fullRows = logsImport.log_events;
+  const minimalRows = fullRows.map(row => compactRow({
+    id: row.id,
+    course_id: row.course_id,
+    import_batch_id: row.import_batch_id,
+    event_time: row.event_time,
+    actor_full_name: row.actor_full_name,
+    context: row.context,
+    component: row.component,
+    event_name: row.event_name,
+    description: row.description,
+    origin: row.origin,
+    created_at: row.created_at
+  }));
+
+  const variants = [
+    { name: "full", rows: fullRows },
+    { name: "minimal", rows: minimalRows }
+  ];
+
+  let lastError = null;
+  let lastVariant = null;
+
+  for (const variant of variants) {
+    let written = 0;
+    let failed = false;
+
+    for (let i = 0; i < variant.rows.length; i += 1000) {
+      const chunk = variant.rows.slice(i, i + 1000);
+      const { error } = await supabase.from("log_events").upsert(chunk, { onConflict: "id" });
+      if (error) {
+        lastError = error;
+        lastVariant = variant.name;
+        failed = true;
+        break;
+      }
+      written += chunk.length;
+    }
+
+    if (!failed) {
+      return {
+        ok: true,
+        skipped: false,
+        log_events_written: written,
+        log_events_variant: variant.name,
+        import_batch_variant: batchWrite.variant,
+        teacher_result: teacherResult.ok ? "ok" : teacherResult.reason,
+        course_result: courseResult.ok ? "ok" : courseResult.reason
+      };
+    }
+  }
+
+  return {
+    ok: false,
+    skipped: false,
+    reason: "LOG_EVENTS_UPSERT_FAILED",
+    detail: String(lastError?.message || "").slice(0, 900),
+    code: lastError?.code || null,
+    variant: lastVariant
+  };
+}
+// <<< MTH_MOODLE_LOGS_IMPORT_V1 <<<
+
 function recordLaunchCapture(body, verificationCode) {
   store.moodleCaptures.push({
     id: crypto.randomUUID(),
@@ -1113,8 +1311,8 @@ app.use((_req, res, next) => {
   res.setHeader("Content-Security-Policy", "frame-ancestors 'self' https://moodlemoe.lms.education.gov.il https://*.lms.education.gov.il;");
   next();
 });
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "80mb" }));
+app.use(express.json({ limit: "80mb" }));
 app.use(cookieParser());
 app.use("/public", express.static(path.join(ROOT, "public")));
 
@@ -2002,6 +2200,82 @@ app.post("/api/import", async (req, res) => {
 
   const body = req.body || {};
   const reportType = body.report_type || body.reportType;
+  if (reportType === "logs") {
+    const logsImport = buildMoodleLogsImport(Array.isArray(body.payload) ? body.payload : [], session, {
+      file_name: body.file_name || null,
+      source_kind: body.source_kind || "file",
+      detection_confidence: typeof body.detection_confidence === "number" ? body.detection_confidence : null
+    });
+
+    if (!logsImport.ok) {
+      return res.status(400).json({
+        ok: false,
+        error: "MOODLE_LOGS_IMPORT_NOT_READY",
+        detail: logsImport.warnings.join(" | "),
+        rows_seen: Array.isArray(body.payload) ? body.payload.length : 0,
+        skipped_rows: logsImport.skipped_rows,
+        safety: {
+          no_fake_logs: true,
+          no_practice_time_invented: true,
+          no_teacher_release_change: true
+        }
+      });
+    }
+
+    const sbWrite = await writeMoodleLogsToSupabase(logsImport, session);
+    if (!sbWrite.ok && !sbWrite.skipped) {
+      return res.status(502).json({
+        ok: false,
+        error: sbWrite.reason,
+        detail: sbWrite.detail || null,
+        code: sbWrite.code || null,
+        note: "Logs import was NOT persisted to durable storage.",
+        safety: {
+          no_fake_logs: true,
+          no_practice_time_invented: true,
+          no_teacher_release_change: true
+        }
+      });
+    }
+
+    if (!Array.isArray(store.importBatches)) store.importBatches = [];
+    if (!Array.isArray(store.logEvents)) store.logEvents = [];
+
+    store.importBatches.push(logsImport.batch);
+    store.logEvents = [
+      ...store.logEvents.filter(item => !logsImport.log_events.some(next => next.id === item.id)),
+      ...logsImport.log_events
+    ];
+
+    store.settings.lastSyncAt = new Date().toISOString();
+    saveStore();
+
+    return res.json({
+      ok: true,
+      mode: "moodle-logs-import",
+      version: "MTH_MOODLE_LOGS_IMPORT_V1",
+      batch_id: logsImport.batch.id,
+      rows_seen: Array.isArray(body.payload) ? body.payload.length : 0,
+      log_events_written: sbWrite.skipped ? 0 : sbWrite.log_events_written,
+      skipped_rows: logsImport.skipped_rows,
+      warnings: logsImport.warnings,
+      supabase: sbWrite.skipped
+        ? { written: false, reason: sbWrite.reason }
+        : {
+            written: true,
+            log_events_written: sbWrite.log_events_written,
+            log_events_variant: sbWrite.log_events_variant,
+            import_batch_variant: sbWrite.import_batch_variant
+          },
+      safety: {
+        no_fake_logs: true,
+        no_practice_time_invented: true,
+        no_teacher_release_change: true,
+        raw_logs_not_returned: true
+      }
+    });
+  }
+
   if (reportType === "grades") {
     const gradebook = buildWideGradebookImport(Array.isArray(body.payload) ? body.payload : [], session, {
       file_name: body.file_name || null,

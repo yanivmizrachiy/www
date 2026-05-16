@@ -20,7 +20,8 @@
     "validate:gradebook:live": "node scripts/checks/gradebook-preflight-live.cjs",
     "validate:gradebook:file": "node scripts/checks/gradebook-real-file-readiness.cjs",
     "validate:gradebook-ui:live": "node scripts/checks/gradebook-preflight-ui-live.cjs",
-    "validate:wide-gradebook-ui:live": "node scripts/checks/wide-gradebook-import-ui-live.cjs"
+    "validate:wide-gradebook-ui:live": "node scripts/checks/wide-gradebook-import-ui-live.cjs",
+    "validate:logs-ui:live": "node scripts/checks/logs-import-ui-live.cjs"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
