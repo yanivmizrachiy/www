@@ -763,3 +763,30 @@ Remaining blockers:
 - final Teacher Release gate
 
 MTH_AFTER_REAL_GRADEBOOK_IMPORT_END
+
+MTH_AFTER_REAL_LOGS_IMPORT_START
+
+## After real Moodle Logs import
+
+Verified result:
+- students: 62
+- grade_items_written: 243
+- grade_results_written: 1693
+- log_events_written: 89995
+- logs_skipped_rows: 0
+- fake_logs: false
+- practice_time_invented: false
+- Teacher Release remains NO
+
+Remaining blockers:
+- practice-time truth gate
+- multi-teacher or multi-course isolation validation
+- final Teacher Release gate
+
+Rules:
+- Do not invent practice time.
+- Do not expose raw logs publicly.
+- Do not commit source log rows to GitHub.
+- Teacher Release remains NO until all gates pass.
+
+MTH_AFTER_REAL_LOGS_IMPORT_END
