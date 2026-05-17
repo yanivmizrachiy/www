@@ -137,6 +137,23 @@ export default function Dashboard() {
         <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-accent/20 blur-3xl" />
       </section>
 
+
+      <section className="grid gap-5 lg:grid-cols-1" aria-label="כפתורי פעולה ראשיים בעמוד הבית החכם">
+        <Link
+          to="/students"
+          className="MTH_DASHBOARD_MAIN_PARTICIPANTS_BUTTON_V1 rounded-[2rem] bg-gradient-to-br from-primary via-primary/90 to-accent p-8 text-white shadow-elegant transition hover:-translate-y-1 hover:shadow-2xl"
+        >
+          <Users className="mb-5 h-14 w-14" />
+          <div className="text-5xl font-black leading-tight tracking-tight">משתתפים</div>
+          <p className="mt-3 text-lg font-bold leading-relaxed text-white/85">
+            רשימת תלמידים ומשתתפים מנתוני Moodle אמיתיים בלבד.
+          </p>
+          <div className="mt-5 inline-flex rounded-full bg-white/20 px-5 py-2 text-base font-black">
+            {v(data?.students_count)} תלמידים
+          </div>
+        </Link>
+      </section>
+
       {error && (
         <div className="rounded-xl border border-status-blocked/30 bg-status-blocked-bg/10 p-4 flex gap-3 text-sm text-status-blocked items-start">
           <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />
