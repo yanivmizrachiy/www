@@ -58,7 +58,7 @@ export default function Dashboard() {
               transition={{ delay: 0.1 }}
               className="text-4xl font-extrabold tracking-tight text-white lg:text-5xl"
             >
-              שלום, {session?.moodle_username?.split(" ")[0] || "מורה"}
+              עמוד הבית החכם
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
