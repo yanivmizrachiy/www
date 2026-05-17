@@ -6,6 +6,28 @@
 
 ---
 
+## 2026-05-17 — Practice-time truth gate: blocked NO_DURATION_FIELD
+
+### Verified
+
+- Moodle Logs imported: log_events_written=89995, skipped_rows=0
+- Moodle Logs report contains no explicit duration field (checked: duration_seconds, duration, timeDiff).
+- `src/practiceTime.js` implements `buildPracticeTimeGate()` — returns `practice_time_available=false` with `blocker_key=NO_DURATION_FIELD` when no duration field present.
+- Timestamp-window estimation is disabled (`window_estimation_enabled=false`).
+- No fake or invented practice time (`fake_time=false`).
+- Teacher Release remains NO.
+- STATE recorded in `STATE/teacher-release/practice-time-truth-blocked-no-duration.json`.
+- `STATE/teacher-release/current-verified-state-latest.json` updated to mode `practice-time-truth-gate`.
+- Build passes: `npm run build` and `npm run check` both green.
+
+### Not verified yet
+
+- Practice time with an official Moodle duration field (requires a different Moodle report or API).
+- Multi-teacher or multi-course isolation.
+- Teacher release final gate.
+
+---
+
 ## 2026-04-27 — Repository governance setup
 
 ### Verified
