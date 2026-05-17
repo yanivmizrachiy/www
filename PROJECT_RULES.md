@@ -790,3 +790,39 @@ Rules:
 - Teacher Release remains NO until all gates pass.
 
 MTH_AFTER_REAL_LOGS_IMPORT_END
+
+MTH_PRACTICE_TIME_TRUTH_GATE_START
+
+## Practice-time truth gate — BLOCKED: NO_DURATION_FIELD
+
+Checked at: 2026-05-17
+
+Verified result:
+- students: 62
+- grade_items_written: 243
+- grade_results_written: 1693
+- log_events_written: 89995
+- practice_time_available: false
+- blocker_key: NO_DURATION_FIELD
+- fake_time: false
+- window_estimation_enabled: false
+- teacher_release_changed: false
+
+Reason: The imported Moodle Logs report contains no explicit duration field
+(checked: duration_seconds, duration, timeDiff). Practice time cannot be
+calculated without an official duration field. Timestamp-window estimation
+is permanently disabled to prevent fake official practice time.
+
+Rules:
+- Do NOT calculate practice time from timestamps.
+- Do NOT label timestamp-window estimates as official Moodle time.
+- Do NOT set practice_time_available=true until a real duration field exists.
+- Do NOT set Teacher Release YES.
+- Do NOT expose raw log rows publicly or commit them to GitHub.
+- If a future Moodle report provides an explicit duration field, re-run gate.
+
+Remaining blockers:
+- multi_teacher_or_multi_course_isolation
+- teacher_release_final_gate
+
+MTH_PRACTICE_TIME_TRUTH_GATE_END
