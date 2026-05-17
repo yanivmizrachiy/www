@@ -826,3 +826,18 @@ Remaining blockers:
 - teacher_release_final_gate
 
 MTH_PRACTICE_TIME_TRUTH_GATE_END
+
+<!-- MTH_DASHBOARD_PRIMARY_BUTTONS_MENU_20260517_START -->
+## Dashboard Primary Buttons and Secondary Menu — 2026-05-17
+
+עמוד הבית החכם חייב לכלול ארבעה כפתורים גדולים וברורים:
+- משתתפים
+- פרקים ופעילויות
+- ציונים
+- כל השאר
+
+שלושת הראשונים הם הפעולות הראשיות. הכפתור כל השאר מוביל לתפריט משני עם ייבוא, Gradebook, Logs, פעילות/זמנים, דוחות, ייצוא, הגדרות והתקנה.
+
+כל הכפתורים חייבים להיות בעברית, גדולים, ברורים, RTL, ולנווט רק לנתיבים קיימים. אין להוסיף נתוני דמו ואין לשנות Participants, Gradebook, Logs, Supabase או Teacher Release.
+<!-- MTH_DASHBOARD_PRIMARY_BUTTONS_MENU_20260517_END -->
+

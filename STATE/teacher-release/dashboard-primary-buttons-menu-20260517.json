@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "version": "MTH_DASHBOARD_PRIMARY_BUTTONS_MENU_V1",
+  "changed_at": "2026-05-17T18:35:44.8089649Z",
+  "buttons": [
+    "משתתפים",
+    "פרקים ופעילויות",
+    "ציונים",
+    "כל השאר"
+  ],
+  "secondary_menu": true,
+  "ui_only": true,
+  "participants_import_changed": false,
+  "gradebook_import_changed": false,
+  "logs_import_changed": false,
+  "supabase_changed": false,
+  "teacher_release_changed": false,
+  "fake_data_added": false
+}
