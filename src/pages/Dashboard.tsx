@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useImportsOverview } from "@/hooks/useImports";
 import TeacherStatusPanel from "@/components/TeacherStatusPanel";
@@ -39,6 +40,23 @@ export default function Dashboard() {
   const hasSession = Boolean(session);
   const v = (n: number | undefined) => hasSession && data ? n ?? 0 : "—";
 
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const updatedAtText = useMemo(() => new Intl.DateTimeFormat("he-IL", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  }).format(now), [now]);
+
   return (
     <div className="space-y-8" dir="rtl">
       <section className="relative overflow-hidden rounded-3xl bg-gradient-hero p-8 shadow-elegant lg:p-12">
@@ -60,6 +78,16 @@ export default function Dashboard() {
             >
               עמוד הבית החכם
             </motion.h1>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.16 }}
+              className="inline-flex flex-wrap items-center gap-3 rounded-2xl bg-white/15 px-4 py-3 text-base font-black text-white backdrop-blur-sm"
+            >
+              <Calendar className="h-5 w-5" />
+              <span>מעודכן לתאריך: {updatedAtText}</span>
+            </motion.div>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
