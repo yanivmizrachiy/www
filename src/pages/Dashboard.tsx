@@ -137,8 +137,7 @@ export default function Dashboard() {
         <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-accent/20 blur-3xl" />
       </section>
 
-
-      <section className="grid gap-5 lg:grid-cols-1" aria-label="כפתורי פעולה ראשיים בעמוד הבית החכם">
+      <section className="grid gap-5 lg:grid-cols-4" aria-label="כפתורי פעולה ראשיים בעמוד הבית החכם">
         <Link
           to="/students"
           className="MTH_DASHBOARD_MAIN_PARTICIPANTS_BUTTON_V1 rounded-[2rem] bg-gradient-to-br from-primary via-primary/90 to-accent p-8 text-white shadow-elegant transition hover:-translate-y-1 hover:shadow-2xl"
@@ -152,9 +151,7 @@ export default function Dashboard() {
             {v(data?.students_count)} תלמידים
           </div>
         </Link>
-      </section>
 
-      <section className="grid gap-5 lg:grid-cols-1" aria-label="כפתור פרקים ופעילויות בעמוד הבית החכם">
         <Link
           to="/tasks"
           className="MTH_DASHBOARD_MAIN_ACTIVITIES_BUTTON_V1 rounded-[2rem] bg-gradient-to-br from-primary via-primary/90 to-accent p-8 text-white shadow-elegant transition hover:-translate-y-1 hover:shadow-2xl"
@@ -168,6 +165,34 @@ export default function Dashboard() {
             {v(data?.tasks_count)} משימות
           </div>
         </Link>
+
+        <Link
+          to="/grades"
+          className="MTH_DASHBOARD_MAIN_GRADES_BUTTON_V1 rounded-[2rem] bg-gradient-to-br from-primary via-primary/90 to-accent p-8 text-white shadow-elegant transition hover:-translate-y-1 hover:shadow-2xl"
+        >
+          <GraduationCap className="mb-5 h-14 w-14" />
+          <div className="text-5xl font-black leading-tight tracking-tight">ציונים</div>
+          <p className="mt-3 text-lg font-bold leading-relaxed text-white/85">
+            ציונים ופריטי ציון שיובאו מ־Gradebook אמיתי.
+          </p>
+          <div className="mt-5 inline-flex rounded-full bg-white/20 px-5 py-2 text-base font-black">
+            {v(data?.grades_count)} ציונים
+          </div>
+        </Link>
+
+        <a
+          href="#all-actions-menu"
+          className="MTH_DASHBOARD_MAIN_ALL_BUTTON_V1 rounded-[2rem] bg-gradient-to-br from-primary via-primary/90 to-accent p-8 text-white shadow-elegant transition hover:-translate-y-1 hover:shadow-2xl"
+        >
+          <Database className="mb-5 h-14 w-14" />
+          <div className="text-5xl font-black leading-tight tracking-tight">כל השאר</div>
+          <p className="mt-3 text-lg font-bold leading-relaxed text-white/85">
+            ייבוא, דוחות, פעילות, ייצוא, הגדרות ותמיכה בתפריט מסודר.
+          </p>
+          <div className="mt-5 inline-flex rounded-full bg-white/20 px-5 py-2 text-base font-black">
+            תפריט
+          </div>
+        </a>
       </section>
       {error && (
         <div className="rounded-xl border border-status-blocked/30 bg-status-blocked-bg/10 p-4 flex gap-3 text-sm text-status-blocked items-start">
@@ -206,6 +231,28 @@ export default function Dashboard() {
 
       <TeacherStatusPanel />
 
+
+      <section id="all-actions-menu" className="MTH_DASHBOARD_SECONDARY_MENU_V1 scroll-mt-8 rounded-[2rem] border border-primary/10 bg-muted/30 p-6 shadow-elegant">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-black text-primary">תפריט כל השאר</h2>
+            <p className="mt-1 text-sm font-bold text-muted-foreground">
+              כל הפעולות הנוספות במקום אחד, בלי עומס בעמוד הראשי.
+            </p>
+          </div>
+          <span className="rounded-full bg-primary/10 px-4 py-2 text-xs font-black text-primary">תפריט משני</span>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/import">ייבוא נתונים</Link></Button>
+          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/gradebook-import">ייבוא Gradebook</Link></Button>
+          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/logs-import">ייבוא יומני מעקב</Link></Button>
+          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/activity">פעילות / זמנים</Link></Button>
+          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/reports">דוחות</Link></Button>
+          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/export">ייצוא</Link></Button>
+          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/settings">הגדרות</Link></Button>
+          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/setup">התקנה / חיבור Moodle</Link></Button>
+        </div>
+      </section>
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard label="תלמידים רשומים" value={v(data?.students_count)} icon={Users} delay={0.1} />
         <StatCard label="פריטי ציון" value={v(data?.grade_items_count)} icon={GraduationCap} delay={0.2} />
@@ -271,4 +318,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
 
