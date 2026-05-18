@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Users, GraduationCap, ClipboardList, Database, Calendar, Import, ArrowRight, AlertCircle, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
 import SyncFeatureGates from "@/components/SyncFeatureGates";
+import MoodleCapabilityPanel from "@/components/MoodleCapabilityPanel";
 
 function StatCard({ label, value, icon: Icon, delay = 0 }: { label: string, value: number | string, icon: any, delay?: number }) {
   return (
@@ -230,6 +231,8 @@ export default function Dashboard() {
       <SyncFeatureGates status={syncStatus.data} loading={syncStatus.loading} />
 
       <TeacherStatusPanel />
+
+      <MoodleCapabilityPanel />
 
 
       <section id="all-actions-menu" className="MTH_DASHBOARD_SECONDARY_MENU_V1 scroll-mt-8 rounded-[2rem] border border-primary/10 bg-muted/30 p-6 shadow-elegant">
