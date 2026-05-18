@@ -71,17 +71,17 @@ function mappingSummary(result: MoodleImportResult | null) {
 }
 
 function reportTypeLabel(type: string) {
-  if (type === "students") return "Participants / תלמידים";
-  if (type === "grades") return "ציונים — חסום כרגע";
-  if (type === "logs") return "לוגים — חסום כרגע";
-  if (type === "completion") return "השלמת פעילות — חסום כרגע";
+  if (type === "students") return "משתתפים";
+  if (type === "grades") return "ציונים — עבר למסך Gradebook";
+  if (type === "logs") return "יומני מעקב — עבר למסך ייעודי";
+  if (type === "completion") return "השלמת פעילות — עבר למסך ייעודי";
   return "לא זוהה";
 }
 
 function friendlyError(error: unknown): string {
   const raw = error instanceof Error ? error.message : String(error || "שגיאה לא ידועה");
   if (raw === "missing_session" || raw === "NO_VERIFIED_MOODLE_SESSION") {
-    return "לא נמצאה פתיחה מאומתת מתוך Moodle. פתח את Teacher Hub מתוך Moodle עצמו ואז נסה שוב.";
+    return "לא נמצאה כניסה מאומתת מתוך Moodle. פתח את Teacher Hub מתוך Moodle ונסה שוב.";
   }
   return raw;
 }
@@ -109,46 +109,82 @@ function copyText(text: string) {
   }
 }
 
-const box: React.CSSProperties = {
-  border: "1px solid #e5e7eb",
-  borderRadius: 18,
-  padding: 18,
-  background: "#ffffff",
-  boxShadow: "0 10px 28px rgba(15,23,42,0.06)",
+const page = {
+  maxWidth: 1120,
+  margin: "0 auto",
+  padding: 24,
+  fontFamily: "Heebo, Assistant, Arial, sans-serif",
 };
 
-const button: React.CSSProperties = {
+const hero = {
+  border: "1px solid rgba(255,255,255,0.16)",
+  borderRadius: 30,
+  padding: "28px 30px",
+  color: "#ffffff",
+  background: "linear-gradient(135deg, #06152f 0%, #082b66 48%, #0b4f8f 100%)",
+  boxShadow: "0 30px 90px rgba(6,21,47,0.35)",
+  marginBottom: 22,
+};
+
+const heroKicker = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  border: "1px solid rgba(255,255,255,0.24)",
+  borderRadius: 999,
+  padding: "8px 13px",
+  background: "rgba(15,61,117,0.85)",
+  fontSize: 13,
+  fontWeight: 900,
+};
+
+const box = {
+  border: "1px solid #e2e8f0",
+  borderRadius: 24,
+  padding: 22,
+  background: "#ffffff",
+  boxShadow: "0 18px 45px rgba(15,23,42,0.08)",
+};
+
+const primaryButton = {
   border: "0",
   borderRadius: 999,
-  padding: "12px 20px",
-  fontWeight: 800,
+  padding: "13px 22px",
+  fontWeight: 900,
   cursor: "pointer",
-  background: "#0ea5e9",
+  background: "linear-gradient(135deg, #0369a1 0%, #0ea5e9 100%)",
   color: "white",
+  boxShadow: "0 16px 40px rgba(14,165,233,0.24)",
 };
 
-const mutedButton: React.CSSProperties = {
-  ...button,
+const mutedButton = {
+  ...primaryButton,
   background: "#eef2ff",
   color: "#1e3a8a",
+  boxShadow: "none",
 };
 
-const dangerBox: React.CSSProperties = {
+const dangerBox = {
   border: "1px solid #fecaca",
-  borderRadius: 16,
-  padding: 14,
-  background: "#fef2f2",
+  borderRadius: 20,
+  padding: 16,
+  background: "#fff7f7",
   color: "#7f1d1d",
-  fontWeight: 700,
+  fontWeight: 800,
 };
 
-const successBox: React.CSSProperties = {
+const successBox = {
   border: "1px solid #bbf7d0",
-  borderRadius: 16,
-  padding: 14,
+  borderRadius: 20,
+  padding: 16,
   background: "#f0fdf4",
   color: "#14532d",
-  fontWeight: 700,
+  fontWeight: 800,
+};
+
+const subtle = {
+  color: "#64748b",
+  lineHeight: 1.75,
 };
 
 export default function Import() {
@@ -173,7 +209,7 @@ export default function Import() {
   const blockingReason = useMemo(() => {
     if (!result) return "";
     if (result.reportType !== "students") {
-      return "השרת מאשר כרגע רק Participants / תלמידים. ציונים, לוגים והשלמת פעילות ייבנו אחרי שתלמידים יאומתו.";
+      return "הקובץ שייך למסך ייבוא אחר. במסך הזה ניתן לשמור משתתפים בלבד.";
     }
     if (!hasNameForImport) return "חסרה עמודת שם תלמיד. נדרש שם מלא או שם פרטי + שם משפחה.";
     if (!hasIdentityForImport) return "חסר מזהה תלמיד. נדרש לפחות מייל, שם משתמש, user_id, lis_person_sourcedid או ID number.";
@@ -254,7 +290,7 @@ export default function Import() {
   const previewHeaders = (result?.headers || []).slice(0, 8);
 
   return (
-    <main dir="rtl" data-version={MARKER} style={{ maxWidth: 1100, margin: "0 auto", padding: 20, fontFamily: "Heebo, Assistant, Arial, sans-serif" }}>
+    <main dir="rtl" data-version={MARKER} style={page}>
       <input
         ref={fileInputRef}
         type="file"
@@ -264,22 +300,19 @@ export default function Import() {
         onChange={handleFile}
       />
 
-      <section style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 12, fontWeight: 900, color: "#0369a1", letterSpacing: "0.08em" }}>
-          ייבוא נתוני Moodle אמיתיים
-        </div>
-        <h1 style={{ margin: "6px 0", fontSize: 30, fontWeight: 950, color: "#0f172a" }}>
-          ייבוא Participants / תלמידים
+      <section style={hero}>
+        <div style={heroKicker}>ייבוא נתוני Moodle</div>
+        <h1 style={{ margin: "12px 0 8px", fontSize: 42, fontWeight: 950, letterSpacing: "-0.03em" }}>
+          ייבוא משתתפים
         </h1>
-        <p style={{ margin: 0, color: "#475569", lineHeight: 1.8 }}>
-          גרסה יציבה ללא רכיבי אנימציה או רכיבי UI חיצוניים. אין דמו, אין תלמידים מומצאים, ואין שמירת נתונים לפני אישור.
+        <p style={{ margin: 0, maxWidth: 760, color: "rgba(255,255,255,0.86)", lineHeight: 1.8, fontSize: 17, fontWeight: 700 }}>
+          העלאת קובץ משתתפים ממודל, בדיקה מקדימה ושמירה מאושרת בלבד.
         </p>
-        <div style={{ marginTop: 6, fontSize: 11, color: "#94a3b8" }}>{MARKER}</div>
       </section>
 
       {error && (
         <section style={{ ...dangerBox, marginBottom: 16 }}>
-          <div style={{ fontSize: 16, marginBottom: 4 }}>הייבוא לא התקדם</div>
+          <div style={{ fontSize: 16, marginBottom: 4 }}>הייבוא נעצר</div>
           <div style={{ lineHeight: 1.8 }}>{error}</div>
           {serverResult && !serverResult.ok && (
             <div style={{ marginTop: 12 }}>
@@ -288,27 +321,30 @@ export default function Import() {
                 style={{ ...mutedButton, padding: "8px 14px", fontSize: 12 }}
                 onClick={() => copyText(JSON.stringify(serverResult, null, 2))}
               >
-                העתק פרטי שגיאה בטוחים
+                העתק פרטים בטוחים
               </button>
-              <pre
-                dir="ltr"
-                style={{
-                  marginTop: 10,
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                  background: "#fff7ed",
-                  border: "1px solid #fed7aa",
-                  borderRadius: 12,
-                  padding: 12,
-                  color: "#7c2d12",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  maxHeight: 260,
-                  overflow: "auto"
-                }}
-              >
-                {JSON.stringify(serverResult, null, 2)}
-              </pre>
+              <details style={{ marginTop: 10 }}>
+                <summary style={{ cursor: "pointer", fontWeight: 900 }}>פרטים טכניים</summary>
+                <pre
+                  dir="ltr"
+                  style={{
+                    marginTop: 10,
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                    background: "#fff7ed",
+                    border: "1px solid #fed7aa",
+                    borderRadius: 12,
+                    padding: 12,
+                    color: "#7c2d12",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    maxHeight: 260,
+                    overflow: "auto"
+                  }}
+                >
+                  {JSON.stringify(serverResult, null, 2)}
+                </pre>
+              </details>
             </div>
           )}
         </section>
@@ -316,7 +352,7 @@ export default function Import() {
 
       {serverResult?.ok && (
         <section style={{ ...successBox, marginBottom: 16 }}>
-          ייבוא Participants הושלם: {serverResult.row_count ?? 0} שורות נקלטו.
+          הייבוא הושלם: {serverResult.row_count ?? 0} שורות נקלטו.
           {" "}נוספו: {serverResult.inserted ?? 0}, עודכנו: {serverResult.updated ?? 0}, נדחו: {serverResult.skipped ?? 0}.
           {" "}Supabase: {serverResult.supabase?.written ? "נשמר" : "לא אושר"}.
           {typeof serverResult.supabase?.students_written === "number" ? ` תלמידים שנכתבו: ${serverResult.supabase.students_written}.` : ""}
@@ -326,22 +362,26 @@ export default function Import() {
       {!result ? (
         <section style={{ display: "grid", gap: 16 }}>
           <div style={box}>
-            <h2 style={{ marginTop: 0 }}>בחר קובץ Participants</h2>
-            <p style={{ color: "#475569", lineHeight: 1.8 }}>
-              בחר קובץ XLSX / CSV / ODS אמיתי שהורדת ממודל. המערכת תציג בדיקה ותצוגה מקדימה לפני שמירה.
-            </p>
-            <button type="button" style={button} onClick={openFilePicker} disabled={busy}>
-              {busy ? "בודק קובץ..." : "בחר קובץ Participants"}
-            </button>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 30, fontWeight: 950, color: "#0f172a" }}>בחר קובץ</h2>
+                <p style={{ ...subtle, margin: "8px 0 0" }}>
+                  קובץ XLSX / CSV / ODS של משתתפים ממודל.
+                </p>
+              </div>
+              <button type="button" style={primaryButton} onClick={openFilePicker} disabled={busy}>
+                {busy ? "בודק קובץ..." : "בחר קובץ"}
+              </button>
+            </div>
           </div>
 
           <div style={box}>
-            <h2 style={{ marginTop: 0 }}>או הדבק טבלה</h2>
+            <h2 style={{ marginTop: 0, fontSize: 24, fontWeight: 900, color: "#0f172a" }}>הדבקת טבלה</h2>
             <textarea
               value={pastedText}
               onChange={(event) => setPastedText(event.target.value)}
-              placeholder="הדבק כאן טבלת Participants ממודל כולל שורת כותרות..."
-              style={{ width: "100%", minHeight: 110, borderRadius: 12, border: "1px solid #cbd5e1", padding: 12, fontSize: 14 }}
+              placeholder="אפשר להדביק כאן טבלת משתתפים כולל שורת כותרות"
+              style={{ width: "100%", minHeight: 110, borderRadius: 16, border: "1px solid #cbd5e1", padding: 14, fontSize: 14, outline: "none" }}
             />
             <div style={{ marginTop: 10 }}>
               <button type="button" style={mutedButton} onClick={handlePaste} disabled={busy || !pastedText.trim()}>
@@ -354,19 +394,19 @@ export default function Import() {
         <section style={box}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "start" }}>
             <div>
-              <h2 style={{ margin: 0 }}>זוהה דוח: {reportTypeLabel(result.reportType)}</h2>
-              <p style={{ color: "#475569", margin: "8px 0 0" }}>
-                {result.fileName ? `קובץ: ${result.fileName}` : "טבלה שהודבקה"} · {result.rowCount} שורות · רמת זיהוי {Math.round(result.confidence * 100)}%
+              <h2 style={{ margin: 0, fontSize: 28, fontWeight: 950, color: "#0f172a" }}>תוצאת בדיקה</h2>
+              <p style={{ color: "#475569", margin: "8px 0 0", lineHeight: 1.75 }}>
+                {reportTypeLabel(result.reportType)} · {result.fileName ? result.fileName : "טבלה שהודבקה"} · {result.rowCount} שורות · זיהוי {Math.round(result.confidence * 100)}%
               </p>
-              {blockingReason && <p style={{ color: "#9a3412", fontWeight: 800 }}>{blockingReason}</p>}
+              {blockingReason && <p style={{ color: "#9a3412", fontWeight: 900 }}>{blockingReason}</p>}
             </div>
 
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button type="button" style={mutedButton} onClick={() => { setResult(null); setServerResult(null); setError(""); }}>
                 ביטול
               </button>
-              <button type="button" style={button} onClick={handleSubmit} disabled={busy || !canSubmit}>
-                {busy ? "מייבא..." : "אשר וייבא Participants"}
+              <button type="button" style={primaryButton} onClick={handleSubmit} disabled={busy || !canSubmit}>
+                {busy ? "מייבא..." : "ייבוא משתתפים"}
               </button>
               {serverResult?.ok && (
                 <a href="/students" style={{ ...mutedButton, textDecoration: "none", display: "inline-block" }}>
@@ -377,13 +417,13 @@ export default function Import() {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginTop: 16 }}>
-            <div style={{ ...box, boxShadow: "none" }}>שם תלמיד: <b>{hasNameForImport ? "קיים" : "חסר"}</b></div>
-            <div style={{ ...box, boxShadow: "none" }}>מייל: <b>{mapping.hasEmail ? "קיים" : "לא התקבל"}</b></div>
-            <div style={{ ...box, boxShadow: "none" }}>שם משתמש: <b>{mapping.hasUsername ? "קיים" : "לא התקבל"}</b></div>
-            <div style={{ ...box, boxShadow: "none" }}>מזהה נוסף: <b>{mapping.hasMoodleUserId || mapping.hasLisPersonSourcedId || mapping.hasIdNumber ? "קיים" : "לא התקבל"}</b></div>
+            <div style={{ ...box, boxShadow: "none", padding: 14 }}>שם תלמיד: <b>{hasNameForImport ? "קיים" : "חסר"}</b></div>
+            <div style={{ ...box, boxShadow: "none", padding: 14 }}>מייל: <b>{mapping.hasEmail ? "קיים" : "לא התקבל"}</b></div>
+            <div style={{ ...box, boxShadow: "none", padding: 14 }}>שם משתמש: <b>{mapping.hasUsername ? "קיים" : "לא התקבל"}</b></div>
+            <div style={{ ...box, boxShadow: "none", padding: 14 }}>מזהה נוסף: <b>{mapping.hasMoodleUserId || mapping.hasLisPersonSourcedId || mapping.hasIdNumber ? "קיים" : "לא התקבל"}</b></div>
           </div>
 
-          <div style={{ marginTop: 18, overflowX: "auto", border: "1px solid #e5e7eb", borderRadius: 14 }}>
+          <div style={{ marginTop: 18, overflowX: "auto", border: "1px solid #e5e7eb", borderRadius: 18 }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
               <thead style={{ background: "#f8fafc" }}>
                 <tr>
@@ -409,7 +449,7 @@ export default function Import() {
           </div>
 
           <p style={{ color: "#64748b", fontSize: 12, textAlign: "center", marginTop: 10 }}>
-            תצוגה מקדימה בלבד — מוצגות 12 שורות ראשונות מתוך {result.rowCount}
+            תצוגה מקדימה — 12 שורות ראשונות מתוך {result.rowCount}
           </p>
         </section>
       )}
