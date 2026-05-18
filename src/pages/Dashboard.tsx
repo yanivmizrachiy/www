@@ -58,14 +58,14 @@ export default function Dashboard() {
   }).format(now), [now]);
 
   return (
-    <div className="space-y-8" dir="rtl">
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-hero p-8 shadow-elegant lg:p-12">
+    <div className="space-y-8" dir="rtl">\n      <span className="sr-only">MTH_DASHBOARD_DARK_BLUE_CONTRAST_V1</span>
+      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#06152f] via-[#082b66] to-[#0b4f8f] p-8 text-white shadow-[0_30px_90px_rgba(6,21,47,0.45)] lg:p-12">
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-6">
           <div className="space-y-4 max-w-2xl">
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="inline-flex items-center gap-2 rounded-full bg-background/20 px-3 py-1 text-xs font-bold text-background/80 backdrop-blur-md"
+              className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-[#0b2b5c]/90 px-4 py-2 text-sm font-black text-white shadow-lg backdrop-blur-md"
             >
               <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
               {hasSession ? "מחובר מתוך Moodle" : "ממתין לכניסה מאומתת מתוך Moodle"}
@@ -74,7 +74,7 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="text-4xl font-extrabold tracking-tight text-white lg:text-5xl"
+              className="text-5xl font-black tracking-tight text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)] lg:text-7xl"
             >
               עמוד הבית החכם
             </motion.h1>
@@ -83,7 +83,7 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.16 }}
-              className="inline-flex flex-wrap items-center gap-3 rounded-2xl bg-white/15 px-4 py-3 text-base font-black text-white backdrop-blur-sm"
+              className="inline-flex flex-wrap items-center gap-3 rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 text-lg font-black text-white shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm"
             >
               <Calendar className="h-5 w-5" />
               <span>מעודכן לתאריך: {updatedAtText}</span>
@@ -92,7 +92,7 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-lg text-white/70 font-medium"
+              className="text-xl font-bold leading-relaxed text-white drop-shadow-[0_3px_12px_rgba(0,0,0,0.35)]"
             >
               {session?.course_title ?? site?.site_name ?? "עדיין לא התקבלה כניסה אמיתית מתוך Moodle. ניתן להתחיל רק מייבוא נתוני Moodle אמיתיים."}
             </motion.p>
@@ -107,18 +107,18 @@ export default function Dashboard() {
                 size="lg"
                 onClick={() => void syncStatus.runSync()}
                 disabled={syncStatus.running}
-                className="bg-white text-primary hover:bg-white/90 font-bold"
+                className="bg-white text-[#06152f] hover:bg-white/90 font-black shadow-xl"
               >
                 <RefreshCw className={syncStatus.running ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
                 סנכרן מרחב
               </Button>
-              <Button asChild size="lg" className="bg-white/15 text-white hover:bg-white/25 font-bold border border-white/20">
+              <Button asChild size="lg" className="border border-white/35 bg-[#0f3d75]/90 text-white hover:bg-[#15559a] font-black shadow-lg">
                 <Link to="/import" className="flex items-center gap-2">
                   <Import className="h-4 w-4" />
                   ייבוא דוחות
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10">
+              <Button asChild variant="outline" size="lg" className="border-white/40 bg-[#06152f]/55 text-white hover:bg-[#0f3d75]/90 font-black">
                 <Link to="/reports">צפייה בדוחות</Link>
               </Button>
             </motion.div>
@@ -133,63 +133,63 @@ export default function Dashboard() {
           </motion.div>
         </div>
 
-        <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-accent/20 blur-3xl" />
+        <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-cyan-300/15 blur-3xl" />
+        <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-blue-300/20 blur-3xl" />
       </section>
 
       <section className="grid gap-5 lg:grid-cols-4" aria-label="כפתורי פעולה ראשיים בעמוד הבית החכם">
         <Link
           to="/students"
-          className="MTH_DASHBOARD_MAIN_PARTICIPANTS_BUTTON_V1 rounded-[2rem] bg-gradient-to-br from-primary via-primary/90 to-accent p-8 text-white shadow-elegant transition hover:-translate-y-1 hover:shadow-2xl"
+          className="MTH_DASHBOARD_MAIN_PARTICIPANTS_BUTTON_V1 MTH_DASHBOARD_DARK_BLUE_CARD_V1 rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-8 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]"
         >
           <Users className="mb-5 h-14 w-14" />
           <div className="text-5xl font-black leading-tight tracking-tight">משתתפים</div>
-          <p className="mt-3 text-lg font-bold leading-relaxed text-white/85">
+          <p className="mt-3 text-lg font-bold leading-relaxed text-white">
             רשימת תלמידים ומשתתפים מנתוני Moodle אמיתיים בלבד.
           </p>
-          <div className="mt-5 inline-flex rounded-full bg-white/20 px-5 py-2 text-base font-black">
+          <div className="mt-5 inline-flex rounded-full border border-white/25 bg-white/15 px-5 py-2 text-base font-black text-white shadow-lg">
             {v(data?.students_count)} תלמידים
           </div>
         </Link>
 
         <Link
           to="/tasks"
-          className="MTH_DASHBOARD_MAIN_ACTIVITIES_BUTTON_V1 rounded-[2rem] bg-gradient-to-br from-primary via-primary/90 to-accent p-8 text-white shadow-elegant transition hover:-translate-y-1 hover:shadow-2xl"
+          className="MTH_DASHBOARD_MAIN_ACTIVITIES_BUTTON_V1 MTH_DASHBOARD_DARK_BLUE_CARD_V1 rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-8 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]"
         >
           <ClipboardList className="mb-5 h-14 w-14" />
           <div className="text-5xl font-black leading-tight tracking-tight">פרקים ופעילויות</div>
-          <p className="mt-3 text-lg font-bold leading-relaxed text-white/85">
+          <p className="mt-3 text-lg font-bold leading-relaxed text-white">
             כניסה מהירה לפרקים, משימות ופעילויות לפי נתוני אמת.
           </p>
-          <div className="mt-5 inline-flex rounded-full bg-white/20 px-5 py-2 text-base font-black">
+          <div className="mt-5 inline-flex rounded-full border border-white/25 bg-white/15 px-5 py-2 text-base font-black text-white shadow-lg">
             {v(data?.tasks_count)} משימות
           </div>
         </Link>
 
         <Link
           to="/grades"
-          className="MTH_DASHBOARD_MAIN_GRADES_BUTTON_V1 rounded-[2rem] bg-gradient-to-br from-primary via-primary/90 to-accent p-8 text-white shadow-elegant transition hover:-translate-y-1 hover:shadow-2xl"
+          className="MTH_DASHBOARD_MAIN_GRADES_BUTTON_V1 MTH_DASHBOARD_DARK_BLUE_CARD_V1 rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-8 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]"
         >
           <GraduationCap className="mb-5 h-14 w-14" />
           <div className="text-5xl font-black leading-tight tracking-tight">ציונים</div>
-          <p className="mt-3 text-lg font-bold leading-relaxed text-white/85">
+          <p className="mt-3 text-lg font-bold leading-relaxed text-white">
             ציונים ופריטי ציון שיובאו מ־Gradebook אמיתי.
           </p>
-          <div className="mt-5 inline-flex rounded-full bg-white/20 px-5 py-2 text-base font-black">
+          <div className="mt-5 inline-flex rounded-full border border-white/25 bg-white/15 px-5 py-2 text-base font-black text-white shadow-lg">
             {v(data?.grades_count)} ציונים
           </div>
         </Link>
 
         <a
           href="#all-actions-menu"
-          className="MTH_DASHBOARD_MAIN_ALL_BUTTON_V1 rounded-[2rem] bg-gradient-to-br from-primary via-primary/90 to-accent p-8 text-white shadow-elegant transition hover:-translate-y-1 hover:shadow-2xl"
+          className="MTH_DASHBOARD_MAIN_ALL_BUTTON_V1 MTH_DASHBOARD_DARK_BLUE_CARD_V1 rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-8 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]"
         >
           <Database className="mb-5 h-14 w-14" />
           <div className="text-5xl font-black leading-tight tracking-tight">כל השאר</div>
-          <p className="mt-3 text-lg font-bold leading-relaxed text-white/85">
+          <p className="mt-3 text-lg font-bold leading-relaxed text-white">
             ייבוא, דוחות, פעילות, ייצוא, הגדרות ותמיכה בתפריט מסודר.
           </p>
-          <div className="mt-5 inline-flex rounded-full bg-white/20 px-5 py-2 text-base font-black">
+          <div className="mt-5 inline-flex rounded-full border border-white/25 bg-white/15 px-5 py-2 text-base font-black text-white shadow-lg">
             תפריט
           </div>
         </a>
