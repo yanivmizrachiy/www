@@ -841,3 +841,15 @@ MTH_PRACTICE_TIME_TRUTH_GATE_END
 כל הכפתורים חייבים להיות בעברית, גדולים, ברורים, RTL, ולנווט רק לנתיבים קיימים. אין להוסיף נתוני דמו ואין לשנות Participants, Gradebook, Logs, Supabase או Teacher Release.
 <!-- MTH_DASHBOARD_PRIMARY_BUTTONS_MENU_20260517_END -->
 
+
+
+<!-- MTH_DASHBOARD_DARK_BLUE_CONTRAST_20260517_START -->
+## Dashboard Dark Blue Contrast Design — 2026-05-17
+
+עמוד הבית החכם חייב להיות קריא וברור בעין:
+- אזור הפתיחה הראשי חייב להיות כחול כהה אמיתי.
+- הכותרת והטקסטים שעל הרקע הכהה חייבים להיות לבנים, חזקים וברורים.
+- אסור להשתמש ברקע בהיר או שקיפות חלשה שגורמת לטקסט לבן להיעלם.
+- כפתורי הפעולה הראשיים צריכים לשמור על כחול כהה/כחול פרימיום עם כתב לבן ברור.
+- אין לשנות לוגיקת Participants, Gradebook, Logs, Supabase או Teacher Release במסגרת תיקון עיצוב זה.
+<!-- MTH_DASHBOARD_DARK_BLUE_CONTRAST_20260517_END -->
