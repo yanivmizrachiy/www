@@ -1147,16 +1147,12 @@ function buildCourseStructureImport(rows, session, meta = {}) {
       const rawValue = row[activityHeaders[i]];
       const status = parseCourseCompletionStatus(rawValue);
 
-      // If the task has no chapter_id yet and a row-level section column exists, assign it.
-      const effectiveChapterId = task.chapter_id
-        ?? (rowSectionName ? sectionMap.get(rowSectionName)?.id ?? null : null);
-
       completions.push({
         id: stableUuidFromText("task_completion|" + courseId + "|" + student.identifier + "|" + task.id),
         course_id: courseId,
         import_batch_id: batchId,
         task_id: task.id,
-        chapter_id: effectiveChapterId,
+        chapter_id: task.chapter_id,
         student_id: student.student_id,
         student_full_name: student.full_name,
         student_identifier: student.identifier,
@@ -1168,12 +1164,10 @@ function buildCourseStructureImport(rows, session, meta = {}) {
     }
   }
 
-  // After processing rows, back-fill chapter_id on tasks when section came from a row column.
-  if (sectionColumnHeader && sectionMap.size > 0) {
-    const firstSection = [...sectionMap.values()][0];
-    for (const task of tasks) {
-      if (!task.chapter_id) task.chapter_id = firstSection.id;
-    }
+  // When a section column exists but is row-level, activity columns cannot be safely mapped
+  // to a section (each row may have a different section value). Tasks stay uncategorized.
+  if (sectionColumnHeader) {
+    warnings.push("Section column found, but it is row-level and cannot safely map activity columns to sections. Tasks saved uncategorized.");
   }
 
   const sections = [...sectionMap.values()];
