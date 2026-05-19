@@ -1,16 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useImportsOverview } from "@/hooks/useImports";
-import TeacherStatusPanel from "@/components/TeacherStatusPanel";
 import { useSyncStatus } from "@/hooks/useSyncStatus";
 import { useLtiSession } from "@/hooks/useLtiSession";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, GraduationCap, ClipboardList, Database, Calendar, Import, ArrowRight, AlertCircle, RefreshCw } from "lucide-react";
+import { Users, GraduationCap, ClipboardList, Database, Calendar, Import, AlertCircle, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
-import SyncFeatureGates from "@/components/SyncFeatureGates";
-import MoodleCapabilityPanel from "@/components/MoodleCapabilityPanel";
 
 function StatCard({ label, value, icon: Icon, delay = 0 }: { label: string, value: number | string, icon: any, delay?: number }) {
   return (
@@ -31,6 +28,35 @@ function StatCard({ label, value, icon: Icon, delay = 0 }: { label: string, valu
         </CardContent>
       </Card>
     </motion.div>
+  );
+}
+
+function ActionCard({
+  to,
+  marker,
+  icon: Icon,
+  title,
+  value,
+  unit,
+}: {
+  to: string;
+  marker: string;
+  icon: any;
+  title: string;
+  value: number | string;
+  unit: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className={`${marker} MTH_DASHBOARD_DARK_BLUE_CARD_V1 rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-8 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]`}
+    >
+      <Icon className="mb-5 h-14 w-14" />
+      <div className="text-5xl font-black leading-tight tracking-tight">{title}</div>
+      <div className="mt-5 inline-flex rounded-full border border-white/25 bg-white/15 px-5 py-2 text-base font-black text-white shadow-lg">
+        {value} {unit}
+      </div>
+    </Link>
   );
 }
 
@@ -55,22 +81,27 @@ export default function Dashboard() {
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    second: "2-digit"
   }).format(now), [now]);
 
+  const teacherName = session?.moodle_username || "—";
+  const courseName = session?.course_title || site?.site_name || "—";
+
   return (
-    <div className="space-y-8" dir="rtl">\n      <span className="sr-only">MTH_DASHBOARD_DARK_BLUE_CONTRAST_V1</span>
+    <div className="MTH_DASHBOARD_ACTION_HUB_V1 space-y-8" dir="rtl">
+      <span className="sr-only">MTH_DASHBOARD_ACTION_ONLY_NO_EXPLAINER_TEXT_V1</span>
+
       <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#06152f] via-[#082b66] to-[#0b4f8f] p-8 text-white shadow-[0_30px_90px_rgba(6,21,47,0.45)] lg:p-12">
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-6">
-          <div className="space-y-4 max-w-2xl">
+          <div className="space-y-5 max-w-4xl">
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-[#0b2b5c]/90 px-4 py-2 text-sm font-black text-white shadow-lg backdrop-blur-md"
             >
               <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
-              {hasSession ? "מחובר מתוך Moodle" : "ממתין לכניסה מאומתת מתוך Moodle"}
+              {hasSession ? "מחובר מתוך Moodle" : "נדרשת פתיחה מתוך Moodle"}
             </motion.div>
+
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -84,25 +115,25 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.16 }}
-              className="inline-flex flex-wrap items-center gap-3 rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 text-lg font-black text-white shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm"
+              className="grid gap-3 md:grid-cols-3"
             >
-              <Calendar className="h-5 w-5" />
-              <span>מעודכן לתאריך: {updatedAtText}</span>
+              <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 text-base font-black text-white shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
+                מורה: {teacherName}
+              </div>
+              <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 text-base font-black text-white shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
+                מרחב: {courseName}
+              </div>
+              <div className="flex items-center gap-2 rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 text-base font-black text-white shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
+                <Calendar className="h-5 w-5" />
+                {updatedAtText}
+              </div>
             </motion.div>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-xl font-bold leading-relaxed text-white drop-shadow-[0_3px_12px_rgba(0,0,0,0.35)]"
-            >
-              {session?.course_title ?? site?.site_name ?? "עדיין לא התקבלה כניסה אמיתית מתוך Moodle. ניתן להתחיל רק מייבוא נתוני Moodle אמיתיים."}
-            </motion.p>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="flex flex-wrap gap-4 pt-4"
+              transition={{ delay: 0.24 }}
+              className="flex flex-wrap gap-4 pt-2"
             >
               <Button
                 size="lg"
@@ -120,7 +151,7 @@ export default function Dashboard() {
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="border-white/40 bg-[#06152f]/55 text-white hover:bg-[#0f3d75]/90 font-black">
-                <Link to="/reports">צפייה בדוחות</Link>
+                <Link to="/reports">דוחות</Link>
               </Button>
             </motion.div>
           </div>
@@ -128,7 +159,7 @@ export default function Dashboard() {
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.4, type: "spring" }}
+            transition={{ delay: 0.35, type: "spring" }}
           >
             <StatusBadge status={hasSession ? "proven" : "missing"} className="scale-150 shadow-2xl" />
           </motion.div>
@@ -139,62 +170,42 @@ export default function Dashboard() {
       </section>
 
       <section className="grid gap-5 lg:grid-cols-4" aria-label="כפתורי פעולה ראשיים בעמוד הבית החכם">
-        <Link
+        <ActionCard
           to="/students"
-          className="MTH_DASHBOARD_MAIN_PARTICIPANTS_BUTTON_V1 MTH_DASHBOARD_DARK_BLUE_CARD_V1 rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-8 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]"
-        >
-          <Users className="mb-5 h-14 w-14" />
-          <div className="text-5xl font-black leading-tight tracking-tight">משתתפים</div>
-          <p className="mt-3 text-lg font-bold leading-relaxed text-white">
-            רשימת תלמידים ומשתתפים מנתוני Moodle אמיתיים בלבד.
-          </p>
-          <div className="mt-5 inline-flex rounded-full border border-white/25 bg-white/15 px-5 py-2 text-base font-black text-white shadow-lg">
-            {v(data?.students_count)} תלמידים
-          </div>
-        </Link>
-
-        <Link
+          marker="MTH_DASHBOARD_MAIN_PARTICIPANTS_BUTTON_V1"
+          icon={Users}
+          title="משתתפים"
+          value={v(data?.students_count)}
+          unit="תלמידים"
+        />
+        <ActionCard
           to="/tasks"
-          className="MTH_DASHBOARD_MAIN_ACTIVITIES_BUTTON_V1 MTH_DASHBOARD_DARK_BLUE_CARD_V1 rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-8 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]"
-        >
-          <ClipboardList className="mb-5 h-14 w-14" />
-          <div className="text-5xl font-black leading-tight tracking-tight">פרקים ופעילויות</div>
-          <p className="mt-3 text-lg font-bold leading-relaxed text-white">
-            כניסה מהירה לפרקים, משימות ופעילויות לפי נתוני אמת.
-          </p>
-          <div className="mt-5 inline-flex rounded-full border border-white/25 bg-white/15 px-5 py-2 text-base font-black text-white shadow-lg">
-            {v(data?.tasks_count)} משימות
-          </div>
-        </Link>
-
-        <Link
+          marker="MTH_DASHBOARD_MAIN_ACTIVITIES_BUTTON_V1"
+          icon={ClipboardList}
+          title="פרקים ופעילויות"
+          value={v(data?.tasks_count)}
+          unit="משימות"
+        />
+        <ActionCard
           to="/grades"
-          className="MTH_DASHBOARD_MAIN_GRADES_BUTTON_V1 MTH_DASHBOARD_DARK_BLUE_CARD_V1 rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-8 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]"
-        >
-          <GraduationCap className="mb-5 h-14 w-14" />
-          <div className="text-5xl font-black leading-tight tracking-tight">ציונים</div>
-          <p className="mt-3 text-lg font-bold leading-relaxed text-white">
-            ציונים ופריטי ציון שיובאו מ־Gradebook אמיתי.
-          </p>
-          <div className="mt-5 inline-flex rounded-full border border-white/25 bg-white/15 px-5 py-2 text-base font-black text-white shadow-lg">
-            {v(data?.grades_count)} ציונים
-          </div>
-        </Link>
-
+          marker="MTH_DASHBOARD_MAIN_GRADES_BUTTON_V1"
+          icon={GraduationCap}
+          title="ציונים"
+          value={v(data?.grades_count)}
+          unit="ציונים"
+        />
         <a
           href="#all-actions-menu"
           className="MTH_DASHBOARD_MAIN_ALL_BUTTON_V1 MTH_DASHBOARD_DARK_BLUE_CARD_V1 rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-8 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]"
         >
           <Database className="mb-5 h-14 w-14" />
           <div className="text-5xl font-black leading-tight tracking-tight">כל השאר</div>
-          <p className="mt-3 text-lg font-bold leading-relaxed text-white">
-            ייבוא, דוחות, פעילות, ייצוא, הגדרות ותמיכה בתפריט מסודר.
-          </p>
           <div className="mt-5 inline-flex rounded-full border border-white/25 bg-white/15 px-5 py-2 text-base font-black text-white shadow-lg">
             תפריט
           </div>
         </a>
       </section>
+
       {error && (
         <div className="rounded-xl border border-status-blocked/30 bg-status-blocked-bg/10 p-4 flex gap-3 text-sm text-status-blocked items-start">
           <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />
@@ -212,39 +223,8 @@ export default function Dashboard() {
         </div>
       )}
 
-      {syncStatus.data?.next_actions_he?.length ? (
-        <section className="rounded-3xl border border-primary/10 bg-white/80 p-6 shadow-elegant">
-          <h2 className="mb-3 text-lg font-extrabold text-primary">מה חסר כדי להמשיך?</h2>
-          <div className="grid gap-2">
-            {syncStatus.data.next_actions_he.map((action, index) => (
-              <div key={`${action}-${index}`} className="rounded-xl bg-muted/50 p-3 text-sm font-medium">
-                {action}
-              </div>
-            ))}
-          </div>
-          <p className="mt-4 text-xs text-muted-foreground">
-            אין כאן נתוני דמו. הכפתור בודק יכולות וחוסרים לפי הנתונים האמיתיים שקיימים כרגע.
-          </p>
-        </section>
-      ) : null}
-
-      <SyncFeatureGates status={syncStatus.data} loading={syncStatus.loading} />
-
-      <TeacherStatusPanel />
-
-      <MoodleCapabilityPanel />
-
-
       <section id="all-actions-menu" className="MTH_DASHBOARD_SECONDARY_MENU_V1 scroll-mt-8 rounded-[2rem] border border-primary/10 bg-muted/30 p-6 shadow-elegant">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-2xl font-black text-primary">תפריט כל השאר</h2>
-            <p className="mt-1 text-sm font-bold text-muted-foreground">
-              כל הפעולות הנוספות במקום אחד, בלי עומס בעמוד הראשי.
-            </p>
-          </div>
-          <span className="rounded-full bg-primary/10 px-4 py-2 text-xs font-black text-primary">תפריט משני</span>
-        </div>
+        <h2 className="mb-5 text-2xl font-black text-primary">פעולות נוספות</h2>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/import">ייבוא נתונים</Link></Button>
           <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/gradebook-import">ייבוא Gradebook</Link></Button>
@@ -253,73 +233,26 @@ export default function Dashboard() {
           <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/reports">דוחות</Link></Button>
           <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/export">ייצוא</Link></Button>
           <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/settings">הגדרות</Link></Button>
-          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/setup">התקנה / חיבור Moodle</Link></Button>
+          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/setup">חיבור Moodle</Link></Button>
+          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/missing-data">מה חסר</Link></Button>
         </div>
       </section>
+
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <StatCard label="תלמידים רשומים" value={v(data?.students_count)} icon={Users} delay={0.1} />
+        <StatCard label="תלמידים" value={v(data?.students_count)} icon={Users} delay={0.1} />
         <StatCard label="פריטי ציון" value={v(data?.grade_items_count)} icon={GraduationCap} delay={0.2} />
-        <StatCard label="ציונים שנקלטו" value={v(data?.grades_count)} icon={Database} delay={0.3} />
-        <StatCard label="פרקים/נושאים" value={v(data?.chapters_count)} icon={ClipboardList} delay={0.4} />
+        <StatCard label="ציונים" value={v(data?.grades_count)} icon={Database} delay={0.3} />
+        <StatCard label="פרקים" value={v(data?.chapters_count)} icon={ClipboardList} delay={0.4} />
         <StatCard label="משימות" value={v(data?.tasks_count)} icon={ClipboardList} delay={0.5} />
-        <StatCard label="אירועי לוג" value={v(data?.log_events_count)} icon={Calendar} delay={0.6} />
-      </section>
-
-      <section className="grid gap-6 lg:grid-cols-2">
-        <Card className="shadow-elegant border-none bg-muted/30">
-          <CardHeader>
-            <CardTitle className="text-lg">סיכום סטטוס אמת</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              הנתונים המוצגים כאן נגזרים רק מהייבוא שבוצע או מסשן Moodle מאומת. המערכת אינה מחשבת ממוצעים או זמנים על בסיס נתונים חסרים.
-            </p>
-            <div className="flex gap-4">
-              <Button asChild variant="ghost" className="p-0 text-primary font-bold hover:bg-transparent">
-                <Link to="/reports/gaps" className="flex items-center gap-1">
-                  הצג דוח פערים
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-elegant border-none bg-primary/5 border border-primary/10">
-          <CardHeader>
-            <CardTitle className="text-lg text-primary">השלמה מהירה</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm font-medium">ייבוא מהיר של נתוני לוגים לשיפור דוח זמן תרגול:</p>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between rounded-lg bg-white/50 p-3 text-xs">
-                <span>דוא"ל תלמידים:</span>
-                <span className={data?.students_count ? "text-status-proven font-bold" : "text-status-blocked"}>
-                  {data?.students_count ? "פעיל" : "נדרש ייבוא"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between rounded-lg bg-white/50 p-3 text-xs">
-                <span>מיפוי משימות לפרקים:</span>
-                <span className={data?.chapters_count ? "text-status-proven font-bold" : "text-status-blocked"}>
-                  {data?.chapters_count ? "פעיל" : "חסר מיפוי"}
-                </span>
-              </div>
-            </div>
-            <Button asChild className="w-full">
-              <Link to="/import">עבור לממשק הייבוא</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <StatCard label="לוגים" value={v(data?.log_events_count)} icon={Calendar} delay={0.6} />
       </section>
 
       {loading && (
         <div className="fixed bottom-8 left-8 flex items-center gap-3 rounded-full bg-white px-4 py-2 shadow-2xl border animate-bounce">
           <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-          <span className="text-[10px] font-bold">טוען נתוני אמת...</span>
+          <span className="text-[10px] font-bold">טוען...</span>
         </div>
       )}
     </div>
   );
 }
-
-
