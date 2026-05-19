@@ -1010,6 +1010,254 @@ async function writeMoodleLogsToSupabase(logsImport, session) {
 }
 // <<< MTH_MOODLE_LOGS_IMPORT_V1 <<<
 
+
+// >>> MTH_COURSE_STRUCTURE_IMPORT_V1 >>>
+const COURSE_STRUCTURE_IDENTITY_NORMALIZED = [
+  "שםפרטי", "firstname", "first_name",
+  "שםמשפחה", "surname", "lastname", "last_name",
+  "שםמלא", "fullname", "name", "שם",
+  "מספרזיהוי", "מספרזהות", "מספרמזהה", "idnumber",
+  "כתובתדואל", "כתובתדוא״ל", "דואל", "דוא״ל", "דואראלקטרוני",
+  "emailaddress", "email",
+  "שםמשתמש", "username", "login",
+  "מוסד", "institution",
+  "מחלקה", "department",
+  "תאריךהפקתהדוח", "dateofreport"
+];
+
+// Column headers that signal a dedicated section/chapter name column.
+const COURSE_SECTION_COLUMN_NORMALIZED = ["פרק", "section", "sections", "sectionname", "chapter", "chaptername", "סעיף", "קטע", "יחידה"];
+
+function isCourseStructureIdentityHeader(header) {
+  const n = normalizeImportKey(header);
+  return COURSE_STRUCTURE_IDENTITY_NORMALIZED.includes(n);
+}
+
+function isSectionColumnHeader(header) {
+  return COURSE_SECTION_COLUMN_NORMALIZED.includes(normalizeImportKey(header));
+}
+
+function parseCourseCompletionStatus(rawValue) {
+  const raw = String(rawValue ?? "").trim().toLowerCase();
+  if (!raw || raw === "-") return "unknown";
+  if (raw === "הושלם" || raw === "completed" || raw === "✓" || raw === "true" || raw === "1") return "complete";
+  if (raw.startsWith("הושלם") || raw.startsWith("completed")) return "complete";
+  if (raw === "לא הושלם" || raw === "not completed" || raw === "✗" || raw === "false" || raw === "0") return "incomplete";
+  return "incomplete";
+}
+
+// Parse optional "SectionName: TaskName" or "SectionName — TaskName" prefix from an activity column header.
+// Returns { sectionName, taskName } — sectionName is null when no prefix pattern is found.
+function parseSectionPrefix(header) {
+  const separators = [/^(.+?):\s+(.+)$/, /^(.+?)\s+[—–-]{1,2}\s+(.+)$/];
+  for (const re of separators) {
+    const m = header.match(re);
+    if (m && m[1].length > 1 && m[2].length > 1) {
+      return { sectionName: m[1].trim(), taskName: m[2].trim() };
+    }
+  }
+  return { sectionName: null, taskName: header.trim() };
+}
+
+function buildCourseStructureImport(rows, session, meta = {}) {
+  const input = Array.isArray(rows) ? rows : [];
+  const headers = Array.from(new Set(input.flatMap(row => Object.keys(row || {}))));
+  const courseId = gradebookCourseId(session);
+  const batchId = crypto.randomUUID();
+  const now = new Date().toISOString();
+  const warnings = [];
+
+  if (!input.length) warnings.push("Course structure payload is empty.");
+
+  // Detect a dedicated section column if one is present.
+  const sectionColumnHeader = headers.find(isSectionColumnHeader) ?? null;
+
+  // Activity columns = all headers that are neither identity nor dedicated section column.
+  const activityHeaders = headers.filter(h => !isCourseStructureIdentityHeader(h) && !isSectionColumnHeader(h));
+
+  if (!activityHeaders.length) warnings.push("No activity columns detected. Expected non-identity columns after student name/ID columns.");
+
+  // Build sections map: sectionName → course_section row.
+  // Strategy priority:
+  //  1. Dedicated section column: use distinct values from the rows.
+  //  2. Prefix pattern in activity header: e.g. "Week 1: Quiz".
+  //  3. No section info → sections = empty, all tasks uncategorized.
+  const sectionMap = new Map(); // sectionName → { id, chapter_name, position }
+
+  function getOrCreateSection(sectionName) {
+    if (!sectionName) return null;
+    if (!sectionMap.has(sectionName)) {
+      sectionMap.set(sectionName, {
+        id: stableUuidFromText("course_section|" + courseId + "|" + sectionName),
+        course_id: courseId,
+        import_batch_id: batchId,
+        chapter_name: sectionName,
+        position: sectionMap.size + 1,
+        created_at: now
+      });
+    }
+    return sectionMap.get(sectionName);
+  }
+
+  // If no dedicated section column, try to parse section prefix from activity headers.
+  // This is done once at import time (column-level), not per-student-row.
+  const activityMeta = activityHeaders.map(header => {
+    const { sectionName, taskName } = parseSectionPrefix(header);
+    return { header, sectionName, taskName };
+  });
+
+  // Populate sections from activity header prefixes when no dedicated section column exists.
+  if (!sectionColumnHeader) {
+    for (const am of activityMeta) {
+      if (am.sectionName) getOrCreateSection(am.sectionName);
+    }
+  }
+
+  // Build tasks. chapter_id resolves after sections are known.
+  const tasks = activityMeta.map((am, index) => {
+    const section = sectionColumnHeader ? null : (am.sectionName ? sectionMap.get(am.sectionName) : null);
+    return {
+      id: stableUuidFromText("course_task|" + courseId + "|" + am.header),
+      course_id: courseId,
+      import_batch_id: batchId,
+      chapter_id: section?.id ?? null,
+      task_name: am.taskName,
+      task_type: null,
+      position: index + 1,
+      due_date: null,
+      created_at: now
+    };
+  });
+
+  // Build completions per student.
+  const completions = [];
+  let skippedStudents = 0;
+
+  for (const row of input) {
+    const student = gradebookStudentFromRow(row, session);
+    if (!student) { skippedStudents++; continue; }
+
+    // If there is a dedicated section column, resolve section from the row value.
+    // (Per-row section column is unusual but supported — it overrides the task's chapter_id.)
+    const rowSectionName = sectionColumnHeader ? pickImportValue(row, [sectionColumnHeader]) || null : null;
+    if (rowSectionName) getOrCreateSection(rowSectionName);
+
+    for (let i = 0; i < tasks.length; i++) {
+      const task = tasks[i];
+      const rawValue = row[activityHeaders[i]];
+      const status = parseCourseCompletionStatus(rawValue);
+
+      completions.push({
+        id: stableUuidFromText("task_completion|" + courseId + "|" + student.identifier + "|" + task.id),
+        course_id: courseId,
+        import_batch_id: batchId,
+        task_id: task.id,
+        chapter_id: task.chapter_id,
+        student_id: student.student_id,
+        student_full_name: student.full_name,
+        student_identifier: student.identifier,
+        is_complete: status === "complete",
+        status,
+        completed_at: status === "complete" ? now : null,
+        created_at: now
+      });
+    }
+  }
+
+  // When a section column exists but is row-level, activity columns cannot be safely mapped
+  // to a section (each row may have a different section value). Tasks stay uncategorized.
+  if (sectionColumnHeader) {
+    warnings.push("Section column found, but it is row-level and cannot safely map activity columns to sections. Tasks saved uncategorized.");
+  }
+
+  const sections = [...sectionMap.values()];
+
+  if (tasks.length === 0) warnings.push("No tasks were created. Verify the file contains activity columns.");
+  if (completions.length === 0 && input.length > 0) warnings.push("No completion rows created. Verify rows contain student identity fields.");
+  if (sections.length === 0 && tasks.length > 0) warnings.push("No section/chapter data found. Tasks saved as uncategorized.");
+
+  const batch = {
+    id: batchId,
+    report_type: "completion",
+    file_name: meta.file_name || null,
+    row_count: tasks.length,
+    status: tasks.length > 0 ? "completed" : "partial",
+    imported_by_username: session?.moodleUsername || session?.teacherName || null,
+    detection_confidence: typeof meta.detection_confidence === "number" ? meta.detection_confidence : null,
+    source_kind: meta.source_kind || "file",
+    warnings,
+    created_at: now,
+    ...buildBatchProvenance({
+      import_batch_id: batchId,
+      source_kind: meta.source_kind || "file",
+      source_name: meta.file_name || null,
+      status: tasks.length > 0 ? "completed" : "partial",
+      row_count: tasks.length
+    }, session)
+  };
+
+  return {
+    ok: tasks.length > 0,
+    batch,
+    sections,
+    tasks,
+    completions,
+    activity_headers: activityHeaders,
+    section_column_used: sectionColumnHeader,
+    warnings,
+    skipped_students: skippedStudents
+  };
+}
+
+async function writeCourseStructureToSupabase(courseImport, session) {
+  const supabase = getSupabaseClient();
+  if (!supabase) return { ok: false, skipped: true, reason: "SUPABASE_NOT_CONFIGURED" };
+
+  const [teacherResult, courseResult] = await Promise.all([
+    ensureTeacher(supabase, session),
+    ensureCourse(supabase, session)
+  ]);
+
+  const batchWrite = await tryInsertImportBatch(supabase, courseImport.batch, session, teacherResult, courseResult);
+  if (!batchWrite.ok) return { ok: false, skipped: false, ...batchWrite };
+
+  // Write sections first (tasks reference them by chapter_id).
+  let sectionsWritten = 0;
+  if (courseImport.sections.length > 0) {
+    const sectionsWrite = await upsertChunked(supabase, "course_sections", courseImport.sections, { onConflict: "id" });
+    if (!sectionsWrite.ok) return { ok: false, skipped: false, ...sectionsWrite };
+    sectionsWritten = sectionsWrite.written;
+  }
+
+  const tasksWrite = await upsertChunked(supabase, "course_tasks", courseImport.tasks, { onConflict: "id" });
+  if (!tasksWrite.ok) return { ok: false, skipped: false, ...tasksWrite };
+
+  // task_completions: gracefully skip if the table doesn't exist yet.
+  let completionsWritten = 0;
+  let completionsSkipped = false;
+  if (courseImport.completions.length > 0) {
+    const result = await upsertChunked(supabase, "task_completions", courseImport.completions, { onConflict: "id" });
+    if (result.ok) {
+      completionsWritten = result.written;
+    } else {
+      completionsSkipped = true;
+    }
+  }
+
+  return {
+    ok: true,
+    skipped: false,
+    import_batch_variant: batchWrite.variant,
+    sections_written: sectionsWritten,
+    tasks_written: tasksWrite.written,
+    completions_written: completionsWritten,
+    completions_skipped: completionsSkipped,
+    teacher_result: teacherResult.ok ? "ok" : teacherResult.reason,
+    course_result: courseResult.ok ? "ok" : courseResult.reason
+  };
+}
+// <<< MTH_COURSE_STRUCTURE_IMPORT_V1 <<<
+
 function recordLaunchCapture(body, verificationCode) {
   store.moodleCaptures.push({
     id: crypto.randomUUID(),
@@ -2368,6 +2616,80 @@ app.post("/api/import", async (req, res) => {
         no_fake_grades: true,
         no_teacher_release_change: true
       }
+    });
+  }
+
+  if (reportType === "completion") {
+    const courseImport = buildCourseStructureImport(Array.isArray(body.payload) ? body.payload : [], session, {
+      file_name: body.file_name || null,
+      source_kind: body.source_kind || "file",
+      detection_confidence: typeof body.detection_confidence === "number" ? body.detection_confidence : null
+    });
+
+    if (!courseImport.ok) {
+      return res.status(400).json({
+        ok: false,
+        error: "COURSE_STRUCTURE_IMPORT_NOT_READY",
+        detail: courseImport.warnings.join(" | "),
+        activity_headers_detected: courseImport.activity_headers.length,
+        rows_seen: Array.isArray(body.payload) ? body.payload.length : 0,
+        safety: { no_fake_tasks: true, no_teacher_release_change: true }
+      });
+    }
+
+    const sbWrite = await writeCourseStructureToSupabase(courseImport, session);
+    if (!sbWrite.ok && !sbWrite.skipped) {
+      return res.status(502).json({
+        ok: false,
+        error: sbWrite.reason,
+        detail: sbWrite.detail || null,
+        code: sbWrite.code || null,
+        note: "Course structure import was NOT persisted to durable storage.",
+        safety: { no_fake_tasks: true, no_teacher_release_change: true }
+      });
+    }
+
+    if (!Array.isArray(store.importBatches)) store.importBatches = [];
+    if (!Array.isArray(store.tasks)) store.tasks = [];
+    if (!Array.isArray(store.chapters)) store.chapters = [];
+
+    store.importBatches.push(courseImport.batch);
+    store.chapters = [
+      ...store.chapters.filter(c => !courseImport.sections.some(next => next.id === c.id)),
+      ...courseImport.sections
+    ];
+    store.tasks = [
+      ...store.tasks.filter(t => !courseImport.tasks.some(next => next.id === t.id)),
+      ...courseImport.tasks
+    ];
+    store.settings.lastSyncAt = new Date().toISOString();
+    saveStore();
+
+    return res.json({
+      ok: true,
+      mode: "course-structure-import",
+      version: "MTH_COURSE_STRUCTURE_IMPORT_V1",
+      batch_id: courseImport.batch.id,
+      rows_seen: Array.isArray(body.payload) ? body.payload.length : 0,
+      activity_headers_detected: courseImport.activity_headers.length,
+      sections_found: courseImport.sections.length,
+      sections_written: sbWrite.skipped ? 0 : sbWrite.sections_written,
+      tasks_written: sbWrite.skipped ? 0 : sbWrite.tasks_written,
+      completions_written: sbWrite.skipped ? 0 : sbWrite.completions_written,
+      skipped_students: courseImport.skipped_students,
+      section_column_used: courseImport.section_column_used,
+      warnings: courseImport.warnings,
+      supabase: sbWrite.skipped
+        ? { written: false, reason: sbWrite.reason }
+        : {
+            written: true,
+            sections_written: sbWrite.sections_written,
+            tasks_written: sbWrite.tasks_written,
+            completions_written: sbWrite.completions_written,
+            completions_skipped: sbWrite.completions_skipped,
+            import_batch_variant: sbWrite.import_batch_variant
+          },
+      safety: { no_fake_tasks: true, no_fake_sections: true, no_teacher_release_change: true }
     });
   }
 
