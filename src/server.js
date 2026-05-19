@@ -2048,6 +2048,103 @@ app.get("/api/capabilities/status", async (req, res) => {
     checked_at: new Date().toISOString()
   });
 });
+
+app.get("/api/automation/capabilities", async (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req) || sessionFromRequest(req);
+  const courseId = String(session?.courseId || session?.course_id || session?.contextId || "").trim();
+  const courseName = session?.courseTitle || session?.spaceTitle || null;
+  const teacherName = String(session?.teacherName || session?.moodleUsername || null || "");
+  const moodleUsername = String(session?.moodleUsername || session?.teacherName || null || "");
+
+  const sbCounts = await getSupabaseCounts();
+  const studentCount = sbCounts?.students ?? (Array.isArray(store.students) ? store.students.length : 0);
+  const gradeItemsCount = sbCounts?.grade_items ?? (Array.isArray(store.gradeItems) ? store.gradeItems.length : 0);
+  const gradeResultsCount = sbCounts?.grade_results ?? (Array.isArray(store.grades) ? store.grades.length : 0);
+  const logEventsCount = sbCounts?.log_events ?? (Array.isArray(store.logEvents) ? store.logEvents.length : 0);
+  const hasStudents = studentCount > 0;
+  const hasGradebook = gradeItemsCount > 0 || gradeResultsCount > 0;
+  const hasLogs = logEventsCount > 0;
+  const hasCourseStructure = (Array.isArray(store.chapters) && store.chapters.length > 0) || (Array.isArray(store.completionRows) && store.completionRows.length > 0);
+  const moodleWsConfigured = !!env("MOODLE_WS_TOKEN");
+  const connected = Boolean(session);
+
+  const warnings = [];
+  if (!connected) warnings.push("הממשק לא זוהה בסשן LTI. פתח מתוך Moodle כדי להתחבר.");
+  if (!courseId) warnings.push("פתח את הכלי מתוך מרחב Moodle כדי שנוכל לזהות את הקורס ולבנות קישורי דוחות.");
+  if (connected && !hasStudents) warnings.push("עדיין לא יובא דוח Participants אמיתי.");
+  if (connected && !hasGradebook) warnings.push("עדיין לא יובא דוח Gradebook אמיתי.");
+  if (connected && !hasLogs) warnings.push("עדיין לא יובא דוח Logs אמיתי.");
+  if (connected && !hasCourseStructure) warnings.push("עדיין לא יובא דוח Course Structure / Activity Completion אמיתי.");
+
+  const nextBestAction = !courseId
+    ? "פתח את הכלי מתוך מרחב Moodle כדי שנוכל לזהות את הקורס ולבנות קישורי דוחות."
+    : !hasStudents
+      ? "העלה דוח Participants אמיתי כדי לאפשר את כל מסלולי הייבוא והדוחות."
+      : !hasGradebook
+        ? "העלה דוח Gradebook אמיתי כדי להשלים את סט הייבוא הפנימי."
+        : !hasLogs
+          ? "העלה דוח Logs אמיתי כדי להשלים את תמונת הפעילות והזמן."
+          : !hasCourseStructure
+            ? "העלה דוח Course Structure / Activity Completion אמיתי כדי לקבל דוחות מלאים יותר."
+            : !moodleWsConfigured
+              ? "השלם את הגדרת MOODLE_WS_TOKEN ב-Render כדי לקדם את המסלול האוטומטי."
+              : "השתמש בקישורי הדוחות האמיתיים ובדוק את הקורס. סנכרון API מלא עדיין לא הופעל.";
+
+  res.json({
+    ok: true,
+    connected,
+    teacherName: teacherName || null,
+    moodleUsername: moodleUsername || null,
+    courseId: courseId || null,
+    courseName,
+    ltiSessionAvailable: connected,
+    importsAvailable: {
+      participants: hasStudents,
+      gradebook: hasGradebook,
+      logs: hasLogs,
+      courseStructure: hasCourseStructure,
+    },
+    automationLevels: {
+      ltiContext: connected ? "available" : "missing",
+      manualReports: (hasStudents || hasGradebook || hasLogs || hasCourseStructure) ? "available" : "missing",
+      exportLinks: courseId ? "available" : "missing",
+      moodleWebServices: moodleWsConfigured ? "configured" : "missing",
+      autoSync: moodleWsConfigured ? "not_verified" : "missing",
+    },
+    teacherRelease: false,
+    warnings,
+    nextBestAction,
+  });
+});
+
+app.get("/api/automation/export-links", (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req) || sessionFromRequest(req);
+  const courseId = String(session?.courseId || session?.course_id || session?.contextId || "").trim();
+
+  if (!courseId) {
+    return res.json({
+      ok: false,
+      error: "missing_course_id",
+      message: "פתח את הכלי מתוך מרחב Moodle כדי שנוכל לזהות את הקורס ולהשלים את קישורי הדוחות.",
+    });
+  }
+
+  const encoded = encodeURIComponent(courseId);
+  res.json({
+    ok: true,
+    courseId,
+    links: {
+      activityCompletion: `/report/progress/index.php?course=${encoded}&activityinclude=all&activityorder=orderincourse&activitysection=-1`,
+      gradebook: `/grade/report/grader/index.php?id=${encoded}`,
+      gradebookExport: `/grade/export/txt/index.php?id=${encoded}`,
+      logs: `/report/log/index.php?chooselog=1&id=${encoded}`,
+      participants: `/user/index.php?id=${encoded}`,
+    },
+  });
+});
+
 // <<< MTH_CAPABILITY_DETECTOR_V1 <<<
 
 // >>> MTH_PRACTICE_TIME_TRUTH_GATE_V1 >>>

@@ -25,6 +25,7 @@ import Import from "./pages/Import";
 import GradebookImport from "./pages/GradebookImport";
 import LogsImport from "./pages/LogsImport";
 
+import Automation from "./pages/Automation";
 import Setup from "./pages/Setup";
 import LtiBootstrap from "./pages/LtiBootstrap";
 import NotFound from "./pages/NotFound";
@@ -63,6 +64,7 @@ const App = () => (
             <Route path="/reports/days" element={<DayReport />} />
             <Route path="/reports/gaps" element={<GapReport />} />
             <Route path="/export" element={<Export />} />
+            <Route path="/automation" element={<Automation />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/import" element={<Import />} />
             <Route path="/gradebook-import" element={<GradebookImport />} />

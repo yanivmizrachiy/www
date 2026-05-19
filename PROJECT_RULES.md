@@ -1,4 +1,5 @@
 <!-- MTH_SOURCE_OF_TRUTH_AUTOMATION_PLAN_20260518_START -->
+
 # מקור אמת נוכחי — Moodle Teacher Hub / www
 
 עודכן: 2026-05-18
@@ -8,6 +9,7 @@
 PROJECT_RULES.md הוא מקור האמת המחייב של הריפו yanivmizrachiy/www.
 
 בכל שינוי עתידי חייב להיות ברור:
+
 1. מה כבר בוצע.
 2. מה הדרישות של יניב.
 3. מה עובד בפועל.
@@ -46,6 +48,7 @@ Moodle Launch / LTI
 → תצוגה ודוחות באתר
 
 כלומר:
+
 - הנתונים אמיתיים.
 - אין דמו.
 - Participants עובד.
@@ -58,6 +61,7 @@ Manual Real Data Import הוא פתרון אמיתי ובטוח כרגע, אבל
 ## מה נדרש לשאיבה אוטומטית מלאה
 
 שאיבה אוטומטית מלאה דורשת אימות בפועל של לפחות אחד מהמסלולים:
+
 1. Moodle Web Services token אמיתי עם הרשאות מתאימות.
 2. LTI services מאומתים כמו NRPS / AGS שמחזירים את הנתונים הנדרשים.
 3. API רשמי אחר שמאפשר לקרוא משתתפים, ציונים, משימות, פעילות ולוגים לפי מרחב.
@@ -73,6 +77,7 @@ Manual Real Data Import הוא פתרון אמיתי ובטוח כרגע, אבל
 - Gradebook אמיתי יובא ונשמר.
 - Logs אמיתיים יובאו ונשמרו.
 - Practice time לא מומצא ונשאר חסום כשאין שדה משך רשמי.
+- מרכז אוטומציה ממודל V1 נוסף עם דף `/automation` ו־API סטטוס אמיתי.
 - Teacher Release עדיין NO.
 - עמוד הבית הראשי הושלם: עמוד הבית החכם.
 - נוספה שורת מעודכן לתאריך עם זמן אמיתי.
@@ -97,6 +102,7 @@ Manual Real Data Import הוא פתרון אמיתי ובטוח כרגע, אבל
    - Export.tsx
    - MissingData.tsx
    - StudentProfile.tsx
+   - Automation.tsx
 5. לבדוק מורה שני או מרחב שני.
 6. לוודא שאין ערבוב נתונים.
 7. רק אחרי כל שערי האמת — לשקול Teacher Release = YES.
@@ -104,6 +110,7 @@ Manual Real Data Import הוא פתרון אמיתי ובטוח כרגע, אבל
 ## מה אסור לקלקל
 
 אסור לשבור או לשנות בלי צורך:
+
 - Participants import.
 - Gradebook import.
 - Logs import.
@@ -127,11 +134,13 @@ Manual Real Data Import הוא פתרון אמיתי ובטוח כרגע, אבל
 איחוד UI פרימיום לכל המסכים: בערך 45%
 מוכנות לכל מורה בכל מרחב: בערך 75%-85%
 Teacher Release: NO
+
 <!-- MTH_SOURCE_OF_TRUTH_AUTOMATION_PLAN_20260518_END -->
 
 ---
 
 <!-- MTH_CURRENT_VERIFIED_STATE_20260512_START -->
+
 ## מצב אמת מאומת — 2026-05-12
 
 - ריפו: `yanivmizrachiy/www`.
@@ -140,6 +149,7 @@ Teacher Release: NO
 - Teacher release: **NO**.
 
 עובד ומאומת:
+
 - Automation Core V1 מוזג ל־`main`.
 - `/api/release/readiness` עובד ב־Live.
 - `/api/persistence/validate` עובד ב־Live.
@@ -148,6 +158,7 @@ Teacher Release: NO
 - אין החזרת שורות תלמידים.
 
 עדיין לא מאומת:
+
 - Launch אמיתי מתוך Moodle אחרי השינויים האחרונים.
 - Import מלא אמיתי.
 - בדיקת שני מורים/שני מרחבים.
@@ -155,11 +166,13 @@ Teacher Release: NO
 
 כלי חכמים:
 בכל שלב יש לבדוק כלים שיכולים לעזור באמת: GitHub, Render, Supabase, Moodle, CI, UX, RTL, דוחות וייצוא. אין להתקין כלי שלא מקדם עבודה אמיתית.
+
 <!-- MTH_CURRENT_VERIFIED_STATE_20260512_END -->
 
 # PROJECT_RULES — www / Moodle Teacher Hub
 
 <!-- MTH_CURRENT_VERIFIED_STATE_20260510_START -->
+
 ## מצב אמת מאומת — 2026-05-10
 
 הפרויקט אינו מתחיל מאפס. זהו ריפו קיים וחי, ויש להמשיך ממנו בלבד.
@@ -195,6 +208,7 @@ Teacher Release: NO
 7. דוחות וייצוא.
 
 Updated: 2026-05-10T05:10:58Z
+
 <!-- MTH_CURRENT_VERIFIED_STATE_20260510_END -->
 
 מסמך זה הוא מקור האמת העליון של הריפו `yanivmizrachiy/www`.
@@ -456,6 +470,7 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 <!-- MTH_PRODUCTION_HARDENING_END -->
 
 <!-- MTH_RUNTIME_DATA_SAFETY_20260510_START -->
+
 ## Runtime Data Safety — 2026-05-10
 
 נתוני Moodle אמיתיים אינם חלק מקוד המקור.
@@ -465,9 +480,11 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 הקובץ data/store.json הוא runtime/local בלבד. הדוגמה הסינתטית היחידה היא docs/examples/store.example.json.
 
 השלב הבא: persistence קבוע ואז מיפוי NRPS ↔ Participants.
+
 <!-- MTH_RUNTIME_DATA_SAFETY_20260510_END -->
 
 <!-- MTH_DOCS_ORGANIZATION_20260510_START -->
+
 ## Docs Organization — 2026-05-10
 
 תיקיית `docs/` מאורגנת לפי תפקיד:
@@ -483,9 +500,11 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 - `docs/archive-candidates/` — מסמכים ישנים לבדיקה לפני ארכיון.
 
 אין לשים ב־docs נתוני תלמידים אמיתיים, קבצי Moodle, גיבויי JSON או secrets.
+
 <!-- MTH_DOCS_ORGANIZATION_20260510_END -->
 
 <!-- MTH_SCRIPTS_ORGANIZATION_20260510_START -->
+
 ## Scripts Organization — 2026-05-10
 
 תיקיית `scripts/` מאורגנת לפי תפקיד:
@@ -499,9 +518,11 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 אם סקריפט מופיע ב־`package.json`, אסור להזיז אותו בלי לעדכן את `package.json` ולהריץ `npm run check` ו־`npm run build`.
 
 אין לשים secrets, נתוני תלמידים, גיבויי Moodle או קבצי CSV/XLSX בתוך scripts.
+
 <!-- MTH_SCRIPTS_ORGANIZATION_20260510_END -->
 
 <!-- MTH_REPO_ORGANIZATION_MASTER_20260510_START -->
+
 ## Repo Organization Master Plan — 2026-05-10
 
 הריפו מאורגן סביב מקור אמת אחד ברור.
@@ -544,9 +565,11 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 7. לבנות דוחות וייצוא.
 
 אין לסמן ציונים, לוגים, זמן תרגול או דוחות כעובדים עד שיש מקור נתונים אמיתי ואימות.
+
 <!-- MTH_REPO_ORGANIZATION_MASTER_20260510_END -->
 
 <!-- MTH_PERSISTENCE_PLAN_20260510_START -->
+
 ## Persistence Plan — 2026-05-10
 
 לפני הרחבה לציונים, לוגים, זמן תרגול ודוחות — חובה לבנות persistence קבוע.
@@ -584,14 +607,17 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 9. רק אחר כך דוחות.
 
 אין לסמן persistence כעובד עד שנתוני תלמידים אמיתיים נטענים מחדש אחרי restart/deploy בלי להיכנס לגיט.
+
 <!-- MTH_PERSISTENCE_PLAN_20260510_END -->
 
 <!-- MTH_SUPABASE_REVIEW_20260510_START -->
+
 ## Supabase Review — 2026-05-10
 
 לפני שימוש ב־Supabase כ־persistence קבוע, חובה לסקור את כל קבצי Supabase הקיימים.
 
 אסור להריץ:
+
 - SQL
 - migrations
 - Supabase Functions
@@ -605,9 +631,11 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 ה־schema העתידי חייב לתמוך בהפרדה לפי issuer/clientId/deploymentId/course/teacher/importBatch/sourceType.
 
 אין להכניס secrets, service-role keys, exports או נתוני תלמידים לגיט.
+
 <!-- MTH_SUPABASE_REVIEW_20260510_END -->
 
 <!-- MTH_AUTOMATION_FIRST_EXECUTION_20260511_START -->
+
 ## Automation-First Execution Rule — 2026-05-11
 
 המערכת חייבת לפעול לפי כלל עבודה אחד:
@@ -684,6 +712,7 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 <!-- MTH_AUTOMATION_FIRST_EXECUTION_20260511_END -->
 
 <!-- MTH_PRODUCTION_REALITY_HARDENING_20260511_START -->
+
 ## Production Reality / No-Demo Hardening — 2026-05-11
 
 הפרויקט הזה נבנה כמוצר אמיתי לשימוש אמיתי, ואולי גם כמוצר מסחרי עתידי. הוא אינו דמו.
@@ -697,12 +726,14 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 קיום route או מסך אינו מספיק כדי לסמן יכולת כעובדת.
 
 דוגמאות:
+
 - אם יש מסך `Grades`, זה לא אומר שציונים עובדים.
 - אם יש מסך `Activity`, זה לא אומר שזמני תרגול עובדים.
 - אם יש מסך `Tasks`, זה לא אומר שכל פרקי Moodle וכל המשימות נשלפים אוטומטית.
 - אם יש מסך `Reports`, זה לא אומר שדוחות production מוכנים.
 
 יכולת נחשבת עובדת רק אם יש:
+
 1. מקור נתונים אמיתי.
 2. קוד שמחובר למקור הזה.
 3. בדיקת build.
@@ -781,6 +812,7 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 <!-- MTH_PRODUCTION_REALITY_HARDENING_20260511_END -->
 
 <!-- MTH_HEBREW_NO_RESTART_MARKER_20260512_START -->
+
 ## כלל עברי מחייב — לא מתחילים מחדש
 
 לא מתחילים מחדש.
@@ -798,6 +830,7 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 אם יש מסך קיים, הוא אינו נחשב יכולת עובדת עד שיש מקור נתונים אמיתי, בדיקה, ותיעוד STATE.
 
 השלב הבא בקוד הוא Automation Core: Capability Detector, Sync Engine, Sync Status Endpoint, Feature Gates, וכפתור `סנכרן מרחב`.
+
 <!-- MTH_HEBREW_NO_RESTART_MARKER_20260512_END -->
 
 MTH_CURRENT_VERIFIED_STATE_AFTER_PR79_START
@@ -807,11 +840,13 @@ MTH_CURRENT_VERIFIED_STATE_AFTER_PR79_START
 Checked at: 20260515-182922
 
 Live:
+
 - Base URL: https://www-tijc.onrender.com
 - Gradebook preflight route: `/gradebook-import`
 - Gradebook UI marker found: `True`
 
 Persisted real data:
+
 - students: 62
 - import_batches: 1
 - teachers: 1
@@ -819,12 +854,14 @@ Persisted real data:
 - teacher_sessions: 39
 
 Still missing:
+
 - grade_items / grade_results
 - log_events
 - multi-teacher or multi-course isolation validation
 - Teacher Release YES
 
 Rules:
+
 - Do not repeat Participants as the main blocker unless live counts fall back to 0.
 - Next main blocker is Gradebook, then Logs.
 - Do not fake grades.
@@ -841,11 +878,13 @@ MTH_CURRENT_VERIFIED_STATE_AFTER_PR81_START
 Checked at: 20260516-222400
 
 Live:
+
 - Base URL: https://www-tijc.onrender.com
 - Gradebook route: /gradebook-import
 - Wide Gradebook UI marker found: True
 
 Persisted real data:
+
 - students: 62
 - import_batches: 1
 - teachers: 1
@@ -853,6 +892,7 @@ Persisted real data:
 - teacher_sessions: 39
 
 Wide Gradebook status:
+
 - Code implemented: true
 - UI deployed: true
 - report_type=grades enabled: true
@@ -860,12 +900,14 @@ Wide Gradebook status:
 - grade_results currently: 0
 
 Still missing:
+
 - Actual Gradebook import button click after uploading grad.ods
 - log_events
 - multi-teacher or multi-course isolation validation
 - Teacher Release YES
 
 Rules:
+
 - Do not repeat Participants as the main blocker unless live counts fall back to 0.
 - Next main action is clicking ייבא Gradebook אמיתי using the real grad.ods file.
 - Do not fake grades.
@@ -881,6 +923,7 @@ MTH_AFTER_REAL_GRADEBOOK_IMPORT_START
 ## After real Gradebook import
 
 Verified result:
+
 - students: 62
 - grade_items_written: 243
 - grade_results_written: 1693
@@ -890,6 +933,7 @@ Verified result:
 - Teacher Release remains NO
 
 Remaining blockers:
+
 - real Moodle Logs import
 - practice-time validation
 - multi-teacher or multi-course isolation validation
@@ -902,6 +946,7 @@ MTH_AFTER_REAL_LOGS_IMPORT_START
 ## After real Moodle Logs import
 
 Verified result:
+
 - students: 62
 - grade_items_written: 243
 - grade_results_written: 1693
@@ -912,11 +957,13 @@ Verified result:
 - Teacher Release remains NO
 
 Remaining blockers:
+
 - practice-time truth gate
 - multi-teacher or multi-course isolation validation
 - final Teacher Release gate
 
 Rules:
+
 - Do not invent practice time.
 - Do not expose raw logs publicly.
 - Do not commit source log rows to GitHub.
@@ -931,6 +978,7 @@ MTH_PRACTICE_TIME_TRUTH_GATE_START
 Checked at: 2026-05-17
 
 Verified result:
+
 - students: 62
 - grade_items_written: 243
 - grade_results_written: 1693
@@ -947,6 +995,7 @@ calculated without an official duration field. Timestamp-window estimation
 is permanently disabled to prevent fake official practice time.
 
 Rules:
+
 - Do NOT calculate practice time from timestamps.
 - Do NOT label timestamp-window estimates as official Moodle time.
 - Do NOT set practice_time_available=true until a real duration field exists.
@@ -955,15 +1004,18 @@ Rules:
 - If a future Moodle report provides an explicit duration field, re-run gate.
 
 Remaining blockers:
+
 - multi_teacher_or_multi_course_isolation
 - teacher_release_final_gate
 
 MTH_PRACTICE_TIME_TRUTH_GATE_END
 
 <!-- MTH_DASHBOARD_PRIMARY_BUTTONS_MENU_20260517_START -->
+
 ## Dashboard Primary Buttons and Secondary Menu — 2026-05-17
 
 עמוד הבית החכם חייב לכלול ארבעה כפתורים גדולים וברורים:
+
 - משתתפים
 - פרקים ופעילויות
 - ציונים
@@ -972,14 +1024,15 @@ MTH_PRACTICE_TIME_TRUTH_GATE_END
 שלושת הראשונים הם הפעולות הראשיות. הכפתור כל השאר מוביל לתפריט משני עם ייבוא, Gradebook, Logs, פעילות/זמנים, דוחות, ייצוא, הגדרות והתקנה.
 
 כל הכפתורים חייבים להיות בעברית, גדולים, ברורים, RTL, ולנווט רק לנתיבים קיימים. אין להוסיף נתוני דמו ואין לשנות Participants, Gradebook, Logs, Supabase או Teacher Release.
+
 <!-- MTH_DASHBOARD_PRIMARY_BUTTONS_MENU_20260517_END -->
 
-
-
 <!-- MTH_DASHBOARD_DARK_BLUE_CONTRAST_20260517_START -->
+
 ## Dashboard Dark Blue Contrast Design — 2026-05-17
 
 עמוד הבית החכם חייב להיות קריא וברור בעין:
+
 - אזור הפתיחה הראשי חייב להיות כחול כהה אמיתי.
 - הכותרת והטקסטים שעל הרקע הכהה חייבים להיות לבנים, חזקים וברורים.
 - אסור להשתמש ברקע בהיר או שקיפות חלשה שגורמת לטקסט לבן להיעלם.
