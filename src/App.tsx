@@ -24,6 +24,7 @@ import SettingsPage from "./pages/SettingsPage";
 import Import from "./pages/Import";
 import GradebookImport from "./pages/GradebookImport";
 import LogsImport from "./pages/LogsImport";
+import CourseStructureImport from "./pages/CourseStructureImport";
 
 import Automation from "./pages/Automation";
 import Setup from "./pages/Setup";
@@ -69,6 +70,7 @@ const App = () => (
             <Route path="/import" element={<Import />} />
             <Route path="/gradebook-import" element={<GradebookImport />} />
             <Route path="/logs-import" element={<LogsImport />} />
+            <Route path="/course-structure-import" element={<CourseStructureImport />} />
             <Route path="/missing-data" element={<MissingData />} />
             <Route path="/setup" element={<Setup />} />
           </Route>
