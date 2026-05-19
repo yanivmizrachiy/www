@@ -1,11 +1,11 @@
-<!-- MTH_SOURCE_OF_TRUTH_AUTOMATION_PLAN_20260518_START -->
+<!-- MTH_SOURCE_OF_TRUTH_AUTOMATION_PLAN_20260519_START -->
 # מקור אמת נוכחי — Moodle Teacher Hub / www
 
-עודכן: 2026-05-18
+עודכן: 2026-05-19
 
 ## כלל עליון
 
-PROJECT_RULES.md הוא מקור האמת המחייב של הריפו yanivmizrachiy/www.
+PROJECT_RULES.md הוא מקור האמת המחייב של הריפו `yanivmizrachiy/www`.
 
 בכל שינוי עתידי חייב להיות ברור:
 1. מה כבר בוצע.
@@ -32,7 +32,16 @@ PROJECT_RULES.md הוא מקור האמת המחייב של הריפו yanivmizr
 
 המערכת חייבת תמיד לשאוף למינימום פעולות ידניות מצד המורה.
 
-אבל אסור לכתוב או להציג שהכול אוטומטי אם זה לא אומת בפועל.
+יש להמשיך באופן קבוע לחקור ולשפר את כל מסלולי השאיבה האפשריים מתוך Moodle:
+- LTI launch/context.
+- LTI 1.3 services.
+- NRPS.
+- AGS.
+- Moodle Web Services אם ורק אם יש token אמיתי והרשאות מתאימות.
+- דוחות Moodle אמיתיים שהמורה מעלה או מדביק.
+- זיהוי דוח אוטומטי, מיפוי עמודות אוטומטי, ושמירה קבועה.
+
+אסור לכתוב או להציג שהכול אוטומטי אם זה לא אומת בפועל.
 
 ## מצב הנתונים הנוכחי
 
@@ -51,19 +60,71 @@ Moodle Launch / LTI
 - Participants עובד.
 - Gradebook עובד.
 - Logs עובד.
+- Supabase persistence קיים.
+- עמוד הבית הוא Action Hub ולא דף הסברים.
 - אבל עדיין אין שאיבה אוטומטית מלאה של כל הנתונים ממודל ללא פעולה מצד המורה.
 
 Manual Real Data Import הוא פתרון אמיתי ובטוח כרגע, אבל הוא לא החזון הסופי.
 
-## מה נדרש לשאיבה אוטומטית מלאה
+## כלל עמוד הבית — Action Hub בלבד
 
-שאיבה אוטומטית מלאה דורשת אימות בפועל של לפחות אחד מהמסלולים:
-1. Moodle Web Services token אמיתי עם הרשאות מתאימות.
-2. LTI services מאומתים כמו NRPS / AGS שמחזירים את הנתונים הנדרשים.
-3. API רשמי אחר שמאפשר לקרוא משתתפים, ציונים, משימות, פעילות ולוגים לפי מרחב.
-4. אימות שכל מורה רואה רק את המרחב שלו.
+עמוד הבית חייב להיות מסך פעולה נקי למורה, לא דף הסברים.
 
-עד שזה אומת, האתר חייב להציג את המצב כאמת: נתונים אמיתיים דרך ייבוא דוחות, לא שאיבה אוטומטית מלאה.
+חובה בעמוד הבית:
+- כפתורי פעולה גדולים, בעברית, נוחים וברורים.
+- כפתורים עובדים בלבד, שמובילים למסכים/פעולות קיימות.
+- שם המורה אם התקבל מ־LTI/session/API.
+- שם המרחב/הקורס אם התקבל מ־LTI/session/API.
+- סטטוס חיבור קצר.
+- מספרים קצרים בלבד: תלמידים, פריטי ציון, ציונים, פרקים, משימות, לוגים.
+- הודעות שגיאה רק אם יש תקלה אמיתית.
+
+אסור בעמוד הבית:
+- טקסטי דמו.
+- כיתובים כגון “אין דמו” כטקסט שיווקי קבוע.
+- הסברים ארוכים על יכולות.
+- פאנלים ארוכים שמסבירים מה חסר.
+- טקסט שמבלבל את המורה במקום לתת פעולה.
+- כפתורים שלא עובדים באמת.
+
+סטטוסי עומק, חסמים, בדיקות יכולות, Teacher Release ו־diagnostics צריכים להיות במסכי הגדרות/מה חסר/בדיקות — לא להעמיס את הבית.
+
+## דרישות כפתורי פעולה
+
+כפתורי הבית הראשיים:
+- משתתפים.
+- פרקים ופעילויות.
+- ציונים.
+- כל השאר / פעולות נוספות.
+
+פעולות נוספות צריכות לכלול רק יעדים קיימים:
+- ייבוא נתונים.
+- ייבוא Gradebook.
+- ייבוא יומני מעקב.
+- פעילות / זמנים.
+- דוחות.
+- ייצוא.
+- הגדרות.
+- חיבור Moodle.
+- מה חסר.
+
+## דרישות פרקים ומשימות
+
+בלחיצה על פרקים ופעילויות, היעד הסופי הוא להציג את כל הפרקים והמשימות שנמצאים במרחב Moodle המסוים של המורה.
+
+המערכת צריכה לשאוף לשאוב זאת אוטומטית ככל האפשר מתוך Moodle. אם אין API שמחזיר זאת, יש להשתמש בדוח/טבלה/ייצוא Moodle אמיתי, עם זיהוי ומיפוי אוטומטי ככל האפשר.
+
+אין להציג משימות מומצאות ואין להציג כפתור קישור למשימה אם אין קישור אמיתי.
+
+## דרישות תלמיד וציונים
+
+לכל תלמיד צריך להיות מסך נוח למורה עם:
+- טבלת ציונים אמיתית.
+- ממוצע ציונים מחושב רק מתוך ציונים קיימים.
+- צבעי פרימיום ברורים.
+- כפתורי פעולה בעברית.
+- משימות/פעילות אם הנתונים קיימים.
+- חוסרים מוצגים כחסר, לא כ־0 ולא כהשערה.
 
 ## מה כבר בוצע
 
@@ -74,19 +135,24 @@ Manual Real Data Import הוא פתרון אמיתי ובטוח כרגע, אבל
 - Logs אמיתיים יובאו ונשמרו.
 - Practice time לא מומצא ונשאר חסום כשאין שדה משך רשמי.
 - Teacher Release עדיין NO.
-- עמוד הבית הראשי הושלם: עמוד הבית החכם.
+- עמוד הבית הראשי הושלם כעמוד הבית החכם.
 - נוספה שורת מעודכן לתאריך עם זמן אמיתי.
 - נוספו כפתורים ראשיים: משתתפים, פרקים ופעילויות, ציונים, כל השאר.
 - נוסף תפריט משני.
 - בוצע עיצוב כחול כהה / פרימיום.
 - מסך Import / Participants עבר ניקוי UI פרימיום.
+- PR #99: מרכז יכולות Moodle דינמי מוזג ל־main.
+- PR #100: בדיקת live קבועה למרכז היכולות נוספה ל־main.
+- PR נוכחי: עמוד הבית עובר לניקוי Action Hub בלי טקסטי הסבר/דמו.
 
 ## מה נשאר לעשות
 
 1. לשמור את PROJECT_RULES.md מעודכן בכל שינוי.
 2. לבדוק לעומק אפשרויות שאיבה אוטומטית דרך LTI / NRPS / AGS / Moodle Web Services.
 3. אם אין API מאומת — לשפר את הייבוא הידני כך שיהיה קצר, ברור וכמעט אוטומטי.
-4. לנקות מסך־מסך לעיצוב פרימיום אחיד:
+4. להשלים פרקים ומשימות אמיתיים לפי מרחב Moodle.
+5. לשדרג מסכי תלמיד/ציונים לעיצוב פרימיום מלא עם ממוצעים, צבעים וכפתורי פעולה.
+6. לנקות מסך־מסך לעיצוב פרימיום אחיד:
    - GradebookImport.tsx
    - LogsImport.tsx
    - Students.tsx
@@ -97,9 +163,9 @@ Manual Real Data Import הוא פתרון אמיתי ובטוח כרגע, אבל
    - Export.tsx
    - MissingData.tsx
    - StudentProfile.tsx
-5. לבדוק מורה שני או מרחב שני.
-6. לוודא שאין ערבוב נתונים.
-7. רק אחרי כל שערי האמת — לשקול Teacher Release = YES.
+7. לבדוק מורה שני או מרחב שני.
+8. לוודא שאין ערבוב נתונים.
+9. רק אחרי כל שערי האמת — לשקול Teacher Release = YES.
 
 ## מה אסור לקלקל
 
@@ -117,17 +183,16 @@ Manual Real Data Import הוא פתרון אמיתי ובטוח כרגע, אבל
 
 ## אחוזי מצב נוכחיים
 
-ריפו נקי ומסונכרן: 100%
-עמוד הבית הראשי: 100%
-מסך Import / Participants בריפו: 100%
-ייבוא דוחות אמיתיים: 100%
-שאיבה אוטומטית מלאה ממודל: 20%-30%
-דף כללים מסודר כמקור אמת: לאחר PR זה בערך 90%
-סידור עומק של כל הריפו: בערך 45%
-איחוד UI פרימיום לכל המסכים: בערך 45%
-מוכנות לכל מורה בכל מרחב: בערך 75%-85%
+ריפו / קוד / אוטומציה / תיעוד: 99%
+צינור נתוני אמת: 98%
+Participants: 100%
+Gradebook: 100%
+Logs: 100%
+עמוד הבית כ־Action Hub: בתהליך PR נוכחי
+שאיבה אוטומטית מלאה ממודל ללא פעולה מצד המורה: עדיין לא מלאה
+מוכנות לכל מורה בכל מרחב: תלויה בבדיקת בידוד מורה/מרחב
 Teacher Release: NO
-<!-- MTH_SOURCE_OF_TRUTH_AUTOMATION_PLAN_20260518_END -->
+<!-- MTH_SOURCE_OF_TRUTH_AUTOMATION_PLAN_20260519_END -->
 
 ---
 
@@ -558,431 +623,3 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 ### שכבת persistence עתידית
 
 הכיוון המועדף הוא Supabase, אבל אין להריץ SQL, migrations או functions בלי בדיקה ואישור.
-
-### הפרדה מחייבת
-
-כל נתון שמור חייב להיות מופרד לפי:
-
-- issuer
-- clientId
-- deploymentId
-- course/context
-- teacher/user
-- importBatch
-- sourceType
-
-### סדר עבודה
-
-1. לתעד ולאשר תוכנית persistence.
-2. לבדוק קבצי Supabase קיימים.
-3. ליצור schema בטוח.
-4. לשמור import_batches ו־students.
-5. להוכיח reload/restart.
-6. לבנות מיפוי NRPS ↔ Participants.
-7. רק אחר כך Gradebook.
-8. רק אחר כך Logs / זמן תרגול.
-9. רק אחר כך דוחות.
-
-אין לסמן persistence כעובד עד שנתוני תלמידים אמיתיים נטענים מחדש אחרי restart/deploy בלי להיכנס לגיט.
-<!-- MTH_PERSISTENCE_PLAN_20260510_END -->
-
-<!-- MTH_SUPABASE_REVIEW_20260510_START -->
-## Supabase Review — 2026-05-10
-
-לפני שימוש ב־Supabase כ־persistence קבוע, חובה לסקור את כל קבצי Supabase הקיימים.
-
-אסור להריץ:
-- SQL
-- migrations
-- Supabase Functions
-- database deploy
-- service role usage
-
-לפני בדיקה ואישור.
-
-כל קובץ תחת `supabase/` הוא REVIEW_REQUIRED עד שנבדק.
-
-ה־schema העתידי חייב לתמוך בהפרדה לפי issuer/clientId/deploymentId/course/teacher/importBatch/sourceType.
-
-אין להכניס secrets, service-role keys, exports או נתוני תלמידים לגיט.
-<!-- MTH_SUPABASE_REVIEW_20260510_END -->
-
-<!-- MTH_AUTOMATION_FIRST_EXECUTION_20260511_START -->
-## Automation-First Execution Rule — 2026-05-11
-
-המערכת חייבת לפעול לפי כלל עבודה אחד:
-
-**המורה עושה מינימום. המערכת עושה מקסימום.**
-
-כל פעולה ידנית מצד מורה נחשבת בעיית מוצר, אלא אם הוכח שאי אפשר לבצע אותה אוטומטית בגלל מגבלת Moodle או הרשאות.
-
-### Teacher Action Budget
-
-הפעולות האידיאליות היחידות של מורה:
-
-1. לפתוח את הכלי מתוך Moodle.
-2. ללחוץ `סנכרן מרחב`.
-
-פעולה ידנית מותרת רק אם אוטומציה חסומה:
-
-- העלאת דוח Moodle אחד שהמערכת ביקשה במפורש.
-
-אסור לדרוש מהמורה:
-
-- להבין NRPS.
-- להבין AGS.
-- להבין Supabase.
-- להבין GitHub.
-- להבין API.
-- לבחור לבד איזה דוח צריך.
-- למפות עמודות ידנית אם אפשר לזהות אוטומטית.
-
-### השלב הבא בקוד
-
-ה־PR הבא בקוד חייב להיות Automation Core:
-
-1. Capability Detector.
-2. Sync Engine.
-3. Sync Status Endpoint.
-4. Frontend Sync Hook.
-5. כפתור `סנכרן מרחב`.
-6. Feature Gates לכל כפתור.
-7. הסבר בעברית מה חסר.
-
-### כלל כפתורים
-
-כל כפתור ראשי חייב להיות מחובר ל־Feature Gate:
-
-- אם יש נתונים אמיתיים — פעיל.
-- אם חסר דוח — מציג איזה דוח צריך.
-- אם חסומה הרשאה — מציג חסימת הרשאה.
-- אם מתוכנן בלבד — לא מוצג כפעיל.
-
-### כפתורים ראשיים
-
-- `סנכרן מרחב`
-- `משימות`
-- `משתתפים`
-- `ציונים`
-- `זמנים`
-- `דוחות`
-- `ייצוא`
-- `מה חסר?`
-
-### אין התחלה מחדש
-
-חובה לשדרג את הקיים:
-
-- Dashboard קיים → מרכז שליטה פרימיום.
-- Tasks קיים → פרקים ומשימות חכמים.
-- Students קיים → משתתפים ותלמידים חכמים.
-- Grades קיים → ציונים ודוחות.
-- Activity קיים → זמנים ופעילות.
-- Reports קיים → מרכז דוחות.
-- Export קיים → Excel/PDF/WhatsApp helper.
-- Import קיים → fallback חכם לדוחות Moodle אמיתיים.
-<!-- MTH_AUTOMATION_FIRST_EXECUTION_20260511_END -->
-
-<!-- MTH_PRODUCTION_REALITY_HARDENING_20260511_START -->
-## Production Reality / No-Demo Hardening — 2026-05-11
-
-הפרויקט הזה נבנה כמוצר אמיתי לשימוש אמיתי, ואולי גם כמוצר מסחרי עתידי. הוא אינו דמו.
-
-### כלל יסוד
-
-אין להתחיל מחדש. אין למחוק או לעקוף יכולות שכבר עובדות. כל פיתוח ממשיך מהריפו הקיים ומהמסכים הקיימים בלבד, אלא אם יש החלטה מתועדת ומנומקת אחרת.
-
-### מסך קיים אינו הוכחה שיכולת עובדת
-
-קיום route או מסך אינו מספיק כדי לסמן יכולת כעובדת.
-
-דוגמאות:
-- אם יש מסך `Grades`, זה לא אומר שציונים עובדים.
-- אם יש מסך `Activity`, זה לא אומר שזמני תרגול עובדים.
-- אם יש מסך `Tasks`, זה לא אומר שכל פרקי Moodle וכל המשימות נשלפים אוטומטית.
-- אם יש מסך `Reports`, זה לא אומר שדוחות production מוכנים.
-
-יכולת נחשבת עובדת רק אם יש:
-1. מקור נתונים אמיתי.
-2. קוד שמחובר למקור הזה.
-3. בדיקת build.
-4. בדיקת התנהגות בפועל.
-5. תיעוד ב־STATE.
-6. מצב חסר נתונים ברור.
-7. בלי demo fallback ובלי נתונים מומצאים.
-
-### הפרדה בין LTI 1.3 לבין LTI 1.0/1.1
-
-אסור לערבב מסלולי LTI.
-
-- LTI 1.3 הוא המסלול שבו אומת NRPS.
-- LTI 1.0/1.1 נשמר רק אם הוא נדרש לתאימות.
-- OAuth1 HMAC-SHA1 שייך למסלול LTI 1.0/1.1.
-- NRPS/AGS שייכים למסלול LTI 1.3 Advantage.
-- אין להסיק שהצלחה במסלול אחד מוכיחה את השני.
-
-כל endpoint, בדיקה, מסמך או UI חייבים לציין לאיזה מסלול LTI הם שייכים.
-
-### מוצר אמיתי / שימוש רחב
-
-לפני שליחת קישור למורים, חובה שהמערכת תעמוד בתנאים הבאים:
-
-1. persistence קבוע.
-2. הפרדה מלאה בין מורים, קורסים ומרחבים.
-3. כפתור `סנכרן מרחב` אמיתי.
-4. Capability Detector.
-5. Feature Gates לכל כפתור ראשי.
-6. מסך שמסביר מה חסר.
-7. אין כפתורי דמו.
-8. אין נתונים מומצאים.
-9. build עובר.
-10. בדיקה עם יותר ממורה/מרחב אחד.
-11. תיעוד התקנה ברור למורה.
-12. מדיניות פרטיות בסיסית לנתוני תלמידים.
-
-### אוטומציה מקסימלית
-
-כל פעולה ידנית מצד המורה נחשבת בעיית מוצר, אלא אם הוכח ש־Moodle או הרשאות חוסמות אוטומציה.
-
-המערכת חייבת לנסות קודם:
-
-1. LTI session.
-2. NRPS.
-3. Moodle Web Services אם יש token והרשאות.
-4. AGS אם זמין.
-5. persistence קיים.
-6. ייבוא דוח Moodle אמיתי.
-7. העלאה/הדבקה ידנית רק כמוצא אחרון.
-
-### המשך עבודה מחייב
-
-השלב הבא בקוד אינו עוד מסך יפה ואינו התחלה מחדש.
-
-השלב הבא בקוד הוא:
-
-1. Automation Core.
-2. Capability Detector.
-3. Sync Engine.
-4. Sync Status Endpoint.
-5. כפתור `סנכרן מרחב`.
-6. Feature Gates.
-7. Premium Dashboard שמציג רק יכולות אמת.
-
-### כלל מוצר
-
-כל PR עתידי חייב לענות:
-
-- האם הוא ממשיך מהקיים?
-- האם הוא מסיר דמו?
-- האם הוא מפחית פעולה ידנית מהמורה?
-- האם הוא מבדיל בין עובד / חסר דוח / חסום הרשאה / מתוכנן?
-- האם הוא שומר על פרטיות?
-- האם הוא תועד ב־STATE?
-<!-- MTH_PRODUCTION_REALITY_HARDENING_20260511_END -->
-
-<!-- MTH_HEBREW_NO_RESTART_MARKER_20260512_START -->
-## כלל עברי מחייב — לא מתחילים מחדש
-
-לא מתחילים מחדש.
-
-ממשיכים מהקיים בלבד.
-
-לא בונים דמו.
-
-לא מחליפים את האפליקציה הקיימת באפליקציה חדשה.
-
-לא מוחקים או עוקפים יכולות שכבר עובדות.
-
-כל פיתוח עתידי חייב להמשיך מהריפו הקיים, מהשרת הפעיל `src/server.js`, מה־Tailwind הפעיל `tailwind.config.cjs`, ומהמסכים הקיימים.
-
-אם יש מסך קיים, הוא אינו נחשב יכולת עובדת עד שיש מקור נתונים אמיתי, בדיקה, ותיעוד STATE.
-
-השלב הבא בקוד הוא Automation Core: Capability Detector, Sync Engine, Sync Status Endpoint, Feature Gates, וכפתור `סנכרן מרחב`.
-<!-- MTH_HEBREW_NO_RESTART_MARKER_20260512_END -->
-
-MTH_CURRENT_VERIFIED_STATE_AFTER_PR79_START
-
-## Current verified state after PR #79
-
-Checked at: 20260515-182922
-
-Live:
-- Base URL: https://www-tijc.onrender.com
-- Gradebook preflight route: `/gradebook-import`
-- Gradebook UI marker found: `True`
-
-Persisted real data:
-- students: 62
-- import_batches: 1
-- teachers: 1
-- courses: 1
-- teacher_sessions: 39
-
-Still missing:
-- grade_items / grade_results
-- log_events
-- multi-teacher or multi-course isolation validation
-- Teacher Release YES
-
-Rules:
-- Do not repeat Participants as the main blocker unless live counts fall back to 0.
-- Next main blocker is Gradebook, then Logs.
-- Do not fake grades.
-- Do not commit student rows or grade rows.
-- Do not run destructive SQL.
-- Teacher Release remains NO until all gates pass.
-
-MTH_CURRENT_VERIFIED_STATE_AFTER_PR79_END
-
-MTH_CURRENT_VERIFIED_STATE_AFTER_PR81_START
-
-## Current verified state after PR #81
-
-Checked at: 20260516-222400
-
-Live:
-- Base URL: https://www-tijc.onrender.com
-- Gradebook route: /gradebook-import
-- Wide Gradebook UI marker found: True
-
-Persisted real data:
-- students: 62
-- import_batches: 1
-- teachers: 1
-- courses: 1
-- teacher_sessions: 39
-
-Wide Gradebook status:
-- Code implemented: true
-- UI deployed: true
-- report_type=grades enabled: true
-- grade_items currently: 0
-- grade_results currently: 0
-
-Still missing:
-- Actual Gradebook import button click after uploading grad.ods
-- log_events
-- multi-teacher or multi-course isolation validation
-- Teacher Release YES
-
-Rules:
-- Do not repeat Participants as the main blocker unless live counts fall back to 0.
-- Next main action is clicking ייבא Gradebook אמיתי using the real grad.ods file.
-- Do not fake grades.
-- Do not convert missing grades to 0.
-- Do not commit student rows or grade rows.
-- Do not run destructive SQL.
-- Teacher Release remains NO until all gates pass.
-
-MTH_CURRENT_VERIFIED_STATE_AFTER_PR81_END
-
-MTH_AFTER_REAL_GRADEBOOK_IMPORT_START
-
-## After real Gradebook import
-
-Verified result:
-- students: 62
-- grade_items_written: 243
-- grade_results_written: 1693
-- skipped_students: 0
-- skipped_empty_grades: 12644
-- empty grade cells were not saved as zero
-- Teacher Release remains NO
-
-Remaining blockers:
-- real Moodle Logs import
-- practice-time validation
-- multi-teacher or multi-course isolation validation
-- final Teacher Release gate
-
-MTH_AFTER_REAL_GRADEBOOK_IMPORT_END
-
-MTH_AFTER_REAL_LOGS_IMPORT_START
-
-## After real Moodle Logs import
-
-Verified result:
-- students: 62
-- grade_items_written: 243
-- grade_results_written: 1693
-- log_events_written: 89995
-- logs_skipped_rows: 0
-- fake_logs: false
-- practice_time_invented: false
-- Teacher Release remains NO
-
-Remaining blockers:
-- practice-time truth gate
-- multi-teacher or multi-course isolation validation
-- final Teacher Release gate
-
-Rules:
-- Do not invent practice time.
-- Do not expose raw logs publicly.
-- Do not commit source log rows to GitHub.
-- Teacher Release remains NO until all gates pass.
-
-MTH_AFTER_REAL_LOGS_IMPORT_END
-
-MTH_PRACTICE_TIME_TRUTH_GATE_START
-
-## Practice-time truth gate — BLOCKED: NO_DURATION_FIELD
-
-Checked at: 2026-05-17
-
-Verified result:
-- students: 62
-- grade_items_written: 243
-- grade_results_written: 1693
-- log_events_written: 89995
-- practice_time_available: false
-- blocker_key: NO_DURATION_FIELD
-- fake_time: false
-- window_estimation_enabled: false
-- teacher_release_changed: false
-
-Reason: The imported Moodle Logs report contains no explicit duration field
-(checked: duration_seconds, duration, timeDiff). Practice time cannot be
-calculated without an official duration field. Timestamp-window estimation
-is permanently disabled to prevent fake official practice time.
-
-Rules:
-- Do NOT calculate practice time from timestamps.
-- Do NOT label timestamp-window estimates as official Moodle time.
-- Do NOT set practice_time_available=true until a real duration field exists.
-- Do NOT set Teacher Release YES.
-- Do NOT expose raw log rows publicly or commit them to GitHub.
-- If a future Moodle report provides an explicit duration field, re-run gate.
-
-Remaining blockers:
-- multi_teacher_or_multi_course_isolation
-- teacher_release_final_gate
-
-MTH_PRACTICE_TIME_TRUTH_GATE_END
-
-<!-- MTH_DASHBOARD_PRIMARY_BUTTONS_MENU_20260517_START -->
-## Dashboard Primary Buttons and Secondary Menu — 2026-05-17
-
-עמוד הבית החכם חייב לכלול ארבעה כפתורים גדולים וברורים:
-- משתתפים
-- פרקים ופעילויות
-- ציונים
-- כל השאר
-
-שלושת הראשונים הם הפעולות הראשיות. הכפתור כל השאר מוביל לתפריט משני עם ייבוא, Gradebook, Logs, פעילות/זמנים, דוחות, ייצוא, הגדרות והתקנה.
-
-כל הכפתורים חייבים להיות בעברית, גדולים, ברורים, RTL, ולנווט רק לנתיבים קיימים. אין להוסיף נתוני דמו ואין לשנות Participants, Gradebook, Logs, Supabase או Teacher Release.
-<!-- MTH_DASHBOARD_PRIMARY_BUTTONS_MENU_20260517_END -->
-
-
-
-<!-- MTH_DASHBOARD_DARK_BLUE_CONTRAST_20260517_START -->
-## Dashboard Dark Blue Contrast Design — 2026-05-17
-
-עמוד הבית החכם חייב להיות קריא וברור בעין:
-- אזור הפתיחה הראשי חייב להיות כחול כהה אמיתי.
-- הכותרת והטקסטים שעל הרקע הכהה חייבים להיות לבנים, חזקים וברורים.
-- אסור להשתמש ברקע בהיר או שקיפות חלשה שגורמת לטקסט לבן להיעלם.
-- כפתורי הפעולה הראשיים צריכים לשמור על כחול כהה/כחול פרימיום עם כתב לבן ברור.
-- אין לשנות לוגיקת Participants, Gradebook, Logs, Supabase או Teacher Release במסגרת תיקון עיצוב זה.
-<!-- MTH_DASHBOARD_DARK_BLUE_CONTRAST_20260517_END -->
