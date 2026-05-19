@@ -39,6 +39,13 @@ Full same-day progress details are documented in:
 - PR #101: Dashboard changed to a clean action-only home hub; explanatory/demo text removed from home.
 - PR #102: Dashboard activities count now falls back to real Gradebook items when full task/course structure is still missing.
 
+## Current open workstream
+
+- Branch `cs1` adds `src/lib/courseStructureImport.ts` as an isolated mapper foundation for Activity Completion / Course Structure / Gradebook-derived activities.
+- This foundation is intentionally not wired to persistence yet.
+- It must be reviewed and build-checked before connecting UI/backend saving.
+- It does not change Participants, Gradebook, Logs, Supabase, LTI launch, or Teacher Release.
+
 ## Current product truth
 
 - The project is not starting from scratch.
@@ -68,7 +75,7 @@ Full same-day progress details are documented in:
 - Repo / code / automation / documentation: 99%
 - Real-data pipeline: 98%
 - Dashboard action experience: 95%+ after PR #101 and PR #102, pending live visual validation
-- Course structure / tasks UX: next critical workstream
+- Course structure / tasks UX: active workstream, mapper foundation added in branch `cs1`
 - Teacher release: **NO**
 - Overall verified completion: 98% for real-data foundation, not yet release-complete for every teacher/every course
 
