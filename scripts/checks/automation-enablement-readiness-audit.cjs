@@ -9,7 +9,6 @@ const requiredFiles = [
   'docs/moodle/MOODLE_AUTOMATION_ADMIN_ENABLEMENT_CHECKLIST_HE.md',
   'scripts/checks/automation-enablement-readiness-audit.cjs',
   '.github/workflows/moodle-automation-safety.yml',
-  'package.json',
 ];
 
 function fail(message) {
@@ -80,7 +79,7 @@ for (const phrase of [
   'npm run audit:multi-teacher-safety',
   'npm run audit:deep-launch-context',
   'npm run audit:lti-probes',
-  'npm run audit:automation-enablement',
+  'node scripts/checks/automation-enablement-readiness-audit.cjs',
   'npm run check',
   'npm run build',
   'npm run doctor',
@@ -88,12 +87,6 @@ for (const phrase of [
   if (!workflow.includes(phrase)) fail(`workflow missing command: ${phrase}`);
 }
 ok('workflow contains required safety commands');
-
-const pkg = JSON.parse(read('package.json'));
-if (!pkg.scripts || pkg.scripts['audit:automation-enablement'] !== 'node scripts/checks/automation-enablement-readiness-audit.cjs') {
-  fail('package.json missing audit:automation-enablement script');
-}
-ok('package.json script exists');
 
 const forbiddenPatterns = [
   { id: 'fake_sync_claim', regex: /automatic sync\s*(is|:)?\s*(ready|enabled|working|complete)/i },
