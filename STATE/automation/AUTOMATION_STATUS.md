@@ -12,7 +12,7 @@
 
 - LTI context: תלוי בפתיחת הכלי בתוך Moodle
 - יכולות דוחות ידניים אמיתיים: מבוסס על ייבוא קיים
-- קישורי דוחות: זמינים כאשר Course ID זוהה
+- קישורי יעד לדוחות: זמינים כאשר Course ID זוהה; אינם הוכחת סנכרון API מלא
 - Moodle Web Services: לא אומת בלי `MOODLE_WS_TOKEN` אמיתי
 - Auto sync: לא מאומת
 - Teacher Release: NO

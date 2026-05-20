@@ -11,7 +11,7 @@
 - סטטוס חיבור Moodle / LTI
 - זיהוי קורס ופרטי מורה/קורס
 - בדיקת ייבוא קיים ל־Participants, Gradebook, Logs ו־Course Structure / Activity Completion
-- קישורי דו"חות Moodle אמיתיים כאשר Course ID זוהה
+- קישורי יעד לדוחות Moodle לפי מזהה קורס כאשר Course ID זוהה. אלו נתיבי יעד/קישורים יחסיים, ולא הוכחת סנכרון API מלא.
 - הודעה ברורה: סנכרון API מלא עדיין לא הופעל
 
 ## כללי אבטחה

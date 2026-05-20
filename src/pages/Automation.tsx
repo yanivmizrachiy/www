@@ -121,7 +121,7 @@ export default function Automation() {
       label: {
         ltiContext: "LTI context",
         manualReports: "דוחות ידניים אמיתיים",
-        exportLinks: "קישורי דוחות",
+        exportLinks: "קישורי יעד לדוחות",
         moodleWebServices: "Moodle Web Services",
         autoSync: "סנכרון אוטומטי",
       }[key] ?? key,
@@ -132,7 +132,7 @@ export default function Automation() {
   return (
     <SafePage
       title="אוטומציה ממודל"
-      description="מרכז בקרה חדש שמראה את סטטוס ה-LTI, הייבוא הקיים וקישורי דוחות אמיתיים. סנכרון API מלא עדיין לא הופעל."
+      description="מרכז בקרה חדש שמראה את סטטוס ה-LTI, הייבוא הקיים וקישורי יעד לדוחות לפי מזהה קורס. סנכרון API מלא עדיין לא הופעל."
     >
       <div className="space-y-6" dir="rtl">
         {loading && (
@@ -230,13 +230,13 @@ export default function Automation() {
               <CardHeader>
                 <CardTitle className="text-lg font-extrabold flex items-center gap-2">
                   <Link2 className="h-5 w-5 text-primary-foreground" />
-                  קישורי דוחות Moodle
+                  קישורי יעד לדוחות Moodle
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {!capabilities.courseId && (
                   <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-700">
-                    יש לפתוח את הכלי מתוך מרחב Moodle כדי לזהות את Course ID ולבנות קישורים אמיתיים.
+                    יש לפתוח את הכלי מתוך מרחב Moodle כדי לזהות את Course ID ולבנות קישורי יעד לדוחות לפי מזהה קורס.
                   </div>
                 )}
 
@@ -262,7 +262,7 @@ export default function Automation() {
 
                 {capabilities.courseId && !exportLinks && (
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-                    טוען קישורים אמיתיים... יש לרענן אם זה לוקח זמן.
+                    טוען קישורי יעד לדוחות... יש לרענן אם זה לוקח זמן.
                   </div>
                 )}
               </CardContent>
