@@ -1,0 +1,39 @@
+{
+  "ok": true,
+  "mode": "MTH_DEEP_LAUNCH_CONTEXT_AUDIT_V1",
+  "generated_at": "2026-05-20T16:12:14.442Z",
+  "productionFilesScanned": 70,
+  "hardcodeFindings": [],
+  "endpoints": {
+    "automationCapabilities": true,
+    "automationExportLinks": true
+  },
+  "dynamicContextSignals": {
+    "ltiSessionMarkers": true,
+    "nrpsMarkers": true,
+    "agsMarkers": true,
+    "webServiceMarkers": true,
+    "courseStructureMarkers": true
+  },
+  "scripts": {
+    "auditMoodleAutomation": true,
+    "auditMultiTeacherSafety": true,
+    "auditDeepLaunchContext": true
+  },
+  "projectStateSignals": {
+    "projectRulesExists": true,
+    "projectStatusExists": true,
+    "aiControlTowerExists": true,
+    "maxAutomationSpecExists": true
+  },
+  "recommendedNextWorkOrder": {
+    "title": "Dynamic LTI Capability Probes V1",
+    "priorities": [
+      "Normalize launch context keys dynamically for every teacher/course.",
+      "Add safe NRPS/AGS claim detection without exposing raw private payloads.",
+      "Bind every import/API result to platform/context/import_batch/source_provenance.",
+      "Keep course 259 as pilot evidence only.",
+      "Keep Teacher Release NO until isolation validation passes."
+    ]
+  }
+}
