@@ -1,0 +1,46 @@
+name: Moodle Automation Safety
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  safety:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit Moodle automation
+        run: npm run audit:moodle-automation
+
+      - name: Audit multi teacher safety
+        run: npm run audit:multi-teacher-safety
+
+      - name: Audit deep launch context
+        run: npm run audit:deep-launch-context
+
+      - name: Audit LTI probes
+        run: npm run audit:lti-probes
+
+      - name: Audit automation enablement
+        run: npm run audit:automation-enablement
+
+      - name: Check server syntax
+        run: npm run check
+
+      - name: Build
+        run: npm run build
+
+      - name: Doctor
+        run: npm run doctor
