@@ -34,7 +34,7 @@ jobs:
         run: npm run audit:lti-probes
 
       - name: Audit automation enablement
-        run: npm run audit:automation-enablement
+        run: node scripts/checks/automation-enablement-readiness-audit.cjs
 
       - name: Check server syntax
         run: npm run check
