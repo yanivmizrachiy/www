@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Users, ListChecks, BookOpen, GraduationCap,
-  Activity, FileBarChart2, Download, Settings, Server, LogOut, Wrench, Upload,
+  Activity, FileBarChart2, Download, Settings, Server, LogOut, Wrench, Upload, Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { title: "מרכז המורה", url: "/", icon: LayoutDashboard },
+  { title: "אוטומציה ממודל", url: "/automation", icon: Zap },
   { title: "ייבוא נתונים", url: "/import", icon: Upload },
   { title: "בדיקת Gradebook", url: "/gradebook-import", icon: GraduationCap },
   { title: "ייבוא יומני מעקב", url: "/logs-import", icon: Activity },

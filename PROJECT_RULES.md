@@ -623,3 +623,39 @@ Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL
 ### שכבת persistence עתידית
 
 הכיוון המועדף הוא Supabase, אבל אין להריץ SQL, migrations או functions בלי בדיקה ואישור.
+
+---
+
+## Automation Control Center V1 — PR #107
+
+Status: implemented in PR #107; pending live validation after merge.
+
+Added in feature branch `feat/automation-control-center-v1`:
+
+- Frontend route: `/automation`
+- Backend endpoint: `GET /api/automation/capabilities`
+- Backend endpoint: `GET /api/automation/export-links`
+- Moodle report target paths for Activity Completion, Gradebook, Logs, and Participants, based on detected Course ID
+- State file: `STATE/automation/AUTOMATION_STATUS.md`
+- Progress file: `STATE/progress/2026-05-19-automation-control.md`
+- Documentation: `docs/automation/AUTOMATION_CONTROL_CENTER_V1.md`
+
+Safety status:
+
+- Teacher Release remains `NO`.
+- Full Moodle API auto-sync is not enabled yet.
+- No Moodle passwords are stored.
+- No Moodle token storage was added.
+- No Playwright/browser automation was added.
+- No Supabase schema migration was added.
+- No fake/demo Moodle data was added.
+- No raw student rows should be returned by the automation endpoints.
+
+Planning note:
+
+- Automation progress must be measured by audit output and live validation, not by speculative percentages.
+- Teacher convenience must be validated by real teacher workflow tests.
+- National readiness remains blocked until multi-teacher / multi-course isolation and final release gates pass.
+
+Every future PR must update a dated `STATE/progress/YYYY-MM-DD-*.md` file.
+
