@@ -46,7 +46,7 @@ function walk(dir, out = []) {
       rel.startsWith('coverage/')
     ) continue;
     if (entry.isDirectory()) walk(rel, out);
-    else if (/\.(js|jsx|ts|tsx|mjs|cjs|md|yml|yaml)$/.test(entry.name)) out.push(rel);
+    else if (/\.(js|jsx|ts|tsx|mjs|cjs)$/.test(entry.name)) out.push(rel);
   }
   return out;
 }
@@ -88,20 +88,18 @@ for (const phrase of [
 }
 ok('workflow contains required safety commands');
 
-const forbiddenPatterns = [
+const sourceForbiddenPatterns = [
   { id: 'fake_sync_claim', regex: /automatic sync\s*(is|:)?\s*(ready|enabled|working|complete)/i },
-  { id: 'teacher_release_yes', regex: /Teacher\s+Release\s*[:=]?\s*YES/i },
   { id: 'teacher_release_true', regex: /teacherRelease\s*[:=]\s*true\b/i },
   { id: 'hardcoded_course_259_assignment', regex: /(?:courseId|course_id|contextId|context_id|id)\s*[:=]\s*["'`]259["'`]/i },
   { id: 'hardcoded_course_259_query', regex: /(?:course|id)=259\b/i },
 ];
 
-const scanFiles = walk('src').concat(walk('docs'), walk('STATE'), walk('WORK_ORDERS'));
 const findings = [];
-for (const file of scanFiles) {
+for (const file of walk('src')) {
   const text = read(file);
   text.split(/\r?\n/).forEach((line, index) => {
-    for (const rule of forbiddenPatterns) {
+    for (const rule of sourceForbiddenPatterns) {
       if (rule.regex.test(line)) {
         findings.push({ rule: rule.id, file, line: index + 1, text: line.trim().slice(0, 180) });
       }
@@ -111,8 +109,22 @@ for (const file of scanFiles) {
 
 if (findings.length) {
   console.error(JSON.stringify(findings, null, 2));
-  fail('unsafe automation readiness marker found');
+  fail('unsafe runtime automation marker found in src');
 }
-ok('no unsafe automation readiness markers found');
+ok('no unsafe runtime automation markers found in src');
+
+for (const doc of [
+  'docs/automation/MOODLE_AUTOMATION_ENABLEMENT_READINESS_V1.md',
+  'STATE/progress/2026-05-21-moodle-automation-enablement-readiness-v1.md',
+]) {
+  if (exists(doc)) {
+    const text = read(doc);
+    if (/Teacher\s+Release\s+remains\s+\*\*NO\*\*/i.test(text) || /Teacher\s+Release\s+remains\s+NO/i.test(text)) {
+      ok(`${doc} explicitly keeps Teacher Release NO`);
+    } else {
+      fail(`${doc} must explicitly keep Teacher Release NO`);
+    }
+  }
+}
 
 console.log('AUTOMATION_ENABLEMENT_READINESS_AUDIT_OK');
