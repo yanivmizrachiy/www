@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "mode": "MTH_LIVE_LTI_CAPABILITY_PROBES_DIRECT_VALIDATION_V1",
+  "generatedAt": "2026-05-20T19:05:04.2285467Z",
+  "liveUrl": "https://www-tijc.onrender.com/api/automation/lti-capability-probes",
+  "mainLatest": "6a713e4 Add dynamic LTI capability probes endpoint",
+  "directBrowserExpected": true,
+  "connected": false,
+  "launchMode": "direct",
+  "ltiSessionAvailable": false,
+  "hasContext": false,
+  "nextBestAction": "open_from_moodle_lti_context",
+  "safety": {
+    "noSecretsDetected": true,
+    "noRawGradesExpected": true,
+    "noRawStudentRowsExpected": true,
+    "noRawLogsExpected": true,
+    "teacherRelease": "NO"
+  },
+  "next": "Open Teacher Hub from Moodle and fetch /api/automation/lti-capability-probes again to inspect NRPS/AGS status."
+}
