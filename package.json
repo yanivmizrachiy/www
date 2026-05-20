@@ -25,7 +25,8 @@
     "validate:logs-ui:live": "node scripts/checks/logs-import-ui-live.cjs",
     "validate:capability-center:live": "node scripts/checks/dynamic-capability-center-live.cjs",
     "audit:multi-teacher-safety": "node scripts/checks/no-hardcoded-course-teacher.cjs",
-    "audit:deep-launch-context": "node scripts/checks/deep-launch-context-audit.cjs"
+    "audit:deep-launch-context": "node scripts/checks/deep-launch-context-audit.cjs",
+    "audit:lti-probes": "node scripts/checks/dynamic-lti-probes-sanity.cjs"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",

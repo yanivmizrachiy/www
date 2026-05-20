@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "mode": "MTH_DYNAMIC_LTI_CAPABILITY_PROBES_STATUS_V1",
+  "route": "/api/automation/lti-capability-probes",
+  "checks": {
+    "marker exists": true,
+    "route exists": true,
+    "helper exists": true,
+    "NRPS claim key exists": true,
+    "AGS claim key exists": true,
+    "no raw token response pattern": true,
+    "teacher release stays false": true
+  },
+  "teacherRelease": "NO",
+  "safety": {
+    "noSecretsReturned": true,
+    "noRawLaunchPayloadReturned": true,
+    "noStudentRowsReturned": true,
+    "noGradesReturned": true
+  },
+  "generatedAt": "2026-05-20T16:34:34.256Z"
+}
