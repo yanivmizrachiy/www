@@ -36,6 +36,9 @@ jobs:
       - name: Audit automation enablement
         run: node scripts/checks/automation-enablement-readiness-audit.cjs
 
+      - name: Audit teacher date format
+        run: npm run audit:teacher-date-format
+
       - name: Check server syntax
         run: npm run check
 
