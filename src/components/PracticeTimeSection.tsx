@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { usePracticeTime, PracticeDayRow } from "@/hooks/useImports";
 import { secondsToHebrewHms } from "@/lib/duration";
-import { exportToCsv } from "@/lib/csv";
+import { downloadCsv } from "@/lib/csv";
 import { TruthBadge } from "@/components/TruthBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,21 +32,17 @@ export function PracticeTimeSection({ studentId = null, title = "זמן תרגו
 
   const handleExport = () => {
     if (!data?.days?.length) return;
-    
-    const rows = [
-      ["תאריך", "תלמיד", "זמן כולל", "אירועים", "סשנים", "התחלה", "סיום"],
-      ...data.days.map(d => [
-        d.day,
-        d.student_name ?? "—",
-        secondsToHebrewHms(d.total_seconds),
-        d.event_count,
-        d.session_count,
-        d.first_at ? new Date(d.first_at).toLocaleTimeString() : "—",
-        d.last_at ? new Date(d.last_at).toLocaleTimeString() : "—",
-      ])
-    ];
-
-    exportToCsv(`practice_time_${new Date().toISOString().split('T')[0]}.csv`, rows);
+    const headers = ["תאריך", "תלמיד", "זמן כולל", "אירועים", "סשנים", "התחלה", "סיום"];
+    const csvRows = data.days.map(d => [
+      d.day,
+      d.student_name ?? "—",
+      secondsToHebrewHms(d.total_seconds),
+      d.event_count,
+      d.session_count,
+      d.first_at ? new Date(d.first_at).toLocaleTimeString() : "—",
+      d.last_at ? new Date(d.last_at).toLocaleTimeString() : "—",
+    ]);
+    downloadCsv(`practice_time_${new Date().toISOString().split('T')[0]}.csv`, headers, csvRows);
   };
 
   if (loading) return <div className="space-y-4"><div className="h-40 animate-pulse rounded-lg bg-muted" /></div>;

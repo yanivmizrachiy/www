@@ -2648,6 +2648,177 @@ app.get("/api/practice-time/status", (_req, res) => {
 // <<< MTH_PRACTICE_TIME_TRUTH_GATE_V1 <<<
 
 
+// >>> MTH_MOODLE_WS_READINESS_V1 >>>
+function buildMoodleWsReadinessResponse({ configured, probeResult = null }) {
+  const baseUrl = env("MOODLE_WS_BASE_URL", "https://moodlemoe.lms.education.gov.il");
+  let host = "unknown";
+  try { host = new URL(baseUrl).hostname; } catch { /* keep unknown */ }
+
+  const safety = {
+    no_token_returned: true,
+    no_student_rows: true,
+    no_grades: true,
+    no_emails: true,
+    no_user_ids: true,
+    no_raw_moodle_response: true
+  };
+
+  if (!configured) {
+    return {
+      ok: true,
+      version: "MTH_MOODLE_WS_READINESS_V1",
+      configured: false,
+      verified: false,
+      status: "missing_env",
+      host,
+      function_checked: "core_webservice_get_site_info",
+      checkedAt: new Date().toISOString(),
+      failure_category: null,
+      moodle_release: null,
+      functions_available_count: null,
+      required_env: ["MOODLE_WS_TOKEN"],
+      required_admin_steps: [
+        "Enable Web Services: Moodle Site Administration > Advanced features > Enable web services: YES",
+        "Enable REST protocol: Site Administration > Plugins > Web services > Manage protocols > Enable 'REST protocol'",
+        "Create a dedicated web service user with appropriate Moodle capabilities",
+        "Create a token: Site Administration > Plugins > Web services > Manage tokens > Add token",
+        "Assign at minimum: core_webservice_get_site_info capability to the token",
+        "Set MOODLE_WS_TOKEN in Render environment variables — never commit to GitHub"
+      ],
+      safety
+    };
+  }
+
+  if (!probeResult) {
+    return {
+      ok: true,
+      version: "MTH_MOODLE_WS_READINESS_V1",
+      configured: true,
+      verified: false,
+      status: "configured_not_verified",
+      host,
+      function_checked: "core_webservice_get_site_info",
+      checkedAt: new Date().toISOString(),
+      failure_category: null,
+      moodle_release: null,
+      functions_available_count: null,
+      required_env: [],
+      required_admin_steps: [],
+      safety
+    };
+  }
+
+  return {
+    ok: probeResult.ok,
+    version: "MTH_MOODLE_WS_READINESS_V1",
+    configured: true,
+    verified: probeResult.verified || false,
+    status: probeResult.status,
+    host,
+    function_checked: "core_webservice_get_site_info",
+    checkedAt: new Date().toISOString(),
+    failure_category: probeResult.failure_category || null,
+    moodle_release: probeResult.moodle_release || null,
+    functions_available_count: probeResult.functions_available_count ?? null,
+    required_env: [],
+    required_admin_steps: probeResult.required_admin_steps || [],
+    safety
+  };
+}
+
+async function probeMoodleWsSiteInfo() {
+  const token = env("MOODLE_WS_TOKEN");
+  const baseUrl = env("MOODLE_WS_BASE_URL", "https://moodlemoe.lms.education.gov.il");
+  if (!token) return null;
+
+  if (typeof fetch !== "function") {
+    return { ok: false, verified: false, status: "runtime_error", failure_category: "fetch_not_available", required_admin_steps: [] };
+  }
+
+  const endpoint = `${baseUrl.replace(/\/+$/, "")}/webservice/rest/server.php`;
+  const body = new URLSearchParams({
+    wstoken: token,
+    wsfunction: "core_webservice_get_site_info",
+    moodlewsrestformat: "json"
+  });
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+  let rawRes;
+  try {
+    rawRes = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+      signal: controller.signal
+    });
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err && err.name === "AbortError") {
+      return { ok: false, verified: false, status: "timeout", failure_category: "timeout", required_admin_steps: [] };
+    }
+    const msg = String(err?.message || "").toLowerCase().slice(0, 120);
+    const category = msg.includes("econnrefused") ? "connection_refused"
+      : msg.includes("enotfound") ? "dns_error"
+      : "network_error";
+    return { ok: false, verified: false, status: "network_error", failure_category: category, required_admin_steps: [] };
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  if (!rawRes.ok) {
+    return { ok: false, verified: false, status: "http_error", failure_category: `http_${rawRes.status}`, required_admin_steps: [] };
+  }
+
+  let parsed;
+  try { parsed = await rawRes.json(); } catch {
+    return { ok: false, verified: false, status: "json_parse_error", failure_category: "json_parse_error", required_admin_steps: [] };
+  }
+
+  if (parsed && parsed.errorcode) {
+    const code = String(parsed.errorcode || "").toLowerCase();
+    if (code.includes("invalidtoken") || code.includes("accessdenied")) {
+      return {
+        ok: false, verified: false, status: "invalid_token", failure_category: "invalid_token",
+        required_admin_steps: ["Verify the token value is correct and has not expired in Moodle."]
+      };
+    }
+    if (code.includes("webservicesdisabled") || code.includes("enablewsdescription") || code.includes("servicenotavailable")) {
+      return {
+        ok: false, verified: false, status: "blocked_by_admin_enablement", failure_category: "webservices_disabled",
+        required_admin_steps: [
+          "Enable Web Services: Site Administration > Advanced features > Enable web services: YES",
+          "Enable REST protocol: Site Administration > Plugins > Web services > Manage protocols > Enable 'REST protocol'"
+        ]
+      };
+    }
+    return { ok: false, verified: false, status: "moodle_error", failure_category: code.slice(0, 60), required_admin_steps: [] };
+  }
+
+  const release = typeof parsed.release === "string" ? parsed.release.slice(0, 40) : null;
+  const funcsCount = Array.isArray(parsed.functions) ? parsed.functions.length : null;
+
+  return {
+    ok: true,
+    verified: true,
+    status: "verified_site_info",
+    moodle_release: release,
+    functions_available_count: funcsCount,
+    failure_category: null,
+    required_admin_steps: []
+  };
+}
+
+app.get("/api/automation/moodle-webservices/readiness", async (req, res) => {
+  noStore(res);
+  const configured = Boolean(env("MOODLE_WS_TOKEN"));
+  const probeResult = configured ? await probeMoodleWsSiteInfo() : null;
+  res.json(buildMoodleWsReadinessResponse({ configured, probeResult }));
+});
+// <<< MTH_MOODLE_WS_READINESS_V1 <<<
+
+
 app.get("/health", (_req, res) => {
   res.json({
     ok: true,
