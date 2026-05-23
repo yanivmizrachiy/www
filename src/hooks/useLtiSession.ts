@@ -161,7 +161,7 @@ export function useLtiSession() {
     setLoading(false);
     if (rpcErr) { setError(rpcErr.message); return; }
 
-    const payload = data as ({ error?: string } & ContextPayload) | null;
+    const payload = data as unknown as ({ error?: string } & ContextPayload) | null;
     if (!payload || payload.error) {
       setError(payload?.error ?? "unknown");
       clearLtiToken();

@@ -670,3 +670,227 @@ Planning note:
 
 Every future PR must update a dated `STATE/progress/YYYY-MM-DD-*.md` file.
 
+<!-- MTH_MOODLE_WS_READINESS_20260524_START -->
+
+## Moodle Web Services Readiness Endpoint — 2026-05-24
+
+Added `GET /api/automation/moodle-webservices/readiness` — a safe, read-only probe endpoint.
+
+Current live status: `missing_env` — `MOODLE_WS_TOKEN` not configured in Render.
+
+This endpoint will advance to `verified_site_info` only after:
+1. A Moodle administrator enables Web Services and REST protocol.
+2. A token with `core_webservice_get_site_info` capability is created.
+3. `MOODLE_WS_TOKEN` is set in Render environment variables (never in GitHub).
+
+Safety guarantees: no token returned, no student data, no grades, no PII, no raw Moodle response.
+
+Audit: `npm run audit:moodle-webservices-readiness`
+
+Teacher Release remains **NO**.
+
+<!-- MTH_MOODLE_WS_READINESS_20260524_END -->
+
+<!-- MTH_PRODUCT_REQUIREMENTS_20260524_START -->
+
+## דרישות מוצר מלאות — 2026-05-24
+
+מסמך זה שומר את כל דרישות המוצר כפי שהוגדרו. הוא מחייב כמו שאר חלקי PROJECT_RULES.md.
+
+### 1. מה המוצר
+
+Moodle Teacher Hub הוא Action Hub למורה — אתר בעברית מלאה ו-RTL שנפתח מתוך מרחב לימוד אמיתי ב-Moodle.
+
+זה לא אתר כללי. זה לא דף הסבר. זה לא פורטל שיווקי.
+
+כל נתון חייב להיות שייך למרחב הלימוד הנוכחי שממנו המורה פתח את הכלי.
+
+### 2. עמוד הכניסה
+
+עמוד הכניסה חייב להציג:
+- שם מרחב הלימוד / הקורס (מ-LTI context בלבד)
+- שם המורה — לחיץ (פתיחת מסך פרטי מורה)
+- מספר תלמידים (ממקור אמת בלבד; "—" אם חסר)
+- מספר מורים אם יש מקור אמת
+- כפתורי פעולה ראשיים בעברית
+- מה חסר במערכת
+
+אם נתון חסר — לא להמציא. לכתוב מצב חסר ברור.
+
+### 3. מסך פרטי מורה
+
+שם המורה בעמוד הכניסה הוא לחיץ ופותח מסך פרטי מורה.
+
+מוצגים רק פרטים אמיתיים שהתקבלו מה-LTI/session/context:
+- שם מלא
+- שם משתמש (username) אם התקבל
+- role
+- מרחבים / קורסים שפתח (אם ידוע)
+
+אסור להמציא פרטי מורה.
+
+### 4. מורים
+
+כפתור "מורים" פותח רשימת מורים של אותו מרחב בלבד.
+
+אם ידוע רק המורה הנוכחי — מציגים רק אותו ומסבירים שחסר מקור מלא (NRPS missing).
+
+אסור להמציא מורים נוספים.
+
+מקורות עתידיים למורים: NRPS (כשיהיה זמין), Moodle Web Services.
+
+### 5. תלמידים
+
+כפתור "תלמידים" פותח רשימת תלמידים ממוספרת של אותו מרחב בלבד.
+
+**ברשימה הפשוטה מציגים רק:**
+- שם פרטי + שם משפחה / שם תצוגה
+
+**אסור להציג ברשימה הפשוטה:**
+- תעודת זהות
+- מייל
+- username
+- external id
+- מזהים פנימיים
+
+פרטים נוספים מותרים רק במסך פרופיל תלמיד בודד ורק אם הגיעו ממקור אמת.
+
+### 6. ציונים
+
+ציונים מוצגים רק ממקור אמת:
+- Gradebook import (פעיל)
+- AGS — רק אם יאומת
+- Moodle Web Services — רק אם יאומת
+
+**אסור:** להפוך ציון חסר ל-0. חסר נשאר חסר ומוצג כחסר.
+
+### 7. זמני פעילות
+
+זמן מצטבר לתלמיד מוצג רק אם יש מקור משך אמיתי ומאומת (שדה duration רשמי ב-Logs).
+
+אם יש רק Logs בלי duration רשמי — לא להמציא זמן. להציג:
+"לא ניתן לחשב זמן מצטבר ללא מקור משך מאומת"
+
+תמיכה עתידית נדרשת:
+- בחירת יום בודד
+- בחירת טווח תאריכים
+- זמן מצטבר בטווח
+- ניווט נוח
+
+### 8. דוחות ידניים — מעמד ותפקיד
+
+Manual import הוא fallback בלבד — לא המסלול הראשי.
+
+דוחות Moodle הרלוונטיים (לפי סדר עדיפות):
+1. Participants — תלמידים/משתתפים
+2. Gradebook — ציונים
+3. Logs — פעילות
+4. Activity Completion / Progress — השלמות
+5. Course Structure / Course Contents — מבנה קורס
+
+המטרה הסופית: כמה שפחות הורדות ידניות מהמורה.
+
+### 9. סדר אוטומציה
+
+```
+LTI context        → עובד ✓
+NRPS               → missing כרגע
+AGS                → missing כרגע
+Moodle Web Services → missing / not verified
+  └─ core_webservice_get_site_info    ← safe first probe
+  └─ core_enrol_get_enrolled_users   ← אחרי אימות ראשון
+  └─ gradereport_user_get_grade_items ← אחרי אימות ראשון
+  └─ core_course_get_contents         ← אחרי אימות ראשון
+  └─ core_completion_get_activities_completion_status ← אחרי אימות
+  └─ report_log_get_events            ← אחרי אימות
+```
+
+כל שלב מחייב ראיה ב-`STATE/evidence-log.md` לפני המשך.
+
+### 10. Web Services — כלל עבודה עם AI
+
+אין לבקש מהמשתמש token / password / cookie / admin credentials.
+
+הריפו מכין readiness endpoint ו-audits בלבד.
+
+אם Admin צריך להפעיל משהו — לכתוב checklist ברור למנהל Moodle ב-docs.
+
+אסור לשמור סוד בקוד או ב-GitHub.
+
+### 11. פרטיות — מה לא לחשוף בשום מצב
+
+- סיסמאות
+- tokens
+- cookies
+- raw headers
+- raw student rows
+- emails ברשימות פשוטות
+- תעודות זהות
+- מזהים פנימיים מיותרים
+- raw Moodle API response אם יש בו PII
+
+### 12. כלל אמת — רשימה מלאה
+
+- אין דמו
+- אין fake sync
+- אין כפתורים מזויפים
+- אין תלמידים מומצאים
+- אין מורים מומצאים
+- אין ציונים מומצאים
+- אין זמני פעילות מומצאים
+- אין Teacher Release YES
+
+### 13. בידוד נתונים
+
+כל נתון חייב להיות שייך ל-context הנוכחי בלבד.
+
+אסור לערבב: קורסים / מורים / מוסדות / מרחבי לימוד.
+
+Course 259 הוא ראיית pilot בלבד — לא hardcode מוצרי.
+
+### 14. פורמט תאריכים ב-UI
+
+כל תאריך שמורה רואה ב-UI מוצג: `D/M/YY`
+
+דוגמה: `5/3/26`
+
+כלל זה חל על UI בלבד. לא לשנות DB / API / logs / STATE / JSON.
+
+### 15. ניווט
+
+בכל המסכים יהיו כפתורי ניווט עבריים וברורים:
+- חזרה לעמוד הבית
+- מורים
+- תלמידים
+- ציונים
+- זמני פעילות
+- דוחות
+- ייבוא דוחות
+- מה חסר
+- הגדרות
+
+### 16. מה לא לגעת — פיפליינים מוגנים
+
+לא לגעת בלי סיבה מוכחת ובעיה מוכחת:
+- Participants import
+- Gradebook import
+- Logs import
+- LTI launch flow
+- Supabase migrations
+- Teacher Release gate
+- deploy
+- secrets
+
+### 17. מה לשפר עכשיו
+
+סדר עדיפות ל-PRs הבאים:
+1. docs / RULES / PROJECT_RULES / audits / backlog — ✅ בוצע ב-2026-05-24
+2. `/api/import/course-structure` — backend endpoint חסר (page קיים)
+3. UI date format — `D/M/YY` בכל מסכי תאריכים
+4. מסך פרטי מורה לחיץ מעמוד הכניסה
+5. רשימת מורים per-space
+6. Privacy guard ברשימת תלמידים (הסתרת TZ / email)
+7. Moodle WS readiness — ✅ בוצע ב-2026-05-24 (`/api/automation/moodle-webservices/readiness`)
+
+<!-- MTH_PRODUCT_REQUIREMENTS_20260524_END -->
+
