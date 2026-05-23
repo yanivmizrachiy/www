@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, GraduationCap, ClipboardList, Database, Calendar, Import, AlertCircle, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
+import { formatTeacherDateDmyShort } from "@/lib/teacherDateFormat";
 
 function StatCard({ label, value, icon: Icon, delay = 0 }: { label: string, value: number | string, icon: any, delay?: number }) {
   return (
@@ -47,7 +48,7 @@ export default function Dashboard() {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 1000); return () => window.clearInterval(timer); }, []);
 
-  const updatedAtText = useMemo(() => new Intl.DateTimeFormat("he-IL", { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(now), [now]);
+  const updatedAtText = useMemo(() => formatTeacherDateDmyShort(now), [now]);
   const teacherName = session?.moodle_username || "—";
   const courseName = session?.course_title || site?.site_name || "—";
 
