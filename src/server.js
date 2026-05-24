@@ -3250,6 +3250,87 @@ app.post("/api/import", async (req, res) => {
   });
 });
 
+// >>> MTH_COURSE_STRUCTURE_ENDPOINT_V1 >>>
+app.post("/api/import/course-structure", async (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
+
+  const body = req.body || {};
+  const courseImport = buildCourseStructureImport(Array.isArray(body.payload) ? body.payload : [], session, {
+    file_name: body.file_name || null,
+    source_kind: body.source_kind || "file",
+    detection_confidence: typeof body.detection_confidence === "number" ? body.detection_confidence : null
+  });
+
+  if (!courseImport.ok) {
+    return res.status(400).json({
+      ok: false,
+      error: "COURSE_STRUCTURE_IMPORT_NOT_READY",
+      detail: courseImport.warnings.join(" | "),
+      activity_headers_detected: courseImport.activity_headers.length,
+      rows_seen: Array.isArray(body.payload) ? body.payload.length : 0,
+      safety: { no_fake_tasks: true, no_teacher_release_change: true }
+    });
+  }
+
+  const sbWrite = await writeCourseStructureToSupabase(courseImport, session);
+  if (!sbWrite.ok && !sbWrite.skipped) {
+    return res.status(502).json({
+      ok: false,
+      error: sbWrite.reason,
+      detail: sbWrite.detail || null,
+      code: sbWrite.code || null,
+      note: "Course structure import was NOT persisted to durable storage.",
+      safety: { no_fake_tasks: true, no_teacher_release_change: true }
+    });
+  }
+
+  if (!Array.isArray(store.importBatches)) store.importBatches = [];
+  if (!Array.isArray(store.tasks)) store.tasks = [];
+  if (!Array.isArray(store.chapters)) store.chapters = [];
+
+  store.importBatches.push(courseImport.batch);
+  store.chapters = [
+    ...store.chapters.filter(c => !courseImport.sections.some(next => next.id === c.id)),
+    ...courseImport.sections
+  ];
+  store.tasks = [
+    ...store.tasks.filter(t => !courseImport.tasks.some(next => next.id === t.id)),
+    ...courseImport.tasks
+  ];
+  store.settings.lastSyncAt = new Date().toISOString();
+  saveStore();
+
+  return res.json({
+    ok: true,
+    mode: "course-structure-import",
+    version: "MTH_COURSE_STRUCTURE_ENDPOINT_V1",
+    batch_id: courseImport.batch.id,
+    rows_seen: Array.isArray(body.payload) ? body.payload.length : 0,
+    activity_headers_detected: courseImport.activity_headers.length,
+    sections_found: courseImport.sections.length,
+    sections_written: sbWrite.skipped ? 0 : sbWrite.sections_written,
+    tasks_written: sbWrite.skipped ? 0 : sbWrite.tasks_written,
+    completions_written: sbWrite.skipped ? 0 : sbWrite.completions_written,
+    skipped_students: courseImport.skipped_students,
+    section_column_used: courseImport.section_column_used,
+    warnings: courseImport.warnings,
+    supabase: sbWrite.skipped
+      ? { written: false, reason: sbWrite.reason }
+      : {
+          written: true,
+          sections_written: sbWrite.sections_written,
+          tasks_written: sbWrite.tasks_written,
+          completions_written: sbWrite.completions_written,
+          completions_skipped: sbWrite.completions_skipped,
+          import_batch_variant: sbWrite.import_batch_variant
+        },
+    safety: { no_fake_tasks: true, no_fake_sections: true, no_teacher_release_change: true }
+  });
+});
+// <<< MTH_COURSE_STRUCTURE_ENDPOINT_V1 <<<
+
 app.get("/api/imports/students", (req, res) => {
   noStore(res);
   const session = importSessionFromRequest(req);

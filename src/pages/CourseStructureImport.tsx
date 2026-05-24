@@ -112,13 +112,12 @@ async function postCourseStructureImport(result: ParseResult): Promise<ImportRes
   if (!token) return { ok: false, error: "NO_VERIFIED_MOODLE_SESSION", detail: "פתח את הכלי מתוך Moodle ואז נסה שוב." };
 
   const rows = (result.data || result.rows || []) as Array<Record<string, unknown>>;
-  const res = await fetch("/api/import", {
+  const res = await fetch("/api/import/course-structure", {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-lti-session": token },
     credentials: "include",
     body: JSON.stringify({
       token,
-      report_type: "completion",
       file_name: result.fileName,
       source_kind: result.fileName ? "upload" : "paste",
       detection_confidence: result.confidence,
