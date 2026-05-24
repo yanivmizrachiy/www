@@ -109,4 +109,63 @@ for (const pat of secretPatterns) {
 }
 ok("no secret values in registry file");
 
+// 11. Governance layer files exist
+const TYPES_SRC = "src/lib/automationCapabilityTypes.ts";
+const GOV_SRC = "src/lib/automationCapabilityGovernance.ts";
+if (!fs.existsSync(TYPES_SRC)) fail(TYPES_SRC + " not found — canonical types file missing");
+ok("automationCapabilityTypes.ts present");
+if (!fs.existsSync(GOV_SRC)) fail(GOV_SRC + " not found — governance wrapper missing");
+ok("automationCapabilityGovernance.ts present");
+
+const typesSrc = fs.readFileSync(TYPES_SRC, "utf8");
+const govSrc = fs.readFileSync(GOV_SRC, "utf8");
+
+// 12. Types file contains required governance types and constants
+for (const name of [
+  "MaturityLevel", "TestLevel", "VerificationMethod", "VerificationScope",
+  "MoodleWsSecurityPolicy", "SCHEMA_EVOLUTION_RULES",
+]) {
+  if (!typesSrc.includes(name)) fail("automationCapabilityTypes.ts missing: " + name);
+}
+ok("all required governance types present in automationCapabilityTypes.ts");
+
+// 13. Governance file has auditable contract metadata with required flags
+if (!govSrc.includes("GOVERNANCE_AUDIT_METADATA")) {
+  fail("GOVERNANCE_AUDIT_METADATA missing from governance file");
+}
+const govRequired = [
+  'teacher_release_status: "BLOCKED"',
+  "teacher_release_ready: false",
+  "no_live_evidence_without_evidence_ref: true",
+  "no_blocked_capability_claims_live_evidence: true",
+  "moodle_ws_security_policy_present: true",
+  "raw_pii_logging_allowed: false",
+  "raw_moodle_response_storage_allowed: false",
+];
+for (const flag of govRequired) {
+  if (!govSrc.includes(flag)) fail("GOVERNANCE_AUDIT_METADATA missing flag: " + flag);
+}
+ok("GOVERNANCE_AUDIT_METADATA present with all required governance flags");
+
+// 14. Security policy enforces false for PII and raw response logging
+if (!/rawPiiLoggingAllowed\s*:\s*false/.test(govSrc)) {
+  fail("governance: rawPiiLoggingAllowed must be false in MOODLE_WS_SECURITY_POLICY");
+}
+if (!/rawMoodleResponseStorageAllowed\s*:\s*false/.test(govSrc)) {
+  fail("governance: rawMoodleResponseStorageAllowed must be false in MOODLE_WS_SECURITY_POLICY");
+}
+ok("security policy enforces rawPiiLoggingAllowed:false and rawMoodleResponseStorageAllowed:false");
+
+// 15. All governed selectors exported
+for (const fn of [
+  "getGovernedAutomationCapabilities",
+  "getGovernedCapabilityById",
+  "getGovernedTeacherVisibleCapabilities",
+  "getGovernedBlockedCapabilities",
+  "getGovernedStaleCapabilities",
+]) {
+  if (!govSrc.includes(fn)) fail("governance selector missing: " + fn);
+}
+ok("all 5 governed selectors present");
+
 console.log("\nCAPABILITY_REGISTRY_AUDIT_OK");

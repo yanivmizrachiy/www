@@ -29,7 +29,8 @@
     "audit:lti-probes": "node scripts/checks/dynamic-lti-probes-sanity.cjs",
     "audit:moodle-webservices-readiness": "node scripts/checks/moodle-webservices-readiness.cjs",
     "audit:teacher-date-format": "node scripts/checks/teacher-date-format-audit.cjs",
-    "audit:automation-capabilities": "node scripts/checks/automation-capabilities-audit.cjs"
+    "audit:automation-capabilities": "node scripts/checks/automation-capabilities-audit.cjs",
+    "audit:automation-capability-contract": "node scripts/checks/automation-capability-contract-audit.cjs"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
