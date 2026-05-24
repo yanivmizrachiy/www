@@ -3,6 +3,7 @@ import { SafePage } from "@/components/SafePage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, BookOpen, Link2, Server, Users, Zap } from "lucide-react";
 import AutomationStatusPanel from "@/components/AutomationStatusPanel";
+import AutoExtractionSourceRouterSection from "@/components/AutoExtractionSourceRouterSection";
 
 interface AutomationCapabilities {
   ok: boolean;
@@ -188,6 +189,7 @@ export default function Automation() {
     >
       <div className="space-y-6" dir="rtl">
         <AutomationStatusPanel />
+        <AutoExtractionSourceRouterSection />
 
         {loading && (
           <Card className="border border-slate-200 bg-white p-4 shadow-sm">

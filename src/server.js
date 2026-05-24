@@ -2598,6 +2598,336 @@ app.get("/api/automation/capabilities", async (req, res) => {
   });
 });
 
+// >>> MTH_AUTO_EXTRACTION_SOURCE_ROUTER_V1 >>>
+// Read-only auto-extraction discovery + source router.
+// Returns sanitized metadata only: no secrets, no tokens, no PII, no rows.
+// Routing logic mirrors src/lib/autoExtractionSourceRouter.ts (the server
+// runs JS, so the pure TS module is kept as the typed contract / future
+// frontend import, and the same rules are evaluated here over real signals).
+app.get("/api/automation/auto-extraction/sources", async (req, res) => {
+  noStore(res);
+
+  // ── Gather REAL signals only ──────────────────────────────────────────────
+  const session = importSessionFromRequest(req) || sessionFromRequest(req) || latestLti13SessionForWs();
+
+  const courseId = normalizeCourseIdFromSession(session);
+  const roles = normalizeRolesFromSession(session);
+  const hasLtiSession = !!session;
+  const hasCourseIdentity = !!courseId;
+  const hasTeacherIdentity = !!(
+    session && (session.teacherId || session.teacherName || session.moodleUsername || session.user_id || session.userId)
+  );
+
+  // LTI Advantage live service claims (only true if the real launch carried them)
+  const lti13Sessions = lti13DiagnosticSessionsSnapshot();
+  const latestLti13 = lti13Sessions.length ? lti13Sessions[lti13Sessions.length - 1] : null;
+  const liveServices = latestLti13?.automaticServices || { has_nrps: false, has_ags: false };
+  const hasNrpsClaim = !!liveServices.has_nrps;
+  const hasAgsClaim = !!liveServices.has_ags;
+
+  // Moodle Web Services — token configured? site-info live verified?
+  const wsStatus = moodleWsStatus();
+  const wsTokenConfigured = !!wsStatus.configured;
+  // Live verification is only true if a real probe recorded it. We do NOT
+  // perform a live call here (read-only/no side effects); we reflect the
+  // known verified flag, which stays false until a probe records evidence.
+  const wsSiteInfoLiveVerified = !!wsStatus.core_webservice_get_site_info_live_verified;
+
+  // Real imported data already persisted (aggregate booleans, never rows)
+  const sbCounts = await getSupabaseCounts();
+  const hasParticipantsData = (sbCounts?.students ?? 0) > 0;
+  const hasGradebookData = ((sbCounts?.grade_items ?? 0) > 0) || ((sbCounts?.grade_results ?? 0) > 0);
+  const hasLogsData = (sbCounts?.log_events ?? 0) > 0;
+  const hasCourseStructureData =
+    ((sbCounts?.course_sections ?? 0) > 0) ||
+    ((sbCounts?.course_tasks ?? 0) > 0) ||
+    (Array.isArray(store.chapters) && store.chapters.length > 0) ||
+    (Array.isArray(store.completionRows) && store.completionRows.length > 0);
+
+  // Practice time: no verified duration source exists today → must refuse.
+  const hasVerifiedDurationSource = false;
+
+  // ── Routing helpers (mirror of autoExtractionSourceRouter.ts) ─────────────
+  const VER = "MTH_AUTO_EXTRACTION_SOURCE_ROUTER_V1";
+
+  const domains = [];
+
+  domains.push({
+    domainId: "course_identity",
+    labelHe: "זהות קורס / מרחב למידה",
+    bestCurrentSource: hasCourseIdentity ? "LTI" : "UNAVAILABLE",
+    automationLevel: hasCourseIdentity ? "AUTOMATIC" : "BLOCKED",
+    isAutomaticNow: hasCourseIdentity,
+    isSemiAutoFallback: false,
+    isBlocked: !hasCourseIdentity,
+    evidenceType: hasCourseIdentity ? "live" : "missing",
+    provingSignalHe: hasCourseIdentity ? "התקבל הקשר LTI חי עם מזהה קורס/מרחב מתוך Moodle." : "אין סשן LTI פעיל עם מזהה קורס.",
+    whatIsMissingHe: hasCourseIdentity ? null : "פתיחת הכלי מתוך מרחב Moodle.",
+    teacherSeesHe: hasCourseIdentity ? "נשלף אוטומטית" : "נדרשת פתיחה מתוך Moodle",
+    adminEnablementHe: null,
+    fallbackRoute: null,
+    routeAction: hasCourseIdentity ? "use_live_signal" : "open_from_moodle",
+    mayShowDataNow: hasCourseIdentity,
+    mustRefuseToCalculate: false,
+  });
+
+  domains.push({
+    domainId: "teacher_identity",
+    labelHe: "זהות מורה",
+    bestCurrentSource: hasTeacherIdentity ? "LTI" : "UNAVAILABLE",
+    automationLevel: hasTeacherIdentity ? "AUTOMATIC" : "BLOCKED",
+    isAutomaticNow: hasTeacherIdentity,
+    isSemiAutoFallback: false,
+    isBlocked: !hasTeacherIdentity,
+    evidenceType: hasTeacherIdentity ? "live" : "missing",
+    provingSignalHe: hasTeacherIdentity ? "התקבלה זהות מורה מתוך הקשר ה-LTI החי." : "אין זהות מורה בסשן LTI פעיל.",
+    whatIsMissingHe: hasTeacherIdentity ? null : "פתיחת הכלי מתוך מרחב Moodle עם זיהוי מורה.",
+    teacherSeesHe: hasTeacherIdentity ? "נשלף אוטומטית" : "נדרשת פתיחה מתוך Moodle",
+    adminEnablementHe: null,
+    fallbackRoute: null,
+    routeAction: hasTeacherIdentity ? "use_live_signal" : "open_from_moodle",
+    mayShowDataNow: hasTeacherIdentity,
+    mustRefuseToCalculate: false,
+  });
+
+  // students_roster: live WS > live NRPS > import fallback
+  if (wsTokenConfigured && wsSiteInfoLiveVerified) {
+    domains.push({
+      domainId: "students_roster", labelHe: "רשימת תלמידים (Roster)",
+      bestCurrentSource: "MOODLE_WS", automationLevel: "AUTOMATIC",
+      isAutomaticNow: true, isSemiAutoFallback: false, isBlocked: false, evidenceType: "live",
+      provingSignalHe: "Moodle Web Services מאומת חי (core_webservice_get_site_info).",
+      whatIsMissingHe: null, teacherSeesHe: "נשלף אוטומטית", adminEnablementHe: null,
+      fallbackRoute: "/import", routeAction: "use_live_signal", mayShowDataNow: true, mustRefuseToCalculate: false,
+    });
+  } else if (hasNrpsClaim) {
+    domains.push({
+      domainId: "students_roster", labelHe: "רשימת תלמידים (Roster)",
+      bestCurrentSource: "NRPS", automationLevel: "AUTOMATIC_READY",
+      isAutomaticNow: false, isSemiAutoFallback: true, isBlocked: false, evidenceType: "inferred",
+      provingSignalHe: "claim של NRPS נמצא ב-launch החי. נדרש מימוש שליפה מאומת לפני שמירה.",
+      whatIsMissingHe: "מימוש שליפת NRPS מאומת + בדיקת בידוד לפני שמירה אוטומטית.",
+      teacherSeesHe: "מוכן לאוטומציה אם Moodle יחשוף הרשאה", adminEnablementHe: null,
+      fallbackRoute: "/import", routeAction: "import_report", mayShowDataNow: hasParticipantsData, mustRefuseToCalculate: false,
+    });
+  } else {
+    domains.push({
+      domainId: "students_roster", labelHe: "רשימת תלמידים (Roster)",
+      bestCurrentSource: "IMPORT", automationLevel: "SEMI_AUTOMATIC",
+      isAutomaticNow: false, isSemiAutoFallback: true, isBlocked: false, evidenceType: "audit",
+      provingSignalHe: hasParticipantsData ? "קיימים נתוני משתתפים שיובאו מדוח Moodle אמיתי." : "אין claim של NRPS ואין token WS — המסלול הזמין הוא ייבוא דוח Participants אמיתי.",
+      whatIsMissingHe: hasParticipantsData ? null : "ייבוא דוח Participants אמיתי ממודל.",
+      teacherSeesHe: hasParticipantsData ? "זמין מייבוא דוח אמיתי" : "נדרש ייבוא דוח זמני",
+      adminEnablementHe: "להפעלת אוטומציה מלאה: מנהל Moodle מפעיל NRPS בהגדרות הכלי, או מנפיק Web Services token.",
+      fallbackRoute: "/import", routeAction: "import_report", mayShowDataNow: hasParticipantsData, mustRefuseToCalculate: false,
+    });
+  }
+
+  // teachers_roles
+  {
+    const viaWs = wsTokenConfigured && wsSiteInfoLiveVerified;
+    domains.push({
+      domainId: "teachers_roles", labelHe: "מורים ותפקידים",
+      bestCurrentSource: viaWs ? "MOODLE_WS" : hasNrpsClaim ? "NRPS" : "IMPORT",
+      automationLevel: viaWs ? "AUTOMATIC" : hasNrpsClaim ? "AUTOMATIC_READY" : "SEMI_AUTOMATIC",
+      isAutomaticNow: viaWs, isSemiAutoFallback: !viaWs, isBlocked: false,
+      evidenceType: viaWs ? "live" : hasNrpsClaim ? "inferred" : "audit",
+      provingSignalHe: viaWs ? "Moodle Web Services מאומת מחזיר תפקידים." : hasNrpsClaim ? "claim של NRPS נמצא ב-launch (כולל תפקידים)." : "תפקידי מורים מגיעים מדוח המשתתפים שיובא.",
+      whatIsMissingHe: viaWs ? null : "מקור תפקידים אוטומטי מאומת (WS/NRPS).",
+      teacherSeesHe: viaWs ? "נשלף אוטומטית" : hasNrpsClaim ? "מוכן לאוטומציה אם Moodle יחשוף הרשאה" : "זמין מייבוא דוח אמיתי",
+      adminEnablementHe: viaWs ? null : "מנהל Moodle מפעיל NRPS או Web Services.",
+      fallbackRoute: "/import", routeAction: viaWs ? "use_live_signal" : "import_report",
+      mayShowDataNow: viaWs || hasParticipantsData, mustRefuseToCalculate: false,
+    });
+  }
+
+  // gradebook
+  if (hasAgsClaim) {
+    domains.push({
+      domainId: "gradebook", labelHe: "גיליון ציונים (Gradebook)",
+      bestCurrentSource: "AGS", automationLevel: "AUTOMATIC_READY",
+      isAutomaticNow: false, isSemiAutoFallback: true, isBlocked: false, evidenceType: "inferred",
+      provingSignalHe: "claim של AGS נמצא ב-launch החי. AGS אינו מחליף את ייצוא ה-Gradebook המלא.",
+      whatIsMissingHe: "מימוש שליפת AGS מאומת. AGS מספק ציונים חלקיים בלבד.",
+      teacherSeesHe: "מוכן לאוטומציה אם Moodle יחשוף הרשאה", adminEnablementHe: null,
+      fallbackRoute: "/gradebook-import", routeAction: "import_report", mayShowDataNow: hasGradebookData, mustRefuseToCalculate: false,
+    });
+  } else {
+    domains.push({
+      domainId: "gradebook", labelHe: "גיליון ציונים (Gradebook)",
+      bestCurrentSource: "IMPORT", automationLevel: "SEMI_AUTOMATIC",
+      isAutomaticNow: false, isSemiAutoFallback: true, isBlocked: false, evidenceType: "audit",
+      provingSignalHe: hasGradebookData ? "קיימים נתוני ציונים שיובאו מדוח Gradebook אמיתי." : "אין claim של AGS — המסלול הזמין הוא ייבוא דוח Gradebook אמיתי.",
+      whatIsMissingHe: hasGradebookData ? null : "ייבוא דוח Gradebook אמיתי ממודל.",
+      teacherSeesHe: hasGradebookData ? "זמין מייבוא דוח אמיתי" : "נדרש ייבוא דוח זמני",
+      adminEnablementHe: "להפעלת אוטומציה: מנהל Moodle מפעיל AGS (LTI Advantage) או Web Services.",
+      fallbackRoute: "/gradebook-import", routeAction: "import_report", mayShowDataNow: hasGradebookData, mustRefuseToCalculate: false,
+    });
+  }
+
+  // logs
+  {
+    const viaWs = wsTokenConfigured && wsSiteInfoLiveVerified;
+    domains.push({
+      domainId: "logs", labelHe: "לוגים (יומן פעילות)",
+      bestCurrentSource: viaWs ? "MOODLE_WS" : "IMPORT",
+      automationLevel: viaWs ? "AUTOMATIC_READY" : "SEMI_AUTOMATIC",
+      isAutomaticNow: false, isSemiAutoFallback: true, isBlocked: false,
+      evidenceType: viaWs ? "inferred" : "audit",
+      provingSignalHe: viaWs ? "Web Services מאומת — קריאת לוגים אפשרית בכפוף לפונקציות מורשות." : hasLogsData ? "קיימים אירועי לוג שיובאו מדוח Moodle אמיתי." : "המסלול הזמין הוא ייבוא דוח Logs אמיתי.",
+      whatIsMissingHe: viaWs ? "מיפוי פונקציית לוגים מורשית ב-WS." : hasLogsData ? null : "ייבוא דוח Logs אמיתי.",
+      teacherSeesHe: viaWs ? "מוכן לאוטומציה אם Moodle יחשוף הרשאה" : hasLogsData ? "זמין מייבוא דוח אמיתי" : "נדרש ייבוא דוח זמני",
+      adminEnablementHe: viaWs ? null : "מנהל Moodle מפעיל Web Services לקריאת לוגים.",
+      fallbackRoute: "/logs-import", routeAction: "import_report", mayShowDataNow: hasLogsData, mustRefuseToCalculate: false,
+    });
+  }
+
+  // practice_time — REFUSE unless verified duration
+  domains.push({
+    domainId: "practice_time", labelHe: "זמן תרגול",
+    bestCurrentSource: "UNAVAILABLE",
+    automationLevel: hasVerifiedDurationSource ? "SEMI_AUTOMATIC" : "REFUSE",
+    isAutomaticNow: false, isSemiAutoFallback: hasVerifiedDurationSource, isBlocked: !hasVerifiedDurationSource,
+    evidenceType: hasVerifiedDurationSource ? "audit" : "missing",
+    provingSignalHe: hasVerifiedDurationSource ? "קיים מקור משך זמן מאומת." : "אין שדה משך זמן רשמי בייצוא הלוגים. חישוב סינתטי אסור.",
+    whatIsMissingHe: hasVerifiedDurationSource ? null : "מקור משך זמן רשמי מ-Moodle.",
+    teacherSeesHe: hasVerifiedDurationSource ? "זמין ממקור משך מאומת" : "לא ניתן לחשב ללא מקור משך אמיתי",
+    adminEnablementHe: null, fallbackRoute: null,
+    routeAction: hasVerifiedDurationSource ? "import_report" : "refuse_calculation",
+    mayShowDataNow: hasVerifiedDurationSource, mustRefuseToCalculate: !hasVerifiedDurationSource,
+  });
+
+  // course_structure
+  {
+    const viaWs = wsTokenConfigured && wsSiteInfoLiveVerified;
+    domains.push({
+      domainId: "course_structure", labelHe: "מבנה קורס ופעילויות",
+      bestCurrentSource: viaWs ? "MOODLE_WS" : "IMPORT",
+      automationLevel: viaWs ? "AUTOMATIC_READY" : "SEMI_AUTOMATIC",
+      isAutomaticNow: false, isSemiAutoFallback: true, isBlocked: false,
+      evidenceType: viaWs ? "inferred" : "audit",
+      provingSignalHe: viaWs ? "Web Services מאומת — קריאת מבנה קורס אפשרית בכפוף לפונקציות מורשות." : hasCourseStructureData ? "קיים מבנה קורס שיובא מדוח Moodle אמיתי." : "המסלול הזמין הוא ייבוא דוח Activity Completion אמיתי.",
+      whatIsMissingHe: viaWs ? "מיפוי core_course_get_contents מורשה." : hasCourseStructureData ? null : "ייבוא דוח מבנה קורס אמיתי.",
+      teacherSeesHe: viaWs ? "מוכן לאוטומציה אם Moodle יחשוף הרשאה" : hasCourseStructureData ? "זמין מייבוא דוח אמיתי" : "נדרש ייבוא דוח זמני",
+      adminEnablementHe: viaWs ? null : "מנהל Moodle מפעיל Web Services לקריאת מבנה קורס.",
+      fallbackRoute: "/course-structure-import", routeAction: "import_report", mayShowDataNow: hasCourseStructureData, mustRefuseToCalculate: false,
+    });
+  }
+
+  // activity_completion
+  domains.push({
+    domainId: "activity_completion", labelHe: "השלמת פעילויות / התקדמות",
+    bestCurrentSource: "IMPORT", automationLevel: "SEMI_AUTOMATIC",
+    isAutomaticNow: false, isSemiAutoFallback: true, isBlocked: false, evidenceType: "audit",
+    provingSignalHe: hasCourseStructureData ? "השלמת פעילויות נגזרת ממבנה הקורס שיובא." : "נדרש ייבוא דוח Activity Completion אמיתי.",
+    whatIsMissingHe: hasCourseStructureData ? null : "ייבוא דוח Activity Completion אמיתי.",
+    teacherSeesHe: hasCourseStructureData ? "זמין מייבוא דוח אמיתי" : "נדרש ייבוא דוח זמני",
+    adminEnablementHe: "להפעלת אוטומציה: Web Services עם core_completion מורשה.",
+    fallbackRoute: "/course-structure-import", routeAction: "import_report", mayShowDataNow: hasCourseStructureData, mustRefuseToCalculate: false,
+  });
+
+  // moodle_web_services
+  {
+    const verified = wsTokenConfigured && wsSiteInfoLiveVerified;
+    const configuredOnly = wsTokenConfigured && !wsSiteInfoLiveVerified;
+    domains.push({
+      domainId: "moodle_web_services", labelHe: "שירותי Web מודל (אוטומציה מלאה)",
+      bestCurrentSource: verified ? "MOODLE_WS" : "UNAVAILABLE",
+      automationLevel: verified ? "AUTOMATIC" : "BLOCKED",
+      isAutomaticNow: verified, isSemiAutoFallback: false, isBlocked: !verified,
+      evidenceType: verified ? "live" : "missing",
+      provingSignalHe: verified ? "core_webservice_get_site_info אומת חי." : configuredOnly ? "MOODLE_WS_TOKEN מוגדר אך core_webservice_get_site_info טרם אומת חי." : "MOODLE_WS_TOKEN לא מוגדר באף סביבה מאומתת.",
+      whatIsMissingHe: verified ? null : configuredOnly ? "אימות חי של core_webservice_get_site_info." : "token + הפעלת Web Services.",
+      teacherSeesHe: verified ? "נשלף אוטומטית" : "נדרש חיבור מנהל מערכת",
+      adminEnablementHe: verified ? null : "מנהל Moodle מפעיל Web Services + REST, יוצר משתמש שירות, מנפיק token, ומקצה core_webservice_get_site_info. הגדר MOODLE_WS_TOKEN ב-Render בלבד.",
+      fallbackRoute: null, routeAction: verified ? "use_live_signal" : "await_token",
+      mayShowDataNow: verified, mustRefuseToCalculate: false,
+    });
+  }
+
+  // nrps
+  domains.push({
+    domainId: "nrps", labelHe: "NRPS (רשימת משתתפים אוטומטית)",
+    bestCurrentSource: hasNrpsClaim ? "NRPS" : "UNAVAILABLE",
+    automationLevel: hasNrpsClaim ? "AUTOMATIC_READY" : "BLOCKED",
+    isAutomaticNow: false, isSemiAutoFallback: hasNrpsClaim, isBlocked: !hasNrpsClaim,
+    evidenceType: hasNrpsClaim ? "inferred" : "missing",
+    provingSignalHe: hasNrpsClaim ? "claim של namesroleservice נמצא ב-launch החי." : "claim של NRPS לא התקבל מ-Moodle ב-launch האחרון.",
+    whatIsMissingHe: hasNrpsClaim ? "מימוש שליפת חברות מאומת." : "הפעלת NRPS בהגדרות הכלי ב-Moodle.",
+    teacherSeesHe: hasNrpsClaim ? "מוכן לאוטומציה אם Moodle יחשוף הרשאה" : "נדרש חיבור מנהל מערכת",
+    adminEnablementHe: hasNrpsClaim ? null : "מנהל Moodle מפעיל Names and Roles Provisioning Service בהגדרות הכלי החיצוני, שומר, ומפעיל מחדש.",
+    fallbackRoute: "/import", routeAction: hasNrpsClaim ? "import_report" : "await_admin_enablement",
+    mayShowDataNow: false, mustRefuseToCalculate: false,
+  });
+
+  // ags
+  domains.push({
+    domainId: "ags", labelHe: "AGS (ציונים אוטומטיים)",
+    bestCurrentSource: hasAgsClaim ? "AGS" : "UNAVAILABLE",
+    automationLevel: hasAgsClaim ? "AUTOMATIC_READY" : "BLOCKED",
+    isAutomaticNow: false, isSemiAutoFallback: hasAgsClaim, isBlocked: !hasAgsClaim,
+    evidenceType: hasAgsClaim ? "inferred" : "missing",
+    provingSignalHe: hasAgsClaim ? "claim של AGS נמצא ב-launch החי." : "claim של AGS לא התקבל מ-Moodle ב-launch האחרון.",
+    whatIsMissingHe: hasAgsClaim ? "מימוש שליפת ציונים מאומת. AGS אינו מחליף ייצוא Gradebook מלא." : "הפעלת AGS בהגדרות הכלי ב-Moodle.",
+    teacherSeesHe: hasAgsClaim ? "מוכן לאוטומציה אם Moodle יחשוף הרשאה" : "נדרש חיבור מנהל מערכת",
+    adminEnablementHe: hasAgsClaim ? null : "מנהל Moodle מפעיל Assignment and Grade Services (LTI Advantage) בהגדרות הכלי.",
+    fallbackRoute: "/gradebook-import", routeAction: hasAgsClaim ? "import_report" : "await_admin_enablement",
+    mayShowDataNow: false, mustRefuseToCalculate: false,
+  });
+
+  // ── Summary ───────────────────────────────────────────────────────────────
+  const byLevel = (lvl) => domains.filter((d) => d.automationLevel === lvl).map((d) => d.labelHe);
+  let nextBestAutomationStepHe;
+  if (!hasLtiSession) {
+    nextBestAutomationStepHe = "פתח את הכלי מתוך מרחב Moodle כדי לקבל הקשר חי.";
+  } else if (!wsTokenConfigured && !hasNrpsClaim && !hasAgsClaim) {
+    nextBestAutomationStepHe = "בקש ממנהל Moodle להפעיל Web Services (token) או NRPS/AGS. עד אז המסלול הוא ייבוא דוחות אמיתיים.";
+  } else if (wsTokenConfigured && !wsSiteInfoLiveVerified) {
+    nextBestAutomationStepHe = "אמת את ה-token דרך core_webservice_get_site_info כדי לפתוח שאיבה אוטומטית.";
+  } else if (hasNrpsClaim) {
+    nextBestAutomationStepHe = "ממש שליפת NRPS מאומתת + בדיקת בידוד לפני שמירה אוטומטית.";
+  } else {
+    nextBestAutomationStepHe = "המשך עם ייבוא דוחות אמיתיים. שדרוג לאוטומציה ייפתח עם הרשאות Moodle.";
+  }
+
+  res.json({
+    ok: true,
+    version: VER,
+    teacher_release: "NO",
+    teacher_release_ready: false,
+    generated_at: new Date().toISOString(),
+    signals_summary: {
+      has_lti_session: hasLtiSession,
+      has_course_identity: hasCourseIdentity,
+      has_teacher_identity: hasTeacherIdentity,
+      has_nrps_claim: hasNrpsClaim,
+      has_ags_claim: hasAgsClaim,
+      ws_token_configured: wsTokenConfigured,
+      ws_site_info_live_verified: wsSiteInfoLiveVerified,
+      roles_present: roles.length > 0,
+    },
+    domains,
+    summary: {
+      automatic_now_he: byLevel("AUTOMATIC"),
+      automatic_ready_he: byLevel("AUTOMATIC_READY"),
+      semi_auto_fallback_he: byLevel("SEMI_AUTOMATIC"),
+      blocked_he: domains.filter((d) => d.automationLevel === "BLOCKED" || d.automationLevel === "REFUSE").map((d) => d.labelHe),
+      next_best_automation_step_he: nextBestAutomationStepHe,
+    },
+    safety: {
+      read_only: true,
+      no_secrets: true,
+      no_token_values: true,
+      no_raw_student_rows: true,
+      no_raw_grade_rows: true,
+      no_raw_logs: true,
+      no_pii: true,
+      teacher_release_remains_no: true,
+    },
+  });
+});
+// <<< MTH_AUTO_EXTRACTION_SOURCE_ROUTER_V1 <<<
+
 app.get("/api/automation/export-links", (req, res) => {
   noStore(res);
   const session = importSessionFromRequest(req) || sessionFromRequest(req);

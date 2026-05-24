@@ -31,7 +31,8 @@
     "audit:teacher-date-format": "node scripts/checks/teacher-date-format-audit.cjs",
     "audit:automation-capabilities": "node scripts/checks/automation-capabilities-audit.cjs",
     "audit:automation-capability-contract": "node scripts/checks/automation-capability-contract-audit.cjs",
-    "audit:automation-evidence-log": "node scripts/checks/automation-evidence-log-audit.cjs"
+    "audit:automation-evidence-log": "node scripts/checks/automation-evidence-log-audit.cjs",
+    "audit:auto-extraction-source-router": "node scripts/checks/auto-extraction-source-router-audit.cjs"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
