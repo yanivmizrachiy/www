@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { SafePage } from "@/components/SafePage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, BookOpen, Link2, Server, Users, Zap } from "lucide-react";
+import AutomationStatusPanel from "@/components/AutomationStatusPanel";
 
 interface AutomationCapabilities {
   ok: boolean;
@@ -186,6 +187,8 @@ export default function Automation() {
       description="מרכז בקרה חדש שמראה את סטטוס ה-LTI, הייבוא הקיים וקישורי יעד לדוחות לפי מזהה קורס. סנכרון API מלא עדיין לא הופעל."
     >
       <div className="space-y-6" dir="rtl">
+        <AutomationStatusPanel />
+
         {loading && (
           <Card className="border border-slate-200 bg-white p-4 shadow-sm">
             <CardContent className="text-sm text-slate-600">טוען סטטוס אוטומציה...</CardContent>
