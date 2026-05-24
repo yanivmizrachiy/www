@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { SafePage } from "@/components/SafePage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, BookOpen, Link2, Users, Zap } from "lucide-react";
+import { AlertTriangle, BookOpen, Link2, Server, Users, Zap } from "lucide-react";
 
 interface AutomationCapabilities {
   ok: boolean;
@@ -29,6 +29,21 @@ interface AutomationCapabilities {
   nextBestAction: string;
 }
 
+interface WsReadinessData {
+  ok: boolean;
+  version: string;
+  configured: boolean;
+  verified: boolean;
+  status: string;
+  host: string | null;
+  function_checked: string | null;
+  checkedAt: string | null;
+  failure_category: string | null;
+  moodle_release: string | null;
+  functions_available_count: number | null;
+  required_admin_steps: string[];
+}
+
 interface AutomationExportLinks {
   ok: boolean;
   courseId: string;
@@ -40,6 +55,25 @@ interface AutomationExportLinks {
     participants: string;
   };
 }
+
+const WS_STATUS: Record<string, { label: string; tone: "green" | "amber" | "red" }> = {
+  verified_site_info:          { label: "✓ Web Services מחוברים ומאומתים.", tone: "green" },
+  missing_env:                 { label: "Web Services לא מוגדרים — נדרשת פעולת מנהל.", tone: "amber" },
+  invalid_token:               { label: "Token שגוי — בדוק את ההגדרות ב-Render.", tone: "red" },
+  blocked_by_admin_enablement: { label: "Web Services כבויים ב-Moodle — נדרשת פעולת מנהל.", tone: "amber" },
+  http_error:                  { label: "שגיאת HTTP מ-Moodle.", tone: "red" },
+  network_error:               { label: "שגיאת רשת — לא ניתן להגיע ל-Moodle.", tone: "red" },
+  timeout:                     { label: "Moodle לא הגיב בזמן — נסה שוב.", tone: "amber" },
+  json_parse_error:            { label: "Moodle החזיר תגובה שאינה JSON.", tone: "red" },
+  moodle_error:                { label: "Moodle החזיר שגיאה.", tone: "red" },
+  runtime_error:               { label: "שגיאה פנימית בשרת.", tone: "red" },
+};
+
+const WS_TONE_CLASSES: Record<"green" | "amber" | "red", { border: string; bg: string; text: string; badge: string }> = {
+  green: { border: "border-emerald-200", bg: "bg-emerald-50", text: "text-emerald-900", badge: "bg-emerald-100 text-emerald-800" },
+  amber: { border: "border-amber-200",   bg: "bg-amber-50",   text: "text-amber-900",  badge: "bg-amber-100 text-amber-800"   },
+  red:   { border: "border-red-200",     bg: "bg-red-50",     text: "text-red-900",    badge: "bg-red-100 text-red-800"       },
+};
 
 const STATUS_LABELS: Record<string, string> = {
   available: "זמין",
@@ -60,6 +94,8 @@ export default function Automation() {
   const [exportLinks, setExportLinks] = useState<AutomationExportLinks | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [wsReadiness, setWsReadiness] = useState<WsReadinessData | null>(null);
+  const [wsLoading, setWsLoading] = useState(true);
 
   useEffect(() => {
     let live = true;
@@ -91,7 +127,22 @@ export default function Automation() {
       }
     }
 
+    async function loadWsReadiness() {
+      try {
+        const res = await fetch("/api/automation/moodle-webservices/readiness", {
+          headers: { Accept: "application/json" },
+        });
+        const json = await res.json();
+        if (live) setWsReadiness(json);
+      } catch {
+        if (live) setWsReadiness(null);
+      } finally {
+        if (live) setWsLoading(false);
+      }
+    }
+
     load();
+    loadWsReadiness();
     return () => { live = false; };
   }, []);
 
@@ -265,6 +316,58 @@ export default function Automation() {
                     טוען קישורי יעד לדוחות... יש לרענן אם זה לוקח זמן.
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            <Card className="MTH_WS_READINESS_CARD_V1 rounded-3xl border bg-white p-5 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-extrabold flex items-center gap-2">
+                  <Server className="h-5 w-5 text-slate-600" />
+                  Moodle Web Services — סטטוס חיבור
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {wsLoading && (
+                  <div className="text-sm text-slate-500">בודק סטטוס Web Services...</div>
+                )}
+                {!wsLoading && !wsReadiness && (
+                  <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                    לא ניתן לטעון את סטטוס Web Services. נסה לרענן את הדף.
+                  </div>
+                )}
+                {!wsLoading && wsReadiness && (() => {
+                  const entry = WS_STATUS[wsReadiness.status] ?? { label: `סטטוס לא מוכר: ${wsReadiness.status}`, tone: "red" as const };
+                  const cls = WS_TONE_CLASSES[entry.tone];
+                  return (
+                    <div className="space-y-4">
+                      <div className={`rounded-2xl border ${cls.border} ${cls.bg} p-4`}>
+                        <div className={`text-sm font-bold ${cls.text}`}>{entry.label}</div>
+                        {wsReadiness.host && (
+                          <div className="mt-2 text-xs text-slate-500">שרת Moodle: <span className="font-mono">{wsReadiness.host}</span></div>
+                        )}
+                        {wsReadiness.verified && wsReadiness.moodle_release && (
+                          <div className="mt-1 text-xs text-slate-500">גרסת Moodle: {wsReadiness.moodle_release}</div>
+                        )}
+                        {wsReadiness.verified && typeof wsReadiness.functions_available_count === "number" && (
+                          <div className="mt-1 text-xs text-slate-500">פונקציות זמינות: {wsReadiness.functions_available_count}</div>
+                        )}
+                      </div>
+                      {!wsReadiness.verified && wsReadiness.required_admin_steps?.length > 0 && (
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                          <div className="mb-2 text-xs font-bold text-slate-700">פעולות נדרשות מהמנהל:</div>
+                          <ul className="list-disc space-y-1 pr-4 text-xs text-slate-600">
+                            {wsReadiness.required_admin_steps.map((step, i) => (
+                              <li key={i}>{step}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      <div className="text-xs text-slate-400">
+                        גרסת endpoint: {wsReadiness.version ?? "—"} · נבדק: {wsReadiness.checkedAt ? new Date(wsReadiness.checkedAt).toLocaleString("he-IL") : "—"}
+                      </div>
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
 
