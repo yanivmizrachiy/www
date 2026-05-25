@@ -86,7 +86,7 @@ export default function MissingData() {
                   <span className="font-bold">הדוח הדרוש: </span>{info.report}
                 </div>
                 <Button asChild variant={available ? "default" : "outline"} className="w-full">
-                  <Link to={available ? "/" : "/import"}>
+                  <Link to={available ? "/" : "/smart-import"}>
                     {available ? "חזור לדשבורד" : "עבור לייבוא דוח"}
                   </Link>
                 </Button>
@@ -157,7 +157,7 @@ export default function MissingData() {
             </p>
           </div>
           <Button asChild>
-            <Link to="/import">
+            <Link to="/smart-import">
               <FileUp className="h-4 w-4" />
               ייבוא דוח Moodle
             </Link>
