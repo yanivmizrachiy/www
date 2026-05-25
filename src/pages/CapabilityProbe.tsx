@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { SafePage, EmptyTruth } from "@/components/SafePage";
 import { CheckCircle2, XCircle, AlertTriangle, HelpCircle, RefreshCw, ExternalLink } from "lucide-react";
+import { NrpsPrivacyInsight } from "@/components/NrpsPrivacyInsight";
 
 // MTH_LIVE_CAPABILITY_PROBE_V1
 // One honest "truth table" page that shows EXACTLY what Moodle gives us right
@@ -145,6 +146,8 @@ export default function Page() {
                 );
               })}
             </section>
+
+            <NrpsPrivacyInsight />
 
             {data.blocker_keys?.length > 0 && (
               <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
