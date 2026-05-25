@@ -3675,6 +3675,128 @@ app.get("/api/imports/students", (req, res) => {
   res.json({ ok: true, students });
 });
 
+app.get("/api/imports/student-profile", (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
+
+  const studentId = String(req.query.student_id || req.query.s || "");
+  if (!studentId) return res.status(400).json({ ok: false, error: "MISSING_STUDENT_ID" });
+
+  const spaceId = session.spaceId || "unknown-space";
+  const inSpace = (row) => !row || !row.space_id && !row.course_id || row.space_id === spaceId || row.course_id === spaceId;
+
+  const rawStudent = store.students.find(s => s.id === studentId && (!s.space_id || s.space_id === spaceId));
+  if (!rawStudent) return res.json({ ok: false, error: "STUDENT_NOT_FOUND" });
+  const student = importedStudentDto(rawStudent);
+
+  const itemNameById = Object.fromEntries(
+    (Array.isArray(store.gradeItems) ? store.gradeItems : [])
+      .filter(inSpace)
+      .map(it => [it.id, { name: it.name || it.item_name || it.raw_header || "", type: it.item_type || null, max: typeof it.max_grade === "number" ? it.max_grade : null }])
+  );
+
+  const grades = (Array.isArray(store.grades) ? store.grades : [])
+    .filter(inSpace)
+    .filter(g => (g.student_id || g.studentId) === studentId)
+    .map(g => {
+      const itemId = g.grade_item_id || g.gradeItemId || g.task_id || g.taskId || "";
+      const meta = itemNameById[itemId] || { name: g.student_full_name ? "" : "", type: null, max: null };
+      const numeric = typeof g.grade === "number" ? g.grade : typeof g.numeric_value === "number" ? g.numeric_value : null;
+      return {
+        grade_item_id: itemId,
+        item_name: meta.name || itemId,
+        item_type: meta.type,
+        max_grade: meta.max,
+        raw_value: g.raw_value != null ? String(g.raw_value) : (g.grade != null ? String(g.grade) : null),
+        numeric_value: numeric,
+        is_missing: numeric === null
+      };
+    });
+
+  const completion = (Array.isArray(store.completionRows) ? store.completionRows : [])
+    .filter(inSpace)
+    .filter(c => (c.student_id || c.studentId) === studentId)
+    .map(c => ({
+      task_id: c.task_id || c.taskId || "",
+      task_name: c.task_name || c.taskName || c.task_id || "",
+      task_type: c.task_type || null,
+      chapter_id: c.chapter_id || c.section_id || null,
+      is_complete: typeof c.is_complete === "boolean" ? c.is_complete : (c.completed_at ? true : null),
+      status: c.status || null,
+      completed_at: c.completed_at || c.completedAt || null
+    }));
+
+  const events = (Array.isArray(store.logEvents) ? store.logEvents : [])
+    .filter(inSpace)
+    .filter(e => (e.student_id || e.studentId) === studentId);
+  const eventTimes = events.map(e => e.timestamp || e.created_at || e.time).filter(Boolean).sort();
+  const days = new Set(eventTimes.map(t => String(t).slice(0, 10)));
+
+  res.json({
+    ok: true,
+    student: {
+      id: student.id,
+      full_name: student.full_name,
+      email: student.email,
+      external_username: student.external_username,
+      external_id: student.external_id,
+      updated_at: student.updated_at || new Date().toISOString()
+    },
+    grades,
+    completion,
+    activity: {
+      event_count: events.length,
+      first_event: eventTimes[0] || null,
+      last_event: eventTimes[eventTimes.length - 1] || null,
+      active_days: days.size,
+      top_components: []
+    }
+  });
+});
+
+app.get("/api/imports/grades-matrix", (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
+
+  const spaceId = session.spaceId || "unknown-space";
+  const inSpace = (row) => !row || !row.space_id && !row.course_id || row.space_id === spaceId || row.course_id === spaceId;
+
+  const students = store.students
+    .filter(s => !s.space_id || s.space_id === spaceId)
+    .map(importedStudentDto)
+    .filter(s => s.full_name)
+    .map(s => ({ id: s.id, full_name: s.full_name }));
+
+  const items = (Array.isArray(store.gradeItems) ? store.gradeItems : [])
+    .filter(inSpace)
+    .map(it => ({
+      id: it.id,
+      item_name: it.name || it.item_name || it.raw_header || "",
+      item_type: it.item_type || null,
+      max_grade: typeof it.max_grade === "number" ? it.max_grade : null
+    }))
+    .filter(it => it.item_name);
+
+  const grades = (Array.isArray(store.grades) ? store.grades : [])
+    .filter(inSpace)
+    .map(g => {
+      const numeric = typeof g.grade === "number" ? g.grade
+        : typeof g.numeric_value === "number" ? g.numeric_value : null;
+      return {
+        student_id: g.student_id || g.studentId || null,
+        grade_item_id: g.grade_item_id || g.gradeItemId || g.task_id || g.taskId || null,
+        raw_value: g.raw_value != null ? String(g.raw_value) : (g.grade != null ? String(g.grade) : null),
+        numeric_value: numeric,
+        is_missing: numeric === null
+      };
+    })
+    .filter(g => g.student_id && g.grade_item_id);
+
+  res.json({ ok: true, students, items, grades });
+});
+
 app.get("/api/imports/overview", (req, res) => {
   noStore(res);
   if (!sessionFromRequest(req)) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });

@@ -31,7 +31,7 @@ export default function Page() {
   return (
     <SafePage 
       title="ציונים" 
-      description="מטריצת ציונים מדוח Moodle אמיתי. אין השלמות ואין ציונים מומצאים."
+      description="מטריצת ציונים מדוח Moodle."
     >
       <div className="space-y-6">
         <Card className="shadow-elegant overflow-hidden">

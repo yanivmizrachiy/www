@@ -28,7 +28,7 @@ export default function StudentProfile() {
   }
 
   if (error || !data) {
-    return <SafePage title="פרופיל תלמיד" description="שגיאה"><EmptyTruth>{error ?? "תלמיד לא נמצא"}</EmptyTruth></SafePage>;
+    return <SafePage title="פרופיל תלמיד" description="מידע התלמיד מתוך Moodle."><EmptyTruth>אין עדיין מידע מפורט על תלמיד זה. ייבא דוח ציונים או פעילות כדי לראות פרטים.</EmptyTruth></SafePage>;
   }
 
   const numericGrades = data.grades
