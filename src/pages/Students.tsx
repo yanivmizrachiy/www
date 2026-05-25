@@ -198,12 +198,12 @@ export default function Page() {
             tone={membersCount > 0 ? "green" : "orange"}
           />
           <InfoCard
-            label="Learners / תלמידים"
+            label="תלמידים"
             value={learnersCount || "לא התקבל"}
             tone={learnersCount > 0 ? "green" : "orange"}
           />
           <InfoCard
-            label="Instructors / מורים"
+            label="מורים"
             value={instructorsCount || "לא התקבל"}
             tone={instructorsCount > 0 ? "green" : "neutral"}
           />

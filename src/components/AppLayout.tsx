@@ -3,6 +3,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { useLtiSession } from "@/hooks/useLtiSession";
 import { StatusBadge } from "@/components/StatusBadge";
+import { hebrewRoleLabel } from "@/lib/roleLabel";
 
 export default function AppLayout() {
   const { site, session, loading } = useLtiSession();
@@ -31,7 +32,7 @@ export default function AppLayout() {
                   {session?.course_title ?? site?.site_name ?? site?.site_url ?? "ממתין ל-LTI launch"}
                 </span>
                 <span className="text-[11px] text-muted-foreground">
-                  {session?.moodle_username ?? "—"} · {session?.role ?? "—"}
+                  {session?.moodle_username ?? "—"} · {hebrewRoleLabel(session?.role)}
                 </span>
               </div>
             </div>
