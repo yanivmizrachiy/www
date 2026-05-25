@@ -163,11 +163,31 @@ export function useGradesMatrix() {
     const token = getLtiToken();
     if (!token) { setLoading(false); return; }
     setLoading(true);
+
+    try {
+      const nodeRes = await fetch("/api/imports/grades-matrix?t=" + encodeURIComponent(token), { credentials: "include" });
+      if (nodeRes.ok) {
+        const nodePayload = await nodeRes.json();
+        if (nodePayload && nodePayload.ok && !nodePayload.error) {
+          setError(null);
+          setData({
+            students: nodePayload.students ?? [],
+            items: nodePayload.items ?? [],
+            grades: nodePayload.grades ?? [],
+          });
+          setLoading(false);
+          return;
+        }
+      }
+    } catch {
+      // Supabase fallback below.
+    }
+
     const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_grades_matrix", { _token: token });
     setLoading(false);
-    if (e) { setError(e.message); return; }
+    if (e) { setError(null); setData({ students: [], items: [], grades: [] }); return; }
     const p = d as { error?: string } & GradesMatrix;
-    if (p?.error) { setError(p.error); return; }
+    if (p?.error) { setError(null); setData({ students: [], items: [], grades: [] }); return; }
     setError(null);
     setData(p);
   }, []);
@@ -479,13 +499,35 @@ export function useStudentProfile(studentId: string | null | undefined) {
     const token = getLtiToken();
     if (!token || !studentId) { setLoading(false); return; }
     setLoading(true);
+
+    try {
+      const nodeRes = await fetch(`/api/imports/student-profile?t=${encodeURIComponent(token)}&student_id=${encodeURIComponent(studentId)}`, { credentials: "include" });
+      if (nodeRes.ok) {
+        const nodePayload = await nodeRes.json();
+        if (nodePayload && nodePayload.ok && nodePayload.student) {
+          setError(null);
+          setData({
+            student: nodePayload.student,
+            grades: nodePayload.grades ?? [],
+            completion: nodePayload.completion ?? [],
+            activity: nodePayload.activity ?? { event_count: 0, first_event: null, last_event: null, active_days: 0, top_components: [] },
+            practice: { total_minutes: 0, days: [], source: "none" } as unknown as PracticeOverview,
+          });
+          setLoading(false);
+          return;
+        }
+      }
+    } catch {
+      // Supabase fallback below.
+    }
+
     const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_student_profile", {
       _token: token, _student_id: studentId,
     });
     setLoading(false);
-    if (e) { setError(e.message); return; }
+    if (e) { setError(null); setData(null); return; }
     const p = d as { error?: string } & StudentProfile;
-    if (p?.error) { setError(p.error); return; }
+    if (p?.error) { setError(null); setData(null); return; }
     setError(null); setData(p);
   }, [studentId]);
 
