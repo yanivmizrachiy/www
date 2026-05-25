@@ -13,8 +13,8 @@ export default function LtiBootstrap() {
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.split("?")[1] || "");
     const token = params.get("t") || hashParams.get("t");
-    const nextPath = params.get("next") || hashParams.get("next") || "/import";
-    const safeNextPath = nextPath.startsWith("/") && !nextPath.startsWith("/api/") ? nextPath : "/import";
+    const nextPath = params.get("next") || hashParams.get("next") || "/";
+    const safeNextPath = nextPath.startsWith("/") && !nextPath.startsWith("/api/") ? nextPath : "/";
 
     if (token) { 
       setLtiToken(token); 
@@ -44,7 +44,7 @@ export default function LtiBootstrap() {
             <>
               <ShieldCheck className="mb-4 h-10 w-10 text-status-proven" />
               <h2 className="text-xl font-bold text-status-proven">הכניסה הצליחה!</h2>
-              <p className="text-sm text-muted-foreground">מעביר אותך לייבוא הנתונים...</p>
+              <p className="text-sm text-muted-foreground">מעביר אותך למודל החכם...</p>
             </>
           )}
 
