@@ -34,7 +34,8 @@
     "audit:automation-evidence-log": "node scripts/checks/automation-evidence-log-audit.cjs",
     "audit:auto-extraction-source-router": "node scripts/checks/auto-extraction-source-router-audit.cjs",
     "audit:multi-teacher-isolation-evidence": "node scripts/checks/multi-teacher-isolation-evidence-audit.cjs",
-    "audit:supabase-rls-isolation-readiness": "node scripts/checks/supabase-rls-isolation-readiness-audit.cjs"
+    "audit:supabase-rls-isolation-readiness": "node scripts/checks/supabase-rls-isolation-readiness-audit.cjs",
+    "audit:supabase-rls-policy-draft": "node scripts/checks/supabase-rls-policy-draft-audit.cjs"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
