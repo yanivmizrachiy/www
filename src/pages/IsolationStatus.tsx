@@ -158,6 +158,15 @@ export default function Page() {
               ראה גם: בדיקת יכולות Moodle
             </Link>
           </div>
+          <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/5 p-3">
+            <div className="text-xs font-extrabold text-primary">בצע את הבדיקה החיה</div>
+            <p className="mt-1 text-xs leading-5 text-slate-700">
+              יש לך שני מרחבי Moodle? תוכל לאמת בעצמך שאין ערבוב נתונים: פתח את הכלי מכל מרחב וצלם את מצבו.
+            </p>
+            <Link to="/isolation-check" className="mt-2 inline-flex rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground hover:opacity-90">
+              בדיקת בידוד חיה — שני מרחבים
+            </Link>
+          </div>
         </section>
       </div>
     </SafePage>
