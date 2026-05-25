@@ -4483,6 +4483,17 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
       }
     }
 
+    const membersNamed = members
+      .map(member => {
+        const name = String(member?.name || [member?.given_name, member?.family_name].filter(Boolean).join(" ") || "").trim();
+        const roles = Array.isArray(member?.roles) ? member.roles.map(r => String(r).split("#").pop()) : [];
+        const isInstructor = roles.some(r => /instructor|teacher|faculty|staff|mentor/i.test(String(r)));
+        const idSource = member?.user_id || member?.sub || member?.lis_person_sourcedid || name;
+        const idHash = crypto.createHash("sha256").update(String(idSource || "")).digest("hex").slice(0, 16);
+        return { id: idHash, name, is_instructor: isInstructor, has_email: Boolean(member?.email) };
+      })
+      .filter(m => m.name);
+
     return res.json({
       ok: true,
       mode: "lti13-nrps-preview-no-save",
@@ -4492,6 +4503,7 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
       membership_http_status: memberResponse.status,
       members_count: members.length,
       role_counts: roleCounts,
+      members_named: membersNamed,
       member_field_presence: {
         has_name_count: members.filter(member => Boolean(member?.name)).length,
         has_given_name_count: members.filter(member => Boolean(member?.given_name)).length,
@@ -4515,7 +4527,8 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
         service_versions: statusJson?.service_claims?.nrps?.service_versions || []
       },
       privacy: {
-        no_names_returned: true,
+        no_names_returned: false,
+        names_only_when_moodle_allows: true,
         no_emails_returned: true,
         no_access_token_returned: true,
         no_save_performed: true
