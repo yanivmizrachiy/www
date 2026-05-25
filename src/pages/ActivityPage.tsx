@@ -62,7 +62,7 @@ export default function Page() {
   return (
     <SafePage
       title="פעילות וזמנים"
-      description="ראיות פעילות אמיתיות מתוך לוגים שיובאו, בנפרד מהערכת זמן תרגול. זמן תרגול מבוסס הערכה מלוגים ואינו זמן מאומת."
+      description="פעילות התלמידים מתוך לוגים שיובאו."
     >
       <div className="space-y-8" dir="rtl">
         {/* ── Section 1: Log evidence (FACT) ───────────────────────────── */}
