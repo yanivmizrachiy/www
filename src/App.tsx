@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import AppLayout from "@/components/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import MissingData from "./pages/MissingData";
+import CapabilityProbe from "./pages/CapabilityProbe";
 import Sites from "./pages/Sites";
 import Students from "./pages/Students";
 import StudentProfile from "./pages/StudentProfile";
@@ -72,6 +73,7 @@ const App = () => (
             <Route path="/logs-import" element={<LogsImport />} />
             <Route path="/course-structure-import" element={<CourseStructureImport />} />
             <Route path="/missing-data" element={<MissingData />} />
+            <Route path="/capabilities" element={<CapabilityProbe />} />
             <Route path="/setup" element={<Setup />} />
           </Route>
           <Route path="*" element={<NotFound />} />
