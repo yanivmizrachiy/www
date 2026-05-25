@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Users, GraduationCap, ClipboardList, Database, Calendar, Import, AlertCircle, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
 import { formatTeacherDateDmyShort } from "@/lib/teacherDateFormat";
+import { TeacherOnboarding } from "@/components/TeacherOnboarding";
 
 // MTH_PREMIUM_DASHBOARD_TEACHER_COUNTS_V1
 // Small, self-contained NRPS teacher card on the dashboard hero. Shows teacher
@@ -90,6 +91,18 @@ export default function Dashboard() {
   const teacherName = session?.moodle_username || "—";
   const courseName = session?.course_title || site?.site_name || "—";
 
+  // First-run / empty state: no real data imported yet (or no Moodle session).
+  const hasAnyData = Boolean(
+    data && (
+      (data.students_count || 0) > 0 ||
+      (data.grades_count || 0) > 0 ||
+      (data.grade_items_count || 0) > 0 ||
+      (data.tasks_count || 0) > 0 ||
+      (data.log_events_count || 0) > 0
+    )
+  );
+  const showOnboarding = !loading && (!hasSession || !hasAnyData);
+
   return (
     <div className="MTH_DASHBOARD_ACTION_HUB_V1 space-y-8" dir="rtl">
       <span className="sr-only">MTH_DASHBOARD_ACTION_ONLY_NO_EXPLAINER_TEXT_V1</span>
@@ -127,6 +140,8 @@ export default function Dashboard() {
         <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-cyan-300/15 blur-3xl" />
         <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-blue-300/20 blur-3xl" />
       </section>
+
+      {showOnboarding && <TeacherOnboarding hasSession={hasSession} />}
 
       <section className="grid gap-5 lg:grid-cols-4" aria-label="כפתורי פעולה ראשיים בעמוד הבית החכם">
         <ActionCard to="/students" marker="MTH_DASHBOARD_MAIN_PARTICIPANTS_BUTTON_V1" icon={Users} title="משתתפים" value={v(data?.students_count)} unit="תלמידים" />
