@@ -105,10 +105,6 @@ function CapabilityCard({ cap }: { cap: GovernedCapability }) {
         {cap.blockedReasonHe && (
           <p className="font-semibold text-amber-900">{cap.blockedReasonHe}</p>
         )}
-        <p className="text-xs leading-relaxed text-slate-600">
-          <span className="font-bold">השלב הבא: </span>
-          {cap.nextTechnicalStep}
-        </p>
         {mode === "teacherAction" && importRoute && (
           <Button
             asChild
@@ -144,9 +140,6 @@ export default function AutomationStatusPanel() {
             <BookOpen className="h-5 w-5" />
             סטטוס יכולות אוטומציה
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            קורא מה-Truth Engine. לא ממציא יכולות. לא מציג מידע חי שלא אומת.
-          </p>
         </div>
         <span className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-700">
           <Info className="h-3.5 w-3.5" />

@@ -230,7 +230,6 @@ export default function LogsImport() {
         <p style={{ margin: 0, color: "#475569", lineHeight: 1.8 }}>
           המסך מזהה דוח יומני מעקב ממודל ושומר אירועים אמיתיים בלבד. לא מחושב זמן תרגול מזויף.
         </p>
-        <div style={{ marginTop: 6, fontSize: 11, color: "#94a3b8" }}>{MARKER}</div>
       </section>
 
       {error && <section style={{ ...errorBox, marginBottom: 16 }}>{error}</section>}
