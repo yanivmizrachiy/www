@@ -35,7 +35,7 @@ export default function Page() {
   return (
     <SafePage
       title="פרקים ופעילויות"
-      description="פרקים מתוך מבנה הקורס האמיתי. לחיצה על פרק מציגה את המשימות שבו. הנתונים מוצגים רק ממקור Moodle אמיתי או מדוח שיובא."
+      description="פרקי הקורס. לחיצה על פרק מציגה את המשימות שבו."
     >
       <div className="space-y-4" dir="rtl">
         {loading ? (

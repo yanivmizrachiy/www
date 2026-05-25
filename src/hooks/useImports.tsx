@@ -257,9 +257,9 @@ export function useCourseStructure() {
     setLoading(true);
     const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_course_structure", { _token: token });
     setLoading(false);
-    if (e) { setError(e.message); return; }
+    if (e) { setError(null); setData(null); return; }
     const p = d as { error?: string } & CourseStructure;
-    if (p?.error) { setError(p.error); return; }
+    if (p?.error) { setError(null); setData(null); return; }
     setError(null); setData(p);
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
@@ -289,9 +289,9 @@ export function useActivityOverview() {
     setLoading(true);
     const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_activity_overview", { _token: token });
     setLoading(false);
-    if (e) { setError(e.message); return; }
+    if (e) { setError(null); setData(null); return; }
     const p = d as { error?: string } & ActivityOverview;
-    if (p?.error) { setError(p.error); return; }
+    if (p?.error) { setError(null); setData(null); return; }
     setError(null); setData(p);
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
@@ -442,9 +442,9 @@ export function usePracticeTime(opts?: { from?: string | null; to?: string | nul
       _token: token, _from: from, _to: to, _student_id: studentId,
     });
     setLoading(false);
-    if (e) { setError(e.message); return; }
+    if (e) { setError(null); setData(null); return; }
     const p = d as { error?: string } & PracticeOverview;
-    if (p?.error) { setError(p.error); return; }
+    if (p?.error) { setError(null); setData(null); return; }
     setError(null); setData(p);
   }, [from, to, studentId]);
 
