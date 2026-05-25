@@ -4,6 +4,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { useLtiSession } from "@/hooks/useLtiSession";
 import { StatusBadge } from "@/components/StatusBadge";
 import { hebrewRoleLabel } from "@/lib/roleLabel";
+import { BookOpen, UserCircle } from "lucide-react";
 
 export default function AppLayout() {
   const { site, session, loading } = useLtiSession();
@@ -27,11 +28,13 @@ export default function AppLayout() {
           <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b bg-background/80 px-4 backdrop-blur-md">
             <div className="flex items-center gap-3">
               <SidebarTrigger className="ml-1" />
-              <div className="hidden flex-col leading-tight sm:flex">
-                <span className="text-sm font-semibold">
+              <div className="flex flex-col leading-tight sm:flex-row sm:items-center sm:gap-4">
+                <span className="flex items-center gap-1.5 text-sm font-bold text-foreground">
+                  <BookOpen className="h-4 w-4 shrink-0 text-primary" />
                   {session?.course_title ?? site?.site_name ?? site?.site_url ?? "ממתין ל-LTI launch"}
                 </span>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                  <UserCircle className="h-4 w-4 shrink-0 text-primary/70" />
                   {session?.moodle_username ?? "—"} · {hebrewRoleLabel(session?.role)}
                 </span>
               </div>

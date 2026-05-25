@@ -3194,7 +3194,7 @@ app.get(CANONICAL_LTI_ENDPOINT, (req, res) => {
   const session = sessionFromRequest(req);
   const base = publicBaseUrl(req);
   if (session?.sessionToken) {
-    return res.redirect(303, base + "/lti?t=" + encodeURIComponent(session.sessionToken) + "&next=" + encodeURIComponent("/import"));
+    return res.redirect(303, base + "/lti?t=" + encodeURIComponent(session.sessionToken) + "&next=" + encodeURIComponent("/"));
   }
   return res.redirect(303, base + "/setup?reason=direct-lti-get");
 });
@@ -3245,7 +3245,7 @@ app.post(CANONICAL_LTI_ENDPOINT, async (req, res) => {
 
     setSession(res, session);
     noStore(res);
-    return res.redirect(303, publicBaseUrl(req) + "/lti?t=" + encodeURIComponent(sessionToken) + "&course=" + encodeURIComponent(space.title) + "&next=" + encodeURIComponent("/import"));
+    return res.redirect(303, publicBaseUrl(req) + "/lti?t=" + encodeURIComponent(sessionToken) + "&course=" + encodeURIComponent(space.title) + "&next=" + encodeURIComponent("/"));
   } catch (error) {
     console.error("LTI Launch Error:", error);
     res.status(500).send("שגיאת שרת בחיבור Moodle Teacher Hub");
