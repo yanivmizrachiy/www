@@ -9,7 +9,6 @@ import MissingData from "./pages/MissingData";
 import CapabilityProbe from "./pages/CapabilityProbe";
 import IsolationStatus from "./pages/IsolationStatus";
 import IsolationLiveCheck from "./pages/IsolationLiveCheck";
-import Sites from "./pages/Sites";
 import Students from "./pages/Students";
 import StudentProfile from "./pages/StudentProfile";
 import Tasks from "./pages/Tasks";
@@ -55,7 +54,7 @@ const App = () => (
           <Route path="/signup" element={<Navigate to="/setup" replace />} />
           <Route element={<AppLayout />}>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/sites" element={<Sites />} />
+            <Route path="/sites" element={<Navigate to="/" replace />} />
             <Route path="/students" element={<Students />} />
             <Route path="/students/:id" element={<StudentProfile />} />
             <Route path="/tasks" element={<Tasks />} />
