@@ -48,7 +48,7 @@ const App = () => (
           <Route path="/install" element={<Navigate to="/setup" replace />} />
           <Route path="/lti" element={<LtiBootstrap />} />
           {/* Rescue route: if a Moodle iframe/browser lands on the backend launch URL as a page, keep the teacher inside the app instead of showing NotFound. */}
-          <Route path="/api/lti/launch" element={<Navigate to="/import" replace />} />
+          <Route path="/api/lti/launch" element={<Navigate to="/" replace />} />
           {/* No teacher login exists — any old /auth /login /signup link goes to setup. */}
           <Route path="/auth" element={<Navigate to="/setup" replace />} />
           <Route path="/login" element={<Navigate to="/setup" replace />} />

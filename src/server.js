@@ -5019,7 +5019,7 @@ if (typeof recordSupabaseSession === "function") {
 
   setSession(res, session);
 
-  const nextPath = "/import";
+  const nextPath = "/";
   const redirectUrl =
     publicBaseUrl(req) +
     "/lti?t=" +
