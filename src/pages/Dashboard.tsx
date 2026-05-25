@@ -10,6 +10,43 @@ import { Users, GraduationCap, ClipboardList, Database, Calendar, Import, AlertC
 import { motion } from "motion/react";
 import { formatTeacherDateDmyShort } from "@/lib/teacherDateFormat";
 
+// MTH_PREMIUM_DASHBOARD_TEACHER_COUNTS_V1
+// Small, self-contained NRPS teacher card on the dashboard hero. Shows teacher
+// count + names ONLY when NRPS returns a real Instructor source. Never invents.
+function useDashboardTeachers() {
+  const [count, setCount] = useState(0);
+  const [names, setNames] = useState<string[]>([]);
+  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/lti13/nrps-preview", { headers: { Accept: "application/json" } });
+        const json = await res.json().catch(() => null);
+        if (!alive) return;
+        const instructors = Number(json?.role_counts?.Instructor || 0);
+        const members = Array.isArray(json?.members) ? json.members : [];
+        const realNames: string[] = [];
+        for (const m of members) {
+          const roles: string[] = Array.isArray(m?.roles) ? m.roles : typeof m?.role === "string" ? [m.role] : [];
+          const isInstructor = roles.some((r) => /instructor|teacher|מורה/i.test(String(r)));
+          const name = (m?.name || m?.full_name || "").toString().trim();
+          if (isInstructor && name) realNames.push(name);
+        }
+        setCount(instructors);
+        setNames(Array.from(new Set(realNames)));
+        setState("ready");
+      } catch {
+        if (alive) setState("error");
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  return { count, names, state };
+}
+
 function StatCard({ label, value, icon: Icon, delay = 0 }: { label: string, value: number | string, icon: any, delay?: number }) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}>
@@ -40,6 +77,7 @@ export default function Dashboard() {
   const { session, site } = useLtiSession();
   const { data, loading, error } = useImportsOverview();
   const syncStatus = useSyncStatus();
+  const teachers = useDashboardTeachers();
   const hasSession = Boolean(session);
   const v = (n: number | undefined) => hasSession && data ? n ?? 0 : "—";
   const realActivitiesCount = hasSession && data ? Math.max(data.tasks_count || 0, data.grade_items_count || 0) : "—";
@@ -66,6 +104,17 @@ export default function Dashboard() {
               <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 text-base font-black text-white shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">מורה: {teacherName}</div>
               <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 text-base font-black text-white shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">מרחב: {courseName}</div>
               <div className="flex items-center gap-2 rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 text-base font-black text-white shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm"><Calendar className="h-5 w-5" />{updatedAtText}</div>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 text-sm font-black text-white shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
+              {teachers.state === "loading" ? (
+                <span className="opacity-80">בודק מורים במרחב...</span>
+              ) : teachers.count > 0 && teachers.names.length > 0 ? (
+                <span><span className="opacity-80">מורים במרחב ({teachers.count}): </span>{teachers.names.join(" · ")}</span>
+              ) : teachers.count > 0 ? (
+                <span className="opacity-80">מורים במרחב: {teachers.count} (Moodle לא שלח שמות)</span>
+              ) : (
+                <span className="opacity-70">אין כרגע מקור אמיתי למורים במרחב</span>
+              )}
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24 }} className="flex flex-wrap gap-4 pt-2">
               <Button size="lg" onClick={() => void syncStatus.runSync()} disabled={syncStatus.running} className="bg-white text-[#06152f] hover:bg-white/90 font-black shadow-xl"><RefreshCw className={syncStatus.running ? "h-4 w-4 animate-spin" : "h-4 w-4"} />סנכרן מרחב</Button>
@@ -106,6 +155,7 @@ export default function Dashboard() {
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard label="תלמידים" value={v(data?.students_count)} icon={Users} delay={0.1} />
+        <StatCard label="מורים במרחב" value={teachers.state === "ready" ? teachers.count : "—"} icon={GraduationCap} delay={0.15} />
         <StatCard label="פריטי ציון" value={v(data?.grade_items_count)} icon={GraduationCap} delay={0.2} />
         <StatCard label="ציונים" value={v(data?.grades_count)} icon={Database} delay={0.3} />
         <StatCard label="פרקים" value={v(data?.chapters_count)} icon={ClipboardList} delay={0.4} />
