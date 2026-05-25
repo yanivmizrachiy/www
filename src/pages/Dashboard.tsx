@@ -27,15 +27,12 @@ function useDashboardTeachers() {
         const json = await res.json().catch(() => null);
         if (!alive) return;
         const instructors = Number(json?.role_counts?.Instructor || 0);
-        const members = Array.isArray(json?.members) ? json.members : [];
-        const realNames: string[] = [];
-        for (const m of members) {
-          const roles: string[] = Array.isArray(m?.roles) ? m.roles : typeof m?.role === "string" ? [m.role] : [];
-          const isInstructor = roles.some((r) => /instructor|teacher|מורה/i.test(String(r)));
-          const name = (m?.name || m?.full_name || "").toString().trim();
-          if (isInstructor && name) realNames.push(name);
-        }
-        setCount(instructors);
+        const named = Array.isArray(json?.members_named) ? json.members_named : [];
+        const realNames: string[] = named
+          .filter((m: { is_instructor?: boolean }) => m?.is_instructor)
+          .map((m: { name?: string }) => String(m?.name || "").trim())
+          .filter(Boolean);
+        setCount(instructors || realNames.length);
         setNames(Array.from(new Set(realNames)));
         setState("ready");
       } catch {
@@ -118,8 +115,8 @@ export default function Dashboard() {
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} className="grid gap-3 md:grid-cols-3">
               <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
-                <div className="text-xs font-bold text-cyan-200/80">מורה</div>
-                <div className="mt-0.5 text-lg font-black text-white">{teacherName}</div>
+                <div className="text-xs font-bold text-cyan-200/80">{teachers.names.length > 1 ? "מורים" : "מורה"}</div>
+                <div className="mt-0.5 text-lg font-black text-white">{teachers.names.length > 0 ? teachers.names.join(" · ") : teacherName}</div>
               </div>
               <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
                 <div className="text-xs font-bold text-cyan-200/80">מרחב הלימוד</div>
@@ -132,17 +129,6 @@ export default function Dashboard() {
                   <div className="mt-0.5 text-lg font-black text-white">{updatedAtText}</div>
                 </div>
               </div>
-            </motion.div>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 text-sm font-black text-white shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
-              {teachers.state === "loading" ? (
-                <span className="opacity-80">בודק מורים במרחב...</span>
-              ) : teachers.count > 0 && teachers.names.length > 0 ? (
-                <span><span className="opacity-80">מורים במרחב ({teachers.count}): </span>{teachers.names.join(" · ")}</span>
-              ) : teachers.count > 0 ? (
-                <span className="opacity-80">מורים במרחב: {teachers.count} (Moodle לא שלח שמות)</span>
-              ) : (
-                <span className="opacity-70">אין כרגע מקור אמיתי למורים במרחב</span>
-              )}
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24 }} className="flex flex-wrap gap-4 pt-2">
               <Button size="lg" onClick={() => void syncStatus.runSync()} disabled={syncStatus.running} className="bg-white text-[#06152f] hover:bg-white/90 font-black shadow-xl"><RefreshCw className={syncStatus.running ? "h-4 w-4 animate-spin" : "h-4 w-4"} />סנכרן מרחב</Button>
@@ -159,7 +145,7 @@ export default function Dashboard() {
       {showOnboarding && <TeacherOnboarding hasSession={hasSession} />}
 
       <section className="grid gap-5 lg:grid-cols-4" aria-label="כפתורי פעולה ראשיים בעמוד הבית החכם">
-        <ActionCard to="/students" marker="MTH_DASHBOARD_MAIN_PARTICIPANTS_BUTTON_V1" icon={Users} title="משתתפים" value={v(data?.students_count)} unit="תלמידים" />
+        <ActionCard to="/students" marker="MTH_DASHBOARD_MAIN_PARTICIPANTS_BUTTON_V1" icon={Users} title="תלמידים" value={v(data?.students_count)} unit="תלמידים" />
         <ActionCard to="/tasks" marker="MTH_DASHBOARD_MAIN_ACTIVITIES_BUTTON_V1" icon={ClipboardList} title="פרקים ופעילויות" value={realActivitiesCount} unit={realActivitiesUnit} />
         <ActionCard to="/grades" marker="MTH_DASHBOARD_MAIN_GRADES_BUTTON_V1" icon={GraduationCap} title="ציונים" value={v(data?.grades_count)} unit="ציונים" />
         <a href="#all-actions-menu" className="MTH_DASHBOARD_MAIN_ALL_BUTTON_V1 MTH_DASHBOARD_DARK_BLUE_CARD_V1 rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-8 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]"><Database className="mb-5 h-14 w-14" /><div className="text-5xl font-black leading-tight tracking-tight">כל השאר</div><div className="mt-5 inline-flex rounded-full border border-white/25 bg-white/15 px-5 py-2 text-base font-black text-white shadow-lg">תפריט</div></a>
