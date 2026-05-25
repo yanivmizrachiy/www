@@ -14,18 +14,18 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { title: "מרכז המורה", url: "/", icon: LayoutDashboard },
-  { title: "אוטומציה ממודל", url: "/automation", icon: Zap },
-  { title: "ייבוא נתונים", url: "/import", icon: Upload },
-  { title: "בדיקת Gradebook", url: "/gradebook-import", icon: GraduationCap },
-  { title: "ייבוא יומני מעקב", url: "/logs-import", icon: Activity },
-  { title: "ייבוא מבנה קורס", url: "/course-structure-import", icon: ListChecks },
   { title: "תלמידים", url: "/students", icon: Users },
-  { title: "משימות", url: "/tasks", icon: ListChecks },
-  { title: "פרקים", url: "/chapters", icon: BookOpen },
   { title: "ציונים", url: "/grades", icon: GraduationCap },
+  { title: "פרקים", url: "/chapters", icon: BookOpen },
+  { title: "משימות", url: "/tasks", icon: ListChecks },
   { title: "פעילות / זמנים", url: "/activity", icon: Activity },
   { title: "דוחות", url: "/reports", icon: FileBarChart2 },
+];
+
+const toolItems = [
+  { title: "ייבוא חכם", url: "/smart-import", icon: Upload },
   { title: "ייצוא", url: "/export", icon: Download },
+  { title: "אוטומציה ממודל", url: "/automation", icon: Zap },
   { title: "הגדרות", url: "/settings", icon: Settings },
 ];
 
@@ -74,6 +74,32 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end={item.url === "/"}
+                      className={({ isActive: active }) =>
+                        cn(
+                          "flex items-center gap-3 rounded-md transition-colors",
+                          active && "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
+                        )
+                      }
+                    >
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          {!collapsed && <SidebarGroupLabel>כלים</SidebarGroupLabel>}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {toolItems.map((item) => (
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+                    <NavLink
+                      to={item.url}
                       className={({ isActive: active }) =>
                         cn(
                           "flex items-center gap-3 rounded-md transition-colors",

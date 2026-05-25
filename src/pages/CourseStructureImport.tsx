@@ -237,13 +237,7 @@ export default function CourseStructureImport() {
       <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls,.ods" style={{ display: "none" }} onChange={handleFile} onClick={(e) => { e.currentTarget.value = ""; }} />
 
       <section style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 12, fontWeight: 900, color: "#0369a1" }}>ייבוא מבנה קורס ופעילויות ממודל</div>
-        <h1 style={{ margin: "6px 0", fontSize: 30, fontWeight: 950, color: "#0f172a" }}>השלמת פעילות / מבנה קורס</h1>
-        <p style={{ margin: 0, color: "#475569", lineHeight: 1.8 }}>
-          המסך מזהה דוח "השלמת פעילות" (Activity Completion) ממודל ושומר פרקים, משימות ואחוזי השלמה אמיתיים בלבד.
-          תאים ריקים לא נשמרים כהשלמה. לא נוצרים פרקים מומצאים.
-        </p>
-        <div style={{ marginTop: 6, fontSize: 11, color: "#94a3b8" }}>{MARKER}</div>
+        <h1 style={{ margin: "6px 0", fontSize: 30, fontWeight: 950, color: "#0f172a" }}>מבנה קורס והשלמות</h1>
       </section>
 
       {error && <section style={{ ...errorBox, marginBottom: 16 }}>{error}</section>}
@@ -259,17 +253,14 @@ export default function CourseStructureImport() {
 
       <section style={{ display: "grid", gap: 16 }}>
         <div style={box}>
-          <h2 style={{ marginTop: 0 }}>בחר קובץ השלמת פעילות</h2>
-          <p style={{ color: "#475569", lineHeight: 1.8 }}>
-            דוח "Activity Completion" ממודל: שורה לכל תלמיד, עמודה לכל פעילות (XLSX / CSV / ODS).
-          </p>
+          <h2 style={{ marginTop: 0 }}>בחר קובץ</h2>
           <button type="button" style={button} onClick={() => fileRef.current?.click()} disabled={busy}>
             {busy ? "מעבד..." : "בחר קובץ מבנה קורס"}
           </button>
         </div>
 
         <div style={box}>
-          <h2 style={{ marginTop: 0 }}>או הדבק טבלת השלמת פעילות</h2>
+          <h2 style={{ marginTop: 0 }}>או הדבק טבלה</h2>
           <textarea
             value={pastedText}
             onChange={(e) => setPastedText(e.target.value)}
