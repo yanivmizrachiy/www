@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Users, UserCheck, EyeOff, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
+import { hebrewRoleLabel } from "@/lib/roleLabel";
 
 // MTH_NRPS_PRIVACY_INSIGHT_V1
 // Reads the real /api/lti13/nrps-preview endpoint and shows the exact privacy
@@ -113,7 +114,7 @@ export function NrpsPrivacyInsight() {
 
           {data.role_counts && (
             <div className="text-xs text-muted-foreground">
-              תפקידים: {Object.entries(data.role_counts).map(([r, c]) => `${r}: ${c}`).join(" · ")}
+              תפקידים: {Object.entries(data.role_counts).map(([r, c]) => `${hebrewRoleLabel(r)}: ${c}`).join(" · ")}
             </div>
           )}
 
