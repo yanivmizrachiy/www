@@ -53,7 +53,7 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="min-w-0">
               <div className="truncate text-sm font-semibold text-sidebar-foreground">
-                Teacher Hub
+                המודל החכם
               </div>
               <div className="truncate text-[11px] text-sidebar-foreground/60">
                 {session?.course_title ?? site?.site_name ?? "—"}
