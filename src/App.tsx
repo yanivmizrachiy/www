@@ -7,6 +7,7 @@ import AppLayout from "@/components/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import MissingData from "./pages/MissingData";
 import CapabilityProbe from "./pages/CapabilityProbe";
+import IsolationStatus from "./pages/IsolationStatus";
 import Sites from "./pages/Sites";
 import Students from "./pages/Students";
 import StudentProfile from "./pages/StudentProfile";
@@ -76,6 +77,7 @@ const App = () => (
             <Route path="/course-structure-import" element={<CourseStructureImport />} />
             <Route path="/missing-data" element={<MissingData />} />
             <Route path="/capabilities" element={<CapabilityProbe />} />
+            <Route path="/isolation" element={<IsolationStatus />} />
             <Route path="/setup" element={<Setup />} />
           </Route>
           <Route path="*" element={<NotFound />} />
