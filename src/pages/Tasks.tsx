@@ -9,7 +9,34 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Card, CardContent } from "@/components/ui/card";
-import { ClipboardCheck, FileText, Layout } from "lucide-react";
+import { FileText, Layout } from "lucide-react";
+import { classifyTaskVisual } from "@/lib/taskTypeVisuals";
+
+// MTH_TASK_TYPE_VISUAL_SYSTEM_V1 — render each real task with its classified
+// icon + Hebrew label + color, based only on real task_type/task_name fields.
+function TaskRow({
+  taskName,
+  taskType,
+}: {
+  taskName: string;
+  taskType: string | null;
+}) {
+  const visual = classifyTaskVisual({ taskType, taskName });
+  const Icon = visual.Icon;
+  return (
+    <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
+      <div className="flex items-center gap-3">
+        <Icon className={`h-4 w-4 ${visual.iconClass}`} />
+        <span className="text-sm font-medium">{taskName}</span>
+      </div>
+      <span
+        className={`text-[10px] px-2 py-1 rounded border font-bold ${visual.badgeClass}`}
+      >
+        {visual.labelHe}
+      </span>
+    </div>
+  );
+}
 
 export default function Page() {
   const { data, loading, error } = useCourseStructure();
@@ -76,15 +103,7 @@ export default function Page() {
                         <p className="text-xs text-muted-foreground p-2">אין משימות בפרק זה</p>
                       ) : (
                         tasks.map((task) => (
-                          <div key={task.id} className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
-                            <div className="flex items-center gap-3">
-                              <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm font-medium">{task.task_name}</span>
-                            </div>
-                            <span className="text-[10px] bg-background px-2 py-1 rounded border text-muted-foreground">
-                              {task.task_type ?? "משימה"}
-                            </span>
-                          </div>
+                          <TaskRow key={task.id} taskName={task.task_name} taskType={task.task_type} />
                         ))
                       )}
                     </div>
@@ -109,12 +128,7 @@ export default function Page() {
                 <AccordionContent>
                   <div className="pt-2 pb-4 space-y-2">
                     {uncategorizedTasks.map((task) => (
-                      <div key={task.id} className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
-                        <div className="flex items-center gap-3">
-                          <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">{task.task_name}</span>
-                        </div>
-                      </div>
+                      <TaskRow key={task.id} taskName={task.task_name} taskType={task.task_type} />
                     ))}
                   </div>
                 </AccordionContent>
