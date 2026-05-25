@@ -110,13 +110,28 @@ export default function Dashboard() {
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-6">
           <div className="space-y-5 max-w-4xl">
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-[#0b2b5c]/90 px-4 py-2 text-sm font-black text-white shadow-lg backdrop-blur-md">
-              <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />{hasSession ? "מחובר מתוך Moodle" : "נדרשת פתיחה מתוך Moodle"}
+              <div className={`h-2 w-2 rounded-full ${hasSession ? "bg-emerald-400" : "bg-amber-400"} animate-pulse`} />{hasSession ? "מחובר מתוך Moodle" : "נדרשת פתיחה מתוך Moodle"}
             </motion.div>
-            <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-5xl font-black tracking-tight text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)] lg:text-7xl">עמוד הבית החכם</motion.h1>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-2">
+              <h1 className="text-5xl font-black tracking-tight text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)] lg:text-7xl">המודל החכם</h1>
+              <p className="text-lg font-bold text-cyan-200/90 lg:text-xl">לוח הבקרה של המורה — נתוני אמת מ-Moodle</p>
+            </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 text-base font-black text-white shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">מורה: {teacherName}</div>
-              <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 text-base font-black text-white shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">מרחב: {courseName}</div>
-              <div className="flex items-center gap-2 rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 text-base font-black text-white shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm"><Calendar className="h-5 w-5" />{updatedAtText}</div>
+              <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
+                <div className="text-xs font-bold text-cyan-200/80">מורה</div>
+                <div className="mt-0.5 text-lg font-black text-white">{teacherName}</div>
+              </div>
+              <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
+                <div className="text-xs font-bold text-cyan-200/80">מרחב הלימוד</div>
+                <div className="mt-0.5 text-lg font-black text-white">{courseName}</div>
+              </div>
+              <div className="flex items-center gap-2 rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
+                <Calendar className="h-5 w-5 text-cyan-200/80" />
+                <div>
+                  <div className="text-xs font-bold text-cyan-200/80">עודכן</div>
+                  <div className="mt-0.5 text-lg font-black text-white">{updatedAtText}</div>
+                </div>
+              </div>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 text-sm font-black text-white shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
               {teachers.state === "loading" ? (
