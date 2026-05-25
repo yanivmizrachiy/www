@@ -185,7 +185,7 @@ export default function Automation() {
   return (
     <SafePage
       title="אוטומציה ממודל"
-      description="מרכז בקרה חדש שמראה את סטטוס ה-LTI, הייבוא הקיים וקישורי יעד לדוחות לפי מזהה קורס. סנכרון API מלא עדיין לא הופעל."
+      description="סטטוס החיבור, הייבוא והנתונים הזמינים אוטומטית."
     >
       <div className="space-y-6" dir="rtl">
         <AutomationStatusPanel />

@@ -250,7 +250,6 @@ export default function GradebookImport() {
         <p style={{ margin: 0, color: "#475569", lineHeight: 1.8 }}>
           המסך מזהה Gradebook רחב: כל תלמיד הוא שורה וכל בוחן/פעילות היא עמודת ציון. תאים ריקים לא נשמרים כ־0.
         </p>
-        <div style={{ marginTop: 6, fontSize: 11, color: "#94a3b8" }}>{MARKER}</div>
       </section>
 
       {error && <section style={errorBox}>{error}</section>}
