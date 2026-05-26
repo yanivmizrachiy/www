@@ -913,3 +913,34 @@ Course 259 הוא ראיית pilot בלבד — לא hardcode מוצרי.
 
 <!-- MTH_FINAL_PRODUCT_RULES_ROADMAP_POINTER_20260525_END -->
 
+<!-- MTH_CURRENT_STATUS_AFTER_PR161_START -->
+
+## Current status after PR #161 — 2026-05-26
+
+The current verified main includes:
+
+- PR #159: scoped /api/imports/overview dashboard counts to the current Moodle/LTI session.
+- PR #160: reorganized the teacher sidebar into the final teacher workflow.
+- PR #161: cleaned teacher-facing Test/LTI labels.
+
+Current new-improvement progress: **35%**.
+
+Teacher Release remains **NO**.
+
+PR #127 remains draft-only and untouched.
+
+The next recommended work should not repeat PR #159–#161. Future work should continue with:
+
+1. eat-teacher-date-time-duration-format-v1
+2. eat-teacher-time-range-report-v1
+3. eat-activities-chapters-teacher-flow-v1
+4. eat-task-report-work-practice-submit-v1
+5. ix-smart-import-session-scope-v1
+6. epo-cleanup-evidence-based-archive-v1
+
+See:
+
+docs/product/MTH_CURRENT_STATUS_AND_NEXT_QUEUE_AFTER_PR161.md
+
+<!-- MTH_CURRENT_STATUS_AFTER_PR161_END -->
+
