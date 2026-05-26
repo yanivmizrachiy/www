@@ -68,7 +68,7 @@ export default function Page() {
         {/* ── Section 1: Log evidence (FACT) ───────────────────────────── */}
         <section>
           <div className="mb-3 flex items-center gap-2">
-            <h2 className="text-xl font-extrabold">ראיות פעילות (מתוך לוגים אמיתיים)</h2>
+            <h2 className="text-xl font-extrabold">ראיות פעילות (מתוך לוגים)</h2>
             <span className="rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-bold text-green-800">
               עובדה
             </span>
@@ -80,7 +80,7 @@ export default function Page() {
             <EmptyTruth>{error}</EmptyTruth>
           ) : !data || (data.events_count ?? 0) === 0 ? (
             <EmptyTruth>
-              עדיין לא יובאו לוגים. ייבא דוח Logs אמיתי כדי לראות ראיות פעילות.
+              עדיין לא יובאו לוגים. ייבא דוח Logs כדי לראות ראיות פעילות.
             </EmptyTruth>
           ) : (
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -105,9 +105,7 @@ export default function Page() {
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
             <div>
               לוגים של Moodle מתעדים <span className="font-bold">אירועים</span>, לא משך זמן.
-              לכן לא ניתן לחשב זמן תרגול אמיתי ללא מקור משך מאומת. הזמן המוצג למטה
-              הוא <span className="font-bold">הערכה</span> שמבוססת על קיבוץ אירועים לסשנים (sessionization),
-              ואינו זמן תרגול מאומת. השתמש בו כאינדיקציה בלבד, לא כעובדה.
+              הזמן המוצג הוא <span className="font-bold">הערכה</span> — השתמש בו כאינדיקציה בלבד.
             </div>
           </div>
 
@@ -123,7 +121,7 @@ export default function Page() {
           ) : error ? (
             <EmptyTruth>{error}</EmptyTruth>
           ) : !data?.recent?.length ? (
-            <EmptyTruth>אין אירועים להצגה. ייבא דוח Logs אמיתי.</EmptyTruth>
+            <EmptyTruth>אין אירועים להצגה. ייבא דוח Logs.</EmptyTruth>
           ) : (
             <ul className="space-y-2">
               {data.recent.map((e) => (
