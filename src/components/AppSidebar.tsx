@@ -18,7 +18,7 @@ const navItems = [
   { title: "מרכז המורה",  url: "/",         icon: LayoutDashboard },
   { title: "תלמידים",      url: "/students", icon: Users },
   { title: "ציונים",       url: "/grades",   icon: GraduationCap },
-  { title: "פעילויות",    url: "/activity", icon: Activity },
+  { title: "פעילויות",    url: "/chapters", icon: Activity },
   { title: "זמנים",        url: "/times",    icon: Clock },
   { title: "דוחות",        url: "/reports",  icon: FileBarChart2 },
 ];

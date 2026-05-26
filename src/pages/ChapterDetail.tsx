@@ -3,7 +3,8 @@ import { useMemo } from "react";
 import { SafePage, EmptyTruth } from "@/components/SafePage";
 import { useCourseStructure } from "@/hooks/useImports";
 import { classifyTaskVisual } from "@/lib/taskTypeVisuals";
-import { ArrowRight } from "lucide-react";
+import { formatTeacherDateDmyShort } from "@/lib/teacherDateFormat";
+import { ArrowRight, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
 
 // MTH_CHAPTERS_TASKS_PREMIUM_FLOW_V1
 // Chapter detail: shows the REAL tasks that belong to this chapter, each with
@@ -15,10 +16,12 @@ function TaskRow({
   taskName,
   taskType,
   dueDate,
+  completion,
 }: {
   taskName: string;
   taskType: string | null;
   dueDate: string | null;
+  completion?: { complete: number; incomplete: number; unknown: number; total: number } | null;
 }) {
   const visual = classifyTaskVisual({ taskType, taskName });
   const Icon = visual.Icon;
@@ -28,9 +31,22 @@ function TaskRow({
         <Icon className={`h-5 w-5 ${visual.iconClass}`} />
         <div>
           <div className="text-sm font-bold text-slate-900">{taskName}</div>
-          {dueDate && (
-            <div className="text-xs text-muted-foreground">להגשה: {dueDate}</div>
-          )}
+          <div className="flex flex-wrap items-center gap-3 mt-0.5">
+            {dueDate && (
+              <span className="text-xs text-muted-foreground">להגשה: {formatTeacherDateDmyShort(dueDate)}</span>
+            )}
+            {completion && completion.total > 0 && (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <CheckCircle2 className="h-3 w-3 text-green-600" />
+                {completion.complete}
+                <XCircle className="h-3 w-3 text-red-500 mr-1" />
+                {completion.incomplete}
+                {completion.unknown > 0 && (
+                  <><HelpCircle className="h-3 w-3 text-slate-400 mr-1" />{completion.unknown}</>
+                )}
+              </span>
+            )}
+          </div>
         </div>
       </div>
       <span
@@ -96,6 +112,7 @@ export default function ChapterDetail() {
                   taskName={t.task_name}
                   taskType={t.task_type}
                   dueDate={t.due_date}
+                  completion={data?.completion_summary?.[t.id] ?? null}
                 />
               </li>
             ))}
