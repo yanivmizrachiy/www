@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { SafePage } from "@/components/SafePage";
 import { parseMoodleFile, type ReportType } from "@/lib/moodleImport";
+import { getLtiToken } from "@/hooks/useLtiSession";
 import { UploadCloud, FileCheck2, CheckCircle2, XCircle, AlertTriangle, Loader2, ArrowLeft } from "lucide-react";
 
 // MTH_SMART_IMPORT_ASSISTANT_V1
@@ -74,6 +75,7 @@ export default function Page() {
       };
     }
 
+    const ltiToken = getLtiToken();
     try {
       const res = await fetch("/api/import", {
         method: "POST",
@@ -84,6 +86,7 @@ export default function Page() {
           file_name: file.name,
           detection_confidence: confidence,
           payload: parsed.data,
+          ...(ltiToken ? { token: ltiToken } : {}),
         }),
       });
       const json = await res.json().catch(() => null);
