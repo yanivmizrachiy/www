@@ -123,7 +123,7 @@ const CAPABILITIES: readonly AutomationCapability[] = [
     isStale: false,
     courseBound: true,
     teacherVisible: true,
-    teacherActionHe: "ייבא דוח Participants ממודל כדי לקבל את רשימת התלמידים האמיתית.",
+    teacherActionHe: "ייבא דוח Participants ממודל לקבלת רשימת התלמידים.",
     allowedTeacherActions: ["import_participants_report"],
     blockedReasonHe: null,
     nextTechnicalStep:
@@ -148,7 +148,7 @@ const CAPABILITIES: readonly AutomationCapability[] = [
     isStale: false,
     courseBound: true,
     teacherVisible: true,
-    teacherActionHe: "ייבא דוח Gradebook ממודל כדי לקבל ציונים אמיתיים.",
+    teacherActionHe: "ייבא דוח Gradebook ממודל לקבלת ציונים.",
     allowedTeacherActions: ["import_gradebook_report"],
     blockedReasonHe: null,
     nextTechnicalStep:
@@ -198,7 +198,7 @@ const CAPABILITIES: readonly AutomationCapability[] = [
     isStale: false,
     courseBound: true,
     teacherVisible: true,
-    teacherActionHe: "ייבא דוח Activity Completion ממודל כדי לראות פרקים ומשימות אמיתיים.",
+    teacherActionHe: "ייבא דוח Activity Completion ממודל לצפייה בפרקים ומשימות.",
     allowedTeacherActions: ["import_course_structure_report"],
     blockedReasonHe: null,
     nextTechnicalStep:

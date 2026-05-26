@@ -39,10 +39,10 @@ const STATUS_DISPLAY: Record<string, { label: string; badgeCls: string; cardCls:
 };
 
 const EVIDENCE_DISPLAY: Record<string, { label: string; cls: string }> = {
-  audit:    { label: "ראיה: ביקורת קוד",  cls: "bg-slate-100 text-slate-600" },
-  live:     { label: "ראיה: מאומת חי",     cls: "bg-emerald-100 text-emerald-800" },
-  inferred: { label: "ראיה: נגזר",          cls: "bg-slate-100 text-slate-500" },
-  missing:  { label: "ראיה: חסרה",          cls: "bg-orange-100 text-orange-800" },
+  audit:    { label: "מאומת בקוד",  cls: "bg-slate-100 text-slate-600" },
+  live:     { label: "מאומת חי",    cls: "bg-emerald-100 text-emerald-800" },
+  inferred: { label: "נגזר",         cls: "bg-slate-100 text-slate-500" },
+  missing:  { label: "חסר אימות",   cls: "bg-orange-100 text-orange-800" },
 };
 
 // Maps allowedTeacherAction value → import page route
@@ -143,7 +143,7 @@ export default function AutomationStatusPanel() {
         </div>
         <span className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-700">
           <Info className="h-3.5 w-3.5" />
-          ראיות ביקורת קוד בלבד · Teacher Release: לא
+          Teacher Release: לא
         </span>
       </div>
 
