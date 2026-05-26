@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Users, GraduationCap, ClipboardList, Database, Calendar, Import, AlertCircle, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
 import { formatTeacherDateDmyShort } from "@/lib/teacherDateFormat";
-import { TeacherOnboarding } from "@/components/TeacherOnboarding";
 
 // MTH_PREMIUM_DASHBOARD_TEACHER_COUNTS_V1
 // Small, self-contained NRPS teacher card on the dashboard hero. Shows teacher
@@ -88,17 +87,28 @@ export default function Dashboard() {
   const teacherName = session?.moodle_username || "—";
   const courseName = session?.course_title || site?.site_name || "—";
 
-  // First-run / empty state: no real data imported yet (or no Moodle session).
-  const hasAnyData = Boolean(
-    data && (
-      (data.students_count || 0) > 0 ||
-      (data.grades_count || 0) > 0 ||
-      (data.grade_items_count || 0) > 0 ||
-      (data.tasks_count || 0) > 0 ||
-      (data.log_events_count || 0) > 0
-    )
-  );
-  const showOnboarding = !loading && (!hasSession || !hasAnyData);
+  const [syncing, setSyncing] = useState(false);
+  async function handleSyncSpace() {
+    setSyncing(true);
+    try {
+      // Pull the live NRPS roster (real names) then persist the learners so each
+      // gets a saved profile. No invented data; instructors are skipped server-side.
+      const res = await fetch("/api/lti13/nrps-preview", { headers: { Accept: "application/json" }, credentials: "include" });
+      const preview = await res.json().catch(() => null);
+      const students = Array.isArray(preview?.members_named) ? preview.members_named : [];
+      if (students.length) {
+        await fetch("/api/imports/nrps-sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ students }),
+        });
+      }
+      await syncStatus.runSync();
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   return (
     <div className="MTH_DASHBOARD_ACTION_HUB_V1 space-y-8" dir="rtl">
@@ -131,7 +141,7 @@ export default function Dashboard() {
               </div>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24 }} className="flex flex-wrap gap-4 pt-2">
-              <Button size="lg" onClick={() => void syncStatus.runSync()} disabled={syncStatus.running} className="bg-white text-[#06152f] hover:bg-white/90 font-black shadow-xl"><RefreshCw className={syncStatus.running ? "h-4 w-4 animate-spin" : "h-4 w-4"} />סנכרן מרחב</Button>
+              <Button size="lg" onClick={() => void handleSyncSpace()} disabled={syncing || syncStatus.running} className="bg-white text-[#06152f] hover:bg-white/90 font-black shadow-xl"><RefreshCw className={(syncing || syncStatus.running) ? "h-4 w-4 animate-spin" : "h-4 w-4"} />סנכרן מרחב</Button>
               <Button asChild size="lg" className="border border-white/35 bg-[#0f3d75]/90 text-white hover:bg-[#15559a] font-black shadow-lg"><Link to="/smart-import" className="flex items-center gap-2"><Import className="h-4 w-4" />ייבוא חכם</Link></Button>
               <Button asChild variant="outline" size="lg" className="border-white/40 bg-[#06152f]/55 text-white hover:bg-[#0f3d75]/90 font-black"><Link to="/reports">דוחות</Link></Button>
             </motion.div>
@@ -141,8 +151,6 @@ export default function Dashboard() {
         <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-cyan-300/15 blur-3xl" />
         <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-blue-300/20 blur-3xl" />
       </section>
-
-      {showOnboarding && <TeacherOnboarding hasSession={hasSession} />}
 
       <section className="grid gap-5 lg:grid-cols-4" aria-label="כפתורי פעולה ראשיים בעמוד הבית החכם">
         <ActionCard to="/students" marker="MTH_DASHBOARD_MAIN_PARTICIPANTS_BUTTON_V1" icon={Users} title="תלמידים" value={v(data?.students_count)} unit="תלמידים" />
