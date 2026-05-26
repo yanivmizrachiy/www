@@ -146,13 +146,13 @@ export default function SettingsPage() {
   return (
     <SafePage
       title="הגדרות ואבחון חיבור"
-      description="מסך אמת חי ל-LTI 1.3, NRPS, AGS, Moodle Web Services ומצב הנתונים. לא מוצגים secrets, access tokens, שמות תלמידים או מיילים."
+      description="סטטוס חיבור — LTI, NRPS ו-Moodle Web Services."
     >
       <div className="space-y-6" dir="rtl">
         <div className="rounded-3xl border bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-xl font-extrabold">סטטוס אמת חי</h2>
+              <h2 className="text-xl font-extrabold">סטטוס חיבור</h2>
               <p className="mt-1 text-sm text-muted-foreground">{truthMessage}</p>
               {loadedAt && <p className="mt-1 text-xs text-muted-foreground">בדיקה אחרונה: {loadedAt}</p>}
             </div>
@@ -262,12 +262,7 @@ export default function SettingsPage() {
         </section>
 
         <div className="rounded-3xl border border-orange-200 bg-orange-50 p-5 text-sm leading-7 text-orange-950">
-          <h3 className="mb-2 font-extrabold">מסקנה מקצועית</h3>
-          <p>
-            המסלול האוטומטי לשמות תלמידים דורש אחד משני דברים אמיתיים: או ש-Moodle ישלח שמות/מיילים דרך NRPS,
-            או שיוגדר ב-Render משתנה סביבה MOODLE_WS_TOKEN אמיתי שמורשה לקרוא Web Services. בלי אחד מהם אין מקור אמיתי לשמות,
-            ולכן אסור להציג שמות תלמידים מומצאים.
-          </p>
+          <p>שמות תלמידים אוטומטיים דורשים NRPS עם שמות מ-Moodle, או MOODLE_WS_TOKEN מוגדר ב-Render.</p>
         </div>
 
         <div className="grid gap-4 xl:grid-cols-2">

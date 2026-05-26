@@ -95,8 +95,8 @@ export default function Page() {
 
   return (
     <SafePage
-      title="בדיקת יכולות Moodle (אמת חיה)"
-      description="הדף הזה לא מנחש. הוא בודק מול Moodle בדיוק מה זמין אוטומטית עכשיו, מה חסום, ומה דורש מנהל Moodle. אין דמו, אין טענות שווא."
+      title="בדיקת יכולות Moodle"
+      description="מה זמין אוטומטית, מה חסום ומה דורש פעולת מנהל."
     >
       <div className="space-y-5" dir="rtl">
         <div className="flex items-center justify-between gap-3">
@@ -173,11 +173,8 @@ export default function Page() {
             )}
 
             <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-700">
-              <div className="mb-1 font-extrabold">המנוף הגדול לאוטומציה מלאה</div>
               <p>
-                שאיבה אוטומטית מלאה (כל הנתונים בלי ייבוא ידני) דורשת <span className="font-bold">MOODLE_WS_TOKEN</span> ממנהל
-                ה-Moodle של משרד החינוך, או הפעלת NRPS/AGS חיים. בלי זה, המערכת עובדת על ייבוא דוחות אמיתיים כ-fallback —
-                לא ממציאה נתונים ולא מתחזה לאוטומטית. ברגע שהאסימון/השירותים יופעלו, המערכת תזהה זאת אוטומטית כאן.
+                שאיבה אוטומטית מלאה דורשת <span className="font-bold">MOODLE_WS_TOKEN</span> ממנהל Moodle, או הפעלת NRPS/AGS. ברגע שיוגדרו, המערכת תזהה זאת כאן.
               </p>
             </section>
           </>

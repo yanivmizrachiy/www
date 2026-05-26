@@ -64,7 +64,7 @@ export default function ChapterDetail() {
   return (
     <SafePage
       title={title}
-      description="המשימות בפרק זה, מתוך מבנה הקורס האמיתי. כל משימה מסווגת לפי סוגה. לא מוצגות משימות מומצאות."
+      description="המשימות בפרק זה לפי מבנה הקורס."
     >
       <div className="space-y-4" dir="rtl">
         <Link
@@ -85,12 +85,8 @@ export default function ChapterDetail() {
           </EmptyTruth>
         ) : !chapterTasks.length ? (
           <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 text-sm leading-7 text-slate-700">
-            <h3 className="mb-1 font-extrabold">אין משימות מקושרות לפרק זה</h3>
-            <p>
-              במבנה הקורס שיובא אין משימות המשויכות לפרק "{chapter.chapter_name}".
-              אם חסרות משימות, ייבא דוח Course Structure / Activity Completion
-              עדכני. לא מוצגות משימות מומצאות.
-            </p>
+            <h3 className="mb-1 font-extrabold">אין משימות בפרק זה</h3>
+            <p>אם חסרות משימות, ייבא דוח Activity Completion עדכני.</p>
           </div>
         ) : (
           <ul className="space-y-2">

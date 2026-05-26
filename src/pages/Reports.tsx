@@ -18,14 +18,14 @@ const REPORTS: ReportCard[] = [
   {
     to: "/reports/students",
     title: "דוח תלמידים",
-    desc: "סקירת ביצועים ופעילות בחתך תלמיד — ממוצעים, משימות והשלמה, מנתוני אמת בלבד.",
+    desc: "סקירת ביצועים ופעילות בחתך תלמיד — ממוצעים, משימות והשלמה.",
     Icon: Users,
     tone: "from-[#06152f] via-[#0b3d91] to-[#0e7490]",
   },
   {
     to: "/reports/tasks",
     title: "דוח משימות",
-    desc: "מצב המשימות והפעילויות בקורס — מי הגיש, מה חסר, לפי נתוני אמת.",
+    desc: "מצב המשימות והפעילויות בקורס — מי הגיש ומה חסר.",
     Icon: ClipboardList,
     tone: "from-[#0b3d91] via-[#0e7490] to-[#0891b2]",
   },
@@ -49,7 +49,7 @@ export default function Reports() {
   return (
     <SafePage
       title="דוחות"
-      description="מרכז הדוחות. כל דוח מבוסס על נתוני אמת שיובאו או אומתו בלבד — אין דוחות מזויפים ואין סינונים מזויפים."
+      description="מרכז הדוחות — תלמידים, משימות, ימים ופערים."
     >
       <div className="space-y-6" dir="rtl">
         <section className="grid gap-4 md:grid-cols-2">
@@ -81,7 +81,7 @@ export default function Reports() {
               <div>
                 <h2 className="text-lg font-extrabold">ייצוא נתונים</h2>
                 <p className="text-sm text-muted-foreground">
-                  ייצוא נתוני אמת לקובץ (Excel/CSV) להמשך עבודה. רק נתונים שקיימים במערכת.
+                  ייצוא נתונים לקובץ (Excel/CSV).
                 </p>
               </div>
             </div>

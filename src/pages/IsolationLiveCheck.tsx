@@ -105,7 +105,7 @@ export default function Page() {
   return (
     <SafePage
       title="בדיקת בידוד חיה — שני מרחבים"
-      description="בדיקה אמיתית שמורה מבצע: פתח את הכלי ממרחב אחד וצלם מצב, ואז פתח ממרחב שני וצלם שוב. הכלי משווה ומוודא שכל מרחב מציג רק את הנתונים שלו — בלי ערבוב. הכל מנתוני אמת של הסשן."
+      description="צלם את מצב הנתונים מכל מרחב ובדוק שאין ערבוב."
     >
       <div className="space-y-5" dir="rtl">
         {/* Current space */}
@@ -212,8 +212,7 @@ export default function Page() {
         </section>
 
         <p className="text-xs leading-5 text-muted-foreground">
-          הערה: שער ה-Teacher Release נשאר סגור עד שהבדיקה הזו תושלם ותאומת ידנית. הכלי משתמש רק בנתוני אמת
-          של הסשן הנוכחי ואינו ממציא דבר.
+          שער ה-Teacher Release נשאר סגור עד שהבדיקה הזו תושלם.
         </p>
       </div>
     </SafePage>
