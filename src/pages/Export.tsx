@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { Download, FileSpreadsheet, Info } from "lucide-react";
+import { Download, FileSpreadsheet } from "lucide-react";
 import { SafePage, EmptyTruth } from "@/components/SafePage";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -105,42 +105,32 @@ export default function Export() {
   return (
     <SafePage
       title="ייצוא לאקסל"
-      description="ייצוא אמיתי נפתח רק כאשר קיימים נתוני Moodle אמיתיים מהייבוא או מסשן מאומת. אין קבצי דמו ואין הצלחת ייצוא מזויפת."
+      description="הורדת קבצי Excel מהנתונים שבמערכת."
     >
       <div className="space-y-6" dir="rtl">
-        <div className="rounded-2xl border bg-muted/30 p-4 text-sm leading-relaxed text-muted-foreground">
-          <div className="mb-2 flex items-center gap-2 font-bold text-foreground">
-            <Info className="h-4 w-4 text-primary" />
-            כלל אמת לייצוא
-          </div>
-          הכפתורים למטה יוצרים קובץ XLSX אמיתי רק מנתונים שכבר קיימים במערכת. אם חסר דוח Moodle מתאים, הכפתור יישאר חסום עם הסבר.
-        </div>
-
         {!hasAnySessionData && (
-          <EmptyTruth>
-            עדיין אין סשן Moodle או נתונים מיובאים. כדי לייצא Excel יש לפתוח את הכלי מתוך Moodle או לייבא דוחות Moodle אמיתיים במסך ייבוא נתונים.
-          </EmptyTruth>
+          <EmptyTruth>אין עדיין נתונים לייצוא. פתח את הכלי מתוך Moodle או ייבא דוח.</EmptyTruth>
         )}
 
         <div className="grid gap-4 md:grid-cols-3">
           <ExportCard
             title="דוח תלמידים"
-            description="ייצוא רשימת תלמידים אמיתית: שם, דואל, שם משתמש ומזהה Moodle אם קיימים בדוח שיובא."
-            disabledReason={!students.data?.length ? "חסר דוח תלמידים או דוח Moodle המכיל תלמידים." : undefined}
+            description="שם, דוא״ל ומזהה לכל תלמיד."
+            disabledReason={!students.data?.length ? "אין עדיין תלמידים." : undefined}
             onExport={exportStudents}
           />
 
           <ExportCard
             title="דוח ציונים"
-            description="ייצוא מטריצת ציונים אמיתית לפי תלמיד ופריט ציון, כולל סימון חסר ציון."
-            disabledReason={!grades.data?.grades?.length ? "חסר דוח ציונים ממודל. יש לייבא Gradebook export כדי להוריד Excel." : undefined}
+            description="מטריצת ציונים לפי תלמיד ופריט."
+            disabledReason={!grades.data?.grades?.length ? "אין עדיין ציונים." : undefined}
             onExport={exportGrades}
           />
 
           <ExportCard
             title="זמן תרגול יומי"
-            description="ייצוא זמן תרגול יומי לפי תלמיד, רק אם קיימים לוגים אמיתיים שמאפשרים חישוב חלונות פעילות."
-            disabledReason={!practice.data?.days?.length ? "חסר דוח לוגים מתאים ממודל. לא ניתן לייצא זמן תרגול ללא לוגים." : undefined}
+            description="זמן תרגול יומי לפי תלמיד."
+            disabledReason={!practice.data?.days?.length ? "אין עדיין לוגים." : undefined}
             onExport={exportPractice}
           />
         </div>

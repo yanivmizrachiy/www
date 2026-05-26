@@ -40,24 +40,15 @@ export default function Page() {
       <div className="space-y-4" dir="rtl">
         {loading ? (
           <p className="text-sm text-muted-foreground">טוען מבנה קורס...</p>
-        ) : error ? (
-          <EmptyTruth>{error}</EmptyTruth>
         ) : !sortedChapters.length ? (
-          <div className="rounded-3xl border border-orange-200 bg-orange-50 p-6 text-sm leading-7 text-orange-950">
-            <h3 className="mb-2 text-base font-extrabold">עדיין אין מבנה קורס</h3>
-            <p>
-              לא נמצאו פרקים. כדי לראות פרקים ומשימות אמיתיים, פתח את הכלי מתוך
-              Moodle עם מבנה קורס פעיל, או ייבא דוח Course Structure / Activity
-              Completion אמיתי. לא מוצגים פרקים מומצאים.
-            </p>
-            <div className="mt-4">
-              <Link
-                to="/import"
-                className="inline-flex rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground shadow-sm hover:opacity-90"
-              >
-                עבור לייבוא מבנה קורס
-              </Link>
-            </div>
+          <div className="rounded-2xl border border-dashed p-6 text-center">
+            <p className="mb-4 text-sm text-muted-foreground">אין עדיין פרקים להצגה.</p>
+            <Link
+              to="/smart-import"
+              className="inline-flex rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground shadow-sm hover:opacity-90"
+            >
+              ייבוא מבנה קורס
+            </Link>
           </div>
         ) : (
           <ul className="space-y-3">
