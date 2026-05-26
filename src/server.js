@@ -3675,6 +3675,61 @@ app.get("/api/imports/students", (req, res) => {
   res.json({ ok: true, students });
 });
 
+app.post("/api/imports/nrps-sync", (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
+
+  // The client passes the learner roster it already received from
+  // /api/lti13/nrps-preview (members_named). We only persist real learners
+  // (not instructors), space-isolated, with no invented data.
+  const incoming = Array.isArray(req.body?.students) ? req.body.students : [];
+  const spaceId = session.spaceId || "unknown-space";
+  const now = new Date().toISOString();
+
+  if (!Array.isArray(store.students)) store.students = [];
+  let inserted = 0;
+  let updated = 0;
+
+  for (const m of incoming) {
+    const fullName = String(m?.name || "").trim();
+    if (!fullName) continue;
+    if (m?.is_instructor) continue;
+    const identity = String(m?.id || fullName);
+    const id = stableId("student", spaceId + "|nrps|" + identity);
+    const record = {
+      id,
+      full_name: fullName,
+      fullName,
+      email: null,
+      external_username: null,
+      external_id: identity,
+      moodle_user_id: null,
+      lis_person_sourcedid: null,
+      id_number: null,
+      space_id: spaceId,
+      source: "moodle-nrps-sync",
+      updated_at: now,
+      updatedAt: now
+    };
+    const index = store.students.findIndex(item => item.id === id);
+    if (index >= 0) {
+      store.students[index] = { ...store.students[index], ...record };
+      updated += 1;
+    } else {
+      store.students.push(record);
+      inserted += 1;
+    }
+  }
+
+  if (inserted || updated) {
+    store.settings.lastSyncAt = now;
+    saveStore();
+  }
+
+  res.json({ ok: true, inserted, updated, total: inserted + updated });
+});
+
 app.get("/api/imports/student-profile", (req, res) => {
   noStore(res);
   const session = importSessionFromRequest(req);
