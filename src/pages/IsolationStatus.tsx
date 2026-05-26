@@ -76,7 +76,7 @@ export default function Page() {
   return (
     <SafePage
       title="בידוד נתונים בין מורים"
-      description="שקיפות אמת: מה כבר מובטח ברמת הקוד כדי שמורים לא יראו נתונים של אחרים, ומה עדיין דורש בדיקה חיה לפני הפצה רחבה. אין כאן הצהרת שווא — שער השחרור נשאר סגור עד אימות מלא."
+      description="מה כבר מובטח ברמת הקוד ומה עדיין דורש בדיקה חיה."
     >
       <div className="space-y-5" dir="rtl">
         <div className="flex items-center justify-between gap-3">

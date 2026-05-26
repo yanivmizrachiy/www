@@ -50,10 +50,10 @@ export default function Page() {
   if (!loading && !data?.chapters.length && !uncategorizedTasks.length && !error) {
     return (
       <SafePage title="משימות ופרקים" description="מבנה הקורס והשלמות משימות.">
-        <EmptyDomain 
-          domain="completion" 
-          title="אין נתוני משימות" 
-          description="כדי לראות את מבנה הקורס ואחוזי ההשלמה, עליך לייבא דוח 'השלמת פעילות' (Activity Completion) ממודל."
+        <EmptyDomain
+          domain="completion"
+          title="אין נתוני משימות"
+          description="ייבא דוח 'השלמת פעילות' (Activity Completion) ממודל."
         />
       </SafePage>
     );

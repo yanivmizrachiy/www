@@ -128,7 +128,7 @@ export default function Page() {
   return (
     <SafePage
       title="ייבוא חכם"
-      description="גרור לכאן כל דוח Moodle אמיתי (CSV / Excel / ODS) — אחד או כמה יחד. המערכת מזהה לבד איזה דוח זה ומייבאת אותו למקום הנכון. קבצים שלא זוהו בוודאות לא ייובאו, כדי לא להכניס נתונים שגויים."
+      description="גרור קובץ דוח Moodle — המערכת מזהה את הסוג ומייבאת אוטומטית."
     >
       <div className="space-y-5" dir="rtl">
         <div
@@ -147,7 +147,7 @@ export default function Page() {
             {busy ? "מעבד קבצים..." : "גרור קבצים לכאן או לחץ לבחירה"}
           </div>
           <p className="max-w-md text-sm text-muted-foreground">
-            כל דוח Moodle אמיתי: משתתפים, ציונים, לוגים, השלמת פעילויות. אפשר כמה קבצים יחד.
+            משתתפים, ציונים, לוגים, השלמת פעילויות — אפשר כמה קבצים יחד.
           </p>
           <input
             ref={inputRef}

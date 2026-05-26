@@ -48,7 +48,7 @@ export default function MissingData() {
           <div>
             <h1 className="text-3xl font-extrabold">מה חסר כדי להמשיך?</h1>
             <p className="mt-2 text-sm text-white/75">
-              הדף הזה לא מציג דמו. הוא בודק אילו מקורות אמת חסרים ומכוון את המורה לדוח Moodle הנכון.
+              בדוק אילו מקורות נתונים חסרים ואיפה להורידם ממודל.
             </p>
           </div>
           <Button onClick={() => void sync.runSync()} disabled={sync.running} className="bg-white text-primary hover:bg-white/90">
@@ -101,7 +101,7 @@ export default function MissingData() {
           <h2 className="text-2xl font-extrabold">קישורים ישירים לדוחות Moodle שלך</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {courseId && base
-              ? "לחיצה פותחת את הדוח המדויק במרחב ה-Moodle שלך בלשונית חדשה. ייצא את הקובץ ואז העלה אותו כאן. האפליקציה לא ניגשת לנתונים בעצמה — את/ה שולט/ת."
+              ? "לחיצה פותחת את הדוח המדויק במרחב ה-Moodle שלך בלשונית חדשה. ייצא ואז העלה לכאן."
               : "הקישורים הישירים יופיעו לאחר פתיחת הכלי מתוך Moodle (כדי לזהות את הקורס ואת כתובת ה-Moodle שלך)."}
           </p>
         </div>
@@ -151,9 +151,9 @@ export default function MissingData() {
       <Card className="border-primary/10 bg-primary/5">
         <CardContent className="flex flex-wrap items-center justify-between gap-3 p-5">
           <div>
-            <div className="font-extrabold text-primary">עיקרון עבודה</div>
+            <div className="font-extrabold text-primary">ייבוא דוח Moodle</div>
             <p className="text-sm text-muted-foreground">
-              המורה עושה מינימום: פתיחה מתוך Moodle, לחיצה על סנכרן מרחב, ורק אם חסר מקור אמת — ייבוא דוח אחד שהמערכת מבקשת.
+              לא מצאת את הנתון שחסר? ייבא את הדוח המתאים ממודל.
             </p>
           </div>
           <Button asChild>
