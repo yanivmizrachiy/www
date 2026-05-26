@@ -19,7 +19,7 @@ const navItems = [
   { title: "תלמידים",      url: "/students", icon: Users },
   { title: "ציונים",       url: "/grades",   icon: GraduationCap },
   { title: "פעילויות",    url: "/activity", icon: Activity },
-  { title: "זמנים",        url: "/activity", icon: Clock },
+  { title: "זמנים",        url: "/times",    icon: Clock },
   { title: "דוחות",        url: "/reports",  icon: FileBarChart2 },
 ];
 

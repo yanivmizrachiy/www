@@ -29,6 +29,7 @@ import GradebookImport from "./pages/GradebookImport";
 import LogsImport from "./pages/LogsImport";
 import CourseStructureImport from "./pages/CourseStructureImport";
 
+import TimeRangeReport from "./pages/TimeRangeReport";
 import Automation from "./pages/Automation";
 import Setup from "./pages/Setup";
 import LtiBootstrap from "./pages/LtiBootstrap";
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="/chapters/:sectionId" element={<ChapterDetail />} />
             <Route path="/grades" element={<Grades />} />
             <Route path="/activity" element={<ActivityPage />} />
+            <Route path="/times" element={<TimeRangeReport />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/reports/students" element={<StudentReport />} />
             <Route path="/reports/tasks" element={<TaskReport />} />
