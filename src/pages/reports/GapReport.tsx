@@ -18,7 +18,7 @@ export default function GapReport() {
   return (
     <SafePage 
       title="דוח פערים" 
-      description="מציג חוסרים ידועים בנתונים שמיובאים ממודל. ללא השלמות מומצאות."
+      description="חוסרים ידועים בנתוני הקורס — מה עדיין חסר לייבוא."
     >
       <div className="max-w-3xl space-y-6">
         <div className="grid gap-4 sm:grid-cols-2">

@@ -18,11 +18,11 @@ export default function Page() {
 
   if (!loading && !data?.students.length && !error) {
     return (
-      <SafePage title="ציונים" description="מטריצת ציונים מדוח Moodle אמיתי.">
-        <EmptyDomain 
-          domain="grades" 
-          title="אין נתוני ציונים" 
-          description="כדי לראות את מטריצת הציונים, עליך לייצא את ה-Gradebook ממודל ולהעלות אותו כאן."
+      <SafePage title="ציונים" description="מטריצת ציונים מדוח Moodle.">
+        <EmptyDomain
+          domain="grades"
+          title="אין נתוני ציונים"
+          description="ייצא Gradebook ממודל והעלה לכאן."
         />
       </SafePage>
     );

@@ -54,7 +54,7 @@ export default function Page() {
   }, [studentsFromNrps, imported]);
 
   return (
-    <SafePage title="תלמידים ומורים" description="רשימת התלמידים והמורים האמיתית של המרחב, מתוך Moodle.">
+    <SafePage title="תלמידים ומורים" description="רשימת התלמידים והמורים של המרחב.">
       <div className="space-y-6" dir="rtl">
         {/* Teachers */}
         <section className="rounded-3xl border bg-white p-5 shadow-sm">

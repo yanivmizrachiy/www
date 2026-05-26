@@ -18,7 +18,7 @@ export default function StudentReport() {
   return (
     <SafePage 
       title="דוח תלמידים" 
-      description="סקירת ביצועים ופעילות בחתך תלמיד מנתוני אמת בלבד."
+      description="סקירת ביצועים ופעילות בחתך תלמיד."
     >
       <Card className="shadow-elegant">
         <CardContent className="p-0">
