@@ -1,3 +1,5 @@
+> **SUPERSEDED / ARCHIVED** — 2026-05-27. This document is kept for historical reference only. The canonical source of truth is `PROJECT_RULES.md` in `yanivmizrachiy/www`.
+
 # Legacy Snapshot — yanivmizrachiy/moodle-teacher-hub
 
 מסמך זה שומר את החומר החשוב מהריפו הישן `yanivmizrachiy/moodle-teacher-hub`, כדי שהידע לא ילך לאיבוד אחרי איחוד מקור האמת אל `yanivmizrachiy/www`.
