@@ -4460,7 +4460,7 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
         has_nrps: Boolean(statusJson?.has_nrps),
         has_ags: Boolean(statusJson?.has_ags),
         next_required: [
-          "Open Moodle Teacher Hub — LTI 1.3 Test from Moodle, then call this endpoint again."
+          "Open המודל החכם from Moodle, then call this endpoint again."
         ],
         privacy: {
           no_secrets_returned: true,
@@ -4788,8 +4788,8 @@ app.get("/api/lti13/config", (req, res) => {
     ok: true,
     mode: "configuration-helper",
     lti13DiagnosticVersion: LTI13_DIAGNOSTIC_VERSION,
-    warning: "Do not use this to replace the working LTI 1.0/1.1 Moodle Teacher Hub tool. Create a separate LTI 1.3 Test tool only after status is configured.",
-    suggested_tool_name: "Moodle Teacher Hub — LTI 1.3 Test",
+    warning: "Do not use this to replace the working LTI 1.0/1.1 Moodle Teacher Hub tool. Create a separate המודל החכם tool only after status is configured.",
+    suggested_tool_name: "המודל החכם",
     tool_urls: {
       oidc_login_initiation_url: base + "/api/lti13/login",
       redirect_uri_or_launch_url: base + "/api/lti13/launch",
@@ -5270,7 +5270,7 @@ app.get("/api/lti13/services-status", (req, res) => {
       clientId: latest.clientId || null
     } : null,
     next_required: !latest
-      ? ["Open Moodle Teacher Hub — LTI 1.3 Test from Moodle, then call this endpoint again."]
+      ? ["Open המודל החכם from Moodle, then call this endpoint again."]
       : services.has_nrps
         ? ["Implement real NRPS membership fetch using Moodle service token."]
         : ["Enable Names and Roles / Membership service in Moodle tool settings, save, relaunch, and check again."],
@@ -5329,6 +5329,7 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`moodle-teacher-hub running on port ${PORT}`);
   console.log(`canonical LTI endpoint: ${CANONICAL_LTI_ENDPOINT}`);
 });
+
 
 
 
