@@ -4,6 +4,7 @@ import { SafePage, EmptyTruth } from "@/components/SafePage";
 import { useLtiSession } from "@/hooks/useLtiSession";
 import { useImportsOverview } from "@/hooks/useImports";
 import { ShieldCheck, ShieldAlert, Camera, RefreshCw, CheckCircle2, XCircle, Trash2 } from "lucide-react";
+import { formatTeacherDateTime } from "@/lib/teacherDateFormat";
 
 // MTH_ISOLATION_LIVE_CHECK_V1
 // A real, teacher-run isolation test across two Moodle spaces. The teacher
@@ -31,9 +32,7 @@ interface Snapshot {
 const KEY = "isolation:snapshots";
 
 function fmtDate(iso: string): string {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return iso;
-  return d.toLocaleString("he-IL");
+  return formatTeacherDateTime(iso);
 }
 
 export default function Page() {

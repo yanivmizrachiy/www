@@ -3,6 +3,7 @@ import { SafePage } from "@/components/SafePage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, BookOpen, Link2, Server, Users, Zap } from "lucide-react";
 import AutomationStatusPanel from "@/components/AutomationStatusPanel";
+import { formatTeacherDateTime } from "@/lib/teacherDateFormat";
 import AutoExtractionSourceRouterSection from "@/components/AutoExtractionSourceRouterSection";
 
 interface AutomationCapabilities {
@@ -368,7 +369,7 @@ export default function Automation() {
                         </div>
                       )}
                       <div className="text-xs text-slate-400">
-                        גרסת endpoint: {wsReadiness.version ?? "—"} · נבדק: {wsReadiness.checkedAt ? new Date(wsReadiness.checkedAt).toLocaleString("he-IL") : "—"}
+                        גרסת endpoint: {wsReadiness.version ?? "—"} · נבדק: {wsReadiness.checkedAt ? formatTeacherDateTime(wsReadiness.checkedAt) : "—"}
                       </div>
                     </div>
                   );

@@ -1,16 +1,17 @@
 import { SafePage } from "@/components/SafePage";
 import { useDailyActivity } from "@/hooks/useImports";
 import { TruthBadge } from "@/components/TruthBadge";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { BarChart2 } from "lucide-react";
+import { formatTeacherDateDmyShort } from "@/lib/teacherDateFormat";
 
 export default function DayReport() {
   const { data, loading } = useDailyActivity();
@@ -43,7 +44,7 @@ export default function DayReport() {
                     const width = (row.events / maxEvents) * 100;
                     return (
                       <TableRow key={row.day} className="hover:bg-muted/30">
-                        <TableCell className="font-medium">{new Date(row.day).toLocaleDateString("he-IL")}</TableCell>
+                        <TableCell className="font-medium">{formatTeacherDateDmyShort(row.day)}</TableCell>
                         <TableCell className="text-center font-bold text-primary">{row.events}</TableCell>
                         <TableCell className="text-center">{row.active_students}</TableCell>
                         <TableCell className="text-right w-[200px]">

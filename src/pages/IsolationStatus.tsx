@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { SafePage, EmptyTruth } from "@/components/SafePage";
 import { ShieldCheck, ShieldAlert, CheckCircle2, Clock, RefreshCw } from "lucide-react";
+import { formatTeacherDateTime } from "@/lib/teacherDateFormat";
 
 // MTH_ISOLATION_STATUS_PAGE_V1
 // Honest, truth-first view of multi-teacher data isolation. It shows the
@@ -81,7 +82,7 @@ export default function Page() {
       <div className="space-y-5" dir="rtl">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
-            {data ? `נבדק: ${new Date(data.checked_at).toLocaleString("he-IL")}` : "טוען..."}
+            {data ? `נבדק: ${formatTeacherDateTime(data.checked_at)}` : "טוען..."}
           </p>
           <button
             type="button"

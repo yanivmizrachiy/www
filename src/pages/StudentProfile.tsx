@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { User, ClipboardList, GraduationCap, History } from "lucide-react";
+import { formatTeacherDateDmyShort, formatTeacherDateTime } from "@/lib/teacherDateFormat";
 
 export default function StudentProfile() {
   const { id } = useParams();
@@ -42,7 +43,7 @@ export default function StudentProfile() {
   return (
     <SafePage
       title={data.student.full_name}
-      description={`עדכון אחרון: ${new Date(data.student.updated_at).toLocaleDateString()}`}
+      description={`עדכון אחרון: ${formatTeacherDateDmyShort(data.student.updated_at)}`}
     >
       <div className="space-y-6">
         <div className="flex flex-wrap items-center gap-2">
@@ -107,7 +108,7 @@ export default function StudentProfile() {
                     <TableRow key={c.task_id}>
                       <TableCell className="text-right">{c.task_name}</TableCell>
                       <TableCell className="text-center">{c.is_complete ? "✓" : "—"}</TableCell>
-                      <TableCell className="text-right text-xs text-muted-foreground">{c.completed_at ? new Date(c.completed_at).toLocaleString() : "—"}</TableCell>
+                      <TableCell className="text-right text-xs text-muted-foreground">{c.completed_at ? formatTeacherDateTime(c.completed_at) : "—"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -119,7 +120,7 @@ export default function StudentProfile() {
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <Card><CardHeader><CardTitle className="text-sm font-medium">אירועים סה\"כ</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{data.activity.event_count}</CardContent></Card>
-                <Card><CardHeader><CardTitle className="text-sm font-medium">פעילות ראשונה</CardTitle></CardHeader><CardContent className="text-sm">{data.activity.first_event ? new Date(data.activity.first_event).toLocaleString() : "—"}</CardContent></Card>
+                <Card><CardHeader><CardTitle className="text-sm font-medium">פעילות ראשונה</CardTitle></CardHeader><CardContent className="text-sm">{data.activity.first_event ? formatTeacherDateTime(data.activity.first_event) : "—"}</CardContent></Card>
               </div>
             </div>
           </TabsContent>

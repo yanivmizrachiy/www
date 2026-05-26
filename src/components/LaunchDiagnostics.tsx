@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, Terminal, CheckCircle2, XCircle, Info } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { formatTeacherDateTime } from "@/lib/teacherDateFormat";
 
 export function LaunchDiagnostics() {
   const [attempts, setAttempts] = useState<any[]>([]);
@@ -43,7 +44,7 @@ export function LaunchDiagnostics() {
                   <XCircle className="h-4 w-4 text-status-blocked" />
                 )}
                 <CardTitle className="text-xs font-bold">
-                  {new Date(attempt.attempted_at).toLocaleString('he-IL')}
+                  {formatTeacherDateTime(attempt.attempted_at)}
                 </CardTitle>
               </div>
               <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${attempt.outcome === 'success' ? 'bg-status-proven-bg text-status-proven' : 'bg-status-blocked-bg text-status-blocked'}`}>

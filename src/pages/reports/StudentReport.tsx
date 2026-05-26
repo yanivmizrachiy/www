@@ -1,16 +1,17 @@
 import { SafePage } from "@/components/SafePage";
 import { useStudentReports } from "@/hooks/useImports";
 import { TruthBadge } from "@/components/TruthBadge";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
+import { formatTeacherDateDmyShort } from "@/lib/teacherDateFormat";
 
 export default function StudentReport() {
   const { data, loading } = useStudentReports();
@@ -61,7 +62,7 @@ export default function StudentReport() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right text-xs text-muted-foreground">
-                      {row.last_event ? new Date(row.last_event).toLocaleDateString() : "—"}
+                      {row.last_event ? formatTeacherDateDmyShort(row.last_event) : "—"}
                     </TableCell>
                   </TableRow>
                 ))

@@ -5,13 +5,15 @@ export function formatDuration(seconds: number | null | undefined): string {
   const minutes = Math.floor((total % 3600) / 60);
   const secs = total % 60;
 
-  if (hours > 0) {
-    return `${hours} שעות ${minutes} דקות`;
-  }
-  if (minutes > 0) {
-    return `${minutes} דקות${secs > 0 ? ` ${secs} שניות` : ""}`;
-  }
-  return `${secs} שניות`;
+  const hLabel = hours === 1 ? "שעה" : `${hours} שעות`;
+  const mLabel = minutes === 1 ? "דקה" : `${minutes} דקות`;
+  const sLabel = secs === 1 ? "שנייה" : `${secs} שניות`;
+
+  if (hours > 0 && minutes > 0) return `${hLabel} ו־${mLabel}`;
+  if (hours > 0) return hLabel;
+  if (minutes > 0 && secs > 0) return `${mLabel} ו־${sLabel}`;
+  if (minutes > 0) return mLabel;
+  return sLabel;
 }
 
 export function formatDurationCompact(seconds: number | null | undefined): string {
@@ -37,9 +39,13 @@ export function secondsToHebrewHms(value: number | null | undefined): string {
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
 
-  if (hours > 0 && minutes > 0) return `${hours} שעות ו־${minutes} דקות`;
-  if (hours > 0) return `${hours} שעות`;
-  if (minutes > 0 && seconds > 0) return `${minutes} דקות ו־${seconds} שניות`;
-  if (minutes > 0) return `${minutes} דקות`;
-  return `${seconds} שניות`;
+  const hLabel = hours === 1 ? "שעה" : `${hours} שעות`;
+  const mLabel = minutes === 1 ? "דקה" : `${minutes} דקות`;
+  const sLabel = seconds === 1 ? "שנייה" : `${seconds} שניות`;
+
+  if (hours > 0 && minutes > 0) return `${hLabel} ו־${mLabel}`;
+  if (hours > 0) return hLabel;
+  if (minutes > 0 && seconds > 0) return `${mLabel} ו־${sLabel}`;
+  if (minutes > 0) return mLabel;
+  return sLabel;
 }

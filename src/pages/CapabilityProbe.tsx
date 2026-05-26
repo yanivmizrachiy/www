@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { SafePage, EmptyTruth } from "@/components/SafePage";
 import { CheckCircle2, XCircle, AlertTriangle, HelpCircle, RefreshCw, ExternalLink } from "lucide-react";
 import { NrpsPrivacyInsight } from "@/components/NrpsPrivacyInsight";
+import { formatTeacherDateTime } from "@/lib/teacherDateFormat";
 
 // MTH_LIVE_CAPABILITY_PROBE_V1
 // One honest "truth table" page that shows EXACTLY what Moodle gives us right
@@ -101,7 +102,7 @@ export default function Page() {
       <div className="space-y-5" dir="rtl">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
-            {data ? `נבדק: ${new Date(data.checked_at).toLocaleString("he-IL")}` : "בודק יכולות..."}
+            {data ? `נבדק: ${formatTeacherDateTime(data.checked_at)}` : "בודק יכולות..."}
           </p>
           <button
             type="button"
