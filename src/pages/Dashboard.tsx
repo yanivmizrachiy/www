@@ -76,8 +76,16 @@ export default function Dashboard() {
   const syncStatus = useSyncStatus();
   const teachers = useDashboardTeachers();
   const hasSession = Boolean(session);
-  const v = (n: number | undefined) => hasSession && data ? n ?? 0 : "—";
-  const realActivitiesCount = hasSession && data ? Math.max(data.tasks_count || 0, data.grade_items_count || 0) : "—";
+  // "—" = no session/no source; "..." = loading; number = real value (0 is real zero)
+  const v = (n: number | undefined) => {
+    if (!hasSession) return "—";
+    if (loading) return "...";
+    if (!data) return "—";
+    return n ?? 0;
+  };
+  const realActivitiesCount = hasSession && data && !loading
+    ? Math.max(data.tasks_count || 0, data.grade_items_count || 0)
+    : loading ? "..." : "—";
   const realActivitiesUnit = hasSession && data && (data.tasks_count || 0) === 0 && (data.grade_items_count || 0) > 0 ? "פעילויות מ-Gradebook" : "משימות";
 
   const [now, setNow] = useState(() => new Date());

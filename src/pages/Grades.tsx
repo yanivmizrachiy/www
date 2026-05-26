@@ -67,14 +67,16 @@ export default function Page() {
                         const grade = data.grades.find(g => g.student_id === student.id && g.grade_item_id === item.id);
                         return (
                           <TableCell key={item.id} className="text-center font-mono text-sm">
-                            {grade?.is_missing ? (
+                            {grade === undefined ? (
+                              <span className="text-[10px] text-muted-foreground/50">אין נתון</span>
+                            ) : grade.is_missing ? (
                               <span className="text-muted-foreground/30">—</span>
-                            ) : grade?.numeric_value !== null ? (
+                            ) : grade.numeric_value !== null && grade.numeric_value !== undefined ? (
                               <span className={grade.numeric_value === 100 ? "text-status-proven font-bold" : ""}>
                                 {grade.numeric_value}
                               </span>
                             ) : (
-                              grade?.raw_value ?? <span className="text-muted-foreground/30">—</span>
+                              grade.raw_value ?? <span className="text-muted-foreground/30">—</span>
                             )}
                           </TableCell>
                         );
