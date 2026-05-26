@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { usePracticeTime, PracticeDayRow } from "@/hooks/useImports";
 import { secondsToHebrewHms } from "@/lib/duration";
 import { downloadCsv } from "@/lib/csv";
-import { formatTeacherTime } from "@/lib/teacherDateFormat";
+import { formatTeacherTime, formatTeacherDateDmyShort } from "@/lib/teacherDateFormat";
 import { TruthBadge } from "@/components/TruthBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -90,7 +90,7 @@ export function PracticeTimeSection({ studentId = null, title = "זמן תרגו
                   className="cursor-pointer hover:bg-muted/30"
                   onClick={() => toggleDay(`${day.day}-${day.student_id}`)}
                 >
-                  <TableCell className="font-medium">{day.day}</TableCell>
+                  <TableCell className="font-medium">{formatTeacherDateDmyShort(day.day)}</TableCell>
                   <TableCell>{day.student_name}</TableCell>
                   <TableCell className="text-center font-bold text-primary">
                     {secondsToHebrewHms(day.total_seconds)}
@@ -117,9 +117,7 @@ export function PracticeTimeSection({ studentId = null, title = "זמן תרגו
                                 <span className="text-[10px] text-muted-foreground">{win.event_count} אירועים</span>
                               </div>
                               <div className="mt-1 text-[10px] text-muted-foreground">
-                                {new Date(win.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} 
-                                {" - "}
-                                {new Date(win.ended_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {formatTeacherTime(win.started_at)} – {formatTeacherTime(win.ended_at)}
                               </div>
                             </div>
                           ))}
