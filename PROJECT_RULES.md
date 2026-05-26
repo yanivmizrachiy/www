@@ -1,4 +1,4 @@
-<!-- MTH_SOURCE_OF_TRUTH_AUTOMATION_PLAN_20260519_START -->
+﻿<!-- MTH_SOURCE_OF_TRUTH_AUTOMATION_PLAN_20260519_START -->
 # מקור אמת נוכחי — Moodle Teacher Hub / www
 
 עודכן: 2026-05-19
@@ -913,34 +913,27 @@ Course 259 הוא ראיית pilot בלבד — לא hardcode מוצרי.
 
 <!-- MTH_FINAL_PRODUCT_RULES_ROADMAP_POINTER_20260525_END -->
 
-<!-- MTH_CURRENT_STATUS_AFTER_PR161_START -->
+<!-- MTH_CURRENT_STATUS_AFTER_PR168_START -->
 
-## Current status after PR #161 — 2026-05-26
+## Current status after PR #168 — 2026-05-27
 
-The current verified main includes:
+The current verified main includes (latest batch):
 
-- PR #159: scoped /api/imports/overview dashboard counts to the current Moodle/LTI session.
-- PR #160: reorganized the teacher sidebar into the final teacher workflow.
-- PR #161: cleaned teacher-facing Test/LTI labels.
+- PR #162: docs sync after PR #161.
+- PR #163: unified date/time/duration formatting across all teacher pages.
+- PR #164: new /times page — time range report with date selector, per-student estimates, Excel export.
+- PR #165: "פעילויות" nav points to /chapters; ChapterDetail shows due_date formatted and completion counts.
+- PR #166: task report — distinguishes no-data / not-complete / complete with Excel export.
+- PR #167: Smart Import sends LTI token so imports are scoped to the current Moodle session.
+- PR #168: dashboard and grades distinguish loading / no-source / real-zero.
 
-Current new-improvement progress: **35%**.
+Current new-improvement progress: **90%**.
 
 Teacher Release remains **NO**.
 
 PR #127 remains draft-only and untouched.
 
-The next recommended work should not repeat PR #159–#161. Future work should continue with:
+Remaining gap to 100%: final live Moodle automation verified, multi-teacher isolation proof, release hardening.
 
-1. eat-teacher-date-time-duration-format-v1
-2. eat-teacher-time-range-report-v1
-3. eat-activities-chapters-teacher-flow-v1
-4. eat-task-report-work-practice-submit-v1
-5. ix-smart-import-session-scope-v1
-6. epo-cleanup-evidence-based-archive-v1
-
-See:
-
-docs/product/MTH_CURRENT_STATUS_AND_NEXT_QUEUE_AFTER_PR161.md
-
-<!-- MTH_CURRENT_STATUS_AFTER_PR161_END -->
+<!-- MTH_CURRENT_STATUS_AFTER_PR168_END -->
 
