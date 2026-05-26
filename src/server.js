@@ -3852,11 +3852,24 @@ app.get("/api/imports/grades-matrix", (req, res) => {
   res.json({ ok: true, students, items, grades });
 });
 
+// >>> MTH_SCOPED_IMPORTS_OVERVIEW_V1 >>>
 app.get("/api/imports/overview", (req, res) => {
   noStore(res);
-  if (!sessionFromRequest(req)) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
-  res.json({ students_count: store.students.length, grade_items_count: store.gradeItems.length || store.tasks.length, grades_count: store.grades.length, chapters_count: store.chapters.length, tasks_count: store.tasks.length, log_events_count: store.logEvents.length || store.activitySessions.length, batches: [...store.importBatches].reverse() });
+  const session = importSessionFromRequest(req);
+  if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
+  const spaceId = session.spaceId || "unknown-space";
+  const inSpace = (row) => !row || (!row.space_id && !row.course_id) || row.space_id === spaceId || row.course_id === spaceId;
+  res.json({
+    students_count: store.students.filter(s => !s.space_id || s.space_id === spaceId).length,
+    grade_items_count: (Array.isArray(store.gradeItems) ? store.gradeItems : []).filter(inSpace).length,
+    grades_count: (Array.isArray(store.grades) ? store.grades : []).filter(inSpace).length,
+    chapters_count: (Array.isArray(store.chapters) ? store.chapters : []).filter(inSpace).length,
+    tasks_count: (Array.isArray(store.tasks) ? store.tasks : []).filter(inSpace).length,
+    log_events_count: (Array.isArray(store.logEvents) ? store.logEvents : []).filter(inSpace).length,
+    batches: []
+  });
 });
+// <<< MTH_SCOPED_IMPORTS_OVERVIEW_V1 <<<
 
 
 const YANIV_MOODLE_WS_AUTOMATIC_ROUTES_V1 = true;
