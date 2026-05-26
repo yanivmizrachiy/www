@@ -3,6 +3,7 @@ import { SafePage, EmptyTruth } from "@/components/SafePage";
 import { useActivityOverview } from "@/hooks/useImports";
 import { PracticeTimeSection } from "@/components/PracticeTimeSection";
 import { Activity, CalendarDays, Clock3, AlertTriangle } from "lucide-react";
+import { formatTeacherDateDmyShort } from "@/lib/teacherDateFormat";
 
 // MTH_PRACTICE_TIME_TRUTH_UI_V1
 // Separates TWO different things that must never be conflated:
@@ -41,12 +42,8 @@ function StatCard({
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "לא התקבל";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "לא התקבל";
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yy = String(d.getFullYear()).slice(-2);
-  return `${dd}/${mm}/${yy}`;
+  const result = formatTeacherDateDmyShort(iso);
+  return result === "—" ? "לא התקבל" : result;
 }
 
 export default function Page() {

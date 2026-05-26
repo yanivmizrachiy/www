@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { SafePage } from "@/components/SafePage";
+import { formatTeacherDateTime } from "@/lib/teacherDateFormat";
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -71,7 +72,7 @@ export default function SettingsPage() {
   async function load() {
     setState("loading");
     setError("");
-    setLoadedAt(new Date().toLocaleString("he-IL"));
+    setLoadedAt(formatTeacherDateTime(new Date()));
 
     try {
       const [servicesJson, nrpsJson, wsStatusJson, wsSiteInfoJson, wsUsersPreviewJson] =

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { usePracticeTime, PracticeDayRow } from "@/hooks/useImports";
 import { secondsToHebrewHms } from "@/lib/duration";
 import { downloadCsv } from "@/lib/csv";
+import { formatTeacherTime } from "@/lib/teacherDateFormat";
 import { TruthBadge } from "@/components/TruthBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,8 +40,8 @@ export function PracticeTimeSection({ studentId = null, title = "זמן תרגו
       secondsToHebrewHms(d.total_seconds),
       d.event_count,
       d.session_count,
-      d.first_at ? new Date(d.first_at).toLocaleTimeString() : "—",
-      d.last_at ? new Date(d.last_at).toLocaleTimeString() : "—",
+      d.first_at ? formatTeacherTime(d.first_at) : "—",
+      d.last_at ? formatTeacherTime(d.last_at) : "—",
     ]);
     downloadCsv(`practice_time_${new Date().toISOString().split('T')[0]}.csv`, headers, csvRows);
   };
