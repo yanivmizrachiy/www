@@ -34,6 +34,17 @@ function useDashboardTeachers() {
         setCount(instructors || realNames.length);
         setNames(Array.from(new Set(realNames)));
         setState("ready");
+        // Auto-persist the live roster on load so students/grades/profiles are
+        // available without a manual "סנכרן מרחב" click. Server skips instructors
+        // and only stores real named learners, space-isolated. No invented data.
+        if (named.length) {
+          void fetch("/api/imports/nrps-sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ students: named }),
+          }).catch(() => { /* non-blocking: manual sync remains available */ });
+        }
       } catch {
         if (alive) setState("error");
       }
