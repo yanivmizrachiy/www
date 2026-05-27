@@ -36,6 +36,8 @@ export default function Page() {
     <SafePage
       title="פרקים ופעילויות"
       description="פרקי הקורס. לחיצה על פרק מציגה את המשימות שבו."
+      backTo="/"
+      backLabel="חזרה למרכז המורה"
     >
       <div className="space-y-4" dir="rtl">
         {loading ? (

@@ -98,6 +98,7 @@ export default function Page() {
     <SafePage
       title="בדיקת יכולות Moodle"
       description="מה זמין אוטומטית, מה חסום ומה דורש פעולת מנהל."
+      backTo="-1"
     >
       <div className="space-y-5" dir="rtl">
         <div className="flex items-center justify-between gap-3">

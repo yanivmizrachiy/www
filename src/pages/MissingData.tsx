@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { AlertCircle, FileUp, RefreshCw, ExternalLink } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { AlertCircle, ArrowRight, FileUp, RefreshCw, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSyncStatus, type SyncStatus } from "@/hooks/useSyncStatus";
@@ -40,9 +40,14 @@ export default function MissingData() {
   const courseId = session?.course_id ?? null;
   const base = site?.site_url ?? null;
   const keys = Object.keys(gateInfo) as Array<keyof SyncStatus["capabilities"]>;
+  const navigate = useNavigate();
 
   return (
     <div dir="rtl" className="space-y-6">
+      <button type="button" onClick={() => navigate(-1)} aria-label="חזרה"
+        className="inline-flex items-center gap-1.5 rounded-full border bg-background px-3 py-1.5 text-sm font-bold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+        <ArrowRight className="h-4 w-4" />חזרה
+      </button>
       <section className="rounded-3xl bg-gradient-hero p-8 text-white shadow-elegant">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>

@@ -49,7 +49,7 @@ export default function Page() {
 
   if (!loading && !data?.chapters.length && !uncategorizedTasks.length && !error) {
     return (
-      <SafePage title="משימות ופרקים" description="מבנה הקורס והשלמות משימות.">
+      <SafePage title="משימות ופרקים" description="מבנה הקורס והשלמות משימות." backTo="/" backLabel="חזרה למרכז המורה">
         <EmptyDomain
           domain="completion"
           title="אין נתוני משימות"

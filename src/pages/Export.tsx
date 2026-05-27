@@ -106,6 +106,7 @@ export default function Export() {
     <SafePage
       title="ייצוא לאקסל"
       description="הורדת קבצי Excel מהנתונים שבמערכת."
+      backTo="-1"
     >
       <div className="space-y-6" dir="rtl">
         {!hasAnySessionData && (

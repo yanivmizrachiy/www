@@ -187,6 +187,7 @@ export default function Automation() {
     <SafePage
       title="אוטומציה ממודל"
       description="סטטוס החיבור, הייבוא והנתונים הזמינים אוטומטית."
+      backTo="-1"
     >
       <div className="space-y-6" dir="rtl">
         <AutomationStatusPanel />

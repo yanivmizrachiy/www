@@ -60,6 +60,8 @@ export default function Page() {
     <SafePage
       title="פעילות וזמנים"
       description="פעילות התלמידים מתוך לוגים שיובאו."
+      backTo="/"
+      backLabel="חזרה למרכז המורה"
     >
       <div className="space-y-8" dir="rtl">
         {/* ── Section 1: Log evidence (FACT) ───────────────────────────── */}

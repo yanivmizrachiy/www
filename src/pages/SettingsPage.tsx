@@ -148,6 +148,7 @@ export default function SettingsPage() {
     <SafePage
       title="הגדרות ואבחון חיבור"
       description="סטטוס חיבור — LTI, NRPS ו-Moodle Web Services."
+      backTo="-1"
     >
       <div className="space-y-6" dir="rtl">
         <div className="rounded-3xl border bg-white p-5 shadow-sm">
