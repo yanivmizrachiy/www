@@ -122,10 +122,10 @@ function StatCard({ label, value, icon: Icon, delay = 0 }: { label: string, valu
 
 function ActionCard({ to, marker, icon: Icon, title, value, unit }: { to: string; marker: string; icon: any; title: string; value: number | string; unit: string }) {
   return (
-    <Link to={to} className={`${marker} MTH_DASHBOARD_DARK_BLUE_CARD_V1 rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-8 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]`}>
-      <Icon className="mb-5 h-14 w-14" />
-      <div className="text-5xl font-black leading-tight tracking-tight">{title}</div>
-      <div className="mt-5 inline-flex rounded-full border border-white/25 bg-white/15 px-5 py-2 text-base font-black text-white shadow-lg">{value} {unit}</div>
+    <Link to={to} className={`${marker} MTH_DASHBOARD_DARK_BLUE_CARD_V1 rounded-3xl border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-6 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]`}>
+      <Icon className="mb-3 h-10 w-10" />
+      <div className="text-2xl font-black leading-tight tracking-tight sm:text-3xl">{title}</div>
+      <div className="mt-3 inline-flex rounded-full border border-white/25 bg-white/15 px-4 py-1.5 text-sm font-black text-white shadow-lg">{value} {unit}</div>
     </Link>
   );
 }
@@ -189,8 +189,8 @@ export default function Dashboard() {
               <div className={`h-2 w-2 rounded-full ${hasSession ? "bg-emerald-400" : "bg-amber-400"} animate-pulse`} />{hasSession ? "מחובר מתוך Moodle" : "נדרשת פתיחה מתוך Moodle"}
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-2">
-              <h1 className="text-5xl font-black tracking-tight text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)] lg:text-7xl">המודל החכם</h1>
-              <p className="text-lg font-bold text-cyan-200/90 lg:text-xl">לוח הבקרה של המורה</p>
+              <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)] sm:text-4xl lg:text-5xl">המודל החכם</h1>
+              <p className="text-base font-bold text-cyan-200/90 lg:text-lg">לוח הבקרה של המורה</p>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} className="grid gap-3 md:grid-cols-3">
               <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
@@ -225,7 +225,7 @@ export default function Dashboard() {
         <ActionCard to="/students" marker="MTH_DASHBOARD_MAIN_PARTICIPANTS_BUTTON_V1" icon={Users} title="תלמידים" value={v(data?.students_count)} unit="תלמידים" />
         <ActionCard to="/tasks" marker="MTH_DASHBOARD_MAIN_ACTIVITIES_BUTTON_V1" icon={ClipboardList} title="פרקים ופעילויות" value={realActivitiesCount} unit={realActivitiesUnit} />
         <ActionCard to="/grades" marker="MTH_DASHBOARD_MAIN_GRADES_BUTTON_V1" icon={GraduationCap} title="ציונים" value={v(data?.grades_count)} unit="ציונים" />
-        <a href="#all-actions-menu" className="MTH_DASHBOARD_MAIN_ALL_BUTTON_V1 MTH_DASHBOARD_DARK_BLUE_CARD_V1 rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-8 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]"><Database className="mb-5 h-14 w-14" /><div className="text-5xl font-black leading-tight tracking-tight">כל השאר</div><div className="mt-5 inline-flex rounded-full border border-white/25 bg-white/15 px-5 py-2 text-base font-black text-white shadow-lg">תפריט</div></a>
+        <a href="#all-actions-menu" className="MTH_DASHBOARD_MAIN_ALL_BUTTON_V1 MTH_DASHBOARD_DARK_BLUE_CARD_V1 rounded-3xl border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-6 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]"><Database className="mb-3 h-10 w-10" /><div className="text-2xl font-black leading-tight tracking-tight sm:text-3xl">כל השאר</div><div className="mt-3 inline-flex rounded-full border border-white/25 bg-white/15 px-4 py-1.5 text-sm font-black text-white shadow-lg">תפריט</div></a>
       </section>
 
       {error && <div className="rounded-xl border border-status-blocked/30 bg-status-blocked-bg/10 p-4 flex gap-3 text-sm text-status-blocked items-start"><AlertCircle className="h-5 w-5 mt-0.5 shrink-0" /><div><div className="font-bold">שגיאה בסנכרון נתונים</div><p className="opacity-80 mt-1">{error}</p></div></div>}
