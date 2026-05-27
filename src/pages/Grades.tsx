@@ -18,7 +18,7 @@ export default function Page() {
 
   if (!loading && !data?.students.length && !error) {
     return (
-      <SafePage title="ציונים" description="מטריצת ציונים מדוח Moodle.">
+      <SafePage title="ציונים" description="מטריצת ציונים מדוח Moodle." backTo="/" backLabel="חזרה למרכז המורה">
         <EmptyDomain
           domain="grades"
           title="אין נתוני ציונים"

@@ -105,6 +105,7 @@ export default function Page() {
     <SafePage
       title="בדיקת בידוד חיה — שני מרחבים"
       description="צלם את מצב הנתונים מכל מרחב ובדוק שאין ערבוב."
+      backTo="-1"
     >
       <div className="space-y-5" dir="rtl">
         {/* Current space */}

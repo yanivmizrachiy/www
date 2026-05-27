@@ -50,6 +50,8 @@ export default function Reports() {
     <SafePage
       title="דוחות"
       description="מרכז הדוחות — תלמידים, משימות, ימים ופערים."
+      backTo="/"
+      backLabel="חזרה למרכז המורה"
     >
       <div className="space-y-6" dir="rtl">
         <section className="grid gap-4 md:grid-cols-2">

@@ -78,6 +78,7 @@ export default function Page() {
     <SafePage
       title="בידוד נתונים בין מורים"
       description="מה כבר מובטח ברמת הקוד ומה עדיין דורש בדיקה חיה."
+      backTo="-1"
     >
       <div className="space-y-5" dir="rtl">
         <div className="flex items-center justify-between gap-3">

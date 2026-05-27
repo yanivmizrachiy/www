@@ -61,7 +61,7 @@ export default function TimeRangeReport() {
   }
 
   return (
-    <SafePage title="דוח זמנים" description="הערכת זמן תרגול לפי לוגים — לא מדידה מדויקת">
+    <SafePage title="דוח זמנים" description="הערכת זמן תרגול לפי לוגים — לא מדידה מדויקת" backTo="/" backLabel="חזרה למרכז המורה">
       <div className="space-y-5" dir="rtl">
 
         {/* Disclaimer */}

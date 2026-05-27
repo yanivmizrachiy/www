@@ -1,10 +1,10 @@
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useMemo } from "react";
 import { SafePage, EmptyTruth } from "@/components/SafePage";
 import { useCourseStructure } from "@/hooks/useImports";
 import { classifyTaskVisual } from "@/lib/taskTypeVisuals";
 import { formatTeacherDateDmyShort } from "@/lib/teacherDateFormat";
-import { ArrowRight, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
+import { CheckCircle2, XCircle, HelpCircle } from "lucide-react";
 
 // MTH_CHAPTERS_TASKS_PREMIUM_FLOW_V1
 // Chapter detail: shows the REAL tasks that belong to this chapter, each with
@@ -81,15 +81,10 @@ export default function ChapterDetail() {
     <SafePage
       title={title}
       description="המשימות בפרק זה לפי מבנה הקורס."
+      backTo="/chapters"
+      backLabel="חזרה לכל הפרקים"
     >
       <div className="space-y-4" dir="rtl">
-        <Link
-          to="/chapters"
-          className="inline-flex items-center gap-1 text-sm font-bold text-primary hover:underline"
-        >
-          <ArrowRight className="h-4 w-4" />
-          חזרה לכל הפרקים
-        </Link>
 
         {loading ? (
           <p className="text-sm text-muted-foreground">טוען משימות הפרק...</p>
