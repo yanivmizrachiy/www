@@ -50,6 +50,33 @@ const LEVEL_META: Record<AutomationLevel, { label: string; cls: string }> = {
   REFUSE: { label: "לא ניתן לחשב", cls: "bg-zinc-200 text-zinc-900 border-zinc-400" },
 };
 
+// MTH_TEACHER_PLAIN_LANGUAGE_V1
+// Display-layer only: the Truth Engine returns technically precise text (API
+// names, env vars) for auditing. Teachers should not see developer jargon, so
+// we translate those phrases to plain Hebrew at render time. This does NOT
+// change any capability logic or status — only how the existing text reads.
+function plainHe(text: string | null | undefined): string {
+  if (!text) return "";
+  let t = text;
+  const replacements: Array<[RegExp, string]> = [
+    [/core_enrol_get_enrolled_users/gi, "שליפת רשימת תלמידים"],
+    [/core_webservice_get_site_info/gi, "בדיקת חיבור למערכת"],
+    [/core_grades?_get_grades?/gi, "שליפת ציונים"],
+    [/MOODLE_WS_TOKEN/g, "הרשאת חיבור אוטומטי"],
+    [/Web Services/gi, "חיבור אוטומטי"],
+    [/REST protocol|REST/gi, "חיבור אוטומטי"],
+    [/\bAGS\b/g, "שירות הציונים של Moodle"],
+    [/\bNRPS\b/g, "רשימת המשתתפים של Moodle"],
+    [/\btoken\b/gi, "הרשאה"],
+    [/\bRender\b/g, "השרת"],
+    [/\bendpoint\b/gi, "שירות"],
+    [/\bscope[s]?\b/gi, "הרשאות"],
+  ];
+  for (const [re, rep] of replacements) t = t.replace(re, rep);
+  // Collapse leftover double spaces from replacements.
+  return t.replace(/\s{2,}/g, " ").trim();
+}
+
 export default function AutoExtractionSourceRouterSection() {
   const [data, setData] = useState<SourceMap | null>(null);
   const [loading, setLoading] = useState(true);
@@ -93,15 +120,15 @@ export default function AutoExtractionSourceRouterSection() {
       <CardContent className="space-y-4">
         {/* Summary chips */}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <SummaryBox icon={<Zap className="h-4 w-4" />} title="נשלף אוטומטית" items={data.summary.automatic_now_he} cls="border-emerald-200 bg-emerald-50 text-emerald-900" />
-          <SummaryBox icon={<Workflow className="h-4 w-4" />} title="מוכן לאוטומציה" items={data.summary.automatic_ready_he} cls="border-sky-200 bg-sky-50 text-sky-900" />
-          <SummaryBox icon={<Workflow className="h-4 w-4" />} title="ייבוא דוח אמיתי" items={data.summary.semi_auto_fallback_he} cls="border-amber-200 bg-amber-50 text-amber-900" />
-          <SummaryBox icon={<AlertTriangle className="h-4 w-4" />} title="חסום" items={data.summary.blocked_he} cls="border-rose-200 bg-rose-50 text-rose-900" />
+          <SummaryBox icon={<Zap className="h-4 w-4" />} title="נשלף אוטומטית" items={data.summary.automatic_now_he.map(plainHe)} cls="border-emerald-200 bg-emerald-50 text-emerald-900" />
+          <SummaryBox icon={<Workflow className="h-4 w-4" />} title="מוכן לאוטומציה" items={data.summary.automatic_ready_he.map(plainHe)} cls="border-sky-200 bg-sky-50 text-sky-900" />
+          <SummaryBox icon={<Workflow className="h-4 w-4" />} title="ייבוא דוח אמיתי" items={data.summary.semi_auto_fallback_he.map(plainHe)} cls="border-amber-200 bg-amber-50 text-amber-900" />
+          <SummaryBox icon={<AlertTriangle className="h-4 w-4" />} title="חסום" items={data.summary.blocked_he.map(plainHe)} cls="border-rose-200 bg-rose-50 text-rose-900" />
         </div>
 
         {/* Next best step */}
         <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm font-bold text-sky-900">
-          הצעד הבא לאוטומציה: {data.summary.next_best_automation_step_he}
+          הצעד הבא לאוטומציה: {plainHe(data.summary.next_best_automation_step_he)}
         </div>
 
         {/* Domain rows */}
@@ -114,12 +141,12 @@ export default function AutoExtractionSourceRouterSection() {
                   <div className="font-extrabold text-slate-800">{d.labelHe}</div>
                   <span className={`rounded-full border px-3 py-1 text-xs font-black ${meta.cls}`}>{d.teacherSeesHe}</span>
                 </div>
-                <div className="mt-2 text-xs leading-relaxed text-slate-600">{d.provingSignalHe}</div>
+                <div className="mt-2 text-xs leading-relaxed text-slate-600">{plainHe(d.provingSignalHe)}</div>
                 {d.whatIsMissingHe && (
-                  <div className="mt-1 text-xs text-slate-500">חסר: {d.whatIsMissingHe}</div>
+                  <div className="mt-1 text-xs text-slate-500">חסר: {plainHe(d.whatIsMissingHe)}</div>
                 )}
                 {d.adminEnablementHe && (
-                  <div className="mt-1 text-xs text-slate-500">להפעלת מנהל: {d.adminEnablementHe}</div>
+                  <div className="mt-1 text-xs text-slate-500">להפעלת מנהל: {plainHe(d.adminEnablementHe)}</div>
                 )}
                 {d.fallbackRoute && (
                   <a href={d.fallbackRoute} className="mt-2 inline-block text-xs font-bold text-sky-700 underline">
