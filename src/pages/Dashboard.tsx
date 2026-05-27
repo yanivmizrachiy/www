@@ -13,6 +13,37 @@ import { formatTeacherDateDmyShort } from "@/lib/teacherDateFormat";
 // MTH_PREMIUM_DASHBOARD_TEACHER_COUNTS_V1
 // Small, self-contained NRPS teacher card on the dashboard hero. Shows teacher
 // count + names ONLY when NRPS returns a real Instructor source. Never invents.
+
+// MTH_HONEST_SOURCE_STATUS_V1
+// Reads the live capability detector so the dashboard can tell the teacher,
+// truthfully, which data is automatic now vs which needs a Moodle report import.
+type SourceStatus = "available" | "unavailable" | "unknown" | "missing" | "partial" | "configured";
+function useSourceStatus() {
+  const [map, setMap] = useState<Record<string, SourceStatus> | null>(null);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/capabilities/status", { headers: { Accept: "application/json" }, credentials: "include" });
+        const json = await res.json().catch(() => null);
+        if (!alive) return;
+        // The endpoint returns individual *_status fields and a capability map.
+        const m: Record<string, SourceStatus> = {
+          nrps: json?.nrps_status ?? json?.capabilities?.nrps ?? "unknown",
+          ags: json?.ags_status ?? json?.capabilities?.ags ?? "unknown",
+          gradebook: json?.gradebook_status ?? json?.capabilities?.gradebook ?? "missing",
+          logs: json?.logs_status ?? json?.capabilities?.logs ?? "missing",
+          moodle_ws: json?.moodle_ws_status ?? json?.capabilities?.moodle_ws ?? "missing",
+        };
+        setMap(m);
+      } catch {
+        if (alive) setMap(null);
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+  return map;
+}
 function useDashboardTeachers() {
   const [count, setCount] = useState(0);
   const [names, setNames] = useState<string[]>([]);
@@ -55,6 +86,24 @@ function useDashboardTeachers() {
   return { count, names, state };
 }
 
+function SourceRow({ label, hint, status }: { label: string; hint: string; status: SourceStatus }) {
+  const isAuto = status === "available" || status === "configured";
+  const isPartial = status === "partial";
+  const tone = isAuto ? "text-green-700 bg-green-50 border-green-200"
+    : isPartial ? "text-amber-700 bg-amber-50 border-amber-200"
+    : "text-slate-600 bg-slate-50 border-slate-200";
+  const badge = isAuto ? "אוטומטי" : isPartial ? "חלקי" : status === "unknown" ? "ממתין ל-Moodle" : "דרוש ייבוא";
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2xl border bg-white p-4">
+      <div className="min-w-0">
+        <div className="font-bold">{label}</div>
+        <div className="truncate text-xs text-muted-foreground">{hint}</div>
+      </div>
+      <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-bold ${tone}`}>{badge}</span>
+    </div>
+  );
+}
+
 function StatCard({ label, value, icon: Icon, delay = 0 }: { label: string, value: number | string, icon: any, delay?: number }) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}>
@@ -86,6 +135,7 @@ export default function Dashboard() {
   const { data, loading, error } = useImportsOverview();
   const syncStatus = useSyncStatus();
   const teachers = useDashboardTeachers();
+  const sourceStatus = useSourceStatus();
   const hasSession = Boolean(session);
   // "—" = no session/no source; "..." = loading; number = real value (0 is real zero)
   const v = (n: number | undefined) => {
@@ -208,6 +258,21 @@ export default function Dashboard() {
         <StatCard label="פעילויות" value={realActivitiesCount} icon={ClipboardList} delay={0.5} />
         <StatCard label="לוגים" value={v(data?.log_events_count)} icon={Calendar} delay={0.6} />
       </section>
+
+      {/* MTH_HONEST_SOURCE_STATUS_V1 — truthful "where does the data come from" panel */}
+      {sourceStatus && (
+        <section className="rounded-3xl border bg-background/60 p-5 sm:p-6" aria-label="מקורות הנתונים">
+          <h2 className="mb-1 text-lg font-bold">מאיפה מגיעים הנתונים</h2>
+          <p className="mb-4 text-sm text-muted-foreground">מה נטען אוטומטית מ-Moodle, ומה דורש ייבוא דוח.</p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <SourceRow label="תלמידים ומורים" hint="רשימת המשתתפים (NRPS)" status={sourceStatus.nrps} />
+            <SourceRow label="ציונים" hint="AGS אוטומטי או ייבוא Gradebook" status={sourceStatus.ags === "available" ? "available" : sourceStatus.gradebook} />
+            <SourceRow label="פרקים ומשימות" hint="ייבוא מבנה קורס" status={sourceStatus.gradebook === "available" ? "available" : "missing"} />
+            <SourceRow label="פעילות ולוגים" hint="ייבוא דוח Logs" status={sourceStatus.logs} />
+            <SourceRow label="חיבור אוטומטי מלא" hint="Web Services (דורש הרשאת מנהל)" status={sourceStatus.moodle_ws} />
+          </div>
+        </section>
+      )}
       {loading && <div className="fixed bottom-8 left-8 flex items-center gap-3 rounded-full bg-white px-4 py-2 shadow-2xl border animate-bounce"><div className="h-2 w-2 rounded-full bg-primary animate-pulse" /><span className="text-[10px] font-bold">טוען...</span></div>}
     </div>
   );
