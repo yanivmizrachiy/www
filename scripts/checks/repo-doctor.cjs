@@ -32,7 +32,7 @@ ok("PRIVATE_FILE_SCAN_OK");
 
 const textLike = /\.(js|jsx|ts|tsx|cjs|mjs|json|md|yml|yaml|html|css|txt|sql|sh|ps1)$/i;
 const secretRegex =
-  /(eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9_-]{20,}|ghp_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[A-Za-z0-9_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)/;
+  /(eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}|\bsk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[A-Za-z0-9_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)/;
 
 for (const p of tracked) {
   if (!textLike.test(p)) continue;
