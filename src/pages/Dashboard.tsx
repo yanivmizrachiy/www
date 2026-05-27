@@ -14,6 +14,85 @@ import { formatTeacherDateDmyShort } from "@/lib/teacherDateFormat";
 // Small, self-contained NRPS teacher card on the dashboard hero. Shows teacher
 // count + names ONLY when NRPS returns a real Instructor source. Never invents.
 
+// MTH_RESILIENCE_AUTO_SYNC_V1
+// Tracks the dashboard auto-sync status so a silent failure (401, network) no
+// longer hides behind .catch(() => {}). The dashboard shows a discreet banner
+// with a retry button + a link to manual import if auto-sync fails. Pure
+// presentation - the underlying truth/capability logic is unchanged.
+type AutoSyncStatus = "idle" | "syncing" | "success" | "auth-failed" | "network-failed" | "empty";
+
+function useAutoSyncStatus() {
+  const [status, setStatus] = useState<AutoSyncStatus>("idle");
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+    setStatus("syncing");
+    setLastError(null);
+    (async () => {
+      try {
+        const previewRes = await fetch("/api/lti13/nrps-preview", { headers: { Accept: "application/json" } });
+        const previewJson = await previewRes.json().catch(() => null);
+        if (!alive) return;
+        const named = Array.isArray(previewJson?.members_named) ? previewJson.members_named : [];
+        if (!named.length) { setStatus("empty"); return; }
+        const ltiToken = getLtiToken();
+        const syncRes = await fetch("/api/imports/nrps-sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ students: named, ...(ltiToken ? { token: ltiToken } : {}) }),
+        });
+        if (!alive) return;
+        if (syncRes.ok) {
+          setStatus("success");
+        } else if (syncRes.status === 401 || syncRes.status === 403) {
+          setStatus("auth-failed");
+          setLastError(`קוד ${syncRes.status} — האימות אל מודל לא הצליח. נסה לפתוח את הכלי שוב מתוך מודל, או השתמש בייבוא ידני.`);
+        } else {
+          setStatus("network-failed");
+          setLastError(`קוד ${syncRes.status} — שמירת רשימת התלמידים נכשלה.`);
+        }
+      } catch (e) {
+        if (!alive) return;
+        setStatus("network-failed");
+        setLastError(e instanceof Error ? e.message : "תקלת רשת במהלך הסנכרון.");
+      }
+    })();
+    return () => { alive = false; };
+  }, [retryNonce]);
+
+  return { status, lastError, retry: () => setRetryNonce(n => n + 1) };
+}
+
+// MTH_AUTO_SYNC_BANNER_V1
+// A discreet banner that appears only when auto-sync failed. Never invents data:
+// just tells the truth and offers a retry + manual import path.
+function AutoSyncBanner({ status, lastError, onRetry }: { status: AutoSyncStatus; lastError: string | null; onRetry: () => void }) {
+  if (status !== "auth-failed" && status !== "network-failed") return null;
+  const isAuth = status === "auth-failed";
+  return (
+    <div className={`flex flex-col gap-2 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between ${isAuth ? "border-amber-300 bg-amber-50 text-amber-900" : "border-rose-300 bg-rose-50 text-rose-900"}`}>
+      <div className="flex items-start gap-2">
+        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+        <div className="min-w-0">
+          <div className="text-sm font-bold">{isAuth ? "סנכרון אוטומטי לא הצליח" : "תקלה בסנכרון רשימת התלמידים"}</div>
+          {lastError && <div className="mt-0.5 text-xs">{lastError}</div>}
+        </div>
+      </div>
+      <div className="flex shrink-0 flex-wrap gap-2">
+        <button type="button" onClick={onRetry} className="inline-flex items-center gap-1.5 rounded-full border border-current bg-white px-3 py-1.5 text-xs font-bold transition hover:bg-current/10">
+          <RefreshCw className="h-3.5 w-3.5" />נסה שוב
+        </button>
+        <Link to="/smart-import" className="inline-flex items-center gap-1.5 rounded-full bg-current px-3 py-1.5 text-xs font-bold text-white transition hover:opacity-90">
+          ייבוא ידני
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 // MTH_HONEST_SOURCE_STATUS_V1
 // Reads the live capability detector so the dashboard can tell the teacher,
 // truthfully, which data is automatic now vs which needs a Moodle report import.
@@ -65,24 +144,9 @@ function useDashboardTeachers() {
         setCount(instructors || realNames.length);
         setNames(Array.from(new Set(realNames)));
         setState("ready");
-        // Auto-persist the live roster on load so students/grades/profiles are
-        // available without a manual "סנכרן מרחב" click. Server skips instructors
-        // and only stores real named learners, space-isolated. No invented data.
-        // Send the LTI token in the body (same pattern as #167 SmartImport) so
-        // the request authenticates even in cross-site iframe contexts where
-        // session cookies may be blocked. The manual button stays as a fallback.
-        if (named.length) {
-          const ltiToken = getLtiToken();
-          void fetch("/api/imports/nrps-sync", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({
-              students: named,
-              ...(ltiToken ? { token: ltiToken } : {}),
-            }),
-          }).catch(() => { /* non-blocking: manual sync remains available */ });
-        }
+        // Auto-sync of the learner roster is owned by useAutoSyncStatus (above)
+        // so failures surface to the teacher via AutoSyncBanner instead of being
+        // silently swallowed. This hook stays focused on the teacher header.
       } catch {
         if (alive) setState("error");
       }
@@ -143,6 +207,7 @@ export default function Dashboard() {
   const syncStatus = useSyncStatus();
   const teachers = useDashboardTeachers();
   const sourceStatus = useSourceStatus();
+  const autoSync = useAutoSyncStatus();
   const hasSession = Boolean(session);
   // "—" = no session/no source; "..." = loading; number = real value (0 is real zero)
   const v = (n: number | undefined) => {
@@ -193,6 +258,7 @@ export default function Dashboard() {
   return (
     <div className="MTH_DASHBOARD_ACTION_HUB_V1 space-y-8" dir="rtl">
       <span className="sr-only">MTH_DASHBOARD_ACTION_ONLY_NO_EXPLAINER_TEXT_V1</span>
+      <AutoSyncBanner status={autoSync.status} lastError={autoSync.lastError} onRetry={autoSync.retry} />
       <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#06152f] via-[#082b66] to-[#0b4f8f] p-8 text-white shadow-[0_30px_90px_rgba(6,21,47,0.45)] lg:p-12">
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-6">
           <div className="space-y-5 max-w-4xl">
