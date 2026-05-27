@@ -29,7 +29,7 @@ export default function StudentProfile() {
   }
 
   if (error || !data) {
-    return <SafePage title="פרופיל תלמיד" description="מידע התלמיד מתוך Moodle."><EmptyTruth>אין עדיין מידע מפורט על תלמיד זה. ייבא דוח ציונים או פעילות כדי לראות פרטים.</EmptyTruth></SafePage>;
+    return <SafePage title="פרופיל תלמיד" description="מידע התלמיד מתוך Moodle." backTo="/students" backLabel="חזרה לתלמידים"><EmptyTruth>אין עדיין מידע מפורט על תלמיד זה. ייבא דוח ציונים או פעילות כדי לראות פרטים.</EmptyTruth></SafePage>;
   }
 
   const numericGrades = data.grades
@@ -44,6 +44,8 @@ export default function StudentProfile() {
     <SafePage
       title={data.student.full_name}
       description={`עדכון אחרון: ${formatTeacherDateDmyShort(data.student.updated_at)}`}
+      backTo="/students"
+      backLabel="חזרה לתלמידים"
     >
       <div className="space-y-6">
         <div className="flex flex-wrap items-center gap-2">

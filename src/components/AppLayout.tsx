@@ -45,8 +45,8 @@ export default function AppLayout() {
             </div>
           </header>
 
-          <main className="flex-1 animate-fade-in p-4 sm:p-6 lg:p-8">
-            <div className="mx-auto w-full max-w-7xl">
+          <main className="flex-1 animate-fade-in p-4 sm:p-6 lg:p-8 xl:p-10">
+            <div className="mx-auto w-full max-w-[1600px]">
               <Outlet />
             </div>
           </main>
