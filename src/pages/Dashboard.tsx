@@ -191,6 +191,91 @@ function StatCard({ label, value, icon: Icon, delay = 0 }: { label: string, valu
   );
 }
 
+// MTH_NEXT_BEST_ACTION_V1
+// Smart guidance for the teacher: based on what data is already loaded and
+// what is available from Moodle, tell the teacher the single most useful next
+// step. Pure decision logic over the existing /api/imports/overview counts and
+// /api/capabilities/status statuses - never invents work that hasn't happened.
+type NextAction = {
+  tone: "success" | "info" | "action";
+  title: string;
+  description: string;
+  cta?: { label: string; to: string };
+};
+function computeNextAction(
+  data: { students_count: number; grades_count: number; grade_items_count?: number; chapters_count: number; tasks_count: number; log_events_count: number } | null,
+  sourceStatus: Record<string, string> | null
+): NextAction | null {
+  if (!data) return null;
+  const hasStudents = data.students_count > 0;
+  const hasGrades = data.grades_count > 0 || (data.grade_items_count ?? 0) > 0;
+  const hasChapters = data.chapters_count > 0 || data.tasks_count > 0;
+  const hasLogs = data.log_events_count > 0;
+  const agsAvailable = sourceStatus?.ags === "available";
+
+  if (!hasStudents) {
+    return { tone: "info", title: "פתח את הכלי מתוך Moodle", description: "הכלי טוען את רשימת התלמידים אוטומטית כשנפתח מהמרחב במודל." };
+  }
+  if (!hasGrades) {
+    if (agsAvailable) {
+      return { tone: "info", title: "הציונים בדרך", description: "מודל מספק את הציונים אוטומטית. רענן את העמוד בעוד מספר שניות." };
+    }
+    return {
+      tone: "action",
+      title: "ייבא את גליון הציונים מ-Moodle",
+      description: "כדי לראות ציונים, הורד את ה-Gradebook מהמרחב במודל ופתח כאן.",
+      cta: { label: "פתח ייבוא חכם", to: "/smart-import" },
+    };
+  }
+  if (!hasChapters) {
+    return {
+      tone: "action",
+      title: "ייבא את מבנה הקורס",
+      description: "כדי לראות פרקים ומשימות, ייבא את מבנה הקורס מ-Moodle.",
+      cta: { label: "פתח ייבוא חכם", to: "/smart-import" },
+    };
+  }
+  if (!hasLogs) {
+    return {
+      tone: "action",
+      title: "ייבא לוגי פעילות",
+      description: "כדי לראות זמני פעילות והשלמות, ייבא את דוח הלוגים מ-Moodle.",
+      cta: { label: "פתח ייבוא חכם", to: "/smart-import" },
+    };
+  }
+  return {
+    tone: "success",
+    title: "המידע מוכן",
+    description: "כל המקורות מסונכרנים. אפשר ליצור דוחות, לראות פעילות, ולעקוב אחרי תלמידים.",
+    cta: { label: "פתח דוחות", to: "/reports" },
+  };
+}
+
+function NextBestActionPanel({ action }: { action: NextAction | null }) {
+  if (!action) return null;
+  const tone =
+    action.tone === "success" ? "border-emerald-300 bg-emerald-50 text-emerald-900"
+    : action.tone === "action" ? "border-sky-300 bg-sky-50 text-sky-900"
+    : "border-slate-300 bg-slate-50 text-slate-800";
+  const ctaTone =
+    action.tone === "success" ? "bg-emerald-700 hover:bg-emerald-800"
+    : "bg-sky-700 hover:bg-sky-800";
+  return (
+    <section className={`flex flex-col gap-3 rounded-3xl border p-5 sm:flex-row sm:items-center sm:justify-between ${tone}`} aria-label="הצעד הבא">
+      <div className="min-w-0">
+        <div className="text-xs font-bold opacity-70">הצעד הבא</div>
+        <h2 className="mt-0.5 text-lg font-bold">{action.title}</h2>
+        <p className="mt-1 text-sm opacity-90">{action.description}</p>
+      </div>
+      {action.cta && (
+        <Link to={action.cta.to} className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-5 py-2 text-sm font-bold text-white shadow transition ${ctaTone}`}>
+          {action.cta.label}
+        </Link>
+      )}
+    </section>
+  );
+}
+
 function ActionCard({ to, marker, icon: Icon, title, value, unit }: { to: string; marker: string; icon: any; title: string; value: number | string; unit: string }) {
   return (
     <Link to={to} className={`${marker} MTH_DASHBOARD_DARK_BLUE_CARD_V1 rounded-3xl border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-6 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]`}>
@@ -208,6 +293,7 @@ export default function Dashboard() {
   const teachers = useDashboardTeachers();
   const sourceStatus = useSourceStatus();
   const autoSync = useAutoSyncStatus();
+  const nextAction = useMemo(() => computeNextAction(data ?? null, sourceStatus), [data, sourceStatus]);
   const hasSession = Boolean(session);
   // "—" = no session/no source; "..." = loading; number = real value (0 is real zero)
   const v = (n: number | undefined) => {
@@ -335,6 +421,8 @@ export default function Dashboard() {
         <StatCard label="פעילויות" value={realActivitiesCount} icon={ClipboardList} delay={0.5} />
         <StatCard label="לוגים" value={v(data?.log_events_count)} icon={Calendar} delay={0.6} />
       </section>
+
+      <NextBestActionPanel action={nextAction} />
 
       {/* MTH_HONEST_SOURCE_STATUS_V1 — truthful "where does the data come from" panel */}
       {sourceStatus && (
