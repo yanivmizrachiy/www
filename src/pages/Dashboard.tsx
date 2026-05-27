@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useImportsOverview } from "@/hooks/useImports";
 import { useSyncStatus } from "@/hooks/useSyncStatus";
-import { useLtiSession } from "@/hooks/useLtiSession";
+import { useLtiSession, getLtiToken } from "@/hooks/useLtiSession";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -68,12 +68,19 @@ function useDashboardTeachers() {
         // Auto-persist the live roster on load so students/grades/profiles are
         // available without a manual "סנכרן מרחב" click. Server skips instructors
         // and only stores real named learners, space-isolated. No invented data.
+        // Send the LTI token in the body (same pattern as #167 SmartImport) so
+        // the request authenticates even in cross-site iframe contexts where
+        // session cookies may be blocked. The manual button stays as a fallback.
         if (named.length) {
+          const ltiToken = getLtiToken();
           void fetch("/api/imports/nrps-sync", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
-            body: JSON.stringify({ students: named }),
+            body: JSON.stringify({
+              students: named,
+              ...(ltiToken ? { token: ltiToken } : {}),
+            }),
           }).catch(() => { /* non-blocking: manual sync remains available */ });
         }
       } catch {
@@ -166,11 +173,15 @@ export default function Dashboard() {
       const preview = await res.json().catch(() => null);
       const students = Array.isArray(preview?.members_named) ? preview.members_named : [];
       if (students.length) {
+        const ltiToken = getLtiToken();
         await fetch("/api/imports/nrps-sync", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ students }),
+          body: JSON.stringify({
+            students,
+            ...(ltiToken ? { token: ltiToken } : {}),
+          }),
         });
       }
       await syncStatus.runSync();
