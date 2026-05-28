@@ -261,15 +261,15 @@ export default function GradebookImport() {
 
       <section style={{ display: "grid", gap: 16 }}>
         <div style={box}>
-          <h2 style={{ marginTop: 0 }}>בחר קובץ Gradebook</h2>
+          <h2 style={{ marginTop: 0 }}>בחר קובץ גליון ציונים (Gradebook)</h2>
           <p style={{ color: "#475569", lineHeight: 1.8 }}>בחר קובץ XLSX / CSV / ODS אמיתי שיוצא ממודל.</p>
           <button type="button" style={button} onClick={() => fileRef.current?.click()} disabled={busy}>
-            {busy ? "מעבד..." : "בחר קובץ Gradebook"}
+            {busy ? "מעבד..." : "בחר קובץ גליון ציונים"}
           </button>
         </div>
 
         <div style={box}>
-          <h2 style={{ marginTop: 0 }}>או הדבק טבלת Gradebook</h2>
+          <h2 style={{ marginTop: 0 }}>או הדבק את טבלת הציונים</h2>
           <textarea
             value={pastedText}
             onChange={(e) => setPastedText(e.target.value)}
