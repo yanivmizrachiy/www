@@ -21,7 +21,7 @@ import { formatTeacherDateDmyShort } from "@/lib/teacherDateFormat";
 // presentation - the underlying truth/capability logic is unchanged.
 type AutoSyncStatus = "idle" | "syncing" | "success" | "auth-failed" | "network-failed" | "empty";
 
-function useAutoSyncStatus() {
+function useAutoSyncStatus(onSuccess?: () => void) {
   const [status, setStatus] = useState<AutoSyncStatus>("idle");
   const [lastError, setLastError] = useState<string | null>(null);
   const [retryNonce, setRetryNonce] = useState(0);
@@ -47,6 +47,11 @@ function useAutoSyncStatus() {
         if (!alive) return;
         if (syncRes.ok) {
           setStatus("success");
+          // CRITICAL: refresh the overview counts now that the roster is saved.
+          // Without this, the dashboard's student count was fetched once on mount
+          // (before the sync finished) and stayed at 0 until a manual refresh -
+          // the "59 -> 0" race condition. Refreshing on success fixes it.
+          onSuccess?.();
         } else if (syncRes.status === 401 || syncRes.status === 403) {
           setStatus("auth-failed");
           setLastError(`קוד ${syncRes.status} — האימות אל מודל לא הצליח. נסה לפתוח את הכלי שוב מתוך מודל, או השתמש בייבוא ידני.`);
@@ -61,6 +66,9 @@ function useAutoSyncStatus() {
       }
     })();
     return () => { alive = false; };
+    // onSuccess intentionally omitted from deps: it's a stable refresh callback
+    // and we only want this effect to run on mount + explicit retry.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [retryNonce]);
 
   return { status, lastError, retry: () => setRetryNonce(n => n + 1) };
@@ -288,11 +296,11 @@ function ActionCard({ to, marker, icon: Icon, title, value, unit }: { to: string
 
 export default function Dashboard() {
   const { session, site } = useLtiSession();
-  const { data, loading, error } = useImportsOverview();
+  const { data, loading, error, refresh } = useImportsOverview();
   const syncStatus = useSyncStatus();
   const teachers = useDashboardTeachers();
   const sourceStatus = useSourceStatus();
-  const autoSync = useAutoSyncStatus();
+  const autoSync = useAutoSyncStatus(refresh);
   const nextAction = useMemo(() => computeNextAction(data ?? null, sourceStatus), [data, sourceStatus]);
   const hasSession = Boolean(session);
   // "—" = no session/no source; "..." = loading; number = real value (0 is real zero)
@@ -302,6 +310,16 @@ export default function Dashboard() {
     if (!data) return "—";
     return n ?? 0;
   };
+  // Students card: while auto-sync is still running and the count is 0, show a
+  // syncing indicator instead of a misleading "0". Once sync succeeds, refresh()
+  // updates data and the real number shows.
+  const studentsValue = (() => {
+    if (!hasSession) return "—";
+    if (loading) return "...";
+    const count = data?.students_count ?? 0;
+    if (count === 0 && (autoSync.status === "syncing" || autoSync.status === "idle")) return "מסנכרן…";
+    return count;
+  })();
   const realActivitiesCount = hasSession && data && !loading
     ? Math.max(data.tasks_count || 0, data.grade_items_count || 0)
     : loading ? "..." : "—";
@@ -385,7 +403,7 @@ export default function Dashboard() {
       </section>
 
       <section className="grid gap-5 lg:grid-cols-4" aria-label="כפתורי פעולה ראשיים בעמוד הבית החכם">
-        <ActionCard to="/students" marker="MTH_DASHBOARD_MAIN_PARTICIPANTS_BUTTON_V1" icon={Users} title="תלמידים" value={v(data?.students_count)} unit="תלמידים" />
+        <ActionCard to="/students" marker="MTH_DASHBOARD_MAIN_PARTICIPANTS_BUTTON_V1" icon={Users} title="תלמידים" value={studentsValue} unit="תלמידים" />
         <ActionCard to="/tasks" marker="MTH_DASHBOARD_MAIN_ACTIVITIES_BUTTON_V1" icon={ClipboardList} title="פרקים ופעילויות" value={realActivitiesCount} unit={realActivitiesUnit} />
         <ActionCard to="/grades" marker="MTH_DASHBOARD_MAIN_GRADES_BUTTON_V1" icon={GraduationCap} title="ציונים" value={v(data?.grades_count)} unit="ציונים" />
         <a href="#all-actions-menu" className="MTH_DASHBOARD_MAIN_ALL_BUTTON_V1 MTH_DASHBOARD_DARK_BLUE_CARD_V1 rounded-3xl border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-6 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]"><Database className="mb-3 h-10 w-10" /><div className="text-2xl font-black leading-tight tracking-tight sm:text-3xl">כל השאר</div><div className="mt-3 inline-flex rounded-full border border-white/25 bg-white/15 px-4 py-1.5 text-sm font-black text-white shadow-lg">תפריט</div></a>
