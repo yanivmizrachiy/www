@@ -2,8 +2,9 @@ import { useCallback, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { SafePage } from "@/components/SafePage";
 import { parseMoodleFile, type ReportType } from "@/lib/moodleImport";
-import { getLtiToken } from "@/hooks/useLtiSession";
-import { UploadCloud, FileCheck2, CheckCircle2, XCircle, AlertTriangle, Loader2, ArrowLeft } from "lucide-react";
+import { getLtiToken, useLtiSession } from "@/hooks/useLtiSession";
+import { MOODLE_REPORTS, buildMoodleReportUrl } from "@/lib/moodleReportLinks";
+import { UploadCloud, FileCheck2, CheckCircle2, XCircle, AlertTriangle, Loader2, ArrowLeft, ExternalLink } from "lucide-react";
 
 // MTH_SMART_IMPORT_ASSISTANT_V1
 // One drop zone for ALL Moodle reports. The teacher drags any exported file
@@ -48,6 +49,9 @@ export default function Page() {
   const [busy, setBusy] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { session, site } = useLtiSession();
+  const courseId = session?.course_id ?? null;
+  const moodleBase = site?.site_url ?? null;
 
   const importOne = useCallback(async (file: File): Promise<FileResult> => {
     const base: FileResult = {
@@ -203,17 +207,39 @@ export default function Page() {
           </section>
         )}
 
-        <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700">
-          <div className="mb-1 flex items-center gap-2 font-extrabold">
+        <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className="mb-1 flex items-center gap-2 text-sm font-extrabold text-slate-700">
             <AlertTriangle className="h-4 w-4 text-amber-600" />
-            איך משיגים את הקבצים בקלות
+            הורד דוח מ-Moodle בלחיצה אחת
           </div>
-          <p>
-            לא בטוח איזה דוח חסר ומאיפה להוריד אותו? עבור ל-
-            <Link to="/missing-data" className="font-bold text-primary hover:underline"> מה חסר</Link>,
-            שם יש קישורים ישירים לדוחות ה-Moodle המדויקים של הקורס שלך — לחיצה אחת פותחת את הדוח להורדה,
-            ואז גוררים את הקובץ לכאן.
+          <p className="mb-3 text-xs leading-6 text-slate-600">
+            לחיצה פותחת את הדוח המדויק במודל בלשונית חדשה — מורידים שם את הקובץ, וגוררים אותו לכאן.
           </p>
+          {courseId && moodleBase ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {MOODLE_REPORTS.map((r) => {
+                const url = buildMoodleReportUrl(moodleBase, courseId, r);
+                if (!url) return null;
+                return (
+                  <a
+                    key={r.key}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 transition hover:border-primary hover:text-primary"
+                  >
+                    <span className="truncate">{r.title}</span>
+                    <ExternalLink className="h-4 w-4 shrink-0 opacity-60" />
+                  </a>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-xs text-slate-500">
+              פתח את הכלי מתוך המרחב במודל כדי לקבל קישורי הורדה ישירים, או עבור ל-
+              <Link to="/missing-data" className="font-bold text-primary hover:underline"> מה חסר</Link>.
+            </p>
+          )}
         </section>
       </div>
     </SafePage>
