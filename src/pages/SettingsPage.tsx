@@ -230,7 +230,7 @@ export default function SettingsPage() {
             />
             <StatusLine
               label="Web Services status"
-              value={wsStatus?.mode || wsStatus?.error || "לא התקבל"}
+              value={wsStatus?.mode === "moodle-web-services-automatic-readiness" ? "בדיקת תקינות מוכנה" : (wsStatus?.mode || wsStatus?.error || "לא התקבל")}
               tone={wsStatus?.ok ? (wsConfigured ? "green" : "orange") : "red"}
             />
             <StatusLine

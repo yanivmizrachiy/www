@@ -65,7 +65,7 @@ function plainHe(text: string | null | undefined): string {
     [/MOODLE_WS_TOKEN/g, "הרשאת חיבור אוטומטי"],
     [/Web Services/gi, "חיבור אוטומטי"],
     [/REST protocol|REST/gi, "חיבור אוטומטי"],
-    [/\bAGS\b/g, "שירות הציונים של Moodle"],
+    [/\bAGS\b/g, "שירות הציונים של Moodle"], [/Moodle ישלח AGS בהפעלה חיה/g, "כאשר Moodle יחשוף את הרשאת הציונים, הם יישלפו אוטומטית"],
     [/\bNRPS\b/g, "רשימת המשתתפים של Moodle"],
     [/\btoken\b/gi, "הרשאה"],
     [/\bRender\b/g, "השרת"],
