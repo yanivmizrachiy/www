@@ -3,6 +3,7 @@ import { AlertCircle, ArrowRight, FileUp, RefreshCw, ExternalLink } from "lucide
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSyncStatus, type SyncStatus } from "@/hooks/useSyncStatus";
+import { useImportsOverview } from "@/hooks/useImports";
 import { useLtiSession } from "@/hooks/useLtiSession";
 import { MOODLE_REPORTS, buildMoodleReportUrl } from "@/lib/moodleReportLinks";
 
@@ -29,14 +30,36 @@ const gateInfo: Record<keyof SyncStatus["capabilities"], { title: string; report
   },
 };
 
-function isAvailable(value: string | undefined) {
-  return value === "available";
+// MTH_MISSING_DATA_SCOPED_TRUTH_V1
+function isAvailableScoped(
+  key: keyof SyncStatus["capabilities"],
+  globalValue: string | undefined,
+  scoped: { students: number; grades: number; tasks: number; logs: number } | null
+): boolean {
+  if (globalValue !== "available") return false;
+  if (!scoped) return false;
+  switch (key) {
+    case "participants": return scoped.students > 0;
+    case "tasks":        return scoped.tasks > 0;
+    case "grades":       return scoped.grades > 0;
+    case "logs":         return scoped.logs > 0;
+    default:             return false;
+  }
 }
 
 export default function MissingData() {
   const sync = useSyncStatus();
   const status = sync.data;
+  const overview = useImportsOverview();
   const { session, site } = useLtiSession();
+  const scoped = overview.data
+    ? {
+        students: overview.data.students_count ?? 0,
+        grades: (overview.data.grade_items_count ?? 0) + (overview.data.grades_count ?? 0),
+        tasks: (overview.data.chapters_count ?? 0) + (overview.data.tasks_count ?? 0),
+        logs: overview.data.log_events_count ?? 0,
+      }
+    : null;
   const courseId = session?.course_id ?? null;
   const base = site?.site_url ?? null;
   const keys = Object.keys(gateInfo) as Array<keyof SyncStatus["capabilities"]>;
@@ -76,7 +99,7 @@ export default function MissingData() {
       <section className="grid gap-4 md:grid-cols-2">
         {keys.map((key) => {
           const info = gateInfo[key];
-          const available = isAvailable(status?.capabilities?.[key]);
+          const available = isAvailableScoped(key, status?.capabilities?.[key], scoped);
           return (
             <Card key={key} className={available ? "border-status-proven/30 bg-status-proven-bg/10" : "border-status-missing/30 bg-status-missing-bg/10"}>
               <CardHeader>
