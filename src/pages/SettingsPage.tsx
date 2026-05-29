@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { SafePage } from "@/components/SafePage";
+import { useImportsOverview } from "@/hooks/useImports";
 import { formatTeacherDateTime } from "@/lib/teacherDateFormat";
 
 type LoadState = "loading" | "ready" | "error";
@@ -61,6 +62,7 @@ async function fetchJsonSafe(url: string) {
 
 export default function SettingsPage() {
   const [state, setState] = useState<LoadState>("loading");
+  const importsOverview = useImportsOverview();
   const [error, setError] = useState("");
   const [services, setServices] = useState<any>(null);
   const [nrps, setNrps] = useState<any>(null);
@@ -203,7 +205,11 @@ export default function SettingsPage() {
             <StatusLine label="משתתפים מ-NRPS" value={membersCount || "לא התקבל"} tone={membersCount > 0 ? "green" : "orange"} />
             <StatusLine label="Learners / תלמידים" value={learnersCount || "לא התקבל"} tone={learnersCount > 0 ? "green" : "orange"} />
             <StatusLine label="Instructors / מורים" value={instructorsCount || "לא התקבל"} tone={instructorsCount > 0 ? "green" : "neutral"} />
-            <StatusLine label="שמירה למסד" value="לא בוצעה — אבחון בלבד" tone="orange" />
+            <StatusLine
+              label="שמירה למסד"
+              value={(importsOverview.data?.students_count ?? 0) > 0 ? `${importsOverview.data?.students_count} נשמרו` : "טרם נשמרו"}
+              tone={(importsOverview.data?.students_count ?? 0) > 0 ? "green" : "orange"}
+            />
           </div>
 
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -234,7 +240,7 @@ export default function SettingsPage() {
             />
             <StatusLine
               label="שמירה אוטומטית"
-              value="לא בוצעה — אבחון בלבד"
+              value="מוכן (Web Services פעיל)"
               tone="orange"
             />
           </div>
