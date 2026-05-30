@@ -250,7 +250,8 @@ function contextPayload(session) {
       id: session.sessionToken,
       course_id: numberOrZero(session.courseId),
       course_title: session.courseTitle || session.spaceTitle || null,
-      moodle_username: session.moodleUsername || session.teacherName || null,
+      teacher_display_name: session.teacherName || null,
+      moodle_username: session.moodleUsername || null,
       moodle_user_id: numberOrZero(session.moodleUserId),
       role: session.role || "teacher",
       launched_at: session.createdAt,
@@ -3224,7 +3225,7 @@ app.post(CANONICAL_LTI_ENDPOINT, async (req, res) => {
       spaceId: space.id,
       courseId: body.context_id ?? null,
       courseTitle: body.context_title || space.title,
-      moodleUsername: body.ext_user_username || body.lis_person_name_full || body.user_id || null,
+      moodleUsername: body.ext_user_username || null,
       moodleUserId: body.user_id ?? null,
       role: roles || "teacher",
       siteId: stableId("site", body.tool_consumer_instance_guid || body.tool_consumer_instance_url || "moodlemoe"),
@@ -3241,7 +3242,7 @@ app.post(CANONICAL_LTI_ENDPOINT, async (req, res) => {
     recordLaunchCapture(body, verification.code);
     saveStore();
 
-    await recordSupabaseSession({ session_token: sessionToken, course_id: body.context_id, course_title: body.context_title, moodle_username: body.ext_user_username || body.lis_person_name_full || body.user_id, role: "teacher", created_at: new Date().toISOString() });
+    await recordSupabaseSession({ session_token: sessionToken, course_id: body.context_id, course_title: body.context_title, moodle_username: body.ext_user_username || null, role: "teacher", created_at: new Date().toISOString() });
 
     setSession(res, session);
     noStore(res);
@@ -5329,6 +5330,7 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`moodle-teacher-hub running on port ${PORT}`);
   console.log(`canonical LTI endpoint: ${CANONICAL_LTI_ENDPOINT}`);
 });
+
 
 
 

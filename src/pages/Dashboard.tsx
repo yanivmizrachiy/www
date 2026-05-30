@@ -35,8 +35,15 @@ function useAutoSyncStatus(onSuccess?: () => void) {
         const previewRes = await fetch("/api/lti13/nrps-preview", { headers: { Accept: "application/json" } });
         const previewJson = await previewRes.json().catch(() => null);
         if (!alive) return;
+        if (!previewRes.ok) {
+          const reason = previewJson?.error ? ` (${previewJson.error})` : "";
+          if (previewRes.status === 401 || previewRes.status === 403) setStatus("auth-failed");
+          else setStatus("network-failed");
+          setLastError(`NRPS לא זמין במרחב הזה${reason}. אם הכלי הוגדר כ-LTI 1.0/1.1 בלבד, Moodle לא שולח רשימת תלמידים אוטומטית. יש להשתמש בייבוא Participants או להתקין כלי LTI 1.3 עם NRPS.`);
+          return;
+        }
         const named = Array.isArray(previewJson?.members_named) ? previewJson.members_named : [];
-        if (!named.length) { setStatus("empty"); return; }
+        if (!named.length) { setStatus("empty"); setLastError("NRPS זמין אך לא התקבלו שמות משתתפים ממודל."); return; }
         const ltiToken = getLtiToken();
         const syncRes = await fetch("/api/imports/nrps-sync", {
           method: "POST",
@@ -163,6 +170,43 @@ function useDashboardTeachers() {
   }, []);
 
   return { count, names, state };
+}
+
+
+// MTH_SAFE_TEACHER_DISPLAY_V1
+// Never show numeric Moodle identifiers / Teudat Zehut as the teacher visible name.
+function normalizeTeacherCandidate(value: unknown) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function isSafeHumanDisplayName(value: unknown) {
+  const text = normalizeTeacherCandidate(value);
+  if (!text) return false;
+  if (/שם מורה לא התקבל/i.test(text)) return false;
+  if (!/[A-Za-z\u0590-\u05FF]/.test(text)) return false;
+  const letters = (text.match(/[A-Za-z\u0590-\u05FF]/g) || []).length;
+  const digits = (text.match(/\d/g) || []).length;
+  if (digits >= Math.max(1, letters)) return false;
+  if (/^\d{5,}$/.test(text.replace(/\D/g, ""))) return false;
+  return true;
+}
+
+function safeTeacherDisplayName(
+  session: { teacher_display_name?: string | null; moodle_username?: string | null } | null,
+  nrpsNames: string[]
+) {
+  const candidates = [
+    session?.teacher_display_name,
+    ...(Array.isArray(nrpsNames) ? nrpsNames : []),
+    session?.moodle_username,
+  ];
+
+  for (const candidate of candidates) {
+    const text = normalizeTeacherCandidate(candidate);
+    if (isSafeHumanDisplayName(text)) return text;
+  }
+
+  return "";
 }
 
 function SourceRow({ label, hint, status }: { label: string; hint: string; status: SourceStatus }) {
@@ -329,7 +373,7 @@ export default function Dashboard() {
   useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 1000); return () => window.clearInterval(timer); }, []);
 
   const updatedAtText = useMemo(() => formatTeacherDateDmyShort(now), [now]);
-  const teacherName = session?.moodle_username || "—";
+  const teacherName = safeTeacherDisplayName(session, teachers.names) || "שם מורה לא התקבל ממודל";
   const courseName = session?.course_title || site?.site_name || "—";
 
   const [syncing, setSyncing] = useState(false);
@@ -370,13 +414,13 @@ export default function Dashboard() {
               <div className={`h-2 w-2 rounded-full ${hasSession ? "bg-emerald-400" : "bg-amber-400"} animate-pulse`} />{hasSession ? "מחובר מתוך Moodle" : "נדרשת פתיחה מתוך Moodle"}
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-2">
-              <h1 className="break-words text-3xl font-black tracking-tight text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)] sm:text-4xl lg:text-5xl">{teachers.names && teachers.names.length > 0 ? "שלום " + ((teachers.names.find(function(n) { var u = session && session.moodle_username ? session.moodle_username.toLowerCase().split(".")[0] : ""; return u && n.toLowerCase().indexOf(u) >= 0; }) || teachers.names[0]).split(" ")[0]) : "המודל החכם"}</h1>
+              <h1 className="break-words text-3xl font-black tracking-tight text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)] sm:text-4xl lg:text-5xl">המודל החכם</h1>
               <p className="text-base font-bold text-cyan-200/90 lg:text-lg">לוח הבקרה של המורה</p>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} className="grid min-w-0 gap-3 xl:grid-cols-3">
               <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
                 <div className="text-xs font-bold text-cyan-200/80">{teachers.names.length > 1 ? "מורים" : "מורה"}</div>
-                <div className="mt-0.5 truncate text-lg font-black text-white">{teachers.names.length > 0 ? teachers.names.join(" · ") : teacherName}</div>
+                <div className="mt-0.5 truncate text-lg font-black text-white">{teacherName}</div>
               </div>
               <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
                 <div className="text-xs font-bold text-cyan-200/80">מרחב הלימוד</div>
@@ -486,3 +530,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
