@@ -4184,7 +4184,8 @@ app.get("/api/lti13/token-matrix", async (req, res) => {
 
   try {
     const configuredTokenUrl = env("LTI13_TOKEN_URL");
-    const clientId = env("LTI13_CLIENT_ID");
+    const clientId = String(liveSession?.clientId || liveSession?.client_id || env("LTI13_CLIENT_ID"));
+    const deploymentIdForAssertion = String(liveSession?.deploymentId || liveSession?.deployment_id || env("LTI13_DEPLOYMENT_ID"));
     const keyId = env("LTI13_KEY_ID");
     const deploymentId = env("LTI13_DEPLOYMENT_ID");
     const privateKeyRaw = env("LTI13_PRIVATE_KEY_PEM");
@@ -4427,30 +4428,19 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
   }
 
   try {
-    const statusUrl = publicBaseUrl(req) + "/api/lti13/services-status";
-    const statusResponse = await fetch(statusUrl, { headers: { Accept: "application/json" } });
-    const statusText = await statusResponse.text();
-
-    let statusJson = null;
-    try {
-      statusJson = JSON.parse(statusText);
-    } catch {
-      return res.status(502).json({
-        ok: false,
-        mode: "lti13-nrps-preview-no-save",
-        stage: "services-status",
-        error: "SERVICES_STATUS_NOT_JSON",
-        http_status: statusResponse.status,
-        body_preview: nrpsPreviewSafeText(statusText),
-        privacy: {
-          no_secrets_returned: true,
-          no_student_names_returned: true,
-          no_save_performed: true
-        }
-      });
-    }
-
-    const membershipUrl = statusJson?.service_claims?.nrps?.context_memberships_url || "";
+    /* MTH_NRPS_CURRENT_LTI13_SESSION_V1
+   Use the current verified LTI 1.3 session directly.
+   Do not depend on global diagnostics/latest-session state.
+*/
+const liveSession = importSessionFromRequest(req) || sessionFromRequest(req);
+const liveServices = liveSession?.automaticServices || {};
+const membershipUrl = liveServices?.nrps?.context_memberships_url || "";
+const statusJson = {
+  has_latest_lti13_session: Boolean(liveSession),
+  has_nrps: Boolean(membershipUrl),
+  has_ags: Boolean(liveServices?.has_ags),
+  service_claims: liveServices
+};
     if (!statusJson?.has_latest_lti13_session || !membershipUrl) {
       return res.status(409).json({
         ok: false,
@@ -4511,7 +4501,8 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
       discoveryErrorPreview = nrpsPreviewSafeText(error?.message || error, 600);
     }
     /* YANIV_NRPS_TOKEN_DISCOVERY_FIX_20260509_END */
-    const clientId = env("LTI13_CLIENT_ID");
+    const clientId = String(liveSession?.clientId || liveSession?.client_id || env("LTI13_CLIENT_ID"));
+    const deploymentIdForAssertion = String(liveSession?.deploymentId || liveSession?.deployment_id || env("LTI13_DEPLOYMENT_ID"));
     const keyId = env("LTI13_KEY_ID");
     const privateKeyRaw = env("LTI13_PRIVATE_KEY_PEM");
     const privateKeyPem = privateKeyRaw.includes("\n")
@@ -4524,7 +4515,7 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
       iss: clientId,
       sub: clientId,
       aud: tokenUrl,
-      "https://purl.imsglobal.org/spec/lti/claim/deployment_id": env("LTI13_DEPLOYMENT_ID"),
+      "https://purl.imsglobal.org/spec/lti/claim/deployment_id": deploymentIdForAssertion,
       iat: now - 5,
       exp: now + 60,
       jti: crypto.randomUUID()
@@ -5365,6 +5356,7 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`moodle-teacher-hub running on port ${PORT}`);
   console.log(`canonical LTI endpoint: ${CANONICAL_LTI_ENDPOINT}`);
 });
+
 
 
 
