@@ -50,6 +50,7 @@ export interface SessionInfo {
   course_id: number;
   course_title: string | null;
   moodle_username: string | null;
+  teacher_display_name: string | null;
   moodle_user_id: number | null;
   role: string | null;
   launched_at: string;
@@ -198,3 +199,4 @@ function buildEmptyDomains(): Record<DomainKey, DomainState> {
   });
   return out;
 }
+
