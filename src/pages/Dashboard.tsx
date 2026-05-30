@@ -286,9 +286,9 @@ function NextBestActionPanel({ action }: { action: NextAction | null }) {
 
 function ActionCard({ to, marker, icon: Icon, title, value, unit }: { to: string; marker: string; icon: any; title: string; value: number | string; unit: string }) {
   return (
-    <Link to={to} className={`${marker} MTH_DASHBOARD_DARK_BLUE_CARD_V1 rounded-3xl border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-6 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]`}>
+    <Link to={to} className={`${marker} MTH_DASHBOARD_DARK_BLUE_CARD_V1 block min-w-0 rounded-3xl border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-6 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]`}>
       <Icon className="mb-3 h-10 w-10" />
-      <div className="text-2xl font-black leading-tight tracking-tight sm:text-3xl">{title}</div>
+      <div className="break-words text-2xl font-black leading-tight tracking-tight sm:text-3xl">{title}</div>
       <div className="mt-3 inline-flex rounded-full border border-white/25 bg-white/15 px-4 py-1.5 text-sm font-black text-white shadow-lg">{value} {unit}</div>
     </Link>
   );
@@ -360,49 +360,49 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="MTH_DASHBOARD_ACTION_HUB_V1 space-y-8" dir="rtl">
+    <div className="MTH_DASHBOARD_ACTION_HUB_V1 w-full min-w-0 max-w-full space-y-8 overflow-x-hidden" dir="rtl">
       <span className="sr-only">MTH_DASHBOARD_ACTION_ONLY_NO_EXPLAINER_TEXT_V1</span>
       <AutoSyncBanner status={autoSync.status} lastError={autoSync.lastError} onRetry={autoSync.retry} />
-      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#06152f] via-[#082b66] to-[#0b4f8f] p-8 text-white shadow-[0_30px_90px_rgba(6,21,47,0.45)] lg:p-12">
-        <div className="relative z-10 flex flex-wrap items-center justify-between gap-6">
-          <div className="space-y-5 max-w-4xl">
+      <section className="relative max-w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#06152f] via-[#082b66] to-[#0b4f8f] p-5 text-white shadow-[0_30px_90px_rgba(6,21,47,0.45)] sm:p-7 lg:p-10">
+        <div className="relative z-10 flex min-w-0 flex-col items-stretch gap-6 xl:flex-row xl:items-center xl:justify-between">
+          <div className="min-w-0 flex-1 space-y-5">
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-[#0b2b5c]/90 px-4 py-2 text-sm font-black text-white shadow-lg backdrop-blur-md">
               <div className={`h-2 w-2 rounded-full ${hasSession ? "bg-emerald-400" : "bg-amber-400"} animate-pulse`} />{hasSession ? "מחובר מתוך Moodle" : "נדרשת פתיחה מתוך Moodle"}
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-2">
-              <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)] sm:text-4xl lg:text-5xl">{teachers.names && teachers.names.length > 0 ? "שלום " + ((teachers.names.find(function(n) { var u = session && session.moodle_username ? session.moodle_username.toLowerCase().split(".")[0] : ""; return u && n.toLowerCase().indexOf(u) >= 0; }) || teachers.names[0]).split(" ")[0]) : "המודל החכם"}</h1>
+              <h1 className="break-words text-3xl font-black tracking-tight text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)] sm:text-4xl lg:text-5xl">{teachers.names && teachers.names.length > 0 ? "שלום " + ((teachers.names.find(function(n) { var u = session && session.moodle_username ? session.moodle_username.toLowerCase().split(".")[0] : ""; return u && n.toLowerCase().indexOf(u) >= 0; }) || teachers.names[0]).split(" ")[0]) : "המודל החכם"}</h1>
               <p className="text-base font-bold text-cyan-200/90 lg:text-lg">לוח הבקרה של המורה</p>
             </motion.div>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} className="grid gap-3 md:grid-cols-3">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} className="grid min-w-0 gap-3 xl:grid-cols-3">
               <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
                 <div className="text-xs font-bold text-cyan-200/80">{teachers.names.length > 1 ? "מורים" : "מורה"}</div>
-                <div className="mt-0.5 text-lg font-black text-white">{teachers.names.length > 0 ? teachers.names.join(" · ") : teacherName}</div>
+                <div className="mt-0.5 truncate text-lg font-black text-white">{teachers.names.length > 0 ? teachers.names.join(" · ") : teacherName}</div>
               </div>
               <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
                 <div className="text-xs font-bold text-cyan-200/80">מרחב הלימוד</div>
-                <div className="mt-0.5 text-lg font-black text-white">{courseName}</div>
+                <div className="mt-0.5 truncate text-lg font-black text-white">{courseName}</div>
               </div>
               <div className="flex items-center gap-2 rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
                 <Calendar className="h-5 w-5 text-cyan-200/80" />
                 <div>
                   <div className="text-xs font-bold text-cyan-200/80">עודכן</div>
-                  <div className="mt-0.5 text-lg font-black text-white">{updatedAtText}</div>
+                  <div className="mt-0.5 truncate text-lg font-black text-white">{updatedAtText}</div>
                 </div>
               </div>
             </motion.div>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24 }} className="flex flex-wrap gap-4 pt-2">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24 }} className="flex min-w-0 flex-wrap gap-3 pt-2">
               <Button size="lg" onClick={() => void handleSyncSpace()} disabled={syncing || syncStatus.running} className="bg-white text-[#06152f] hover:bg-white/90 font-black shadow-xl"><RefreshCw className={(syncing || syncStatus.running) ? "h-4 w-4 animate-spin" : "h-4 w-4"} />סנכרן מרחב</Button>
               <Button asChild size="lg" className="border border-white/35 bg-[#0f3d75]/90 text-white hover:bg-[#15559a] font-black shadow-lg"><Link to="/smart-import" className="flex items-center gap-2"><Import className="h-4 w-4" />ייבוא חכם</Link></Button>
               <Button asChild variant="outline" size="lg" className="border-white/40 bg-[#06152f]/55 text-white hover:bg-[#0f3d75]/90 font-black"><Link to="/reports">דוחות</Link></Button>
             </motion.div>
           </div>
-          <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.35, type: "spring" }}><StatusBadge status={hasSession ? "proven" : "missing"} className="scale-150 shadow-2xl" /></motion.div>
+          <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.35, type: "spring" }}><StatusBadge status={hasSession ? "proven" : "missing"} className="self-start shadow-2xl xl:scale-125 2xl:scale-150" /></motion.div>
         </div>
         <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-cyan-300/15 blur-3xl" />
         <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-blue-300/20 blur-3xl" />
       </section>
 
-      <section className="grid gap-5 lg:grid-cols-4" aria-label="כפתורי פעולה ראשיים בעמוד הבית החכם">
+      <section className="grid min-w-0 gap-5 sm:grid-cols-2 xl:grid-cols-4" aria-label="כפתורי פעולה ראשיים בעמוד הבית החכם">
         <div className="relative">
           <ActionCard to="/students" marker="MTH_DASHBOARD_MAIN_PARTICIPANTS_BUTTON_V1" icon={Users} title="תלמידים" value={studentsValue} unit="תלמידים" />
           {(data?.students_count ?? 0) === 0 && autoSync.status !== "syncing" && (
@@ -418,7 +418,7 @@ export default function Dashboard() {
         </div>
         <ActionCard to="/tasks" marker="MTH_DASHBOARD_MAIN_ACTIVITIES_BUTTON_V1" icon={ClipboardList} title="פרקים ופעילויות" value={realActivitiesCount} unit={realActivitiesUnit} />
         <ActionCard to="/grades" marker="MTH_DASHBOARD_MAIN_GRADES_BUTTON_V1" icon={GraduationCap} title="ציונים" value={v(data?.grades_count)} unit="ציונים" />
-        <a href="#all-actions-menu" className="MTH_DASHBOARD_MAIN_ALL_BUTTON_V1 MTH_DASHBOARD_DARK_BLUE_CARD_V1 rounded-3xl border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-6 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]"><Database className="mb-3 h-10 w-10" /><div className="text-2xl font-black leading-tight tracking-tight sm:text-3xl">כל השאר</div><div className="mt-3 inline-flex rounded-full border border-white/25 bg-white/15 px-4 py-1.5 text-sm font-black text-white shadow-lg">תפריט</div></a>
+        <a href="#all-actions-menu" className="MTH_DASHBOARD_MAIN_ALL_BUTTON_V1 MTH_DASHBOARD_DARK_BLUE_CARD_V1 rounded-3xl border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-6 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]"><Database className="mb-3 h-10 w-10" /><div className="break-words text-2xl font-black leading-tight tracking-tight sm:text-3xl">כל השאר</div><div className="mt-3 inline-flex rounded-full border border-white/25 bg-white/15 px-4 py-1.5 text-sm font-black text-white shadow-lg">תפריט</div></a>
       </section>
 
       {error && <div className="rounded-xl border border-status-blocked/30 bg-status-blocked-bg/10 p-4 flex gap-3 text-sm text-status-blocked items-start"><AlertCircle className="h-5 w-5 mt-0.5 shrink-0" /><div><div className="font-bold">שגיאה בסנכרון נתונים</div><p className="opacity-80 mt-1">{error}</p></div></div>}

@@ -7,7 +7,7 @@ const Ctx = React.createContext<{state:SidebarState; toggle:()=>void}>({state:"e
 export function SidebarProvider({children}:{children:React.ReactNode}) { const [state,setState]=React.useState<SidebarState>("expanded"); return <Ctx.Provider value={{state,toggle:()=>setState(s=>s==="expanded"?"collapsed":"expanded")}}>{children}</Ctx.Provider>; }
 export const useSidebar = () => React.useContext(Ctx);
 export function SidebarTrigger({className}:{className?:string}) { const {toggle}=useSidebar(); return <Button variant="ghost" size="sm" className={className} onClick={toggle}>☰</Button>; }
-export function Sidebar({children,className}:{children:React.ReactNode; className?:string; side?:"left"|"right"; collapsible?:"icon"}) { const {state}=useSidebar(); return <aside className={cn("min-h-screen border-l bg-sidebar text-sidebar-foreground transition-all", state==="collapsed"?"w-16":"w-72", className)}>{children}</aside>; }
+export function Sidebar({children,className}:{children:React.ReactNode; className?:string; side?:"left"|"right"; collapsible?:"icon"}) { const {state}=useSidebar(); return <aside className={cn("min-h-screen shrink-0 border-l bg-sidebar text-sidebar-foreground transition-all", state==="collapsed"?"w-16":"w-72", className)}>{children}</aside>; }
 export const SidebarHeader = ({className,...p}:React.HTMLAttributes<HTMLDivElement>) => <div className={className} {...p}/>;
 export const SidebarContent = ({className,...p}:React.HTMLAttributes<HTMLDivElement>) => <div className={cn("p-2",className)} {...p}/>;
 export const SidebarFooter = ({className,...p}:React.HTMLAttributes<HTMLDivElement>) => <div className={className} {...p}/>;

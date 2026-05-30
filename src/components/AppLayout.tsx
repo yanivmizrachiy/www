@@ -22,11 +22,11 @@ export default function AppLayout() {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-gradient-surface" dir="rtl">
+      <div className="flex min-h-screen w-full max-w-full overflow-x-hidden bg-gradient-surface" dir="rtl">
         <AppSidebar />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b bg-background/80 px-4 backdrop-blur-md">
-            <div className="flex items-center gap-3">
+        <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
+          <header className="sticky top-0 z-30 flex h-14 min-w-0 items-center justify-between gap-3 overflow-hidden border-b bg-background/80 px-4 backdrop-blur-md">
+            <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
               <SidebarTrigger className="ml-1" />
               <div className="flex flex-col leading-tight sm:flex-row sm:items-center sm:gap-4">
                 <span className="flex items-center gap-1.5 text-sm font-bold text-foreground">
@@ -45,8 +45,8 @@ export default function AppLayout() {
             </div>
           </header>
 
-          <main className="flex-1 animate-fade-in p-4 sm:p-6 lg:p-8 xl:p-10">
-            <div className="mx-auto w-full max-w-[1600px]">
+          <main className="min-w-0 flex-1 overflow-x-hidden animate-fade-in p-3 sm:p-5 lg:p-7 xl:p-9">
+            <div className="mx-auto min-w-0 w-full max-w-[1600px]">
               <Outlet />
             </div>
           </main>
