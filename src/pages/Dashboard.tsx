@@ -370,7 +370,7 @@ export default function Dashboard() {
               <div className={`h-2 w-2 rounded-full ${hasSession ? "bg-emerald-400" : "bg-amber-400"} animate-pulse`} />{hasSession ? "מחובר מתוך Moodle" : "נדרשת פתיחה מתוך Moodle"}
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-2">
-              <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)] sm:text-4xl lg:text-5xl">{teachers.names && teachers.names.length > 0 ? "שלום " + (teachers.names[0].split(" ")[0]) : "המודל החכם"}</h1>
+              <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)] sm:text-4xl lg:text-5xl">{teachers.names && teachers.names.length > 0 ? "שלום " + ((teachers.names.find(function(n) { var u = session && session.moodle_username ? session.moodle_username.toLowerCase().split(".")[0] : ""; return u && n.toLowerCase().indexOf(u) >= 0; }) || teachers.names[0]).split(" ")[0]) : "המודל החכם"}</h1>
               <p className="text-base font-bold text-cyan-200/90 lg:text-lg">לוח הבקרה של המורה</p>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} className="grid gap-3 md:grid-cols-3">
