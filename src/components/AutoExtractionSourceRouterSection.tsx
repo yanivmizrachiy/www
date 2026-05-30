@@ -69,6 +69,11 @@ function plainHe(text: string | null | undefined): string {
     [/\bNRPS\b/g, "רשימת המשתתפים של Moodle"],
     [/\btoken\b/gi, "הרשאה"],
     [/\bRender\b/g, "השרת"],
+    [/core_completion/g, "שירות השלמת פעילויות"],
+    [/core_webservice/g, "שירות חיבור"],
+    [/Assignment and Grade Services?/gi, "שירות הציונים"],
+    [/LTI Advantage/g, "חיבור מתקדם"],
+    [/namesroleservice/gi, "שירות רשימת תלמידים"],
     [/\bendpoint\b/gi, "שירות"],
     [/\bscope[s]?\b/gi, "הרשאות"],
   ];

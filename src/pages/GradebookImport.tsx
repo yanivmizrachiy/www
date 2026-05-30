@@ -261,7 +261,12 @@ export default function GradebookImport() {
 
       <section style={{ display: "grid", gap: 16 }}>
         <div style={box}>
-          <h2 style={{ marginTop: 0 }}>בחר קובץ גליון ציונים (Gradebook)</h2>
+          <section style={{ background: "linear-gradient(135deg, #06152f 0%, #0b3d91 50%, #0e7490 100%)", color: "white", padding: "32px", borderRadius: "1.5rem", marginBottom: "24px", boxShadow: "0 20px 60px rgba(6, 21, 47, 0.3)" }}>
+        <div style={{ fontSize: "14px", fontWeight: 700, opacity: 0.8, marginBottom: "8px" }}>ייבוא נתוני Moodle</div>
+        <h1 style={{ fontSize: "32px", fontWeight: 900, margin: 0, marginBottom: "8px" }}>ייבוא ציונים (Gradebook)</h1>
+        <p style={{ fontSize: "14px", opacity: 0.85, margin: 0 }}>העלאת קובץ גליון ציונים ממודל, בדיקה מקדימה ושמירה מאושרת בלבד.</p>
+      </section>
+      <h2 style={{ marginTop: 0 }}>בחר קובץ גליון ציונים (Gradebook)</h2>
           <p style={{ color: "#475569", lineHeight: 1.8 }}>בחר קובץ XLSX / CSV / ODS אמיתי שיוצא ממודל.</p>
           <button type="button" style={button} onClick={() => fileRef.current?.click()} disabled={busy}>
             {busy ? "מעבד..." : "בחר קובץ גליון ציונים"}
