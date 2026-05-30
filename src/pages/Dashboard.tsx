@@ -370,7 +370,7 @@ export default function Dashboard() {
               <div className={`h-2 w-2 rounded-full ${hasSession ? "bg-emerald-400" : "bg-amber-400"} animate-pulse`} />{hasSession ? "מחובר מתוך Moodle" : "נדרשת פתיחה מתוך Moodle"}
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-2">
-              <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)] sm:text-4xl lg:text-5xl">המודל החכם</h1>
+              <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)] sm:text-4xl lg:text-5xl">{teachers.names && teachers.names.length > 0 ? "שלום " + (teachers.names[0].split(" ")[0]) : "המודל החכם"}</h1>
               <p className="text-base font-bold text-cyan-200/90 lg:text-lg">לוח הבקרה של המורה</p>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} className="grid gap-3 md:grid-cols-3">
@@ -452,6 +452,20 @@ export default function Dashboard() {
         <StatCard label="לוגים" value={v(data?.log_events_count)} icon={Calendar} delay={0.6} />
       </section>
 
+      {sourceStatus && (
+        <section className="flex flex-wrap items-center gap-3 rounded-2xl border bg-background/60 p-4 text-sm" aria-label="סטטוס חיבור מהיר">
+          <span className="font-bold text-muted-foreground">מצב חיבור:</span>
+          <span className={"inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold " + (sourceStatus.nrps === "available" ? "bg-emerald-100 text-emerald-900" : "bg-slate-100 text-slate-600")}>
+            {sourceStatus.nrps === "available" ? "✓" : "○"} תלמידים אוטומטיים
+          </span>
+          <span className={"inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold " + (sourceStatus.ags === "available" ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900")}>
+            {sourceStatus.ags === "available" ? "✓" : "○"} ציונים אוטומטיים
+          </span>
+          <span className={"inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold " + (sourceStatus.moodle_ws === "available" ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900")}>
+            {sourceStatus.moodle_ws === "available" ? "✓" : "○"} שאיבה מלאה
+          </span>
+        </section>
+      )}
       <NextBestActionPanel action={nextAction} />
 
       {/* MTH_HONEST_SOURCE_STATUS_V1 — truthful "where does the data come from" panel */}
