@@ -4971,10 +4971,38 @@ function lti13VerifyCoreClaims(req, payload) {
   const messageType = lti13Claim(payload, "message_type");
   const version = lti13Claim(payload, "version");
 
+  const builtinRegistrations = [
+    { client_id: expectedClientId, deployment_id: expectedDeploymentId, label: "primary-env" },
+    { client_id: "yaMvBxOoDzpir3I", deployment_id: "6", label: "moodle-imported-course-lti13-v1" }
+  ];
+
+  const envRegistrations = String(process.env.LTI13_ALLOWED_REGISTRATIONS || "")
+    .split(/[,\n;]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => {
+      const parts = item.split(/[|:]/).map((part) => part.trim()).filter(Boolean);
+      return parts.length >= 2 ? { client_id: parts[0], deployment_id: parts[1], label: "env-allowlist" } : null;
+    })
+    .filter(Boolean);
+
+  const registrations = [...builtinRegistrations, ...envRegistrations]
+    .filter((item) => item && item.client_id && item.deployment_id)
+    .filter((item, index, arr) =>
+      arr.findIndex((other) =>
+        other.client_id === item.client_id && String(other.deployment_id) === String(item.deployment_id)
+      ) === index
+    );
+
+  const matchedRegistration = registrations.find((registration) =>
+    lti13AudContains(payload.aud, registration.client_id) &&
+    String(deploymentId || "") === String(registration.deployment_id)
+  );
+
   const checks = {
     issuer: payload.iss === expectedIssuer,
-    audience: lti13AudContains(payload.aud, expectedClientId),
-    deployment_id: String(deploymentId || "") === String(expectedDeploymentId),
+    audience: registrations.some((registration) => lti13AudContains(payload.aud, registration.client_id)),
+    deployment_id: !!matchedRegistration,
     message_type: messageType === "LtiResourceLinkRequest",
     version: version === "1.3.0",
     nonce_cookie_present: !!expectedNonce,
@@ -4988,20 +5016,27 @@ function lti13VerifyCoreClaims(req, payload) {
     checks,
     expected: {
       issuer: expectedIssuer,
-      client_id: expectedClientId,
-      deployment_id: expectedDeploymentId
+      registrations: registrations.map((registration) => ({
+        client_id: registration.client_id,
+        deployment_id: registration.deployment_id,
+        label: registration.label
+      }))
     },
     actual: {
       issuer: payload.iss || null,
       audience: payload.aud || null,
       deployment_id: deploymentId || null,
+      matched_registration: matchedRegistration ? {
+        client_id: matchedRegistration.client_id,
+        deployment_id: matchedRegistration.deployment_id,
+        label: matchedRegistration.label
+      } : null,
       message_type: messageType || null,
       version: version || null,
       nonce_present: !!payload.nonce
     }
   };
 }
-
 
 function lti13ExtractServiceClaims(payload) {
   const nrps =
@@ -5330,6 +5365,7 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`moodle-teacher-hub running on port ${PORT}`);
   console.log(`canonical LTI endpoint: ${CANONICAL_LTI_ENDPOINT}`);
 });
+
 
 
 
