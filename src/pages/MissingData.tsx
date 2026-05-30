@@ -99,6 +99,8 @@ export default function MissingData() {
       <section className="grid gap-4 md:grid-cols-2">
         {keys.map((key) => {
           const info = gateInfo[key];
+          // אם עדיין טוען - לא להציג "חסר" שמטעה. המורה רואה "טוען..." במקום
+          const isStillLoading = sync.loading || overview.loading;
           const available = isAvailableScoped(key, status?.capabilities?.[key], scoped);
           return (
             <Card key={key} className={available ? "border-status-proven/30 bg-status-proven-bg/10" : "border-status-missing/30 bg-status-missing-bg/10"}>
@@ -107,7 +109,7 @@ export default function MissingData() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className={available ? "font-bold text-status-proven" : "font-bold text-status-missing"}>
-                  {available ? "קיים מקור אמת" : "חסר מקור אמת"}
+                  {isStillLoading ? "טוען..." : (available ? "קיים מקור אמת" : "חסר מקור אמת")}
                 </div>
                 <p className="text-sm text-muted-foreground">{available ? "הנתונים כבר קיימים ואפשר לעבוד איתם במסכים הרלוונטיים." : info.why}</p>
                 <div className="rounded-xl bg-background/70 p-3 text-sm">
