@@ -32,7 +32,9 @@ function useAutoSyncStatus(onSuccess?: () => void) {
     setLastError(null);
     (async () => {
       try {
-        const previewRes = await fetch("/api/lti13/nrps-preview", { headers: { Accept: "application/json" } });
+        const ltiPreviewToken = getLtiToken();
+        const ltiPreviewUrl = "/api/lti13/nrps-preview" + (ltiPreviewToken ? "?t=" + encodeURIComponent(ltiPreviewToken) : "");
+        const previewRes = await fetch(ltiPreviewUrl, { headers: { Accept: "application/json" }, credentials: "include" });
         const previewJson = await previewRes.json().catch(() => null);
         if (!alive) return;
         if (!previewRes.ok) {
@@ -530,4 +532,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
 
