@@ -24,19 +24,14 @@ const navItems = [
 ];
 
 const toolItems = [
-  { title: "פרקים",           url: "/chapters",     icon: BookOpen },
-  { title: "משימות",          url: "/tasks",        icon: ListChecks },
-  { title: "ייבוא חכם",       url: "/smart-import", icon: Upload },
-  { title: "ייצוא",           url: "/export",       icon: Download },
-  { title: "אוטומציה ממודל",  url: "/automation",   icon: Zap },
-  { title: "אבחון",           url: "/missing-data", icon: AlertCircle },
-  { title: "בידוד נתונים",    url: "/isolation",    icon: Shield },
-  { title: "בדיקת יכולות",    url: "/capabilities", icon: Cpu },
+  { title: "ייבוא חכם",      url: "/smart-import", icon: Upload },
+  { title: "ייצוא",          url: "/export",       icon: Download },
+  { title: "מה חסר",         url: "/missing-data", icon: AlertCircle },
+  { title: "התקנה / Moodle", url: "/setup",        icon: Wrench },
 ];
 
 const supportItems = [
-  { title: "הגדרות",               url: "/settings", icon: Settings },
-  { title: "התקנה / חיבור Moodle", url: "/setup",    icon: Wrench },
+  { title: "הגדרות", url: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -171,3 +166,4 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+

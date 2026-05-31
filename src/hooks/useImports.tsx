@@ -37,6 +37,10 @@ export interface ImportsOverview {
 
 type Rpc = (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
 
+// MTH_IMPORTS_CACHE_V1
+let _cache: ImportsOverview | null = null;
+let _cacheToken = "";
+
 export function useImportsOverview() {
   const [data, setData] = useState<ImportsOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,6 +55,11 @@ export function useImportsOverview() {
       return;
     }
 
+    if (_cache && _cacheToken === getLtiToken()) {
+      setData(_cache);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
 
     try {
@@ -112,6 +121,11 @@ export function useImportedStudents() {
   const refresh = useCallback(async () => {
     const token = getLtiToken();
     if (!token) { setLoading(false); setData([]); return; }
+    if (_cache && _cacheToken === getLtiToken()) {
+      setData(_cache);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
 
     try {
@@ -162,6 +176,11 @@ export function useGradesMatrix() {
   const refresh = useCallback(async () => {
     const token = getLtiToken();
     if (!token) { setLoading(false); return; }
+    if (_cache && _cacheToken === getLtiToken()) {
+      setData(_cache);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
 
     try {
@@ -254,6 +273,11 @@ export function useCourseStructure() {
   const refresh = useCallback(async () => {
     const token = getLtiToken();
     if (!token) { setLoading(false); return; }
+    if (_cache && _cacheToken === getLtiToken()) {
+      setData(_cache);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_course_structure", { _token: token });
     setLoading(false);
@@ -286,6 +310,11 @@ export function useActivityOverview() {
   const refresh = useCallback(async () => {
     const token = getLtiToken();
     if (!token) { setLoading(false); return; }
+    if (_cache && _cacheToken === getLtiToken()) {
+      setData(_cache);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_activity_overview", { _token: token });
     setLoading(false);
@@ -319,6 +348,11 @@ export function useStudentReports() {
   const refresh = useCallback(async () => {
     const token = getLtiToken();
     if (!token) { setLoading(false); return; }
+    if (_cache && _cacheToken === getLtiToken()) {
+      setData(_cache);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_student_reports", { _token: token });
     setLoading(false);
@@ -350,6 +384,11 @@ export function useTaskCompletionDetail() {
   const refresh = useCallback(async () => {
     const token = getLtiToken();
     if (!token) { setLoading(false); return; }
+    if (_cache && _cacheToken === getLtiToken()) {
+      setData(_cache);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_task_completion_detail", { _token: token });
     setLoading(false);
@@ -369,6 +408,11 @@ export function useDailyActivity() {
   const refresh = useCallback(async () => {
     const token = getLtiToken();
     if (!token) { setLoading(false); return; }
+    if (_cache && _cacheToken === getLtiToken()) {
+      setData(_cache);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_daily_activity", { _token: token });
     setLoading(false);
@@ -437,6 +481,11 @@ export function usePracticeTime(opts?: { from?: string | null; to?: string | nul
   const refresh = useCallback(async () => {
     const token = getLtiToken();
     if (!token) { setLoading(false); return; }
+    if (_cache && _cacheToken === getLtiToken()) {
+      setData(_cache);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_practice_time", {
       _token: token, _from: from, _to: to, _student_id: studentId,
@@ -498,6 +547,11 @@ export function useStudentProfile(studentId: string | null | undefined) {
   const refresh = useCallback(async () => {
     const token = getLtiToken();
     if (!token || !studentId) { setLoading(false); return; }
+    if (_cache && _cacheToken === getLtiToken()) {
+      setData(_cache);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
 
     try {
@@ -534,3 +588,4 @@ export function useStudentProfile(studentId: string | null | undefined) {
   useEffect(() => { refresh(); }, [refresh]);
   return { data, loading, error, refresh };
 }
+
