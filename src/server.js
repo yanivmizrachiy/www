@@ -3856,24 +3856,27 @@ app.get("/api/imports/grades-matrix", (req, res) => {
   res.json({ ok: true, students, items, grades });
 });
 
-// >>> MTH_SCOPED_IMPORTS_OVERVIEW_V1 >>>
-app.get("/api/imports/overview", (req, res) => {
+// >>> MTH_SCOPED_IMPORTS_OVERVIEW_V2_SUPABASE >>>
+app.get("/api/imports/overview", async (req, res) => {
   noStore(res);
   const session = importSessionFromRequest(req);
   if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
   const spaceId = session.spaceId || "unknown-space";
-  const inSpace = (row) => !row || (!row.space_id && !row.course_id) || row.space_id === spaceId || row.course_id === spaceId;
-  res.json({
-    students_count: store.students.filter(s => !s.space_id || s.space_id === spaceId).length,
-    grade_items_count: (Array.isArray(store.gradeItems) ? store.gradeItems : []).filter(inSpace).length,
-    grades_count: (Array.isArray(store.grades) ? store.grades : []).filter(inSpace).length,
-    chapters_count: (Array.isArray(store.chapters) ? store.chapters : []).filter(inSpace).length,
-    tasks_count: (Array.isArray(store.tasks) ? store.tasks : []).filter(inSpace).length,
-    log_events_count: (Array.isArray(store.logEvents) ? store.logEvents : []).filter(inSpace).length,
-    batches: []
-  });
+  const courseId = session.courseId || session.course_id || spaceId;
+  try {
+    const [stud, gi, gr, le] = await Promise.all([
+      supabase.from("students").select("id", { count: "exact", head: true }).eq("space_id", spaceId),
+      supabase.from("grade_items").select("id", { count: "exact", head: true }).eq("course_id", courseId),
+      supabase.from("grade_results").select("id", { count: "exact", head: true }).eq("course_id", courseId),
+      supabase.from("log_events").select("id", { count: "exact", head: true }).eq("course_id", courseId),
+    ]);
+    return res.json({ students_count: stud.count??0, grade_items_count: gi.count??0, grades_count: gr.count??0, log_events_count: le.count??0, chapters_count: 0, tasks_count: 0, batches: [] });
+  } catch(e) {
+    const inSpace = (row) => !row||(!row.space_id&&!row.course_id)||row.space_id===spaceId||row.course_id===spaceId;
+    return res.json({ students_count: store.students.filter(s=>!s.space_id||s.space_id===spaceId).length, grade_items_count: (Array.isArray(store.gradeItems)?store.gradeItems:[]).filter(inSpace).length, grades_count: (Array.isArray(store.grades)?store.grades:[]).filter(inSpace).length, log_events_count: (Array.isArray(store.logEvents)?store.logEvents:[]).filter(inSpace).length, chapters_count: 0, tasks_count: 0, batches: [] });
+  }
 });
-// <<< MTH_SCOPED_IMPORTS_OVERVIEW_V1 <<<
+// <<< MTH_SCOPED_IMPORTS_OVERVIEW_V2_SUPABASE >>>
 
 
 const YANIV_MOODLE_WS_AUTOMATIC_ROUTES_V1 = true;
@@ -5359,6 +5362,8 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`moodle-teacher-hub running on port ${PORT}`);
   console.log(`canonical LTI endpoint: ${CANONICAL_LTI_ENDPOINT}`);
 });
+
+
 
 
 
