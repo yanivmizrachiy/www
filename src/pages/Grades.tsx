@@ -11,6 +11,7 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
+import { SkeletonTableRows } from "@/components/Skeleton";
 import { Link } from "react-router-dom";
 
 export default function Page() {
@@ -50,7 +51,7 @@ export default function Page() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={(data?.items.length ?? 0) + 1} className="text-center py-10">טוען נתונים...</TableCell></TableRow>
+                  <SkeletonTableRows columns={(data?.items.length ?? 0) + 1} />
                 ) : error ? (
                   <TableRow><TableCell colSpan={(data?.items.length ?? 0) + 1} className="text-center py-10"><EmptyTruth>{error}</EmptyTruth></TableCell></TableRow>
                 ) : !data?.students.length ? (
