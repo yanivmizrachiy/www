@@ -49,6 +49,8 @@ export default function Page() {
   const studentRows = useMemo(() => {
     if (studentsFromNrps.length > 0) {
       return studentsFromNrps.map((m) => ({ key: m.id, name: m.name, to: `/students/nrps:${m.id}` }));
+  const [search, setSearch] = useSearchState("");
+  const filteredRows = search.trim() ? studentRows.filter(s => s.name.includes(search.trim())) : studentRows;
     }
     return (imported || []).map((s) => ({ key: s.id, name: s.full_name, to: `/students/${s.id}` }));
   }, [studentsFromNrps, imported]);
@@ -109,8 +111,9 @@ export default function Page() {
           {nrpsState === "loading" ? (
             <p className="text-sm text-muted-foreground">טוען רשימת תלמידים...</p>
           ) : studentRows.length > 0 ? (
-            <ul className="space-y-2">
-              {studentRows.map((s) => (
+            <div className="mb-3 relative"><Search className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" /><input type="text" placeholder="חיפוש תלמיד..." value={search} onChange={e => setSearch(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white py-2 pr-9 pl-3 text-sm font-medium focus:border-primary focus:outline-none" dir="rtl" /></div>
+<ul className="space-y-2">
+              {filteredRows.map((s) => (
                 <li key={s.key}>
                   <Link
                     to={s.to}
@@ -134,3 +137,4 @@ export default function Page() {
     </SafePage>
   );
 }
+
