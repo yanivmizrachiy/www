@@ -4122,7 +4122,37 @@ app.get("/api/students", async (req, res) => {
     return res.json(fromStore());
   }
 });
-app.get("/api/tasks", (_req, res) => res.json(store.tasks));
+// MTH_API_TASKS_FROM_SUPABASE_V1
+// Known issue #1: this endpoint previously returned the volatile in-memory
+// `store.tasks`, which resets to [] on Render cold-start. Tasks are the
+// `course_tasks` rows the course-structure import persists to Supabase, scoped by
+// course_id (`store.tasks` is populated directly from those same rows). It now reads
+// the persisted `course_tasks` for the caller's course_id, ordered by position, and
+// falls back to the in-memory store only when Supabase is unconfigured or the query errors.
+app.get("/api/tasks", async (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  const courseId = gradebookCourseId(session);
+
+  const inScope = row =>
+    !row || (!row.course_id && !row.space_id) || row.course_id === courseId || row.space_id === courseId;
+  const fromStore = () => (Array.isArray(store.tasks) ? store.tasks.filter(inScope) : []);
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return res.json(fromStore());
+
+  try {
+    const { data, error } = await supabase
+      .from("course_tasks")
+      .select("*")
+      .eq("course_id", courseId)
+      .order("position", { ascending: true });
+    if (error) return res.json(fromStore());
+    return res.json(Array.isArray(data) ? data : []);
+  } catch {
+    return res.json(fromStore());
+  }
+});
 // MTH_API_GRADES_FROM_SUPABASE_V1
 // Known issue #1: this endpoint previously returned the volatile in-memory
 // `store.grades`, which resets to [] on Render cold-start. It now reads the
