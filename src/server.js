@@ -3150,6 +3150,9 @@ app.get("/api/automation/moodle-webservices/readiness", async (req, res) => {
 // <<< MTH_MOODLE_WS_READINESS_V1 <<<
 
 
+// MTH_KEEPALIVE_V1 — prevents Render cold start
+app.get("/ping", (_req, res) => { res.json({ ok: true, t: Date.now() }); });
+
 app.get("/health", (_req, res) => {
   res.json({
     ok: true,
@@ -5356,6 +5359,7 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`moodle-teacher-hub running on port ${PORT}`);
   console.log(`canonical LTI endpoint: ${CANONICAL_LTI_ENDPOINT}`);
 });
+
 
 
 
