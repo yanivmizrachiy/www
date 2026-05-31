@@ -3665,18 +3665,45 @@ app.post("/api/import/course-structure", async (req, res) => {
 });
 // <<< MTH_COURSE_STRUCTURE_ENDPOINT_V1 <<<
 
-app.get("/api/imports/students", (req, res) => {
+// MTH_API_IMPORTS_STUDENTS_FROM_SUPABASE_V1
+// Known issue #6: this endpoint previously read the volatile in-memory
+// `store.students` (which resets to [] on Render cold-start) before any
+// Supabase fallback. It now queries the persisted `students` rows directly,
+// scoped to the verified import session's space_id, ordered by full_name and
+// capped at 500, and falls back to the in-memory store only when Supabase is
+// unconfigured or the query errors. The { ok, students } response contract and
+// importedStudentDto shape are unchanged.
+app.get("/api/imports/students", async (req, res) => {
   noStore(res);
   const session = importSessionFromRequest(req);
   if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
 
   const spaceId = session.spaceId || "unknown-space";
-  const students = store.students
-    .filter(student => !student.space_id || student.space_id === spaceId)
-    .map(importedStudentDto)
-    .filter(student => student.full_name);
 
-  res.json({ ok: true, students });
+  const fromStore = () =>
+    store.students
+      .filter(student => !student.space_id || student.space_id === spaceId)
+      .map(importedStudentDto)
+      .filter(student => student.full_name);
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return res.json({ ok: true, students: fromStore() });
+
+  try {
+    const { data, error } = await supabase
+      .from("students")
+      .select("id, full_name, email, external_username, external_id, updated_at")
+      .eq("space_id", spaceId)
+      .order("full_name", { ascending: true })
+      .limit(500);
+    if (error) return res.json({ ok: true, students: fromStore() });
+    const students = (Array.isArray(data) ? data : [])
+      .map(importedStudentDto)
+      .filter(student => student.full_name);
+    return res.json({ ok: true, students });
+  } catch {
+    return res.json({ ok: true, students: fromStore() });
+  }
 });
 
 app.post("/api/imports/nrps-sync", (req, res) => {
