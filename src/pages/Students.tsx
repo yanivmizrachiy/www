@@ -20,6 +20,27 @@ interface NamedMember {
   has_email: boolean;
 }
 
+function StudentSearchList({ rows }: { rows: { key: string; name: string; to: string }[] }) {
+  const [q, setQ] = useState("");
+  const filtered = q ? rows.filter(r => r.name.includes(q)) : rows;
+  return (
+    <div className="space-y-2">
+      <input type="text" placeholder="חיפוש תלמיד..." value={q} onChange={e => setQ(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white py-2 px-4 text-sm focus:border-primary focus:outline-none" dir="rtl" />
+      <ul className="space-y-2">
+        {filtered.map((s) => (
+          <li key={s.key}>
+            <Link to={s.to} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 transition hover:border-primary/30 hover:bg-primary/5">
+              <StudentAvatar name={s.name} size="sm" />
+              <span className="flex-1 text-base font-extrabold text-primary">{s.name}</span>
+              <ArrowLeft className="h-4 w-4 shrink-0 text-primary" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default function Page() {
   const { data: imported } = useImportedStudents();
   const [nrpsState, setNrpsState] = useState<NrpsState>("loading");
@@ -134,3 +155,5 @@ export default function Page() {
     </SafePage>
   );
 }
+
+
