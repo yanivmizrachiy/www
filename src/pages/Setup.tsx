@@ -75,6 +75,7 @@ export default function Page() {
           <p className="text-sm text-muted-foreground">{site.site_name ?? site.site_url}</p>
         </div>
       ) : null}
+    <div className="rounded-3xl border bg-blue-50 p-6"><h2 className="mb-3 text-xl font-black text-blue-900">להתקנה במרחב נוסף - 5 שלבים</h2><ol className="space-y-2 text-sm leading-relaxed text-blue-900 list-decimal pr-5"><li>היכנס למרחב החדש ב-Moodle והפעל מצב עריכה</li><li>הוסף פעילות → לשונית פעילויות</li><li>בחר &quot;כלי או שירות LTI חיצוני&quot;</li><li>בחר &quot;Moodle Teacher Hub - LTI 1.3 Test&quot;</li><li>שמור והצג - הכלי ייפתח אוטומטית</li></ol></div>
     </section>
   );
 }
