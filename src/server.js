@@ -4167,7 +4167,54 @@ app.get("/api/grades", async (req, res) => {
     return res.json(fromStore());
   }
 });
-app.get("/api/activity", (_req, res) => res.json({ sessions: store.activitySessions, dailySummaries: [] }));
+// MTH_API_ACTIVITY_FROM_SUPABASE_V1
+// Known issue #1: this endpoint previously returned the volatile in-memory
+// `store.activitySessions`, which is only ever populated at runtime and resets to
+// [] on Render cold-start. Activity is derived from the Moodle log events that the
+// logs import persists to Supabase (`log_events`, scoped by course_id). It now reads
+// those persisted events, scoped to the caller's course_id, and falls back to the
+// in-memory store only when Supabase is unconfigured or the query errors.
+app.get("/api/activity", async (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  const courseId = gradebookCourseId(session);
+
+  const fromStore = () =>
+    res.json({ sessions: Array.isArray(store.activitySessions) ? store.activitySessions : [], dailySummaries: [] });
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return fromStore();
+
+  try {
+    const { data, error } = await supabase
+      .from("log_events")
+      .select("*")
+      .eq("course_id", courseId)
+      .order("event_time", { ascending: false });
+    if (error) return fromStore();
+    const rows = Array.isArray(data) ? data : [];
+    const sessions = rows.map(row => ({
+      id: row.id,
+      course_id: row.course_id,
+      courseId: row.course_id,
+      event_time: row.event_time,
+      eventTime: row.event_time,
+      actor_full_name: row.actor_full_name,
+      actor: row.actor_full_name,
+      context: row.context,
+      component: row.component,
+      event_name: row.event_name,
+      eventName: row.event_name,
+      description: row.description,
+      origin: row.origin,
+      moodle_user_id: row.moodle_user_id,
+      created_at: row.created_at
+    }));
+    return res.json({ sessions, dailySummaries: [] });
+  } catch {
+    return fromStore();
+  }
+});
 app.get("/api/settings", (_req, res) => res.json(store.settings));
 app.get("/api/moodle-captures", (_req, res) => res.json([...store.moodleCaptures].reverse()));
 app.get("/api/moodle-summary", (_req, res) => res.json({ capturesCount: store.moodleCaptures.length, lastCaptureAt: store.moodleCaptures.at(-1)?.createdAt ?? null, lastSource: store.moodleCaptures.at(-1)?.source ?? null, availableKeys: store.moodleCaptures.at(-1)?.keys ?? [] }));
