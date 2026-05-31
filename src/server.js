@@ -4442,7 +4442,7 @@ const statusJson = {
   service_claims: liveServices
 };
     if (!statusJson?.has_latest_lti13_session || !membershipUrl) {
-      return res.status(409).json({
+      return res.status(200).json({
         ok: false,
         mode: "lti13-nrps-preview-no-save",
         stage: "session-or-nrps-claim",
@@ -5356,6 +5356,7 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`moodle-teacher-hub running on port ${PORT}`);
   console.log(`canonical LTI endpoint: ${CANONICAL_LTI_ENDPOINT}`);
 });
+
 
 
 
