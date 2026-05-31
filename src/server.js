@@ -3878,6 +3878,176 @@ app.get("/api/imports/overview", async (req, res) => {
 });
 // <<< MTH_SCOPED_IMPORTS_OVERVIEW_V2_SUPABASE >>>
 
+// >>> MTH_SCOPED_TIME_RANGE_V1_SUPABASE >>>
+// Practice/time report reads persisted `log_events` from Supabase, scoped to the
+// caller's course_id and an optional [from, to] date range. Practice time is an
+// estimate derived by sessionizing real log events (no invented durations): events
+// for one student are grouped, ordered by event_time, and split into sessions when
+// the gap between consecutive events exceeds PRACTICE_GAP_SECONDS. Falls back to the
+// in-memory store only when Supabase is unconfigured or the query errors.
+const PRACTICE_GAP_SECONDS = 1800; // 30 minutes between events ends a session
+
+function buildPracticeTimeFromLogEvents(rows, { from, to, studentId }) {
+  const byStudent = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const at = row.event_time || row.created_at || null;
+    if (!at) continue;
+    const key = String(row.moodle_user_id || row.actor_full_name || "unknown");
+    if (studentId && key !== studentId) continue;
+    let bucket = byStudent.get(key);
+    if (!bucket) {
+      bucket = { student_id: key, student_name: row.actor_full_name || null, events: [] };
+      byStudent.set(key, bucket);
+    }
+    if (!bucket.student_name && row.actor_full_name) bucket.student_name = row.actor_full_name;
+    bucket.events.push({ at, ms: Date.parse(at) });
+  }
+
+  const days = [];
+  const perStudent = [];
+
+  for (const bucket of byStudent.values()) {
+    const events = bucket.events.filter(e => Number.isFinite(e.ms)).sort((a, b) => a.ms - b.ms);
+    if (!events.length) continue;
+
+    // Split into sessions on gaps, accumulating per ISO day.
+    const dayAgg = new Map();
+    let sessionStart = events[0];
+    let prev = events[0];
+    let sessionEventCount = 1;
+
+    const flushSession = (startEvt, endEvt, evtCount) => {
+      const day = String(startEvt.at).slice(0, 10);
+      const durationSeconds = Math.max(0, Math.round((endEvt.ms - startEvt.ms) / 1000));
+      let d = dayAgg.get(day);
+      if (!d) {
+        d = { day, total_seconds: 0, event_count: 0, session_count: 0, first_ms: startEvt.ms, last_ms: endEvt.ms, windows: [] };
+        dayAgg.set(day, d);
+      }
+      d.total_seconds += durationSeconds;
+      d.event_count += evtCount;
+      d.session_count += 1;
+      d.first_ms = Math.min(d.first_ms, startEvt.ms);
+      d.last_ms = Math.max(d.last_ms, endEvt.ms);
+      d.windows.push({
+        started_at: startEvt.at,
+        ended_at: endEvt.at,
+        duration_seconds: durationSeconds,
+        event_count: evtCount
+      });
+    };
+
+    for (let i = 1; i < events.length; i += 1) {
+      const cur = events[i];
+      if ((cur.ms - prev.ms) / 1000 > PRACTICE_GAP_SECONDS) {
+        flushSession(sessionStart, prev, sessionEventCount);
+        sessionStart = cur;
+        sessionEventCount = 1;
+      } else {
+        sessionEventCount += 1;
+      }
+      prev = cur;
+    }
+    flushSession(sessionStart, prev, sessionEventCount);
+
+    let studentTotal = 0;
+    let studentEvents = 0;
+    let studentSessions = 0;
+    let studentFirst = events[0].ms;
+    let studentLast = events[events.length - 1].ms;
+
+    for (const d of [...dayAgg.values()].sort((a, b) => (a.day < b.day ? -1 : 1))) {
+      studentTotal += d.total_seconds;
+      studentEvents += d.event_count;
+      studentSessions += d.session_count;
+      days.push({
+        day: d.day,
+        student_id: bucket.student_id,
+        student_name: bucket.student_name,
+        total_seconds: d.total_seconds,
+        event_count: d.event_count,
+        session_count: d.session_count,
+        first_at: new Date(d.first_ms).toISOString(),
+        last_at: new Date(d.last_ms).toISOString(),
+        windows: d.windows
+      });
+    }
+
+    perStudent.push({
+      student_id: bucket.student_id,
+      student_name: bucket.student_name,
+      total_seconds: studentTotal,
+      event_count: studentEvents,
+      session_count: studentSessions,
+      active_days: dayAgg.size,
+      first_at: new Date(studentFirst).toISOString(),
+      last_at: new Date(studentLast).toISOString()
+    });
+  }
+
+  perStudent.sort((a, b) => b.total_seconds - a.total_seconds);
+
+  return {
+    meta: { gap_seconds: PRACTICE_GAP_SECONDS, from: from || null, to: to || null, student_id: studentId || null },
+    days,
+    per_student: perStudent
+  };
+}
+
+app.get("/api/imports/time-range", async (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
+
+  const courseId = gradebookCourseId(session);
+  const from = typeof req.query.from === "string" && req.query.from ? req.query.from : null;
+  const to = typeof req.query.to === "string" && req.query.to ? req.query.to : null;
+  const studentId = typeof req.query.student_id === "string" && req.query.student_id ? req.query.student_id : null;
+
+  // Inclusive day range: [from 00:00:00, to 23:59:59.999].
+  const fromIso = from ? new Date(`${from}T00:00:00.000Z`).toISOString() : null;
+  const toIso = to ? new Date(`${to}T23:59:59.999Z`).toISOString() : null;
+
+  const fromStore = () => {
+    const rows = (Array.isArray(store.logEvents) ? store.logEvents : [])
+      .filter(e => !e.course_id || String(e.course_id) === courseId)
+      .map(e => ({
+        event_time: e.event_time || e.timestamp || e.time || e.created_at || null,
+        created_at: e.created_at || null,
+        actor_full_name: e.actor_full_name || e.actor || e.student_name || null,
+        moodle_user_id: e.moodle_user_id != null ? String(e.moodle_user_id) : null
+      }))
+      .filter(e => {
+        if (!e.event_time) return false;
+        const ms = Date.parse(e.event_time);
+        if (fromIso && ms < Date.parse(fromIso)) return false;
+        if (toIso && ms > Date.parse(toIso)) return false;
+        return true;
+      });
+    return res.json(buildPracticeTimeFromLogEvents(rows, { from, to, studentId }));
+  };
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return fromStore();
+
+  try {
+    let query = supabase
+      .from("log_events")
+      .select("event_time,created_at,actor_full_name,moodle_user_id,course_id")
+      .eq("course_id", courseId)
+      .order("event_time", { ascending: true });
+    if (fromIso) query = query.gte("event_time", fromIso);
+    if (toIso) query = query.lte("event_time", toIso);
+
+    const { data, error } = await query;
+    if (error) return fromStore();
+    return res.json(buildPracticeTimeFromLogEvents(Array.isArray(data) ? data : [], { from, to, studentId }));
+  } catch {
+    return fromStore();
+  }
+});
+// <<< MTH_SCOPED_TIME_RANGE_V1_SUPABASE >>>
+
 
 const YANIV_MOODLE_WS_AUTOMATIC_ROUTES_V1 = true;
 
