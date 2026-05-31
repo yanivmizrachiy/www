@@ -438,6 +438,26 @@ export function usePracticeTime(opts?: { from?: string | null; to?: string | nul
     const token = getLtiToken();
     if (!token) { setLoading(false); return; }
     setLoading(true);
+
+    try {
+      const params = new URLSearchParams({ t: token });
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      if (studentId) params.set("student_id", studentId);
+      const nodeRes = await fetch(`/api/imports/time-range?${params.toString()}`, { credentials: "include" });
+      if (nodeRes.ok) {
+        const nodePayload = await nodeRes.json();
+        if (nodePayload && !nodePayload.error) {
+          setError(null);
+          setData(nodePayload as PracticeOverview);
+          setLoading(false);
+          return;
+        }
+      }
+    } catch {
+      // Supabase RPC fallback below.
+    }
+
     const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_practice_time", {
       _token: token, _from: from, _to: to, _student_id: studentId,
     });
