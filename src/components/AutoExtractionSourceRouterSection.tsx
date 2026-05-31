@@ -154,7 +154,7 @@ export default function AutoExtractionSourceRouterSection() {
                   <div className="mt-1 text-xs text-slate-500">להפעלת מנהל: {plainHe(d.adminEnablementHe)}</div>
                 )}
                 {d.fallbackRoute && (
-                  <a href={d.fallbackRoute} className="mt-2 inline-block text-xs font-bold text-sky-700 underline">
+                  <a href={d.fallbackRoute} className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-black text-sky-700 shadow-sm hover:bg-sky-100 transition">
                     מסלול ייבוא אמיתי ←
                   </a>
                 )}
@@ -184,3 +184,4 @@ function SummaryBox({ icon, title, items, cls }: { icon: React.ReactNode; title:
     </div>
   );
 }
+
