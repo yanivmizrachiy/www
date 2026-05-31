@@ -7,8 +7,32 @@ export default defineConfig({
   plugins: [react()],
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
   build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"],
+          ui: ["@radix-ui/react-accordion", "@radix-ui/react-tabs", "lucide-react"],
+          charts: ["recharts", "d3"],
+          supabase: ["@supabase/supabase-js"],
+          xlsx: ["xlsx"],
+        }
+      }
+    },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"],
+          ui: ["@radix-ui/react-accordion", "@radix-ui/react-tabs", "lucide-react"],
+          charts: ["recharts", "d3"],
+          supabase: ["@supabase/supabase-js"],
+          xlsx: ["xlsx"],
+        }
+      }
+    },
     // Keep Vite/Rollup default chunking. Manual vendor splitting caused a circular
     // runtime chunk in the Moodle iframe build, so stability is preferred here.
     chunkSizeWarningLimit: 1200,
   },
 });
+
+
