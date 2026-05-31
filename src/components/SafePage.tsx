@@ -21,5 +21,5 @@ function BackButton({ backTo, label = "חזרה" }: { backTo?: string; label?: s
 }
 
 export function SafePage({title, description, children, backTo, backLabel}:{title:string; description:string; children?:React.ReactNode; backTo?:string; backLabel?:string}) {
-  return <section className="space-y-5" dir="rtl"><div>{backTo !== undefined && <BackButton backTo={backTo} label={backLabel} />}<h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1><p className="mt-1 text-sm text-muted-foreground">{description}</p></div><Card><CardContent className="pt-6">{children ?? <EmptyTruth />}</CardContent></Card></section>;
+  return <section className="space-y-5" dir="rtl">{backTo !== undefined && <BackButton backTo={backTo} label={backLabel} />}<section style={{ background: "linear-gradient(135deg, #06152f 0%, #0b3d91 50%, #0e7490 100%)", color: "white", padding: "28px 32px", borderRadius: "1.5rem", boxShadow: "0 20px 60px rgba(6, 21, 47, 0.25)" }}><h1 style={{ fontSize: "32px", fontWeight: 900, margin: 0, marginBottom: "6px", lineHeight: 1.1 }}>{title}</h1><p style={{ fontSize: "14px", opacity: 0.9, margin: 0 }}>{description}</p></section><Card><CardContent className="pt-6">{children ?? <EmptyTruth />}</CardContent></Card></section>;
 }
