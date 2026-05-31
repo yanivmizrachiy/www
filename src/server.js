@@ -4095,7 +4095,33 @@ app.get("/api/moodle-ws/enrolled-users-preview", async (req, res) => {
 });
 
 app.get("/api/launches", (_req, res) => res.json([...store.launches].reverse()));
-app.get("/api/students", (_req, res) => res.json(store.students));
+// MTH_API_STUDENTS_FROM_SUPABASE_V1
+// Known issue #1: this endpoint previously returned the volatile in-memory
+// `store.students`, which resets to [] on Render cold-start. It now reads the
+// persisted roster from Supabase, scoped to the caller's space_id (LTI session),
+// and falls back to the in-memory store only when Supabase is unconfigured or errors.
+app.get("/api/students", async (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  const spaceId = session?.spaceId || "unknown-space";
+
+  const fromStore = () =>
+    store.students.filter(student => !student.space_id || student.space_id === spaceId);
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return res.json(fromStore());
+
+  try {
+    const { data, error } = await supabase
+      .from("students")
+      .select("*")
+      .eq("space_id", spaceId);
+    if (error) return res.json(fromStore());
+    return res.json(Array.isArray(data) ? data : []);
+  } catch {
+    return res.json(fromStore());
+  }
+});
 app.get("/api/tasks", (_req, res) => res.json(store.tasks));
 app.get("/api/grades", (_req, res) => res.json(store.grades));
 app.get("/api/activity", (_req, res) => res.json({ sessions: store.activitySessions, dailySummaries: [] }));
