@@ -76,11 +76,11 @@ const App = () => {
             <Route path="/export" element={<Export />} />
             <Route path="/automation" element={<Automation />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/import" element={<Import />} />
+            <Route path="/import" element={<Navigate to="/smart-import" replace />} />
             <Route path="/smart-import" element={<SmartImport />} />
-            <Route path="/gradebook-import" element={<GradebookImport />} />
-            <Route path="/logs-import" element={<LogsImport />} />
-            <Route path="/course-structure-import" element={<CourseStructureImport />} />
+            <Route path="/gradebook-import" element={<Navigate to="/smart-import" replace />} />
+            <Route path="/logs-import" element={<Navigate to="/smart-import" replace />} />
+            <Route path="/course-structure-import" element={<Navigate to="/smart-import" replace />} />
             <Route path="/missing-data" element={<MissingData />} />
             <Route path="/capabilities" element={<CapabilityProbe />} />
             <Route path="/isolation" element={<IsolationStatus />} />
