@@ -106,17 +106,14 @@ export default function Page() {
             </div>
           </div>
 
-          {nrpsState === "loading" ? (
-            <p className="text-sm text-muted-foreground">טוען רשימת תלמידים...</p>
-          ) : studentRows.length > 0 ? (
+          {nrpsState === "loading" ? (<SkeletonList count={5} />) : studentRows.length > 0 ? (
             <ul className="space-y-2">
               {studentRows.map((s) => (
                 <li key={s.key}>
                   <Link
                     to={s.to}
                     className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 transition hover:border-primary/30 hover:bg-primary/5"
-                  >
-                    <span className="text-base font-extrabold text-primary">{s.name}</span>
+                  ><StudentAvatar name={s.name} size="sm" /><span className="text-base font-extrabold text-primary">{s.name}</span>
                     <ArrowLeft className="h-4 w-4 shrink-0 text-primary" />
                   </Link>
                 </li>
@@ -134,3 +131,5 @@ export default function Page() {
     </SafePage>
   );
 }
+
+
