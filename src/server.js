@@ -4123,7 +4123,50 @@ app.get("/api/students", async (req, res) => {
   }
 });
 app.get("/api/tasks", (_req, res) => res.json(store.tasks));
-app.get("/api/grades", (_req, res) => res.json(store.grades));
+// MTH_API_GRADES_FROM_SUPABASE_V1
+// Known issue #1: this endpoint previously returned the volatile in-memory
+// `store.grades`, which resets to [] on Render cold-start. It now reads the
+// persisted grade results from Supabase, scoped to the caller's course_id (the
+// same scope grade_results are written with on Gradebook import), and falls back
+// to the in-memory store only when Supabase is unconfigured or the query errors.
+app.get("/api/grades", async (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  const courseId = gradebookCourseId(session);
+
+  const inScope = row =>
+    !row || (!row.space_id && !row.course_id) || row.course_id === courseId || row.space_id === courseId;
+  const fromStore = () => (Array.isArray(store.grades) ? store.grades.filter(inScope) : []);
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return res.json(fromStore());
+
+  try {
+    const { data, error } = await supabase
+      .from("grade_results")
+      .select("*")
+      .eq("course_id", courseId);
+    if (error) return res.json(fromStore());
+    const rows = Array.isArray(data) ? data : [];
+    return res.json(
+      rows.map(result => ({
+        id: result.id,
+        student_id: result.student_id,
+        studentId: result.student_id,
+        grade_item_id: result.grade_item_id,
+        task_id: result.grade_item_id,
+        taskId: result.grade_item_id,
+        raw_value: result.raw_value,
+        grade: result.grade,
+        numeric_value: result.grade,
+        updated_at: result.created_at,
+        updatedAt: result.created_at
+      }))
+    );
+  } catch {
+    return res.json(fromStore());
+  }
+});
 app.get("/api/activity", (_req, res) => res.json({ sessions: store.activitySessions, dailySummaries: [] }));
 app.get("/api/settings", (_req, res) => res.json(store.settings));
 app.get("/api/moodle-captures", (_req, res) => res.json([...store.moodleCaptures].reverse()));
