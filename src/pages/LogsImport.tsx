@@ -1,7 +1,8 @@
 import { useMemo, useRef, useState } from "react";
 import type { ChangeEvent, CSSProperties } from "react";
 import { parseMoodleFile, parsePastedTable } from "@/lib/moodleImport";
-import { getLtiToken } from "@/hooks/useLtiSession";
+import { getLtiToken, useLtiSession } from "@/hooks/useLtiSession";
+import { buildMoodleReportUrl, MOODLE_REPORTS } from "@/lib/moodleReportLinks";
 
 const MARKER = "MTH_MOODLE_LOGS_IMPORT_UI_V1";
 
@@ -161,6 +162,10 @@ const errorBox: CSSProperties = {
 };
 
 export default function LogsImport() {
+  const { session, site } = useLtiSession();
+  const courseId = (session as any)?.course_id ?? null;
+  const moodleBase = (site as any)?.site_url ?? null;
+  const logsUrl = buildMoodleReportUrl(moodleBase, courseId, MOODLE_REPORTS.find(r => r.key === "logs") ?? MOODLE_REPORTS[4]);
   const fileRef = useRef<HTMLInputElement>(null);
   const [result, setResult] = useState<ParseResult | null>(null);
   const [pastedText, setPastedText] = useState("");
@@ -294,3 +299,4 @@ export default function LogsImport() {
     </main>
   );
 }
+
