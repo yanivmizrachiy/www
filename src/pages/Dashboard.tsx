@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useImportsOverview } from "@/hooks/useImports";
 import { useSyncStatus } from "@/hooks/useSyncStatus";
 import { useLtiSession, getLtiToken } from "@/hooks/useLtiSession";
+import { OnboardingBanner } from "@/components/OnboardingBanner";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -409,6 +410,7 @@ export default function Dashboard() {
     <div className="MTH_DASHBOARD_ACTION_HUB_V1 w-full min-w-0 max-w-full space-y-8 overflow-x-hidden" dir="rtl">
       <span className="sr-only">MTH_DASHBOARD_ACTION_ONLY_NO_EXPLAINER_TEXT_V1</span>
       <AutoSyncBanner status={autoSync.status} lastError={autoSync.lastError} onRetry={autoSync.retry} />
+      <OnboardingBanner hasSession={hasSession} studentsCount={data?.students_count ?? 0} gradesCount={data?.grades_count ?? 0} logsCount={data?.log_events_count ?? 0} />
       <section className="relative max-w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#06152f] via-[#082b66] to-[#0b4f8f] p-5 text-white shadow-[0_30px_90px_rgba(6,21,47,0.45)] sm:p-7 lg:p-10">
         <div className="relative z-10 flex min-w-0 flex-col items-stretch gap-6 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0 flex-1 space-y-5">
@@ -534,5 +536,6 @@ export default function Dashboard() {
     </div>
   );
 }
+
 
 
