@@ -500,7 +500,9 @@ export default function Dashboard() {
 
       {sourceStatus && (
         <section className="flex flex-wrap items-center gap-3 rounded-2xl border bg-background/60 p-4 text-sm" aria-label="סטטוס חיבור מהיר">
-          <span className="font-bold text-muted-foreground">מצב חיבור:</span>
+          <span className="font-bold text-muted-foreground">מצב אוטומציה:</span>
+          <span className="text-xs text-muted-foreground">({data?.students_count ?? 0} תלמידים נשלפו · {data?.grade_items_count ?? 0} פריטי ציון · {data?.tasks_count ?? 0} משימות · {data?.log_events_count ?? 0} לוגים)</span>
+          <span className="font-bold text-muted-foreground">|</span>
           <span className={"inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold " + (sourceStatus.nrps === "available" ? "bg-emerald-100 text-emerald-900" : "bg-slate-100 text-slate-600")}>
             {sourceStatus.nrps === "available" ? "✓" : "○"} תלמידים אוטומטיים
           </span>
