@@ -15,28 +15,22 @@ import { cn } from "@/lib/utils";
 
 // MTH_TEACHER_SIDEBAR_FINAL_WORKFLOW_V1
 const navItems = [
-  { title: "מרכז המורה",  url: "/",         icon: LayoutDashboard },
-  { title: "תלמידים",      url: "/students", icon: Users },
-  { title: "ציונים",       url: "/grades",   icon: GraduationCap },
-  { title: "פעילויות",    url: "/chapters", icon: Activity },
-  { title: "זמנים",        url: "/times",    icon: Clock },
-  { title: "דוחות",        url: "/reports",  icon: FileBarChart2 },
+  { title: "מרכז המורה", url: "/",             icon: LayoutDashboard },
+  { title: "תלמידים",    url: "/students",     icon: Users },
+  { title: "ציונים",     url: "/grades",       icon: GraduationCap },
+  { title: "פעילות",     url: "/activity",     icon: Activity },
+  { title: "דוחות",      url: "/reports",      icon: FileBarChart2 },
 ];
 
 const toolItems = [
-  { title: "פרקים",           url: "/chapters",     icon: BookOpen },
-  { title: "משימות",          url: "/tasks",        icon: ListChecks },
-  { title: "ייבוא חכם",       url: "/smart-import", icon: Upload },
-  { title: "ייצוא",           url: "/export",       icon: Download },
-  { title: "אוטומציה ממודל",  url: "/automation",   icon: Zap },
-  { title: "אבחון",           url: "/missing-data", icon: AlertCircle },
-  { title: "בידוד נתונים",    url: "/isolation",    icon: Shield },
-  { title: "בדיקת יכולות",    url: "/capabilities", icon: Cpu },
+  { title: "ייבוא חכם", url: "/smart-import", icon: Upload },
+  { title: "ייצוא",     url: "/export",       icon: Download },
+  { title: "מה חסר",   url: "/missing-data", icon: AlertCircle },
 ];
 
 const supportItems = [
-  { title: "הגדרות",               url: "/settings", icon: Settings },
-  { title: "התקנה / חיבור Moodle", url: "/setup",    icon: Wrench },
+  { title: "הגדרות",       url: "/settings", icon: Settings },
+  { title: "חיבור Moodle", url: "/setup",    icon: Wrench },
 ];
 
 export function AppSidebar() {
@@ -171,3 +165,4 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+
