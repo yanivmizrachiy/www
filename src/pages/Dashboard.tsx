@@ -422,7 +422,7 @@ export default function Dashboard() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} className="grid min-w-0 gap-3 xl:grid-cols-3">
               <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
                 <div className="text-xs font-bold text-cyan-200/80">{teachers.names.length > 1 ? "מורים" : "מורה"}</div>
-                <div className="mt-0.5 truncate text-lg font-black text-white">{teacherName}</div>
+                <div className="mt-0.5 text-base font-black text-white leading-snug">{teachers.names.length > 0 ? (teachers.names.length <= 3 ? teachers.names.join(" · ") : teachers.names.slice(0, 3).join(" · ") + " · ועוד " + (teachers.names.length - 3)) : teacherName}</div>
               </div>
               <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
                 <div className="text-xs font-bold text-cyan-200/80">מרחב הלימוד</div>
