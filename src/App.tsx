@@ -10,6 +10,7 @@ import MissingData from "./pages/MissingData";
 import CapabilityProbe from "./pages/CapabilityProbe";
 import IsolationStatus from "./pages/IsolationStatus";
 import IsolationLiveCheck from "./pages/IsolationLiveCheck";
+import InstallCheck from "./pages/InstallCheck";
 import Students from "./pages/Students";
 import Teachers from "./pages/Teachers";
 import StudentProfile from "./pages/StudentProfile";
@@ -86,6 +87,7 @@ const App = () => {
             <Route path="/capabilities" element={<CapabilityProbe />} />
             <Route path="/isolation" element={<IsolationStatus />} />
             <Route path="/isolation-check" element={<IsolationLiveCheck />} />
+            <Route path="/install-check" element={<InstallCheck />} />
             <Route path="/setup" element={<Setup />} />
           </Route>
           <Route path="*" element={<NotFound />} />
