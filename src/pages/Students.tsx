@@ -18,8 +18,24 @@ type NrpsState = "loading" | "ready" | "error";
 interface NamedMember {
   id: string;
   name: string;
+  // role_kind is the robust server classification; is_instructor is kept for
+  // backwards compatibility. Only role_kind === "learner" is a real student.
+  role_kind?: "learner" | "instructor" | "unknown";
   is_instructor: boolean;
   has_email: boolean;
+}
+
+// A member is a teacher when classified "instructor" (or, for older payloads
+// without role_kind, when is_instructor is set).
+function isTeacherMember(m: NamedMember): boolean {
+  return m.role_kind ? m.role_kind === "instructor" : m.is_instructor;
+}
+
+// A member is a real student only when explicitly classified as a learner.
+// Unknown/ambiguous roles are never shown as students. Older payloads without
+// role_kind fall back to "not an instructor".
+function isLearnerMember(m: NamedMember): boolean {
+  return m.role_kind ? m.role_kind === "learner" : !m.is_instructor;
 }
 
 // Normalize a display name so a live NRPS learner can be matched to an already
@@ -51,8 +67,8 @@ export default function Page() {
 
   const live = Boolean(nrps?.ok);
   const named: NamedMember[] = Array.isArray(nrps?.members_named) ? nrps.members_named : [];
-  const teachers = useMemo(() => named.filter((m) => m.is_instructor), [named]);
-  const studentsFromNrps = useMemo(() => named.filter((m) => !m.is_instructor), [named]);
+  const teachers = useMemo(() => named.filter(isTeacherMember), [named]);
+  const studentsFromNrps = useMemo(() => named.filter(isLearnerMember), [named]);
 
   // Aggregate counts straight from live NRPS role_counts (authoritative source).
   const learnersCount = Number(nrps?.role_counts?.Learner || 0);

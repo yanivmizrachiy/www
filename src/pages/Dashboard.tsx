@@ -167,7 +167,8 @@ function useDashboardTeachers() {
         const total = Number(json?.members_count || 0);
         const named = Array.isArray(json?.members_named) ? json.members_named : [];
         const realNames: string[] = named
-          .filter((m: { is_instructor?: boolean }) => m?.is_instructor)
+          .filter((m: { is_instructor?: boolean; role_kind?: string }) =>
+            m?.role_kind ? m.role_kind === "instructor" : m?.is_instructor)
           .map((m: { name?: string }) => String(m?.name || "").trim())
           .filter(Boolean);
         setCount(instructors || realNames.length);
