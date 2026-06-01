@@ -5512,6 +5512,21 @@ app.get("/api/lti13/participants-breakdown", async (req, res) => {
       env("LTI13_DEPLOYMENT_ID") ||
       ""
     );
+    // Installation/course diagnostics only — not personal data. resource_link_id
+    // and course_title come straight from the current LTI 1.3 launch context and
+    // let the isolation-check page prove each space is scoped on its own.
+    const resourceLinkId = String(
+      liveSession?.resourceLinkId ||
+      liveSession?.resource_link_id ||
+      ""
+    );
+    const courseTitle = String(
+      liveSession?.courseTitle ||
+      liveSession?.course_title ||
+      liveSession?.contextTitle ||
+      liveSession?.context_title ||
+      ""
+    );
 
     return res.json({
       ok: true,
@@ -5523,6 +5538,8 @@ app.get("/api/lti13/participants-breakdown", async (req, res) => {
       role_counts: result.roleCounts,
       has_names: hasNamesCount > 0,
       course_id: courseId || null,
+      course_title: courseTitle || null,
+      resource_link_id: resourceLinkId || null,
       deployment_id: deploymentId || null,
       client_id: result.clientId || null,
       membership_http_status: result.membership_http_status,
