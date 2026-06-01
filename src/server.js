@@ -3713,7 +3713,13 @@ app.post("/api/imports/nrps-sync", (req, res) => {
 
   // The client passes the learner roster it already received from
   // /api/lti13/nrps-preview (members_named). We only persist real learners
-  // (not instructors), space-isolated, with no invented data.
+  // (not instructors, not ambiguous/unknown roles), space-isolated, with no
+  // invented data. The preview now tags each member with role_kind
+  // ("learner" | "instructor" | "unknown") from the robust classifier
+  // (MTH_NRPS_ROLE_CLASSIFICATION_V1). Only role_kind === "learner" is saved;
+  // unknown roles are skipped so an unclassified participant is never silently
+  // stored as a student. Older clients without role_kind fall back to the prior
+  // "skip instructors" behavior.
   const incoming = Array.isArray(req.body?.students) ? req.body.students : [];
   const spaceId = session.spaceId || "unknown-space";
   const now = new Date().toISOString();
@@ -3721,11 +3727,20 @@ app.post("/api/imports/nrps-sync", (req, res) => {
   if (!Array.isArray(store.students)) store.students = [];
   let inserted = 0;
   let updated = 0;
+  let skippedUnknown = 0;
+  let skippedInstructor = 0;
 
   for (const m of incoming) {
     const fullName = String(m?.name || "").trim();
     if (!fullName) continue;
-    if (m?.is_instructor) continue;
+    const roleKind = typeof m?.role_kind === "string" ? m.role_kind : null;
+    if (roleKind) {
+      if (roleKind === "instructor") { skippedInstructor += 1; continue; }
+      if (roleKind !== "learner") { skippedUnknown += 1; continue; }
+    } else if (m?.is_instructor) {
+      skippedInstructor += 1;
+      continue;
+    }
     const identity = String(m?.id || fullName);
     const id = stableId("student", spaceId + "|nrps|" + identity);
     const record = {
@@ -3758,7 +3773,14 @@ app.post("/api/imports/nrps-sync", (req, res) => {
     saveStore();
   }
 
-  res.json({ ok: true, inserted, updated, total: inserted + updated });
+  res.json({
+    ok: true,
+    inserted,
+    updated,
+    total: inserted + updated,
+    skipped_instructor: skippedInstructor,
+    skipped_unknown: skippedUnknown
+  });
 });
 
 app.get("/api/imports/student-profile", (req, res) => {
@@ -4707,6 +4729,71 @@ app.get("/api/lti13/token-matrix", async (req, res) => {
 });
 /* YANIV_LTI13_TOKEN_MATRIX_DIAG_20260510_END */
 
+/* MTH_NRPS_ROLE_CLASSIFICATION_V1
+   Robust, reusable NRPS role classification shared by the preview, the
+   participants-breakdown counts, and the learner sync guard.
+
+   A single member can carry several roles (e.g. both a context Learner role and
+   an institution Instructor role). Classification is therefore evaluated over
+   ALL of a member's roles, and any staff/team signal wins over a learner signal:
+   a Teacher who is also enrolled as a Learner must never be saved as a student.
+
+   Role values may be full IMS URNs/URLs
+   (e.g. ".../membership#Instructor", ".../institution/person#Faculty") or bare
+   short names ("Instructor", "Student"). We normalize to the trailing segment
+   after the last "#" or "/" before matching.
+
+   - isInstructorRole / isManagerRole: teacher/team/staff signals.
+   - isLearnerRole: learner-like signals (Learner/Student; Member only when no
+     staff/team signal exists on the same member — see classifyNrpsMember).
+   - isUnknownRole: not recognized as either.
+   - classifyNrpsMember(member): "instructor" | "learner" | "unknown" over the
+     member's full role set. Ambiguous -> "unknown" (never silently a student). */
+function nrpsShortRole(role) {
+  return String(role || "").split(/[#/]/).pop().trim();
+}
+
+// Manager / admin / course-creator style roles. Kept separate so callers can
+// distinguish a course manager from a teaching role when useful; for the
+// learner-vs-team decision these all count as team (non-learner).
+function isManagerRole(role) {
+  return /^(manager|administrator|admin|coursecreator|sysadmin|accountadmin)$/i.test(nrpsShortRole(role));
+}
+
+// Teacher / team / staff roles. Includes manager roles so any single call is a
+// complete "is this a team member" test.
+function isInstructorRole(role) {
+  const short = nrpsShortRole(role);
+  if (isManagerRole(role)) return true;
+  return /^(instructor|teacher|editingteacher|noneditingteacher|faculty|staff|mentor|teachingassistant|ta|tutor|contentdeveloper)$/i.test(short);
+}
+
+// Learner-like roles. "Member" is intentionally excluded here: a bare Member
+// signal is only treated as a learner by classifyNrpsMember, and only when the
+// member carries no team/staff signal at all.
+function isLearnerRole(role) {
+  return /^(learner|student|guest)$/i.test(nrpsShortRole(role));
+}
+
+function isUnknownRole(role) {
+  return !isInstructorRole(role) && !isLearnerRole(role);
+}
+
+// Classify a whole NRPS member by its full role set.
+// Precedence: any team/staff/manager signal => "instructor"; else any explicit
+// learner signal (or a bare "Member" with no team signal) => "learner";
+// otherwise "unknown". Ambiguous members are NEVER classified as learners.
+function classifyNrpsMember(member) {
+  const roles = Array.isArray(member?.roles) ? member.roles : [];
+  if (roles.some(isInstructorRole)) return "instructor";
+  if (roles.some(isLearnerRole)) return "learner";
+  // A bare context "Member" with no team signal is learner-like (Moodle hands a
+  // plain membership role to enrolled participants who have no elevated role).
+  if (roles.some(role => /^member$/i.test(nrpsShortRole(role)))) return "learner";
+  return "unknown";
+}
+/* MTH_NRPS_ROLE_CLASSIFICATION_V1_END */
+
 /* YANIV_NRPS_PREVIEW_SAFE_20260509_START */
 function nrpsPreviewBase64Url(input) {
   return Buffer.from(input)
@@ -5095,11 +5182,19 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
     const membersNamed = members
       .map(member => {
         const name = String(member?.name || [member?.given_name, member?.family_name].filter(Boolean).join(" ") || "").trim();
-        const roles = Array.isArray(member?.roles) ? member.roles.map(r => String(r).split("#").pop()) : [];
-        const isInstructor = roles.some(r => /instructor|teacher|faculty|staff|mentor/i.test(String(r)));
+        const roleKind = classifyNrpsMember(member);
         const idSource = member?.user_id || member?.sub || member?.lis_person_sourcedid || name;
         const idHash = crypto.createHash("sha256").update(String(idSource || "")).digest("hex").slice(0, 16);
-        return { id: idHash, name, is_instructor: isInstructor, has_email: Boolean(member?.email) };
+        return {
+          id: idHash,
+          name,
+          // role_kind is the robust classification ("learner" | "instructor" |
+          // "unknown"); is_instructor stays for backwards compatibility with
+          // existing consumers. Only role_kind === "learner" is safe to save.
+          role_kind: roleKind,
+          is_instructor: roleKind === "instructor",
+          has_email: Boolean(member?.email)
+        };
       })
       .filter(m => m.name);
 
@@ -5171,20 +5266,8 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
    preview). Returns ONLY aggregate counts and safe diagnostics — no names,
    no emails, no raw user IDs, no access token, no client assertion, no secrets.
    Numbers come exclusively from the live NRPS response (never hard-coded).
-   Does not persist anything. Full robust role classifier is PR 4; this PR keeps
-   the basic Learner/Instructor separation already used by the preview. */
-function classifyNrpsRole(roles) {
-  const shortRoles = (Array.isArray(roles) ? roles : [])
-    .map(role => String(role).split("#").pop() || String(role));
-  const isInstructor = shortRoles.some(role =>
-    /instructor|teacher|faculty|staff|mentor|manager|administrator|admin/i.test(role)
-  );
-  const isLearner = shortRoles.some(role => /learner|student/i.test(role));
-  if (isInstructor) return "instructor";
-  if (isLearner) return "learner";
-  return "unknown";
-}
-
+   Does not persist anything. Uses the shared robust classifier
+   classifyNrpsMember (MTH_NRPS_ROLE_CLASSIFICATION_V1). */
 app.get("/api/lti13/participants-breakdown", async (req, res) => {
   lti13NoStore(res);
 
@@ -5259,7 +5342,7 @@ app.get("/api/lti13/participants-breakdown", async (req, res) => {
     let unknownCount = 0;
     let hasNamesCount = 0;
     for (const member of members) {
-      const kind = classifyNrpsRole(member?.roles);
+      const kind = classifyNrpsMember(member);
       if (kind === "learner") learnersCount += 1;
       else if (kind === "instructor") instructorsCount += 1;
       else unknownCount += 1;
