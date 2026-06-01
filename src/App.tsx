@@ -4,7 +4,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useKeepAlive } from "@/hooks/useKeepAlive";
-import { useKeepAlive } from "@/hooks/useKeepAlive";
 import AppLayout from "@/components/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import MissingData from "./pages/MissingData";
