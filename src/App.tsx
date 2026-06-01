@@ -12,6 +12,7 @@ import CapabilityProbe from "./pages/CapabilityProbe";
 import IsolationStatus from "./pages/IsolationStatus";
 import IsolationLiveCheck from "./pages/IsolationLiveCheck";
 import Students from "./pages/Students";
+import Teachers from "./pages/Teachers";
 import StudentProfile from "./pages/StudentProfile";
 import Tasks from "./pages/Tasks";
 import Chapters from "./pages/Chapters";
@@ -61,6 +62,7 @@ const App = () => {
             <Route path="/" element={<Dashboard />} />
             <Route path="/sites" element={<Navigate to="/" replace />} />
             <Route path="/students" element={<Students />} />
+            <Route path="/teachers" element={<Teachers />} />
             <Route path="/students/:id" element={<StudentProfile />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/chapters" element={<Chapters />} />
