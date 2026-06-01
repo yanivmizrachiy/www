@@ -7,7 +7,7 @@ import crypto from "crypto";
 import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
 import { buildBatchProvenance } from "./provenance.js";
-import { buildPracticeTimeGate } from "./practiceTime.js";
+import { buildPracticeTimeGate, MIN_LOG_EVENTS_FOR_PRACTICE_TIME } from "./practiceTime.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -4061,20 +4061,48 @@ app.get("/api/imports/overview", async (req, res) => {
 // in-memory store only when Supabase is unconfigured or the query errors.
 const PRACTICE_GAP_SECONDS = 1800; // 30 minutes between events ends a session
 
+// MTH_LOGS_PRACTICE_TIME_TRUTH_V1
+// Detect whether the imported log rows carry an OFFICIAL duration field from
+// Moodle. Moodle standard logs record discrete events, not elapsed time, so a
+// duration source is normally absent. We never invent one: time is presented as
+// an estimate (sessionization heuristic) unless a real duration field exists.
+function rowOfficialDurationSeconds(row) {
+  const raw = row?.duration_seconds ?? row?.duration ?? row?.timeDiff ?? null;
+  const num = Number(raw);
+  if (raw === null || raw === undefined || !Number.isFinite(num) || num <= 0) return null;
+  return num;
+}
+
 function buildPracticeTimeFromLogEvents(rows, { from, to, studentId }) {
+  const allRows = Array.isArray(rows) ? rows : [];
+  // Truthful source detection — is there any real duration field at all?
+  const rowsWithOfficialDuration = allRows.filter(r => rowOfficialDurationSeconds(r) !== null).length;
+  const hasOfficialDuration = rowsWithOfficialDuration > 0;
+
+  // Safe activity-event counts (FACT, not duration) for recent windows.
+  const nowMs = Date.now();
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  let events24h = 0;
+  let eventsWeek = 0;
+
   const byStudent = new Map();
-  for (const row of Array.isArray(rows) ? rows : []) {
+  for (const row of allRows) {
     const at = row.event_time || row.created_at || null;
     if (!at) continue;
     const key = String(row.moodle_user_id || row.actor_full_name || "unknown");
     if (studentId && key !== studentId) continue;
+    const ms = Date.parse(at);
+    if (Number.isFinite(ms)) {
+      if (nowMs - ms <= DAY_MS) events24h += 1;
+      if (nowMs - ms <= 7 * DAY_MS) eventsWeek += 1;
+    }
     let bucket = byStudent.get(key);
     if (!bucket) {
       bucket = { student_id: key, student_name: row.actor_full_name || null, events: [] };
       byStudent.set(key, bucket);
     }
     if (!bucket.student_name && row.actor_full_name) bucket.student_name = row.actor_full_name;
-    bucket.events.push({ at, ms: Date.parse(at) });
+    bucket.events.push({ at, ms });
   }
 
   const days = [];
@@ -4161,8 +4189,28 @@ function buildPracticeTimeFromLogEvents(rows, { from, to, studentId }) {
 
   perStudent.sort((a, b) => b.total_seconds - a.total_seconds);
 
+  const logCount = allRows.length;
+  const enoughLogs = logCount >= MIN_LOG_EVENTS_FOR_PRACTICE_TIME;
+
   return {
-    meta: { gap_seconds: PRACTICE_GAP_SECONDS, from: from || null, to: to || null, student_id: studentId || null },
+    meta: {
+      gap_seconds: PRACTICE_GAP_SECONDS,
+      from: from || null,
+      to: to || null,
+      student_id: studentId || null,
+      // Truth flags: time is an ESTIMATE unless an official duration field exists.
+      has_official_duration: hasOfficialDuration,
+      time_basis: hasOfficialDuration ? "official" : "estimate",
+      rows_with_official_duration: rowsWithOfficialDuration,
+      log_event_count: logCount,
+      min_log_events: MIN_LOG_EVENTS_FOR_PRACTICE_TIME,
+      enough_logs: enoughLogs,
+      no_official_duration_message_he: hasOfficialDuration
+        ? null
+        : "אין שדה משך זמן רשמי — לא ניתן לחשב זמן אמיתי.",
+      events_last_24h: events24h,
+      events_last_week: eventsWeek
+    },
     days,
     per_student: perStudent
   };
@@ -4189,7 +4237,10 @@ app.get("/api/imports/time-range", async (req, res) => {
         event_time: e.event_time || e.timestamp || e.time || e.created_at || null,
         created_at: e.created_at || null,
         actor_full_name: e.actor_full_name || e.actor || e.student_name || null,
-        moodle_user_id: e.moodle_user_id != null ? String(e.moodle_user_id) : null
+        moodle_user_id: e.moodle_user_id != null ? String(e.moodle_user_id) : null,
+        // Pass through an official duration field only if the source truly carries
+        // one. Never invented — normally absent in Moodle event logs.
+        duration_seconds: e.duration_seconds ?? e.duration ?? e.timeDiff ?? null
       }))
       .filter(e => {
         if (!e.event_time) return false;

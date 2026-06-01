@@ -425,8 +425,25 @@ export interface PracticePerStudentRow {
   first_at: string | null;
   last_at: string | null;
 }
+export interface PracticeMeta {
+  gap_seconds: number;
+  from: string | null;
+  to: string | null;
+  student_id: string | null;
+  // Truth flags: time is an estimate (sessionization) unless Moodle supplies an
+  // official duration field. Older payloads may omit these — treat absent as estimate.
+  has_official_duration?: boolean;
+  time_basis?: "official" | "estimate";
+  rows_with_official_duration?: number;
+  log_event_count?: number;
+  min_log_events?: number;
+  enough_logs?: boolean;
+  no_official_duration_message_he?: string | null;
+  events_last_24h?: number;
+  events_last_week?: number;
+}
 export interface PracticeOverview {
-  meta: { gap_seconds: number; from: string | null; to: string | null; student_id: string | null };
+  meta: PracticeMeta;
   days: PracticeDayRow[];
   per_student: PracticePerStudentRow[];
 }
