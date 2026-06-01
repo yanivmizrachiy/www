@@ -5851,6 +5851,60 @@ function lti13VerifyCoreClaims(req, payload) {
   };
 }
 
+// PR 13 — Build a safe admin diagnostic report when an unknown
+// client_id/deployment_id launches LTI 1.3. The report never auto-approves,
+// never mutates the allowlist, and never returns secrets, private keys,
+// access tokens, client assertions, the JWT body, or PII.
+function lti13BuildRegistrationDiagnostic(payload, claimVerification, signature) {
+  const audienceRaw = payload && payload.aud;
+  const audClientId = Array.isArray(audienceRaw)
+    ? compactString(audienceRaw[0])
+    : compactString(audienceRaw);
+  const deploymentId = compactString(lti13Claim(payload, "deployment_id"));
+  const messageType = compactString(lti13Claim(payload, "message_type"));
+  const version = compactString(lti13Claim(payload, "version"));
+  const issuer = compactString(payload && payload.iss);
+
+  const checks = (claimVerification && claimVerification.checks) || {};
+  const signatureOk = !!(signature && signature.ok);
+  const nonceOk = !!checks.nonce_matches;
+  const matchedAllowlist = !!checks.deployment_id && !!checks.audience;
+
+  // suggested env line for LTI13_ALLOWED_REGISTRATIONS — identifiers only.
+  const suggestedEnvLine = audClientId && deploymentId
+    ? `${audClientId}:${deploymentId}`
+    : null;
+
+  return {
+    report_type: "lti13-unknown-registration",
+    issuer: issuer || null,
+    audience: audClientId || null,
+    client_id: audClientId || null,
+    deployment_id: deploymentId || null,
+    message_type: messageType || null,
+    version: version || null,
+    signature_ok: signatureOk,
+    nonce_ok: nonceOk,
+    matched_allowlist: matchedAllowlist,
+    suggested_env_line: suggestedEnvLine,
+    suggested_env_var: "LTI13_ALLOWED_REGISTRATIONS",
+    auto_approved: false,
+    allowlist_modified: false,
+    privacy: {
+      no_secrets: true,
+      no_private_key: true,
+      no_access_token: true,
+      no_client_assertion: true,
+      no_jwt_body: true,
+      no_pii: true
+    },
+    admin_action_he:
+      "client_id/deployment_id אינם ברשימת ההרשאות. כדי לאשר התקנה זו, " +
+      "הוסף את השורה המוצעת ל-LTI13_ALLOWED_REGISTRATIONS ב-Render (לעולם לא ב-GitHub) והפעל מחדש את ה-launch.",
+    now: new Date().toISOString()
+  };
+}
+
 function lti13ExtractServiceClaims(payload) {
   const nrps =
     payload?.["https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice"] ||
@@ -6018,6 +6072,30 @@ app.all("/api/lti13/launch", async (req, res) => {
   const claimVerification = lti13VerifyCoreClaims(req, payload);
 
   if (!claimVerification.ok) {
+    // PR 13 — unknown client_id/deployment_id: signature is valid but the
+    // registration is not in the trusted allowlist. Do not auto-approve and do
+    // not modify the allowlist. Return a safe admin diagnostic that excludes
+    // secrets, private keys, access tokens, client assertions, the JWT body,
+    // and the trusted allowlist contents.
+    const checks = claimVerification.checks || {};
+    const unknownRegistration = signature.ok && (!checks.audience || !checks.deployment_id);
+
+    if (unknownRegistration) {
+      return res.status(403).json({
+        ok: false,
+        mode: "phase3-unknown-registration",
+        message: "LTI 1.3 signature is valid, but this client_id/deployment_id is not in the trusted allowlist. Launch was not auto-approved.",
+        registration_diagnostic: lti13BuildRegistrationDiagnostic(payload, claimVerification, signature),
+        safety: {
+          existing_lti11_endpoint_kept: CANONICAL_LTI_ENDPOINT,
+          no_fake_success: true,
+          auto_approved: false,
+          allowlist_modified: false
+        },
+        now: new Date().toISOString()
+      });
+    }
+
     return res.status(401).json({
       ok: false,
       mode: "phase3-core-claims-verification-failed",
