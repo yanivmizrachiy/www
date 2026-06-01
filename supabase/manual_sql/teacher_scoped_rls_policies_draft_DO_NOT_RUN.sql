@@ -1,0 +1,232 @@
+-- Moodle Teacher Hub — Teacher-scoped & course-scoped RLS policies (DRAFT)
+-- ===========================================================================
+-- !!! DRAFT — DO NOT RUN IN PRODUCTION WITHOUT REVIEW !!!
+-- !!! DRAFT — DO_NOT_RUN — plan-only, not applied, not verified           !!!
+-- ===========================================================================
+--
+-- Status:        DRAFT / PLAN-ONLY. This SQL has NOT been run anywhere.
+-- Teacher Release: NO (unchanged). This file does not change that.
+-- Filename note:  this file intentionally carries the DO_NOT_RUN marker so the
+--                 static audit (scripts/checks/supabase-rls-isolation-readiness
+--                 -audit.cjs) treats it as a non-authoritative draft and does
+--                 NOT count these CREATE POLICY statements as live readiness.
+--                 Counting a draft as "ready" would be a false truth claim.
+--
+-- Purpose:
+--   Capture a reviewable PLAN for teacher-scoped and course-scoped Row Level
+--   Security policies on every sensitive table. Today RLS is ENABLED on these
+--   tables but NO policy exists, so access is service-role-only (default-deny).
+--   These drafts describe what scoped policies WOULD look like once a real
+--   teacher-authenticated read path exists. They are NOT a migration.
+--
+-- Hard safety rules honored by this draft:
+--   - No DROP, no DELETE, no TRUNCATE.
+--   - No data rows inserted. No fake/demo data.
+--   - No secrets, no live project IDs, no live teacher identifiers.
+--   - No change to existing schema, migrations, or service-role grants.
+--   - Does not touch: LTI launch flow / allowlist, manual import fallback,
+--     evidence logs, applied Supabase migrations, student sync behavior.
+--
+-- ===========================================================================
+-- SECTION 0 — Assumptions that MUST be verified before any apply (TODO)
+-- ===========================================================================
+-- These are ASSUMPTIONS, not verified facts. Marked TODO so no certainty is
+-- implied. Verify each against the live schema in a DISPOSABLE dev project.
+--
+--   TODO[A1]: There is (or will be) a teacher-authenticated DB role/JWT whose
+--             claims expose a stable teacher identifier. The exact claim path
+--             is NOT verified. Below we assume a JWT claim `teacher_id` reached
+--             via `auth.jwt() ->> 'teacher_id'`. This may instead need to be
+--             `auth.uid()` mapped through a teachers lookup, or a custom claim.
+--             לא אומת.
+--   TODO[A2]: `public.teachers.id` is the canonical teacher key, and other
+--             tables reference a teacher via a column. NOT all sensitive tables
+--             currently HAVE a teacher_id column (see per-table notes). Some are
+--             only course-scoped today. Adding columns is OUT OF SCOPE here.
+--             לא אומת.
+--   TODO[A3]: Course ownership mapping (which teacher owns which course_id) is
+--             NOT modeled by a verified table/column yet. Course-scoped policies
+--             below assume a future `teacher_courses(teacher_id, course_id)`
+--             membership table OR a verified `courses.teacher_id`. Neither is
+--             confirmed to exist. לא אומת.
+--   TODO[A4]: `course_id` is stored as TEXT (Moodle course id) across tables,
+--             not as a FK uuid. Any join in a policy must match TEXT to TEXT.
+--   TODO[A5]: service_role continues to BYPASS RLS by design in Supabase. These
+--             policies are for a NON-service, teacher-scoped read path only.
+--             Backend writes via service_role are unaffected. לא אומת that any
+--             non-service teacher key is actually in use today.
+--
+-- Naming convention (aligned with existing manual_sql style: lower_snake_case):
+--   <table>_teacher_select   — teacher-scoped SELECT
+--   <table>_course_select    — course-scoped SELECT (via membership)
+-- Each policy is wrapped so a re-run would not error if it already exists; but
+-- again: DO NOT RUN. This is a plan.
+--
+-- ===========================================================================
+-- SECTION 1 — Helper predicate shapes (PLAN — choose ONE per table at review)
+-- ===========================================================================
+-- Two candidate scoping strategies are documented. Reviewers must pick the one
+-- that matches the verified auth model before any apply.
+--
+--   STRATEGY T (teacher-direct):
+--     row belongs to the authenticated teacher via a teacher_id column.
+--       USING ( teacher_id::text = (auth.jwt() ->> 'teacher_id') )
+--
+--   STRATEGY C (course-membership):
+--     row belongs to a course the authenticated teacher is a member of.
+--       USING ( course_id IN (
+--         SELECT tc.course_id FROM public.teacher_courses tc
+--         WHERE tc.teacher_id::text = (auth.jwt() ->> 'teacher_id')
+--       ) )
+--     TODO[A3]: public.teacher_courses is NOT confirmed to exist. לא אומת.
+--
+-- The blocks below are commented out on purpose. They are illustrative DRAFT
+-- text, not executable policy. Uncommenting + running is a separate, reviewed,
+-- dev-only step.
+--
+-- ===========================================================================
+-- SECTION 2 — Per-table DRAFT policies
+-- ===========================================================================
+
+-- ---------------------------------------------------------------------------
+-- teachers  (teacher identity)
+--   Scope: a teacher may read ONLY their own teacher row.
+--   Verified columns: id (uuid PK). teacher_id-equivalent = id itself.
+-- ---------------------------------------------------------------------------
+-- DRAFT — DO NOT RUN:
+-- create policy teachers_teacher_select on public.teachers
+--   for select to authenticated
+--   using ( id::text = (auth.jwt() ->> 'teacher_id') );
+-- TODO: confirm claim path (TODO[A1]). No course scope applies to identity.
+
+-- ---------------------------------------------------------------------------
+-- courses  (course identity)
+--   Scope: a teacher may read ONLY courses they own / are a member of.
+--   Verified columns: id (uuid PK), moodle_course_id (text). NO teacher_id
+--   column is confirmed on courses. לא אומת.
+-- ---------------------------------------------------------------------------
+-- DRAFT — DO NOT RUN (Strategy C, needs teacher_courses — TODO[A3]):
+-- create policy courses_course_select on public.courses
+--   for select to authenticated
+--   using ( moodle_course_id IN (
+--     select tc.course_id from public.teacher_courses tc
+--     where tc.teacher_id::text = (auth.jwt() ->> 'teacher_id')
+--   ) );
+
+-- ---------------------------------------------------------------------------
+-- students  (student PII — highest sensitivity)
+--   Scope: course-scoped. A teacher may read students only for courses they own.
+--   Verified columns: space_id (text), import_batch_id (uuid). NO direct
+--   teacher_id; course linkage is indirect (via import_batches.course_id /
+--   space_id). לא אומת which key is authoritative for course scope.
+-- ---------------------------------------------------------------------------
+-- DRAFT — DO NOT RUN (course-scoped via import batch — TODO[A2]/TODO[A3]):
+-- create policy students_course_select on public.students
+--   for select to authenticated
+--   using ( import_batch_id IN (
+--     select ib.id from public.import_batches ib
+--     where ib.course_id IN (
+--       select tc.course_id from public.teacher_courses tc
+--       where tc.teacher_id::text = (auth.jwt() ->> 'teacher_id')
+--     )
+--   ) );
+
+-- ---------------------------------------------------------------------------
+-- grade_items  (grade structure)
+--   Scope: course-scoped. Verified columns: course_id (text), import_batch_id.
+-- ---------------------------------------------------------------------------
+-- DRAFT — DO NOT RUN (Strategy C — TODO[A3]):
+-- create policy grade_items_course_select on public.grade_items
+--   for select to authenticated
+--   using ( course_id IN (
+--     select tc.course_id from public.teacher_courses tc
+--     where tc.teacher_id::text = (auth.jwt() ->> 'teacher_id')
+--   ) );
+
+-- ---------------------------------------------------------------------------
+-- grade_results  (grades — student PII + assessment)
+--   Scope: course-scoped. Verified columns: course_id (text), import_batch_id,
+--   student_id (uuid).
+-- ---------------------------------------------------------------------------
+-- DRAFT — DO NOT RUN (Strategy C — TODO[A3]):
+-- create policy grade_results_course_select on public.grade_results
+--   for select to authenticated
+--   using ( course_id IN (
+--     select tc.course_id from public.teacher_courses tc
+--     where tc.teacher_id::text = (auth.jwt() ->> 'teacher_id')
+--   ) );
+
+-- ---------------------------------------------------------------------------
+-- log_events  (activity logs)
+--   Scope: course-scoped. Verified columns: course_id (text), import_batch_id.
+-- ---------------------------------------------------------------------------
+-- DRAFT — DO NOT RUN (Strategy C — TODO[A3]):
+-- create policy log_events_course_select on public.log_events
+--   for select to authenticated
+--   using ( course_id IN (
+--     select tc.course_id from public.teacher_courses tc
+--     where tc.teacher_id::text = (auth.jwt() ->> 'teacher_id')
+--   ) );
+
+-- ---------------------------------------------------------------------------
+-- import_batches  (import scoping anchor)
+--   Scope: teacher-direct preferred. Verified columns: teacher_id (uuid, may be
+--   null), course_id (text). NOTE: teacher_id is nullable today; rows with NULL
+--   teacher_id would be invisible to a teacher-scoped policy. לא אומת that all
+--   batches carry teacher_id.
+-- ---------------------------------------------------------------------------
+-- DRAFT — DO NOT RUN (Strategy T, falls back to course — TODO[A1]/TODO[A3]):
+-- create policy import_batches_teacher_select on public.import_batches
+--   for select to authenticated
+--   using ( teacher_id::text = (auth.jwt() ->> 'teacher_id') );
+
+-- ---------------------------------------------------------------------------
+-- teacher_sessions  (session identity)
+--   Scope: a teacher may read ONLY their own sessions.
+--   Verified columns: moodle_user_id (text), course_id (text). NO direct
+--   internal teacher_id column; mapping moodle_user_id -> teacher identity is
+--   NOT verified. לא אומת.
+-- ---------------------------------------------------------------------------
+-- DRAFT — DO NOT RUN (needs verified identity mapping — TODO[A1]/TODO[A2]):
+-- create policy teacher_sessions_teacher_select on public.teacher_sessions
+--   for select to authenticated
+--   using ( moodle_user_id = (auth.jwt() ->> 'moodle_user_id') );
+-- Recommendation at review: keep NO client SELECT (server/service-role only)
+-- unless a concrete teacher-scoped read path is required.
+
+-- ---------------------------------------------------------------------------
+-- lti_launches  (launch identity / audit)
+--   Scope: a teacher may read ONLY launches attributed to them.
+--   Verified columns: teacher_identifier_hash (text), course_id (text). Stores
+--   a HASH only (privacy by design). A teacher-scoped policy must compare the
+--   same hash derivation, which is NOT defined here. לא אומת.
+-- ---------------------------------------------------------------------------
+-- DRAFT — DO NOT RUN (hash comparison undefined — TODO[A1]):
+-- create policy lti_launches_teacher_select on public.lti_launches
+--   for select to authenticated
+--   using ( teacher_identifier_hash = (auth.jwt() ->> 'teacher_identifier_hash') );
+-- Recommendation at review: this is an aggregate audit log; default to NO client
+-- SELECT (service-role only) unless a teacher-facing audit view is required.
+
+-- ===========================================================================
+-- SECTION 3 — What MUST be checked before this becomes a real migration
+-- ===========================================================================
+--   [ ] Confirm the teacher-authenticated read path actually exists. If all
+--       reads remain via service_role, these policies add no runtime behavior
+--       and the honest state stays "service-role-only (default-deny)". לא אומת.
+--   [ ] Confirm the exact JWT/claim shape for teacher identity (TODO[A1]).
+--   [ ] Confirm or design the course-ownership mapping (teacher_courses or a
+--       verified courses.teacher_id) (TODO[A3]). Schema additions are a separate
+--       reviewed migration, not this draft.
+--   [ ] Confirm nullable teacher_id on import_batches is acceptable or backfilled
+--       under review (no silent data writes).
+--   [ ] Decide per audit table (teacher_sessions, lti_launches) whether ANY
+--       client SELECT is exposed at all; default recommendation is none.
+--   [ ] Apply ONLY in a DISPOSABLE dev Supabase project first.
+--   [ ] Record a LIVE cross-teacher read-blocked verification as evidence in
+--       STATE/evidence-log.md before claiming DB-layer isolation.
+--   [ ] Teacher Release stays NO regardless; it depends on the full gate.
+--
+-- ===========================================================================
+-- END OF DRAFT — nothing above was executed. SQL NOT RUN. לא אומת.
+-- ===========================================================================
