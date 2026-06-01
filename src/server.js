@@ -3885,7 +3885,7 @@ app.post("/api/imports/nrps-sync", async (req, res) => {
 });
 /* MTH_NRPS_SERVER_OWNED_SYNC_V1_END */
 
-app.get("/api/imports/student-profile", (req, res) => {
+app.get("/api/imports/student-profile", async (req, res) => {
   noStore(res);
   const session = importSessionFromRequest(req);
   if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
@@ -3896,7 +3896,30 @@ app.get("/api/imports/student-profile", (req, res) => {
   const spaceId = session.spaceId || "unknown-space";
   const inSpace = (row) => !row || !row.space_id && !row.course_id || row.space_id === spaceId || row.course_id === spaceId;
 
-  const rawStudent = store.students.find(s => s.id === studentId && (!s.space_id || s.space_id === spaceId));
+  // Resolve the student record. The listing endpoint prefers Supabase, so a
+  // student id shown there may not exist in the local store. To guarantee every
+  // listed student opens a valid profile, fall back to a space-isolated Supabase
+  // lookup before treating the id as unknown. Grades/completion/logs still come
+  // only from the local store (their datasets live there); when none exist the
+  // profile renders the calm empty-data state, not an error.
+  let rawStudent = store.students.find(s => s.id === studentId && (!s.space_id || s.space_id === spaceId));
+  if (!rawStudent) {
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("students")
+          .select("id, full_name, email, external_username, external_id, updated_at")
+          .eq("space_id", spaceId)
+          .eq("id", studentId)
+          .limit(1)
+          .maybeSingle();
+        if (!error && data && data.id) rawStudent = data;
+      } catch {
+        // Fall through to STUDENT_NOT_FOUND below.
+      }
+    }
+  }
   if (!rawStudent) return res.json({ ok: false, error: "STUDENT_NOT_FOUND" });
   const student = importedStudentDto(rawStudent);
 
