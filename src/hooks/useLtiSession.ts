@@ -93,6 +93,14 @@ export function clearLtiToken() {
   try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
 }
 
+// Unified NRPS preview URL. Always appends the current LTI token as ?t=<token>
+// so server session resolution (token/query/header/cookie) works the same for
+// every caller. Use together with `{ credentials: "include" }` on the fetch.
+export function nrpsPreviewUrl(): string {
+  const token = getLtiToken();
+  return "/api/lti13/nrps-preview" + (token ? "?t=" + encodeURIComponent(token) : "");
+}
+
 interface ContextPayload {
   session: SessionInfo;
   site: SiteInfo;
