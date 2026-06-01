@@ -4757,48 +4757,287 @@ function nrpsPreviewSanitizeMember(member) {
   };
 }
 
+/* MTH_NRPS_CURRENT_SESSION_FETCH_V1
+   Shared read-only fetch of NRPS membership for the CURRENT verified LTI 1.3
+   session only (token/query/header/cookie via importSessionFromRequest, never
+   the global/latest session). Performs env check -> discovery -> client-credentials
+   token -> membership GET. Returns a discriminated result; never persists anything
+   and never returns the access token / client assertion / private key to callers.
+   Used by both /api/lti13/nrps-preview and /api/lti13/participants-breakdown so the
+   broad token/discovery/membership logic is defined once. */
+async function lti13FetchCurrentNrpsMembers(req) {
+  const envStatus = lti13EnvStatus();
+  if (!envStatus.configured) {
+    return { ok: false, stage: "env", error: "LTI13_ENV_NOT_CONFIGURED", httpStatus: 503, missing: envStatus.missing };
+  }
+
+  const liveSession = importSessionFromRequest(req) || sessionFromRequest(req);
+  const liveServices = liveSession?.automaticServices || {};
+  const membershipUrl = liveServices?.nrps?.context_memberships_url || "";
+  const statusJson = {
+    has_latest_lti13_session: Boolean(liveSession),
+    has_nrps: Boolean(membershipUrl),
+    has_ags: Boolean(liveServices?.has_ags),
+    service_claims: liveServices
+  };
+
+  if (!statusJson.has_latest_lti13_session || !membershipUrl) {
+    return {
+      ok: false,
+      stage: "session-or-nrps-claim",
+      error: "NO_LIVE_LTI13_NRPS_SESSION",
+      httpStatus: 200,
+      has_latest_lti13_session: Boolean(statusJson.has_latest_lti13_session),
+      has_nrps: Boolean(statusJson.has_nrps),
+      has_ags: Boolean(statusJson.has_ags)
+    };
+  }
+
+  /* YANIV_NRPS_TOKEN_DISCOVERY_FIX_20260509_START */
+  const configuredTokenUrl = env("LTI13_TOKEN_URL");
+  const discoveryUrl = env(
+    "LTI13_OPENID_CONFIGURATION_URL",
+    env("LTI13_ISSUER").replace(/\/+$/, "") + "/mod/lti/openid-configuration.php"
+  );
+
+  let tokenUrl = configuredTokenUrl;
+  let tokenEndpointSource = "env";
+  let discoveryHttpStatus = null;
+  let discoveryErrorPreview = "";
+  let discoveryTokenEndpoint = "";
+  let discoveryAuthorizationEndpoint = "";
+  let discoveryJwksUri = "";
+  let discoveryScopes = [];
+
+  try {
+    const discoveryResponse = await fetch(discoveryUrl, {
+      headers: { Accept: "application/json" }
+    });
+    discoveryHttpStatus = discoveryResponse.status;
+    const discoveryText = await discoveryResponse.text();
+
+    if (discoveryResponse.ok) {
+      const discoveryJson = JSON.parse(discoveryText);
+      discoveryTokenEndpoint = discoveryJson.token_endpoint || "";
+      discoveryAuthorizationEndpoint = discoveryJson.authorization_endpoint || "";
+      discoveryJwksUri = discoveryJson.jwks_uri || "";
+      discoveryScopes = Array.isArray(discoveryJson.scopes_supported) ? discoveryJson.scopes_supported : [];
+      if (discoveryTokenEndpoint) {
+        tokenUrl = discoveryTokenEndpoint;
+        tokenEndpointSource = "openid-configuration";
+      }
+    } else {
+      discoveryErrorPreview = nrpsPreviewSafeText(discoveryText, 600);
+    }
+  } catch (error) {
+    discoveryErrorPreview = nrpsPreviewSafeText(error?.message || error, 600);
+  }
+  /* YANIV_NRPS_TOKEN_DISCOVERY_FIX_20260509_END */
+  const clientId = String(liveSession?.clientId || liveSession?.client_id || env("LTI13_CLIENT_ID"));
+  const deploymentIdForAssertion = String(liveSession?.deploymentId || liveSession?.deployment_id || env("LTI13_DEPLOYMENT_ID"));
+  const keyId = env("LTI13_KEY_ID");
+  const privateKeyRaw = env("LTI13_PRIVATE_KEY_PEM");
+  const privateKeyPem = privateKeyRaw.includes("\n")
+    ? privateKeyRaw.replace(/\n/g, String.fromCharCode(10))
+    : privateKeyRaw;
+
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: "RS256", typ: "JWT", kid: keyId };
+  const payload = {
+    iss: clientId,
+    sub: clientId,
+    aud: tokenUrl,
+    "https://purl.imsglobal.org/spec/lti/claim/deployment_id": deploymentIdForAssertion,
+    iat: now - 5,
+    exp: now + 60,
+    jti: crypto.randomUUID()
+  };
+  /* YANIV_NRPS_DEPLOYMENT_CLAIM_20260509 */
+
+  const signingInput = nrpsPreviewBase64UrlJson(header) + "." + nrpsPreviewBase64UrlJson(payload);
+  const signature = crypto
+    .sign("RSA-SHA256", Buffer.from(signingInput), privateKeyPem)
+    .toString("base64")
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+
+  const clientAssertion = signingInput + "." + signature;
+
+  /* YANIV_NRPS_TOKEN_CLIENT_ID_DIAG_20260509_START */
+  function buildTokenBody(includeClientId) {
+    const entries = {
+      grant_type: "client_credentials",
+      client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+      client_assertion: clientAssertion,
+      scope: "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"
+    };
+    if (includeClientId) entries.client_id = clientId;
+    return new URLSearchParams(entries);
+  }
+
+  async function requestTokenVariant(includeClientId) {
+    const body = buildTokenBody(includeClientId);
+    const response = await fetch(tokenUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Accept: "application/json"
+      },
+      body: body.toString()
+    });
+    const text = await response.text();
+    let json = {};
+    try { json = JSON.parse(text); } catch {}
+    return {
+      includeClientId,
+      response,
+      text,
+      json,
+      ok: response.ok && Boolean(json.access_token)
+    };
+  }
+
+  let tokenAttempt = await requestTokenVariant(false);
+  let fallbackAttempt = null;
+  if (!tokenAttempt.ok) {
+    fallbackAttempt = await requestTokenVariant(true);
+    if (fallbackAttempt.ok) tokenAttempt = fallbackAttempt;
+  }
+
+  const tokenResponse = tokenAttempt.response;
+  const tokenText = tokenAttempt.text;
+  const tokenJson = tokenAttempt.json;
+  const tokenVariantUsed = tokenAttempt.includeClientId ? "with_client_id" : "without_client_id";
+  const tokenFallbackSummary = fallbackAttempt ? {
+    tried: true,
+    include_client_id: true,
+    http_status: fallbackAttempt.response.status,
+    got_access_token: Boolean(fallbackAttempt.json?.access_token),
+    error: fallbackAttempt.json?.error || null,
+    error_description_preview: nrpsPreviewSafeText(fallbackAttempt.json?.error_description || fallbackAttempt.text, 500)
+  } : { tried: false };
+  /* YANIV_NRPS_TOKEN_CLIENT_ID_DIAG_20260509_END */
+
+  const tokenDiagnostics = {
+    configured_token_url_host: configuredTokenUrl ? new URL(configuredTokenUrl).host : null,
+    active_token_url_host: tokenUrl ? new URL(tokenUrl).host : null,
+    active_token_url_path: tokenUrl ? new URL(tokenUrl).pathname : null,
+    token_endpoint_source: tokenEndpointSource,
+    discovery_url: discoveryUrl,
+    discovery_http_status: discoveryHttpStatus,
+    discovery_error_preview: discoveryErrorPreview || null,
+    discovery_token_endpoint_host: discoveryTokenEndpoint ? new URL(discoveryTokenEndpoint).host : null,
+    discovery_token_endpoint_path: discoveryTokenEndpoint ? new URL(discoveryTokenEndpoint).pathname : null,
+    discovery_authorization_endpoint_host: discoveryAuthorizationEndpoint ? new URL(discoveryAuthorizationEndpoint).host : null,
+    discovery_jwks_uri_host: discoveryJwksUri ? new URL(discoveryJwksUri).host : null,
+    discovery_scopes_has_nrps: discoveryScopes.includes("https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"),
+    client_id_body_variant_tested: true,
+    deployment_id_claim_in_assertion: true
+  };
+
+  if (!tokenResponse.ok || !tokenJson.access_token) {
+    return {
+      ok: false,
+      stage: "token",
+      httpStatus: 502,
+      token_http_status: tokenResponse.status,
+      token_error: tokenJson.error || "TOKEN_REQUEST_FAILED",
+      token_variant_used: tokenVariantUsed,
+      token_fallback_with_client_id: tokenFallbackSummary,
+      token_error_description: nrpsPreviewSafeText(tokenJson.error_description || tokenText),
+      token_diagnostics: tokenDiagnostics
+    };
+  }
+
+  const memberResponse = await fetch(membershipUrl, {
+    method: "GET",
+    headers: {
+      Authorization: "Bearer " + tokenJson.access_token,
+      Accept: "application/vnd.ims.lti-nrps.v2.membershipcontainer+json"
+    }
+  });
+
+  const memberText = await memberResponse.text();
+  let membership = {};
+  try { membership = JSON.parse(memberText); } catch {}
+
+  if (!memberResponse.ok) {
+    return {
+      ok: false,
+      stage: "membership",
+      httpStatus: 502,
+      membership_http_status: memberResponse.status,
+      membership_error_preview: nrpsPreviewSafeText(memberText)
+    };
+  }
+
+  const members = Array.isArray(membership.members)
+    ? membership.members
+    : Array.isArray(membership)
+      ? membership
+      : [];
+
+  const roleCounts = {};
+  for (const member of members) {
+    const roles = Array.isArray(member?.roles) ? member.roles : [];
+    for (const role of roles) {
+      const shortRole = String(role).split("#").pop() || String(role);
+      roleCounts[shortRole] = (roleCounts[shortRole] || 0) + 1;
+    }
+  }
+
+  return {
+    ok: true,
+    stage: "membership",
+    liveSession,
+    statusJson,
+    clientId,
+    membershipUrl,
+    members,
+    roleCounts,
+    membership,
+    token_http_status: tokenResponse.status,
+    token_variant_used: tokenVariantUsed,
+    membership_http_status: memberResponse.status,
+    token_endpoint_source: tokenEndpointSource,
+    active_token_url_host: tokenUrl ? new URL(tokenUrl).host : null,
+    active_token_url_path: tokenUrl ? new URL(tokenUrl).pathname : null,
+    discovery_http_status: discoveryHttpStatus,
+    discovery_scopes_has_nrps: discoveryScopes.includes("https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly")
+  };
+}
+
 app.get("/api/lti13/nrps-preview", async (req, res) => {
   lti13NoStore(res);
 
-  const envStatus = lti13EnvStatus();
-  if (!envStatus.configured) {
-    return res.status(503).json({
-      ok: false,
-      mode: "lti13-nrps-preview-no-save",
-      stage: "env",
-      error: "LTI13_ENV_NOT_CONFIGURED",
-      missing: envStatus.missing,
-      privacy: {
-        no_secrets_returned: true,
-        no_student_names_returned: true,
-        no_save_performed: true
-      }
-    });
-  }
-
   try {
-    /* MTH_NRPS_CURRENT_LTI13_SESSION_V1
-   Use the current verified LTI 1.3 session directly.
-   Do not depend on global diagnostics/latest-session state.
-*/
-const liveSession = importSessionFromRequest(req) || sessionFromRequest(req);
-const liveServices = liveSession?.automaticServices || {};
-const membershipUrl = liveServices?.nrps?.context_memberships_url || "";
-const statusJson = {
-  has_latest_lti13_session: Boolean(liveSession),
-  has_nrps: Boolean(membershipUrl),
-  has_ags: Boolean(liveServices?.has_ags),
-  service_claims: liveServices
-};
-    if (!statusJson?.has_latest_lti13_session || !membershipUrl) {
+    const result = await lti13FetchCurrentNrpsMembers(req);
+
+    if (!result.ok && result.stage === "env") {
+      return res.status(503).json({
+        ok: false,
+        mode: "lti13-nrps-preview-no-save",
+        stage: "env",
+        error: "LTI13_ENV_NOT_CONFIGURED",
+        missing: result.missing,
+        privacy: {
+          no_secrets_returned: true,
+          no_student_names_returned: true,
+          no_save_performed: true
+        }
+      });
+    }
+
+    if (!result.ok && result.stage === "session-or-nrps-claim") {
       return res.status(200).json({
         ok: false,
         mode: "lti13-nrps-preview-no-save",
         stage: "session-or-nrps-claim",
         error: "NO_LIVE_LTI13_NRPS_SESSION",
-        has_latest_lti13_session: Boolean(statusJson?.has_latest_lti13_session),
-        has_nrps: Boolean(statusJson?.has_nrps),
-        has_ags: Boolean(statusJson?.has_ags),
+        has_latest_lti13_session: Boolean(result.has_latest_lti13_session),
+        has_nrps: Boolean(result.has_nrps),
+        has_ags: Boolean(result.has_ags),
         next_required: [
           "Open המודל החכם from Moodle, then call this endpoint again."
         ],
@@ -4810,158 +5049,17 @@ const statusJson = {
       });
     }
 
-    /* YANIV_NRPS_TOKEN_DISCOVERY_FIX_20260509_START */
-    const configuredTokenUrl = env("LTI13_TOKEN_URL");
-    const discoveryUrl = env(
-      "LTI13_OPENID_CONFIGURATION_URL",
-      env("LTI13_ISSUER").replace(/\/+$/, "") + "/mod/lti/openid-configuration.php"
-    );
-
-    let tokenUrl = configuredTokenUrl;
-    let tokenEndpointSource = "env";
-    let discoveryHttpStatus = null;
-    let discoveryErrorPreview = "";
-    let discoveryTokenEndpoint = "";
-    let discoveryAuthorizationEndpoint = "";
-    let discoveryJwksUri = "";
-    let discoveryScopes = [];
-
-    try {
-      const discoveryResponse = await fetch(discoveryUrl, {
-        headers: { Accept: "application/json" }
-      });
-      discoveryHttpStatus = discoveryResponse.status;
-      const discoveryText = await discoveryResponse.text();
-
-      if (discoveryResponse.ok) {
-        const discoveryJson = JSON.parse(discoveryText);
-        discoveryTokenEndpoint = discoveryJson.token_endpoint || "";
-        discoveryAuthorizationEndpoint = discoveryJson.authorization_endpoint || "";
-        discoveryJwksUri = discoveryJson.jwks_uri || "";
-        discoveryScopes = Array.isArray(discoveryJson.scopes_supported) ? discoveryJson.scopes_supported : [];
-        if (discoveryTokenEndpoint) {
-          tokenUrl = discoveryTokenEndpoint;
-          tokenEndpointSource = "openid-configuration";
-        }
-      } else {
-        discoveryErrorPreview = nrpsPreviewSafeText(discoveryText, 600);
-      }
-    } catch (error) {
-      discoveryErrorPreview = nrpsPreviewSafeText(error?.message || error, 600);
-    }
-    /* YANIV_NRPS_TOKEN_DISCOVERY_FIX_20260509_END */
-    const clientId = String(liveSession?.clientId || liveSession?.client_id || env("LTI13_CLIENT_ID"));
-    const deploymentIdForAssertion = String(liveSession?.deploymentId || liveSession?.deployment_id || env("LTI13_DEPLOYMENT_ID"));
-    const keyId = env("LTI13_KEY_ID");
-    const privateKeyRaw = env("LTI13_PRIVATE_KEY_PEM");
-    const privateKeyPem = privateKeyRaw.includes("\n")
-      ? privateKeyRaw.replace(/\n/g, String.fromCharCode(10))
-      : privateKeyRaw;
-
-    const now = Math.floor(Date.now() / 1000);
-    const header = { alg: "RS256", typ: "JWT", kid: keyId };
-    const payload = {
-      iss: clientId,
-      sub: clientId,
-      aud: tokenUrl,
-      "https://purl.imsglobal.org/spec/lti/claim/deployment_id": deploymentIdForAssertion,
-      iat: now - 5,
-      exp: now + 60,
-      jti: crypto.randomUUID()
-    };
-    /* YANIV_NRPS_DEPLOYMENT_CLAIM_20260509 */
-
-    const signingInput = nrpsPreviewBase64UrlJson(header) + "." + nrpsPreviewBase64UrlJson(payload);
-    const signature = crypto
-      .sign("RSA-SHA256", Buffer.from(signingInput), privateKeyPem)
-      .toString("base64")
-      .replace(/=/g, "")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_");
-
-    const clientAssertion = signingInput + "." + signature;
-
-    /* YANIV_NRPS_TOKEN_CLIENT_ID_DIAG_20260509_START */
-    function buildTokenBody(includeClientId) {
-      const entries = {
-        grant_type: "client_credentials",
-        client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-        client_assertion: clientAssertion,
-        scope: "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"
-      };
-      if (includeClientId) entries.client_id = clientId;
-      return new URLSearchParams(entries);
-    }
-
-    async function requestTokenVariant(includeClientId) {
-      const body = buildTokenBody(includeClientId);
-      const response = await fetch(tokenUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Accept: "application/json"
-        },
-        body: body.toString()
-      });
-      const text = await response.text();
-      let json = {};
-      try { json = JSON.parse(text); } catch {}
-      return {
-        includeClientId,
-        response,
-        text,
-        json,
-        ok: response.ok && Boolean(json.access_token)
-      };
-    }
-
-    let tokenAttempt = await requestTokenVariant(false);
-    let fallbackAttempt = null;
-    if (!tokenAttempt.ok) {
-      fallbackAttempt = await requestTokenVariant(true);
-      if (fallbackAttempt.ok) tokenAttempt = fallbackAttempt;
-    }
-
-    const tokenResponse = tokenAttempt.response;
-    const tokenText = tokenAttempt.text;
-    const tokenJson = tokenAttempt.json;
-    const tokenVariantUsed = tokenAttempt.includeClientId ? "with_client_id" : "without_client_id";
-    const tokenFallbackSummary = fallbackAttempt ? {
-      tried: true,
-      include_client_id: true,
-      http_status: fallbackAttempt.response.status,
-      got_access_token: Boolean(fallbackAttempt.json?.access_token),
-      error: fallbackAttempt.json?.error || null,
-      error_description_preview: nrpsPreviewSafeText(fallbackAttempt.json?.error_description || fallbackAttempt.text, 500)
-    } : { tried: false };
-    /* YANIV_NRPS_TOKEN_CLIENT_ID_DIAG_20260509_END */
-
-    if (!tokenResponse.ok || !tokenJson.access_token) {
+    if (!result.ok && result.stage === "token") {
       return res.status(502).json({
         ok: false,
         mode: "lti13-nrps-preview-no-save",
         stage: "token",
-        token_http_status: tokenResponse.status,
-        token_error: tokenJson.error || "TOKEN_REQUEST_FAILED",
-        token_variant_used: tokenVariantUsed,
-        token_fallback_with_client_id: tokenFallbackSummary,
-        token_error_description: nrpsPreviewSafeText(tokenJson.error_description || tokenText),
-        token_diagnostics: {
-          configured_token_url_host: configuredTokenUrl ? new URL(configuredTokenUrl).host : null,
-          active_token_url_host: tokenUrl ? new URL(tokenUrl).host : null,
-          active_token_url_path: tokenUrl ? new URL(tokenUrl).pathname : null,
-          token_endpoint_source: tokenEndpointSource,
-          discovery_url: discoveryUrl,
-          discovery_http_status: discoveryHttpStatus,
-          discovery_error_preview: discoveryErrorPreview || null,
-          discovery_token_endpoint_host: discoveryTokenEndpoint ? new URL(discoveryTokenEndpoint).host : null,
-          discovery_token_endpoint_path: discoveryTokenEndpoint ? new URL(discoveryTokenEndpoint).pathname : null,
-          discovery_authorization_endpoint_host: discoveryAuthorizationEndpoint ? new URL(discoveryAuthorizationEndpoint).host : null,
-          discovery_jwks_uri_host: discoveryJwksUri ? new URL(discoveryJwksUri).host : null,
-          discovery_scopes_has_nrps: discoveryScopes.includes("https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"),
-          client_id_body_variant_tested: true,
-          deployment_id_claim_in_assertion: true
-        },
+        token_http_status: result.token_http_status,
+        token_error: result.token_error,
+        token_variant_used: result.token_variant_used,
+        token_fallback_with_client_id: result.token_fallback_with_client_id,
+        token_error_description: result.token_error_description,
+        token_diagnostics: result.token_diagnostics,
         privacy: {
           no_secrets_returned: true,
           no_access_token_returned: true,
@@ -4971,25 +5069,13 @@ const statusJson = {
       });
     }
 
-    const memberResponse = await fetch(membershipUrl, {
-      method: "GET",
-      headers: {
-        Authorization: "Bearer " + tokenJson.access_token,
-        Accept: "application/vnd.ims.lti-nrps.v2.membershipcontainer+json"
-      }
-    });
-
-    const memberText = await memberResponse.text();
-    let membership = {};
-    try { membership = JSON.parse(memberText); } catch {}
-
-    if (!memberResponse.ok) {
+    if (!result.ok && result.stage === "membership") {
       return res.status(502).json({
         ok: false,
         mode: "lti13-nrps-preview-no-save",
         stage: "membership",
-        membership_http_status: memberResponse.status,
-        membership_error_preview: nrpsPreviewSafeText(memberText),
+        membership_http_status: result.membership_http_status,
+        membership_error_preview: result.membership_error_preview,
         privacy: {
           no_secrets_returned: true,
           no_access_token_returned: true,
@@ -4999,20 +5085,12 @@ const statusJson = {
       });
     }
 
-    const members = Array.isArray(membership.members)
-      ? membership.members
-      : Array.isArray(membership)
-        ? membership
-        : [];
-
-    const roleCounts = {};
-    for (const member of members) {
-      const roles = Array.isArray(member?.roles) ? member.roles : [];
-      for (const role of roles) {
-        const shortRole = String(role).split("#").pop() || String(role);
-        roleCounts[shortRole] = (roleCounts[shortRole] || 0) + 1;
-      }
-    }
+    const members = result.members;
+    const roleCounts = result.roleCounts;
+    const clientId = result.clientId;
+    const membershipUrl = result.membershipUrl;
+    const tokenVariantUsed = result.token_variant_used;
+    const statusJson = result.statusJson;
 
     const membersNamed = members
       .map(member => {
@@ -5029,9 +5107,9 @@ const statusJson = {
       ok: true,
       mode: "lti13-nrps-preview-no-save",
       stage: "membership",
-      token_http_status: tokenResponse.status,
+      token_http_status: result.token_http_status,
       token_variant_used: tokenVariantUsed,
-      membership_http_status: memberResponse.status,
+      membership_http_status: result.membership_http_status,
       members_count: members.length,
       role_counts: roleCounts,
       members_named: membersNamed,
@@ -5050,11 +5128,11 @@ const statusJson = {
         client_id: clientId,
         deployment_id: env("LTI13_DEPLOYMENT_ID"),
         membership_url_host: new URL(membershipUrl).host,
-        token_endpoint_source: tokenEndpointSource,
-        active_token_url_host: tokenUrl ? new URL(tokenUrl).host : null,
-        active_token_url_path: tokenUrl ? new URL(tokenUrl).pathname : null,
-        discovery_http_status: discoveryHttpStatus,
-        discovery_scopes_has_nrps: discoveryScopes.includes("https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"),
+        token_endpoint_source: result.token_endpoint_source,
+        active_token_url_host: result.active_token_url_host,
+        active_token_url_path: result.active_token_url_path,
+        discovery_http_status: result.discovery_http_status,
+        discovery_scopes_has_nrps: result.discovery_scopes_has_nrps,
         service_versions: statusJson?.service_claims?.nrps?.service_versions || []
       },
       privacy: {
@@ -5086,6 +5164,150 @@ const statusJson = {
   }
 });
 /* YANIV_NRPS_PREVIEW_SAFE_20260509_END */
+
+/* MTH_PARTICIPANTS_BREAKDOWN_API_V1
+   Read-only, counts-only breakdown of the CURRENT LTI 1.3 NRPS session.
+   Reuses lti13FetchCurrentNrpsMembers (same current-session token flow as the
+   preview). Returns ONLY aggregate counts and safe diagnostics — no names,
+   no emails, no raw user IDs, no access token, no client assertion, no secrets.
+   Numbers come exclusively from the live NRPS response (never hard-coded).
+   Does not persist anything. Full robust role classifier is PR 4; this PR keeps
+   the basic Learner/Instructor separation already used by the preview. */
+function classifyNrpsRole(roles) {
+  const shortRoles = (Array.isArray(roles) ? roles : [])
+    .map(role => String(role).split("#").pop() || String(role));
+  const isInstructor = shortRoles.some(role =>
+    /instructor|teacher|faculty|staff|mentor|manager|administrator|admin/i.test(role)
+  );
+  const isLearner = shortRoles.some(role => /learner|student/i.test(role));
+  if (isInstructor) return "instructor";
+  if (isLearner) return "learner";
+  return "unknown";
+}
+
+app.get("/api/lti13/participants-breakdown", async (req, res) => {
+  lti13NoStore(res);
+
+  const privacy = {
+    no_emails_returned: true,
+    no_raw_ids_returned: true,
+    no_access_token_returned: true,
+    no_names_returned: true,
+    no_save_performed: true
+  };
+
+  try {
+    const result = await lti13FetchCurrentNrpsMembers(req);
+
+    if (!result.ok && result.stage === "env") {
+      return res.status(503).json({
+        ok: false,
+        source: "nrps",
+        stage: "env",
+        error: "LTI13_ENV_NOT_CONFIGURED",
+        missing: result.missing,
+        privacy
+      });
+    }
+
+    if (!result.ok && result.stage === "session-or-nrps-claim") {
+      return res.status(200).json({
+        ok: false,
+        source: "nrps",
+        stage: "session-or-nrps-claim",
+        error: "NO_LIVE_LTI13_NRPS_SESSION",
+        has_latest_lti13_session: Boolean(result.has_latest_lti13_session),
+        has_nrps: Boolean(result.has_nrps),
+        has_ags: Boolean(result.has_ags),
+        next_required: [
+          "Open המודל החכם from Moodle, then call this endpoint again."
+        ],
+        privacy
+      });
+    }
+
+    if (!result.ok && result.stage === "token") {
+      return res.status(502).json({
+        ok: false,
+        source: "nrps",
+        stage: "token",
+        token_http_status: result.token_http_status,
+        token_error: result.token_error,
+        token_variant_used: result.token_variant_used,
+        token_error_description: result.token_error_description,
+        token_diagnostics: result.token_diagnostics,
+        privacy
+      });
+    }
+
+    if (!result.ok && result.stage === "membership") {
+      return res.status(502).json({
+        ok: false,
+        source: "nrps",
+        stage: "membership",
+        membership_http_status: result.membership_http_status,
+        membership_error_preview: result.membership_error_preview,
+        privacy
+      });
+    }
+
+    const members = result.members;
+    const liveSession = result.liveSession;
+
+    let learnersCount = 0;
+    let instructorsCount = 0;
+    let unknownCount = 0;
+    let hasNamesCount = 0;
+    for (const member of members) {
+      const kind = classifyNrpsRole(member?.roles);
+      if (kind === "learner") learnersCount += 1;
+      else if (kind === "instructor") instructorsCount += 1;
+      else unknownCount += 1;
+      if (member?.name || member?.given_name || member?.family_name) hasNamesCount += 1;
+    }
+
+    const courseId = String(
+      liveSession?.courseId ||
+      liveSession?.course_id ||
+      liveSession?.contextId ||
+      liveSession?.context_id ||
+      ""
+    );
+    const deploymentId = String(
+      liveSession?.deploymentId ||
+      liveSession?.deployment_id ||
+      env("LTI13_DEPLOYMENT_ID") ||
+      ""
+    );
+
+    return res.json({
+      ok: true,
+      source: "nrps",
+      total_members: members.length,
+      learners_count: learnersCount,
+      instructors_count: instructorsCount,
+      unknown_count: unknownCount,
+      role_counts: result.roleCounts,
+      has_names: hasNamesCount > 0,
+      course_id: courseId || null,
+      deployment_id: deploymentId || null,
+      client_id: result.clientId || null,
+      membership_http_status: result.membership_http_status,
+      token_http_status: result.token_http_status,
+      updated_at: new Date().toISOString(),
+      privacy
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      source: "nrps",
+      stage: "unexpected",
+      error: "PARTICIPANTS_BREAKDOWN_FAILED",
+      detail: nrpsPreviewSafeText(error?.message || error),
+      privacy
+    });
+  }
+});
 
 app.get("/api/lti13/status", (req, res) => {
   lti13NoStore(res);
