@@ -2,14 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useImportsOverview } from "@/hooks/useImports";
 import { useSyncStatus } from "@/hooks/useSyncStatus";
-import { useLtiSession, getLtiToken } from "@/hooks/useLtiSession";
+import { useLtiSession, getLtiToken, nrpsPreviewUrl } from "@/hooks/useLtiSession";
 import { OnboardingBanner } from "@/components/OnboardingBanner";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, GraduationCap, ClipboardList, Database, Calendar, Import, AlertCircle, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
-import { formatTeacherDateDmyShort } from "@/lib/teacherDateFormat";
+import { formatTeacherDateDmyShort, formatTeacherDateTime } from "@/lib/teacherDateFormat";
 
 // MTH_PREMIUM_DASHBOARD_TEACHER_COUNTS_V1
 // Small, self-contained NRPS teacher card on the dashboard hero. Shows teacher
@@ -33,9 +33,7 @@ function useAutoSyncStatus(onSuccess?: () => void) {
     setLastError(null);
     (async () => {
       try {
-        const ltiPreviewToken = getLtiToken();
-        const ltiPreviewUrl = "/api/lti13/nrps-preview" + (ltiPreviewToken ? "?t=" + encodeURIComponent(ltiPreviewToken) : "");
-        const previewRes = await fetch(ltiPreviewUrl, { headers: { Accept: "application/json" }, credentials: "include" });
+        const previewRes = await fetch(nrpsPreviewUrl(), { headers: { Accept: "application/json" }, credentials: "include" });
         const previewJson = await previewRes.json().catch(() => null);
         if (!alive) return;
         if (!previewRes.ok) {
@@ -141,19 +139,32 @@ function useSourceStatus() {
   }, []);
   return map;
 }
+// MTH_DASHBOARD_NRPS_BREAKDOWN_V1
+// Reads the live NRPS preview for the dashboard header. Uses the unified preview
+// URL (always carries ?t=<token>) + credentials so the server can resolve the
+// current LTI 1.3 session. Exposes ONLY counts that NRPS actually returned and
+// real instructor names - never invents totals or names.
 function useDashboardTeachers() {
   const [count, setCount] = useState(0);
   const [names, setNames] = useState<string[]>([]);
+  const [participants, setParticipants] = useState<number | null>(null);
+  const [learners, setLearners] = useState<number | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [hasLiveNrps, setHasLiveNrps] = useState(false);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
-        const res = await fetch("/api/lti13/nrps-preview", { headers: { Accept: "application/json" } });
+        const res = await fetch(nrpsPreviewUrl(), { headers: { Accept: "application/json" }, credentials: "include" });
         const json = await res.json().catch(() => null);
         if (!alive) return;
+        const live = Boolean(json?.ok);
+        setHasLiveNrps(live);
         const instructors = Number(json?.role_counts?.Instructor || 0);
+        const learnerCount = Number(json?.role_counts?.Learner || 0);
+        const total = Number(json?.members_count || 0);
         const named = Array.isArray(json?.members_named) ? json.members_named : [];
         const realNames: string[] = named
           .filter((m: { is_instructor?: boolean }) => m?.is_instructor)
@@ -161,6 +172,9 @@ function useDashboardTeachers() {
           .filter(Boolean);
         setCount(instructors || realNames.length);
         setNames(Array.from(new Set(realNames)));
+        setParticipants(live && total > 0 ? total : null);
+        setLearners(live && learnerCount > 0 ? learnerCount : null);
+        setUpdatedAt(live && typeof json?.now === "string" ? json.now : null);
         setState("ready");
         // Auto-sync of the learner roster is owned by useAutoSyncStatus (above)
         // so failures surface to the teacher via AutoSyncBanner instead of being
@@ -172,7 +186,7 @@ function useDashboardTeachers() {
     return () => { alive = false; };
   }, []);
 
-  return { count, names, state };
+  return { count, names, participants, learners, updatedAt, hasLiveNrps, state };
 }
 
 
@@ -379,13 +393,37 @@ export default function Dashboard() {
   const teacherName = safeTeacherDisplayName(session, teachers.names) || "שם מורה לא התקבל ממודל";
   const courseName = session?.course_title || site?.site_name || "—";
 
+  // Teacher header: pluralize by the real instructor count from NRPS when known,
+  // otherwise fall back to the number of resolved names. Show up to 3 names plus
+  // "ועוד X"; full list lives in the title attribute. When NRPS returned no
+  // teacher names, show a short truthful message instead of inventing one.
+  const teacherCount = teachers.count || teachers.names.length;
+  const teacherCardLabel = teacherCount === 1 ? "מורה" : (teacherCount > 1 ? teacherCount + " מורים" : "מורה");
+  const teacherCardValue = teachers.names.length > 0
+    ? (teachers.names.length <= 3
+        ? teachers.names.join(" · ")
+        : teachers.names.slice(0, 3).join(" · ") + " · ועוד " + (teachers.names.length - 3))
+    : (teachers.state === "ready"
+        ? (safeTeacherDisplayName(session, teachers.names) || "שמות מורים לא התקבלו ממודל")
+        : teacherName);
+  // Truthful participants line: only shown when live NRPS returned real counts.
+  const participantsBreakdownText = (() => {
+    if (!teachers.hasLiveNrps || teachers.participants == null) return "";
+    const parts = [teachers.participants + " משתתפים במרחב"];
+    if (teachers.learners != null) parts.push(teachers.learners + " תלמידים");
+    if (teacherCount > 0) parts.push(teacherCount === 1 ? "מורה אחד" : teacherCount + " מורים");
+    let line = parts.join(" · ") + " · מקור: Moodle NRPS";
+    if (teachers.updatedAt) line += " · עודכן " + formatTeacherDateTime(teachers.updatedAt);
+    return line;
+  })();
+
   const [syncing, setSyncing] = useState(false);
   async function handleSyncSpace() {
     setSyncing(true);
     try {
       // Pull the live NRPS roster (real names) then persist the learners so each
       // gets a saved profile. No invented data; instructors are skipped server-side.
-      const res = await fetch("/api/lti13/nrps-preview", { headers: { Accept: "application/json" }, credentials: "include" });
+      const res = await fetch(nrpsPreviewUrl(), { headers: { Accept: "application/json" }, credentials: "include" });
       const preview = await res.json().catch(() => null);
       const students = Array.isArray(preview?.members_named) ? preview.members_named : [];
       if (students.length) {
@@ -423,8 +461,9 @@ export default function Dashboard() {
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} className="grid min-w-0 gap-3 xl:grid-cols-3">
               <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
-                <div className="text-xs font-bold text-cyan-200/80">{teachers.names.length > 1 ? "מורים" : "מורה"}</div>
-                <div className="mt-0.5 text-base font-black text-white leading-snug">{teachers.names.length > 0 ? (teachers.names.length <= 3 ? teachers.names.join(" · ") : teachers.names.slice(0, 3).join(" · ") + " · ועוד " + (teachers.names.length - 3)) : teacherName}</div>
+                <div className="text-xs font-bold text-cyan-200/80">{teacherCardLabel}</div>
+                <div className="mt-0.5 text-base font-black text-white leading-snug" title={teachers.names.length > 0 ? teachers.names.join(", ") : undefined}>{teacherCardValue}</div>
+                {participantsBreakdownText && <div className="mt-1 text-xs font-bold text-cyan-200/70">{participantsBreakdownText}</div>}
               </div>
               <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
                 <div className="text-xs font-bold text-cyan-200/80">מרחב הלימוד</div>
