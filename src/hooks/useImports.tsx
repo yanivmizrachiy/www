@@ -240,6 +240,11 @@ export interface CourseChapter { id: string; chapter_name: string; position: num
 export interface CourseTask {
   id: string; chapter_id: string | null; task_name: string;
   task_type: string | null; position: number | null; due_date: string | null;
+  // Optional real fields. The course-structure import (Activity Completion
+  // report) does NOT currently carry these, so they are usually absent. They
+  // are surfaced ONLY when the source actually provides them — never invented.
+  moodle_url?: string | null;
+  status?: string | null;
 }
 export interface CourseStructure {
   chapters: CourseChapter[];
