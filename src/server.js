@@ -4679,6 +4679,7 @@ app.get("/api/lti13/token-matrix", async (req, res) => {
   }
 
   try {
+    const liveSession = importSessionFromRequest(req) || sessionFromRequest(req);
     const configuredTokenUrl = env("LTI13_TOKEN_URL");
     const clientId = String(liveSession?.clientId || liveSession?.client_id || env("LTI13_CLIENT_ID"));
     const deploymentIdForAssertion = String(liveSession?.deploymentId || liveSession?.deployment_id || env("LTI13_DEPLOYMENT_ID"));
