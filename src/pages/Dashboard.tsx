@@ -464,11 +464,12 @@ export default function Dashboard() {
               <p className="text-base font-bold text-cyan-200/90 lg:text-lg">לוח הבקרה של המורה</p>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} className="grid min-w-0 gap-3 xl:grid-cols-3">
-              <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
+              <Link to="/teachers" className="block rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm transition hover:bg-[#15559a]">
                 <div className="text-xs font-bold text-cyan-200/80">{teacherCardLabel}</div>
                 <div className="mt-0.5 text-base font-black text-white leading-snug" title={teachers.names.length > 0 ? teachers.names.join(", ") : undefined}>{teacherCardValue}</div>
                 {participantsBreakdownText && <div className="mt-1 text-xs font-bold text-cyan-200/70">{participantsBreakdownText}</div>}
-              </div>
+                <div className="mt-1.5 text-xs font-bold text-cyan-100/80">צוות הוראה במרחב ←</div>
+              </Link>
               <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
                 <div className="text-xs font-bold text-cyan-200/80">מרחב הלימוד</div>
                 <div className="mt-0.5 truncate text-lg font-black text-white">{courseName}</div>
