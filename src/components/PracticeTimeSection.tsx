@@ -25,6 +25,10 @@ export function PracticeTimeSection({ studentId = null, title = "זמן תרגו
   const [expandedDays, setExpandedDays] = useState<string[]>([]);
   const { data, loading, error } = usePracticeTime({ studentId });
 
+  // Truth: estimate unless an official duration field exists.
+  const hasOfficialDuration = data?.meta?.has_official_duration === true;
+  const enoughLogs = data?.meta?.enough_logs !== false;
+
   const toggleDay = (day: string) => {
     setExpandedDays(prev => 
       prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
@@ -60,12 +64,24 @@ export function PracticeTimeSection({ studentId = null, title = "זמן תרגו
     );
   }
 
+  if (!enoughLogs) {
+    return (
+      <Card className="border-dashed">
+        <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+          <Clock className="mb-2 h-10 w-10 text-muted-foreground/50" />
+          <h3 className="font-semibold">אין מספיק לוגים לחישוב זמן</h3>
+          <p className="text-sm text-muted-foreground">נדרשים לפחות {data?.meta?.min_log_events ?? 2} אירועי לוג כדי להעריך זמן.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="overflow-hidden shadow-elegant">
       <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/30 px-6 py-4">
         <div className="flex items-center gap-3">
           <CardTitle className="text-xl font-bold">{title}</CardTitle>
-          <TruthBadge status="calculated" />
+          <TruthBadge status={hasOfficialDuration ? "proven" : "blocked"} label={hasOfficialDuration ? "משך רשמי" : "הערכה — לא מאומת"} />
         </div>
         <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
           <Download className="h-4 w-4" />
@@ -78,7 +94,7 @@ export function PracticeTimeSection({ studentId = null, title = "זמן תרגו
             <TableRow className="bg-muted/50 hover:bg-muted/50">
               <TableHead className="text-right">תאריך</TableHead>
               <TableHead className="text-right">תלמיד</TableHead>
-              <TableHead className="text-center">זמן כולל</TableHead>
+              <TableHead className="text-center">{hasOfficialDuration ? "זמן כולל" : "זמן כולל (הערכה)"}</TableHead>
               <TableHead className="text-center">אירועים</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
