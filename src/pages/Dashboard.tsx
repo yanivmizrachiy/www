@@ -144,16 +144,26 @@ function useSourceStatus() {
   return map;
 }
 // MTH_DASHBOARD_NRPS_BREAKDOWN_V1
-// Reads the live NRPS preview for the dashboard header. Uses the unified preview
-// URL (always carries ?t=<token>) + credentials so the server can resolve the
-// current LTI 1.3 session. Exposes ONLY counts that NRPS actually returned and
-// real instructor names - never invents totals or names.
+// Reads the live NRPS data for the dashboard header. Combines two safe sources:
+//   1. /api/lti13/participants-breakdown — the authoritative, privacy-stripped
+//      aggregate counts (total / learners / instructors) + live course title +
+//      update time. Returns no names by design.
+//   2. /api/lti13/nrps-preview — used for the real instructor *names* and as a
+//      fallback for the counts when the breakdown endpoint is unavailable.
+// Both carry ?t=<token> + credentials so the server resolves the current LTI 1.3
+// session. Exposes ONLY counts/names/title that NRPS actually returned - never
+// invents totals or names.
+function breakdownUrl(): string {
+  const token = getLtiToken();
+  return "/api/lti13/participants-breakdown" + (token ? "?t=" + encodeURIComponent(token) : "");
+}
 function useDashboardTeachers() {
   const [count, setCount] = useState(0);
   const [names, setNames] = useState<string[]>([]);
   const [participants, setParticipants] = useState<number | null>(null);
   const [learners, setLearners] = useState<number | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [courseTitle, setCourseTitle] = useState<string | null>(null);
   const [hasLiveNrps, setHasLiveNrps] = useState(false);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
 
@@ -161,25 +171,50 @@ function useDashboardTeachers() {
     let alive = true;
     (async () => {
       try {
-        const res = await fetch(nrpsPreviewUrl(), { headers: { Accept: "application/json" }, credentials: "include" });
-        const json = await res.json().catch(() => null);
+        const [previewRes, breakdownRes] = await Promise.all([
+          fetch(nrpsPreviewUrl(), { headers: { Accept: "application/json" }, credentials: "include" }),
+          fetch(breakdownUrl(), { headers: { Accept: "application/json" }, credentials: "include" }),
+        ]);
+        const json = await previewRes.json().catch(() => null);
+        const bd = await breakdownRes.json().catch(() => null);
         if (!alive) return;
-        const live = Boolean(json?.ok);
+
+        const previewLive = Boolean(json?.ok);
+        const breakdownLive = Boolean(bd?.ok);
+        const live = previewLive || breakdownLive;
         setHasLiveNrps(live);
-        const instructors = Number(json?.role_counts?.Instructor || 0);
-        const learnerCount = Number(json?.role_counts?.Learner || 0);
-        const total = Number(json?.members_count || 0);
+
+        // Instructor names only come from the preview (breakdown returns none).
         const named = Array.isArray(json?.members_named) ? json.members_named : [];
         const realNames: string[] = named
           .filter((m: { is_instructor?: boolean; role_kind?: string }) =>
             m?.role_kind ? m.role_kind === "instructor" : m?.is_instructor)
           .map((m: { name?: string }) => String(m?.name || "").trim())
           .filter(Boolean);
-        setCount(instructors || realNames.length);
+
+        // Counts: prefer the authoritative breakdown aggregates, fall back to the
+        // preview role_counts, then to the resolved instructor name count.
+        const bdInstructors = breakdownLive ? Number(bd?.instructors_count || 0) : 0;
+        const bdLearners = breakdownLive ? Number(bd?.learners_count || 0) : 0;
+        const bdTotal = breakdownLive ? Number(bd?.total_members || 0) : 0;
+        const previewInstructors = Number(json?.role_counts?.Instructor || 0);
+        const previewLearners = Number(json?.role_counts?.Learner || 0);
+        const previewTotal = Number(json?.members_count || 0);
+
+        const instructors = bdInstructors || previewInstructors || realNames.length;
+        const learnerCount = bdLearners || previewLearners;
+        const total = bdTotal || previewTotal;
+
+        setCount(instructors);
         setNames(Array.from(new Set(realNames)));
         setParticipants(live && total > 0 ? total : null);
         setLearners(live && learnerCount > 0 ? learnerCount : null);
-        setUpdatedAt(live && typeof json?.now === "string" ? json.now : null);
+        const bdUpdated = breakdownLive && typeof bd?.updated_at === "string" ? bd.updated_at : null;
+        const previewUpdated = previewLive && typeof json?.now === "string" ? json.now : null;
+        setUpdatedAt(bdUpdated || previewUpdated);
+        // Live-confirmed space name straight from the current LTI 1.3 launch context.
+        const bdTitle = breakdownLive ? String(bd?.course_title || "").trim() : "";
+        setCourseTitle(bdTitle || null);
         setState("ready");
         // Auto-sync of the learner roster is owned by useAutoSyncStatus (above)
         // so failures surface to the teacher via AutoSyncBanner instead of being
@@ -191,7 +226,7 @@ function useDashboardTeachers() {
     return () => { alive = false; };
   }, []);
 
-  return { count, names, participants, learners, updatedAt, hasLiveNrps, state };
+  return { count, names, participants, learners, updatedAt, courseTitle, hasLiveNrps, state };
 }
 
 
@@ -396,7 +431,7 @@ export default function Dashboard() {
 
   const updatedAtText = useMemo(() => formatTeacherDateDmyShort(now), [now]);
   const teacherName = safeTeacherDisplayName(session, teachers.names) || "שם מורה לא התקבל ממודל";
-  const courseName = session?.course_title || site?.site_name || "—";
+  const courseName = teachers.courseTitle || session?.course_title || site?.site_name || "—";
 
   // Teacher header: pluralize by the real instructor count from NRPS when known,
   // otherwise fall back to the number of resolved names. Show up to 3 names plus
