@@ -3706,42 +3706,48 @@ app.get("/api/imports/students", async (req, res) => {
   }
 });
 
-app.post("/api/imports/nrps-sync", (req, res) => {
-  noStore(res);
-  const session = importSessionFromRequest(req);
-  if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
+/* MTH_NRPS_SERVER_OWNED_SYNC_V1
+   Server-owned roster sync. The roster of record is the live NRPS membership the
+   SERVER fetches for the current verified LTI 1.3 session (via the shared
+   lti13FetchCurrentNrpsMembers + classifyNrpsMember), NOT a client-supplied list.
+   The client should now POST token-only. Only role_kind === "learner" members are
+   persisted (space-isolated); instructors and unknown/ambiguous roles are counted
+   but never stored as students. No invented data; numbers come only from the live
+   NRPS response.
 
-  // The client passes the learner roster it already received from
-  // /api/lti13/nrps-preview (members_named). We only persist real learners
-  // (not instructors, not ambiguous/unknown roles), space-isolated, with no
-  // invented data. The preview now tags each member with role_kind
-  // ("learner" | "instructor" | "unknown") from the robust classifier
-  // (MTH_NRPS_ROLE_CLASSIFICATION_V1). Only role_kind === "learner" is saved;
-  // unknown roles are skipped so an unclassified participant is never silently
-  // stored as a student. Older clients without role_kind fall back to the prior
-  // "skip instructors" behavior.
-  const incoming = Array.isArray(req.body?.students) ? req.body.students : [];
-  const spaceId = session.spaceId || "unknown-space";
+   Persisted identity is derived with nrpsMemberIdHash (the same hash the preview
+   exposed as members_named[].id), so learners synced by the legacy client path keep
+   the exact same stable student id and are UPDATED in place — the existing synced
+   learners are preserved, not duplicated.
+
+   Backward compatibility: if the server cannot fetch NRPS itself (env not
+   configured, no live NRPS claim for the session, or token/membership failure) the
+   endpoint falls back to a client-supplied `students` payload when present. This
+   legacy payload is treated as compat/fallback only and is NOT authoritative.
+   Manual report import remains a separate, untouched path. */
+function persistNrpsLearners(members, spaceId) {
   const now = new Date().toISOString();
-
   if (!Array.isArray(store.students)) store.students = [];
   let inserted = 0;
   let updated = 0;
-  let skippedUnknown = 0;
-  let skippedInstructor = 0;
+  let learnersSeen = 0;
+  let instructorsSeen = 0;
+  let unknownSeen = 0;
 
-  for (const m of incoming) {
-    const fullName = String(m?.name || "").trim();
+  for (const member of members) {
+    const fullName = nrpsMemberFullName(member);
+    const roleKind = classifyNrpsMember(member);
+    if (roleKind === "instructor") { instructorsSeen += 1; continue; }
+    if (roleKind !== "learner") { unknownSeen += 1; continue; }
+    learnersSeen += 1;
     if (!fullName) continue;
-    const roleKind = typeof m?.role_kind === "string" ? m.role_kind : null;
-    if (roleKind) {
-      if (roleKind === "instructor") { skippedInstructor += 1; continue; }
-      if (roleKind !== "learner") { skippedUnknown += 1; continue; }
-    } else if (m?.is_instructor) {
-      skippedInstructor += 1;
-      continue;
-    }
-    const identity = String(m?.id || fullName);
+    // Identity: a raw NRPS member is hashed to the 16-char id the preview
+    // exposed; a legacy client member already carries that hash in `precomputedId`
+    // (sent originally as members_named[].id) so we must NOT hash it again. Either
+    // way the resulting stable student id matches the previously synced learners.
+    const identity = member?.precomputedId != null
+      ? String(member.precomputedId)
+      : nrpsMemberIdHash(member);
     const id = stableId("student", spaceId + "|nrps|" + identity);
     const record = {
       id,
@@ -3768,20 +3774,116 @@ app.post("/api/imports/nrps-sync", (req, res) => {
     }
   }
 
+  // Store a counts-only teacher/team breakdown in the existing settings object
+  // (no new schema, no names, no PII). This is the "safe existing place" for the
+  // instructor/unknown breakdown so the dashboard can read truthful aggregates.
+  if (!store.settings || typeof store.settings !== "object") store.settings = {};
+  store.settings.nrpsRosterBreakdown = {
+    space_id: spaceId,
+    learners: learnersSeen,
+    instructors: instructorsSeen,
+    unknown: unknownSeen,
+    total_members: learnersSeen + instructorsSeen + unknownSeen,
+    updated_at: now
+  };
+
   if (inserted || updated) {
     store.settings.lastSyncAt = now;
-    saveStore();
   }
+  // Always persist so the counts-only breakdown survives even on a zero-delta sync.
+  saveStore();
+
+  return { inserted, updated, learnersSeen, instructorsSeen, unknownSeen };
+}
+
+// Legacy client-supplied roster shaped like members_named -> classify-equivalent
+// member objects so persistNrpsLearners can treat both paths identically.
+function legacyClientRosterToMembers(incoming) {
+  return (Array.isArray(incoming) ? incoming : []).map(m => {
+    const name = String(m?.name || "").trim();
+    let roles;
+    if (typeof m?.role_kind === "string") {
+      roles = m.role_kind === "instructor" ? ["Instructor"]
+        : m.role_kind === "learner" ? ["Learner"]
+        : ["__unknown__"];
+    } else {
+      roles = m?.is_instructor ? ["Instructor"] : ["Learner"];
+    }
+    // Preserve the client-sent hashed id (already a members_named[].id hash) so the
+    // stable student id matches the original client-path behavior without re-hashing.
+    return { name, roles, precomputedId: m?.id != null ? String(m.id) : undefined };
+  });
+}
+
+app.post("/api/imports/nrps-sync", async (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
+
+  const spaceId = session.spaceId || "unknown-space";
+
+  let members = null;
+  let mode = "server-owned-nrps";
+  let serverFetchStage = null;
+
+  try {
+    const result = await lti13FetchCurrentNrpsMembers(req);
+    if (result.ok) {
+      members = result.members;
+    } else {
+      serverFetchStage = result.stage || "unknown";
+    }
+  } catch (error) {
+    serverFetchStage = "unexpected";
+  }
+
+  // Backward-compatibility fallback: only when the server could not own the
+  // fetch. The client payload is NOT authoritative; manual import is unaffected.
+  let usedLegacyPayload = false;
+  if (!Array.isArray(members)) {
+    const incoming = Array.isArray(req.body?.students) ? req.body.students : [];
+    if (incoming.length) {
+      members = legacyClientRosterToMembers(incoming);
+      mode = "legacy-client-payload-fallback";
+      usedLegacyPayload = true;
+    }
+  }
+
+  if (!Array.isArray(members)) {
+    return res.status(200).json({
+      ok: false,
+      mode: "server-owned-nrps",
+      error: "NO_SERVER_OWNED_NRPS_AND_NO_CLIENT_FALLBACK",
+      server_fetch_stage: serverFetchStage,
+      next_required: [
+        "Open המודל החכם from Moodle so a live LTI 1.3 NRPS session exists, then retry.",
+        "If NRPS is unavailable in this space, use manual report import."
+      ],
+      no_fake_data: true
+    });
+  }
+
+  const counts = persistNrpsLearners(members, spaceId);
 
   res.json({
     ok: true,
-    inserted,
-    updated,
-    total: inserted + updated,
-    skipped_instructor: skippedInstructor,
-    skipped_unknown: skippedUnknown
+    mode,
+    used_legacy_payload: usedLegacyPayload,
+    learners_inserted: counts.inserted,
+    learners_updated: counts.updated,
+    instructors_seen: counts.instructorsSeen,
+    unknown_seen: counts.unknownSeen,
+    total_members: members.length,
+    // Legacy fields kept so existing clients that read them keep working.
+    inserted: counts.inserted,
+    updated: counts.updated,
+    total: counts.inserted + counts.updated,
+    skipped_instructor: counts.instructorsSeen,
+    skipped_unknown: counts.unknownSeen,
+    no_fake_data: true
   });
 });
+/* MTH_NRPS_SERVER_OWNED_SYNC_V1_END */
 
 app.get("/api/imports/student-profile", (req, res) => {
   noStore(res);
@@ -4794,6 +4896,32 @@ function classifyNrpsMember(member) {
 }
 /* MTH_NRPS_ROLE_CLASSIFICATION_V1_END */
 
+/* MTH_NRPS_MEMBER_IDENTITY_V1
+   Shared, privacy-safe member identity helpers used by both the NRPS preview
+   (members_named) and the server-owned learner sync. Keeping the id-hash and
+   full-name logic in one place guarantees the server-owned sync derives the SAME
+   stable student id as the legacy client-payload path (which sent the preview's
+   hashed `id`), so the previously synced learners are UPDATED in place rather
+   than duplicated. The hash is a 16-char SHA-256 prefix over a stable identity
+   source (user_id -> sub -> lis_person_sourcedid -> name); no raw id is exposed. */
+function nrpsMemberFullName(member) {
+  return String(
+    member?.name ||
+    [member?.given_name, member?.family_name].filter(Boolean).join(" ") ||
+    ""
+  ).trim();
+}
+
+function nrpsMemberIdHash(member) {
+  const idSource =
+    member?.user_id ||
+    member?.sub ||
+    member?.lis_person_sourcedid ||
+    nrpsMemberFullName(member);
+  return crypto.createHash("sha256").update(String(idSource || "")).digest("hex").slice(0, 16);
+}
+/* MTH_NRPS_MEMBER_IDENTITY_V1_END */
+
 /* YANIV_NRPS_PREVIEW_SAFE_20260509_START */
 function nrpsPreviewBase64Url(input) {
   return Buffer.from(input)
@@ -5181,10 +5309,9 @@ app.get("/api/lti13/nrps-preview", async (req, res) => {
 
     const membersNamed = members
       .map(member => {
-        const name = String(member?.name || [member?.given_name, member?.family_name].filter(Boolean).join(" ") || "").trim();
+        const name = nrpsMemberFullName(member);
         const roleKind = classifyNrpsMember(member);
-        const idSource = member?.user_id || member?.sub || member?.lis_person_sourcedid || name;
-        const idHash = crypto.createHash("sha256").update(String(idSource || "")).digest("hex").slice(0, 16);
+        const idHash = nrpsMemberIdHash(member);
         return {
           id: idHash,
           name,

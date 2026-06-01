@@ -45,12 +45,16 @@ function useAutoSyncStatus(onSuccess?: () => void) {
         }
         const named = Array.isArray(previewJson?.members_named) ? previewJson.members_named : [];
         if (!named.length) { setStatus("empty"); setLastError("NRPS זמין אך לא התקבלו שמות משתתפים ממודל."); return; }
+        // Server-owned sync (MTH_NRPS_SERVER_OWNED_SYNC_V1): POST token only. The
+        // server re-fetches the NRPS roster itself and persists only learners, so
+        // the client roster is no longer authoritative. The preview above is used
+        // solely to drive truthful UI states (auth/empty/network).
         const ltiToken = getLtiToken();
         const syncRes = await fetch("/api/imports/nrps-sync", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ students: named, ...(ltiToken ? { token: ltiToken } : {}) }),
+          body: JSON.stringify(ltiToken ? { token: ltiToken } : {}),
         });
         if (!alive) return;
         if (syncRes.ok) {
@@ -422,8 +426,10 @@ export default function Dashboard() {
   async function handleSyncSpace() {
     setSyncing(true);
     try {
-      // Pull the live NRPS roster (real names) then persist the learners so each
-      // gets a saved profile. No invented data; instructors are skipped server-side.
+      // Server-owned sync (MTH_NRPS_SERVER_OWNED_SYNC_V1): POST token only and let
+      // the server fetch + classify + persist learners. The preview is only used to
+      // confirm NRPS returned members before triggering the save. No invented data;
+      // instructors/unknown are skipped server-side.
       const res = await fetch(nrpsPreviewUrl(), { headers: { Accept: "application/json" }, credentials: "include" });
       const preview = await res.json().catch(() => null);
       const students = Array.isArray(preview?.members_named) ? preview.members_named : [];
@@ -433,10 +439,7 @@ export default function Dashboard() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({
-            students,
-            ...(ltiToken ? { token: ltiToken } : {}),
-          }),
+          body: JSON.stringify(ltiToken ? { token: ltiToken } : {}),
         });
       }
       await syncStatus.runSync();
