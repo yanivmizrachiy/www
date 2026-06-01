@@ -2,14 +2,16 @@ import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { SafePage, EmptyTruth } from "@/components/SafePage";
 import { useImportedStudents } from "@/hooks/useImports";
+import { nrpsPreviewUrl } from "@/hooks/useLtiSession";
 import { GraduationCap, Users, RefreshCw, ArrowLeft } from "lucide-react";
 
 // MTH_STUDENTS_TEACHERS_REAL_LIST_V1
 // Two real sections, no demo text:
 //  - מורים: real instructor names from NRPS.
-//  - תלמידים: real student roster from NRPS (names now allowed by Moodle
-//    privacy), each clickable to a profile. Imported students are merged in
-//    when present. No invented names; missing stays missing.
+//  - תלמידים: real learner roster. Only Learners are listed (instructors and
+//    unknown roles are excluded). Counts come from live NRPS; rows link to a
+//    real profile only when the learner matches an imported student record.
+//    No invented names or IDs; missing stays missing.
 
 type NrpsState = "loading" | "ready" | "error";
 
@@ -20,6 +22,12 @@ interface NamedMember {
   has_email: boolean;
 }
 
+// Normalize a display name so a live NRPS learner can be matched to an already
+// imported student record (the real, clickable profile id). Whitespace-only.
+function normalizeName(name: string): string {
+  return String(name || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
 export default function Page() {
   const { data: imported } = useImportedStudents();
   const [nrpsState, setNrpsState] = useState<NrpsState>("loading");
@@ -28,7 +36,10 @@ export default function Page() {
   async function loadNrps() {
     setNrpsState("loading");
     try {
-      const res = await fetch("/api/lti13/nrps-preview", { headers: { Accept: "application/json" } });
+      const res = await fetch(nrpsPreviewUrl(), {
+        headers: { Accept: "application/json" },
+        credentials: "include",
+      });
       const json = await res.json().catch(() => null);
       setNrps(json);
       setNrpsState("ready");
@@ -38,24 +49,67 @@ export default function Page() {
   }
   useEffect(() => { loadNrps(); }, []);
 
+  const live = Boolean(nrps?.ok);
   const named: NamedMember[] = Array.isArray(nrps?.members_named) ? nrps.members_named : [];
   const teachers = useMemo(() => named.filter((m) => m.is_instructor), [named]);
   const studentsFromNrps = useMemo(() => named.filter((m) => !m.is_instructor), [named]);
 
+  // Aggregate counts straight from live NRPS role_counts (authoritative source).
   const learnersCount = Number(nrps?.role_counts?.Learner || 0);
   const instructorsCount = Number(nrps?.role_counts?.Instructor || 0);
+  const participantsCount = Number(nrps?.members_count || 0);
+  // Anything in the roster that NRPS counted but is neither Learner nor
+  // Instructor. Surfaced as a safe note only; never auto-treated as a student.
+  const unknownCount = Math.max(0, participantsCount - learnersCount - instructorsCount);
 
-  // Prefer the real NRPS roster (with names). Fall back to imported students.
+  const showSummary = live && participantsCount > 0;
+
+  // Build the learner rows. Prefer the real NRPS roster (Learners only) and link
+  // each to a valid profile only when the name matches an imported student
+  // record (whose id is a real, routable student id). NRPS member ids are opaque
+  // hashes that are NOT valid profile ids, so we never link to `nrps:<id>`.
+  const importedByName = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of imported || []) {
+      const key = normalizeName(s.full_name);
+      if (key && !map.has(key)) map.set(key, s.id);
+    }
+    return map;
+  }, [imported]);
+
   const studentRows = useMemo(() => {
     if (studentsFromNrps.length > 0) {
-      return studentsFromNrps.map((m) => ({ key: m.id, name: m.name, to: `/students/nrps:${m.id}` }));
+      return studentsFromNrps.map((m) => {
+        const matchedId = importedByName.get(normalizeName(m.name)) || null;
+        return { key: m.id, name: m.name, to: matchedId ? `/students/${matchedId}` : null };
+      });
     }
     return (imported || []).map((s) => ({ key: s.id, name: s.full_name, to: `/students/${s.id}` }));
-  }, [studentsFromNrps, imported]);
+  }, [studentsFromNrps, imported, importedByName]);
 
   return (
     <SafePage title="תלמידים ומורים" description="רשימת התלמידים והמורים של המרחב." backTo="/" backLabel="חזרה למרכז המורה">
       <div className="space-y-6" dir="rtl">
+        {/* NRPS summary — shown only when live NRPS returned real counts */}
+        {showSummary && (
+          <section className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-bold text-emerald-900">
+              <span className="text-base font-black">{participantsCount} משתתפים במרחב</span>
+              <span className="text-emerald-400">·</span>
+              <span>{learnersCount} תלמידים</span>
+              <span className="text-emerald-400">·</span>
+              <span>{instructorsCount} מורים</span>
+              {unknownCount > 0 && (
+                <>
+                  <span className="text-emerald-400">·</span>
+                  <span className="text-emerald-700">{unknownCount} בתפקיד לא מזוהה</span>
+                </>
+              )}
+            </div>
+            <div className="mt-1 text-xs font-medium text-emerald-700">מקור: Moodle NRPS</div>
+          </section>
+        )}
+
         {/* Teachers */}
         <section className="rounded-3xl border bg-white p-5 shadow-sm">
           <div className="mb-3 flex items-center justify-between gap-3">
@@ -83,7 +137,7 @@ export default function Page() {
           )}
         </section>
 
-        {/* Students */}
+        {/* Students (Learners only) */}
         <section className="rounded-3xl border bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="flex items-center gap-2 text-xl font-extrabold">
@@ -110,17 +164,26 @@ export default function Page() {
             <p className="text-sm text-muted-foreground">טוען רשימת תלמידים...</p>
           ) : studentRows.length > 0 ? (
             <ul className="space-y-2">
-              {studentRows.map((s) => (
-                <li key={s.key}>
-                  <Link
-                    to={s.to}
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 transition hover:border-primary/30 hover:bg-primary/5"
+              {studentRows.map((s) =>
+                s.to ? (
+                  <li key={s.key}>
+                    <Link
+                      to={s.to}
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 transition hover:border-primary/30 hover:bg-primary/5"
+                    >
+                      <span className="text-base font-extrabold text-primary">{s.name}</span>
+                      <ArrowLeft className="h-4 w-4 shrink-0 text-primary" />
+                    </Link>
+                  </li>
+                ) : (
+                  <li
+                    key={s.key}
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3"
                   >
-                    <span className="text-base font-extrabold text-primary">{s.name}</span>
-                    <ArrowLeft className="h-4 w-4 shrink-0 text-primary" />
-                  </Link>
-                </li>
-              ))}
+                    <span className="text-base font-extrabold text-slate-800">{s.name}</span>
+                  </li>
+                )
+              )}
             </ul>
           ) : learnersCount > 0 ? (
             <EmptyTruth>
