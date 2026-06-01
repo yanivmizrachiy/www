@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getLtiToken } from "@/hooks/useLtiSession";
+import { getLtiToken, nrpsPreviewUrl } from "@/hooks/useLtiSession";
 
 export interface ImportBatch {
   id: string;
@@ -553,4 +553,61 @@ export function useStudentProfile(studentId: string | null | undefined) {
 
   useEffect(() => { refresh(); }, [refresh]);
   return { data, loading, error, refresh };
+}
+
+// ---------- NRPS roster (safe, names + role only) ----------
+// Reads the live NRPS preview for the current LTI 1.3 space. Exposes ONLY the
+// real display name + classified role kind that Moodle returned — never the
+// id hash, email presence, raw identifiers, tokens or secrets. Used by the
+// export page for the teachers / participants sheets. Missing stays missing:
+// when NRPS is not live we surface live:false rather than inventing a roster.
+
+export interface NrpsMember {
+  name: string;
+  role_kind: "learner" | "instructor" | "unknown";
+}
+export interface NrpsRoster {
+  live: boolean;
+  members: NrpsMember[];
+  instructors: NrpsMember[];
+  learners: NrpsMember[];
+  updated_at: string | null;
+}
+
+export function useNrpsRoster() {
+  const [data, setData] = useState<NrpsRoster | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    const token = getLtiToken();
+    if (!token) { setLoading(false); setData({ live: false, members: [], instructors: [], learners: [], updated_at: null }); return; }
+    setLoading(true);
+    try {
+      const res = await fetch(nrpsPreviewUrl(), { headers: { Accept: "application/json" }, credentials: "include" });
+      const json = await res.json().catch(() => null);
+      const live = Boolean(json?.ok);
+      const named: Array<{ name?: string; role_kind?: string; is_instructor?: boolean }> =
+        Array.isArray(json?.members_named) ? json.members_named : [];
+      const members: NrpsMember[] = named
+        .map((m) => ({
+          name: String(m?.name || "").trim(),
+          role_kind: (m?.role_kind as NrpsMember["role_kind"]) ?? (m?.is_instructor ? "instructor" : "unknown"),
+        }))
+        .filter((m) => m.name);
+      setData({
+        live,
+        members,
+        instructors: members.filter((m) => m.role_kind === "instructor"),
+        learners: members.filter((m) => m.role_kind === "learner"),
+        updated_at: live && typeof json?.now === "string" ? json.now : null,
+      });
+    } catch {
+      setData({ live: false, members: [], instructors: [], learners: [], updated_at: null });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+  return { data, loading, refresh };
 }
