@@ -38,6 +38,13 @@ export default function TimeRangeReport() {
 
   const { data, loading } = usePracticeTime({ from, to });
 
+  // Truth: time is an estimate (sessionization) unless Moodle supplies an
+  // official duration field. Absent flag → treat as estimate, never as fact.
+  const hasOfficialDuration = data?.meta?.has_official_duration === true;
+  const enoughLogs = data?.meta?.enough_logs !== false;
+  const eventsLast24h = data?.meta?.events_last_24h ?? null;
+  const eventsLastWeek = data?.meta?.events_last_week ?? null;
+
   const perStudent = useMemo(() => {
     if (!data?.per_student?.length) return [];
     return [...data.per_student].sort((a, b) => b.total_seconds - a.total_seconds);
@@ -64,13 +71,22 @@ export default function TimeRangeReport() {
     <SafePage title="דוח זמנים" description="הערכת זמן תרגול לפי לוגים — לא מדידה מדויקת" backTo="/" backLabel="חזרה למרכז המורה">
       <div className="space-y-5" dir="rtl">
 
-        {/* Disclaimer */}
-        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>
-            <strong>הערכה לפי לוגים בלבד.</strong> זמן התרגול מחושב לפי חלונות פעילות (sessionization) מתוך לוגי Moodle שיובאו. אין מדידת משך מדויקת ממקור רשמי Moodle — אלו הערכות בלבד.
-          </span>
-        </div>
+        {/* Truth disclaimer — official duration vs estimate */}
+        {hasOfficialDuration ? (
+          <div className="flex items-start gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              <strong>משך זמן רשמי.</strong> הזמן המוצג מבוסס על שדה משך זמן רשמי מתוך מקור הלוגים.
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              <strong>אין שדה משך זמן רשמי — לא ניתן לחשב זמן אמיתי.</strong> לוגי Moodle מתעדים אירועים ולא משך זמן. הערך המוצג בעמודת "זמן" הוא <strong>הערכה</strong> בלבד לפי חלונות פעילות (sessionization), לא מדידה רשמית.
+            </span>
+          </div>
+        )}
 
         {/* Range selector */}
         <div className="flex flex-wrap items-center gap-2">
@@ -113,12 +129,26 @@ export default function TimeRangeReport() {
           מציג: {formatTeacherDateDmyShort(from)} – {formatTeacherDateDmyShort(to)}
         </p>
 
+        {/* Recent activity — FACT (event counts only, never duration) */}
+        {!loading && (eventsLast24h !== null || eventsLastWeek !== null) && (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+              <div className="text-xs font-bold text-muted-foreground">אירועים ב-24 שעות אחרונות</div>
+              <div className="text-2xl font-extrabold text-slate-900">{(eventsLast24h ?? 0).toLocaleString()}</div>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+              <div className="text-xs font-bold text-muted-foreground">אירועים בשבוע האחרון</div>
+              <div className="text-2xl font-extrabold text-slate-900">{(eventsLastWeek ?? 0).toLocaleString()}</div>
+            </div>
+          </div>
+        )}
+
         {/* Per-student table */}
         <Card className="overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/30 px-6 py-4">
             <div className="flex items-center gap-3">
-              <CardTitle className="text-xl font-bold">זמן לפי תלמיד</CardTitle>
-              <TruthBadge status="calculated" />
+              <CardTitle className="text-xl font-bold">{hasOfficialDuration ? "זמן לפי תלמיד" : "זמן (הערכה) לפי תלמיד"}</CardTitle>
+              <TruthBadge status={hasOfficialDuration ? "proven" : "blocked"} label={hasOfficialDuration ? "משך רשמי" : "הערכה — לא מאומת"} />
             </div>
             <Button
               variant="outline"
@@ -140,12 +170,18 @@ export default function TimeRangeReport() {
                 <p className="font-semibold">אין נתוני זמן לטווח זה</p>
                 <p className="text-sm text-muted-foreground">יש לייבא דוח לוגים (Logs) ממודל כדי לחשב זמני תרגול. בחר טווח תאריכים אחר או ייבא לוגים.</p>
               </div>
+            ) : !enoughLogs ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+                <Clock className="h-10 w-10 text-muted-foreground/40" />
+                <p className="font-semibold">אין מספיק לוגים לחישוב זמן</p>
+                <p className="text-sm text-muted-foreground">נדרשים לפחות {data?.meta?.min_log_events ?? 2} אירועי לוג בטווח כדי להעריך זמן. ייבא דוח Logs מלא יותר או בחר טווח רחב יותר.</p>
+              </div>
             ) : (
               <Table dir="rtl">
                 <TableHeader>
                   <TableRow className="bg-muted/50 hover:bg-muted/50">
                     <TableHead className="text-right">תלמיד</TableHead>
-                    <TableHead className="text-center">זמן הערכה</TableHead>
+                    <TableHead className="text-center">{hasOfficialDuration ? "זמן" : "זמן (הערכה)"}</TableHead>
                     <TableHead className="text-center">ימי פעילות</TableHead>
                     <TableHead className="text-center">אירועים</TableHead>
                     <TableHead className="text-center">סשנים</TableHead>
@@ -156,7 +192,7 @@ export default function TimeRangeReport() {
                   {perStudent.map((s) => (
                     <TableRow key={s.student_id} className="hover:bg-muted/20">
                       <TableCell className="font-medium">{s.student_name ?? "—"}</TableCell>
-                      <TableCell className="text-center font-bold text-primary">
+                      <TableCell className={`text-center font-bold ${hasOfficialDuration ? "text-primary" : "text-amber-700"}`}>
                         {secondsToHebrewHms(s.total_seconds)}
                       </TableCell>
                       <TableCell className="text-center">{s.active_days}</TableCell>

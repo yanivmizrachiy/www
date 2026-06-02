@@ -64,7 +64,7 @@ export default function DayReport() {
           </CardContent>
         </Card>
         <div className="flex justify-end">
-          <TruthBadge status="calculated" />
+          <TruthBadge status={data?.length ? "calculated" : "missing"} />
         </div>
       </div>
     </SafePage>

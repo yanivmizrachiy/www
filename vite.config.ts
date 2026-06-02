@@ -1,14 +1,21 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
-
 export default defineConfig({
   server: { host: "0.0.0.0", port: 3000 },
   plugins: [react()],
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
   build: {
-    // Keep Vite/Rollup default chunking. Manual vendor splitting caused a circular
-    // runtime chunk in the Moodle iframe build, so stability is preferred here.
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"],
+          ui: ["@radix-ui/react-accordion", "@radix-ui/react-tabs", "lucide-react"],
+          supabase: ["@supabase/supabase-js"],
+          xlsx: ["xlsx"],
+        }
+      }
+    },
     chunkSizeWarningLimit: 1200,
   },
 });
