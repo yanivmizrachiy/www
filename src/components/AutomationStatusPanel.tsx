@@ -118,6 +118,23 @@ function CapabilityCard({ cap }: { cap: GovernedCapability }) {
             </Link>
           </Button>
         )}
+        {mode === "adminAction" && (
+          <div className="mt-2 space-y-2">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              יכולת זו דורשת הפעלת Web Services ב-Moodle על ידי מנהל המערכת.
+            </div>
+            {cap.id === "ags_grades" && (
+              <Button asChild variant="outline" size="sm" className="w-full rounded-xl font-black border-blue-200 text-blue-700 hover:bg-blue-50">
+                <Link to="/gradebook-import"><FileUp className="ml-2 h-3.5 w-3.5" />ייבא Gradebook ידנית במקום</Link>
+              </Button>
+            )}
+            {cap.id === "nrps_participants" && (
+              <Button asChild variant="outline" size="sm" className="w-full rounded-xl font-black border-blue-200 text-blue-700 hover:bg-blue-50">
+                <Link to="/import"><FileUp className="ml-2 h-3.5 w-3.5" />ייבא משתתפים ידנית במקום</Link>
+              </Button>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -155,3 +172,4 @@ export default function AutomationStatusPanel() {
     </section>
   );
 }
+
