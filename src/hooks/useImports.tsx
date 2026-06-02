@@ -1,5 +1,5 @@
 import{useState,useEffect,useCallback}from"react";
-import{supabase}from"@/lib/supabaseClient";
+import{supabase}from"@/integrations/supabase/client";
 import{useLTIContext}from"@/hooks/useLTIContext";
 export interface ImportRecord{id:string;created_at:string;course_id:number;teacher_id:number;source:"manual"|"lti"|"api";status:"success"|"partial"|"failed";rows_imported:number;rows_failed:number;filename?:string|null;}
 let _c:{data:ImportRecord[];ts:number;cid:number}|null=null;
