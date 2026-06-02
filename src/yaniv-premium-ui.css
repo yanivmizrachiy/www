@@ -297,3 +297,7 @@ body:has(#root) {
     transform: translateY(0);
   }
 }
+
+/* MTH_FULLSCREEN */
+#root { width:100%; max-width:100% !important; }
+.app-main-content { max-width:1400px !important; width:100% !important; margin:0 auto !important; padding:0 2rem !important; }

@@ -2,8 +2,9 @@ import { SafePage } from "@/components/SafePage";
 import { useLtiSession } from "@/hooks/useLtiSession";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Copy, ExternalLink, BookOpen, MousePointerClick, Zap, AlertTriangle, Info } from "lucide-react";
+import { CheckCircle2, Copy, ExternalLink, BookOpen, MousePointerClick, Zap, AlertTriangle, Info, ClipboardCheck } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 const LTI_URL = "https://www-tijc.onrender.com/api/lti/launch";
 const LTI_KEY = "yaniv-lti-tool";
@@ -68,6 +69,16 @@ export default function Setup() {
             </div>
           </div>
         )}
+        <Link to="/install-check" className="flex items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3 shadow-sm transition hover:bg-slate-50">
+          <div className="flex items-center gap-3">
+            <ClipboardCheck className="h-5 w-5 shrink-0 text-blue-600" />
+            <div>
+              <div className="font-bold text-slate-900">בדיקת התקנה במרחב</div>
+              <div className="text-xs text-muted-foreground">ודא LTI 1.3 + NRPS וספירות לפני סנכרון — בטוח, ללא נתונים אישיים.</div>
+            </div>
+          </div>
+          <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </Link>
         <Card className="shadow-sm">
           <CardContent className="pt-6">
             <div className="mb-4 flex items-center gap-2"><Zap className="h-5 w-5 text-primary" /><h2 className="text-lg font-black">שימוש יומיומי — 3 שלבים</h2></div>
