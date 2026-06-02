@@ -363,3 +363,13 @@ The working LTI 1.0/1.1 tool must remain unchanged.
 - Logs/time calculation evidence.
 
 Updated: 2026-05-10T05:10:58Z
+
+## 2026-05-31 — RLS Policies הופעלו על Production
+- grade_items: teacher_own_course_grade_items ✅
+- grade_results: teacher_own_course_grade_results ✅
+- import_batches: teacher_own_course_imports ✅
+- log_events: teacher_own_course_logs ✅
+- students: teacher_own_space_students ✅
+- teacher_sessions: teacher_own_course_sessions ✅
+- אומת ב-Supabase Dashboard → pg_policies
+

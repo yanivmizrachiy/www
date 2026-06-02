@@ -1,81 +1,124 @@
+import { SafePage } from "@/components/SafePage";
 import { useLtiSession } from "@/hooks/useLtiSession";
-import { hebrewRoleLabel } from "@/lib/roleLabel";
-import { CheckCircle2, BookOpen, MousePointerClick, ShieldCheck } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { CheckCircle2, Copy, ExternalLink, BookOpen, MousePointerClick, Zap, AlertTriangle, Info, ClipboardCheck } from "lucide-react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 
-// MTH_REAL_SETUP_PAGE_V1
-// Real connection page: shows the live connection status (from the session) and
-// clear Hebrew steps to open the tool from inside Moodle. No demo, no password.
+const LTI_URL = "https://www-tijc.onrender.com/api/lti/launch";
+const LTI_KEY = "yaniv-lti-tool";
 
-export default function Page() {
-  const { hasSession, session, site } = useLtiSession();
-
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
   return (
-    <section className="space-y-6" dir="rtl">
+    <button type="button" onClick={() => { void navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+      className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-bold text-blue-700 shadow-sm transition hover:bg-blue-50">
+      {copied ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+      {copied ? "הועתק!" : "העתק"}
+    </button>
+  );
+}
+
+function Step({ n, icon, title, children }: { n: number; icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <li className="flex gap-4">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 font-black text-white shadow">{n}</div>
+      <div className="flex-1 pt-1">
+        <div className="flex items-center gap-2 font-bold text-gray-900">{icon}{title}</div>
+        <div className="mt-1 text-sm text-muted-foreground leading-relaxed">{children}</div>
+      </div>
+    </li>
+  );
+}
+
+function FieldRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl border bg-white px-4 py-3 shadow-sm">
       <div>
-        <h1 className="text-2xl font-bold">התקנה / חיבור Moodle</h1>
-        <p className="mt-1 text-sm text-muted-foreground">חיבור הכלי מתבצע מתוך Moodle בלבד. אין צורך בסיסמה.</p>
+        <div className="text-xs font-bold text-muted-foreground">{label}</div>
+        <div className="mt-0.5 font-mono text-sm font-bold text-gray-900 break-all">{value}</div>
       </div>
+      <CopyButton text={value} />
+    </div>
+  );
+}
 
-      {/* Live connection status */}
-      <div className={`rounded-3xl border p-5 ${hasSession ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"}`}>
-        <div className="flex items-center gap-3">
-          {hasSession ? (
-            <CheckCircle2 className="h-6 w-6 text-green-700" />
-          ) : (
-            <ShieldCheck className="h-6 w-6 text-amber-700" />
-          )}
-          <div>
-            <div className={`text-lg font-black ${hasSession ? "text-green-900" : "text-amber-900"}`}>
-              {hasSession ? "מחובר ל-Moodle" : "לא מחובר עדיין"}
+export default function Setup() {
+  const { session, site } = useLtiSession();
+  const isConnected = !!(session as any)?.course_id;
+  const courseName = (session as any)?.course_name ?? (session as any)?.context_title ?? null;
+  const teacherName = (session as any)?.teacher_name ?? (session as any)?.name ?? null;
+  return (
+    <SafePage title="חיבור Moodle" description="הגדרת Moodle Teacher Hub במרחב לימוד." backTo="/" backLabel="חזרה">
+      <div className="space-y-6 max-w-2xl">
+        {isConnected ? (
+          <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+            <CheckCircle2 className="h-6 w-6 shrink-0 text-emerald-600" />
+            <div>
+              <div className="font-black text-emerald-900">מחובר ופעיל</div>
+              <div className="text-sm text-emerald-700">{courseName && <span>{courseName}</span>}{teacherName && <span> · {teacherName}</span>}</div>
             </div>
-            {hasSession && session ? (
-              <div className="text-sm text-green-800">
-                {session.course_title ? `מרחב: ${session.course_title}` : null}
-                {session.moodle_username ? ` · ${session.moodle_username}` : null}
-                {session.role ? ` · ${hebrewRoleLabel(session.role)}` : null}
-              </div>
-            ) : (
-              <div className="text-sm text-amber-800">פתח את הכלי מתוך מרחב הלימוד שלך ב-Moodle.</div>
-            )}
           </div>
-        </div>
+        ) : (
+          <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <AlertTriangle className="h-6 w-6 shrink-0 text-amber-600" />
+            <div>
+              <div className="font-black text-amber-900">לא מחובר למרחב Moodle</div>
+              <div className="text-sm text-amber-700">פתח כלי זה מתוך מרחב Moodle כדי לקבל נתונים אמיתיים.</div>
+            </div>
+          </div>
+        )}
+        <Link to="/install-check" className="flex items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3 shadow-sm transition hover:bg-slate-50">
+          <div className="flex items-center gap-3">
+            <ClipboardCheck className="h-5 w-5 shrink-0 text-blue-600" />
+            <div>
+              <div className="font-bold text-slate-900">בדיקת התקנה במרחב</div>
+              <div className="text-xs text-muted-foreground">ודא LTI 1.3 + NRPS וספירות לפני סנכרון — בטוח, ללא נתונים אישיים.</div>
+            </div>
+          </div>
+          <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </Link>
+        <Card className="shadow-sm">
+          <CardContent className="pt-6">
+            <div className="mb-4 flex items-center gap-2"><Zap className="h-5 w-5 text-primary" /><h2 className="text-lg font-black">שימוש יומיומי — 3 שלבים</h2></div>
+            <ol className="space-y-5">
+              <Step n={1} icon={<BookOpen className="h-4 w-4 text-primary" />} title="היכנס למרחב הלימוד שלך ב-Moodle">המרחב שבו אתה מלמד, באתר משרד החינוך.</Step>
+              <Step n={2} icon={<MousePointerClick className="h-4 w-4 text-primary" />} title='לחץ על הכלי "Moodle Teacher Hub"'>הכלי מופיע כפעילות מסוג כלי חיצוני (LTI) בתוך המרחב.</Step>
+              <Step n={3} icon={<CheckCircle2 className="h-4 w-4 text-emerald-600" />} title="זהו — הנתונים נטענים אוטומטית">שם המרחב, המורים והתלמידים מגיעים ישירות מ-Moodle. אין צורך בהתחברות נפרדת.</Step>
+            </ol>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm border-blue-100">
+          <CardContent className="pt-6">
+            <div className="mb-4 flex items-center gap-2"><Info className="h-5 w-5 text-blue-600" /><h2 className="text-lg font-black text-blue-900">התקנה במרחב חדש — 5 שלבים</h2></div>
+            <ol className="space-y-5">
+              <Step n={1} icon={<BookOpen className="h-4 w-4 text-blue-600" />} title="היכנס למרחב החדש ב-Moodle והפעל מצב עריכה">לחץ על "הפעל עריכה" בפינה הימנית העליונה של המרחב.</Step>
+              <Step n={2} icon={<MousePointerClick className="h-4 w-4 text-blue-600" />} title='לחץ "הוסף פעילות" ← לשונית "פעילויות"'>בחר <strong>כלי או שירות LTI חיצוני</strong>.</Step>
+              <Step n={3} icon={<Copy className="h-4 w-4 text-blue-600" />} title="הגדר את פרטי הכלי">
+                <div className="mt-3 space-y-2">
+                  <FieldRow label="כתובת הכלי (Tool URL)" value={LTI_URL} />
+                  <FieldRow label="Consumer Key" value={LTI_KEY} />
+                  <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-xs text-red-700"><strong>Shared Secret</strong> — קבל מהמנהל בלבד. אל תשתף בצ'אט, מייל או צילום מסך.</div>
+                </div>
+              </Step>
+              <Step n={4} icon={<CheckCircle2 className="h-4 w-4 text-blue-600" />} title="שמור והצג">לחץ "שמור וחזור למרחב" — הכלי יופיע כפעילות חדשה.</Step>
+              <Step n={5} icon={<Zap className="h-4 w-4 text-emerald-600" />} title="לחץ על הכלי — הוא נפתח אוטומטית">הנתונים של המרחב החדש ייטענו אוטומטית. אין התחברות נוספת.</Step>
+            </ol>
+            <div className="mt-5">
+              <Button asChild variant="outline" size="sm">
+                <a href="https://www-tijc.onrender.com/health" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2"><ExternalLink className="h-4 w-4" />בדוק שהשרת פעיל</a>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        {(site?.site_name || site?.site_url) && (
+          <Card className="shadow-sm"><CardContent className="pt-4 pb-4">
+            <div className="text-xs font-bold text-muted-foreground">שרת Moodle מזוהה</div>
+            <div className="mt-0.5 font-semibold">{site.site_name ?? site.site_url}</div>
+          </CardContent></Card>
+        )}
       </div>
-
-      {/* Steps to connect */}
-      <div className="rounded-3xl border bg-white p-5 shadow-sm">
-        <h2 className="mb-4 text-xl font-extrabold">איך מתחברים</h2>
-        <ol className="space-y-4">
-          <li className="flex gap-3">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 font-black text-primary">1</span>
-            <div>
-              <div className="flex items-center gap-2 font-bold"><BookOpen className="h-4 w-4 text-primary" />היכנס למרחב הלימוד שלך ב-Moodle</div>
-              <p className="mt-0.5 text-sm text-muted-foreground">המרחב שבו אתה מלמד, באתר משרד החינוך.</p>
-            </div>
-          </li>
-          <li className="flex gap-3">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 font-black text-primary">2</span>
-            <div>
-              <div className="flex items-center gap-2 font-bold"><MousePointerClick className="h-4 w-4 text-primary" />לחץ על הכלי "המודל החכם"</div>
-              <p className="mt-0.5 text-sm text-muted-foreground">הכלי מופיע כפעילות מסוג כלי חיצוני (LTI) בתוך המרחב.</p>
-            </div>
-          </li>
-          <li className="flex gap-3">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 font-black text-primary">3</span>
-            <div>
-              <div className="flex items-center gap-2 font-bold"><CheckCircle2 className="h-4 w-4 text-primary" />זהו — הנתונים נטענים אוטומטית</div>
-              <p className="mt-0.5 text-sm text-muted-foreground">שם המרחב, המורים והתלמידים מגיעים ישירות מ-Moodle.</p>
-            </div>
-          </li>
-        </ol>
-      </div>
-
-      {site?.site_name || site?.site_url ? (
-        <div className="rounded-3xl border bg-white p-5 shadow-sm">
-          <h2 className="mb-2 text-lg font-extrabold">שרת Moodle</h2>
-          <p className="text-sm text-muted-foreground">{site.site_name ?? site.site_url}</p>
-        </div>
-      ) : null}
-    <div className="rounded-3xl border bg-blue-50 p-6"><h2 className="mb-3 text-xl font-black text-blue-900">להתקנה במרחב נוסף - 5 שלבים</h2><ol className="space-y-2 text-sm leading-relaxed text-blue-900 list-decimal pr-5"><li>היכנס למרחב החדש ב-Moodle והפעל מצב עריכה</li><li>הוסף פעילות → לשונית פעילויות</li><li>בחר &quot;כלי או שירות LTI חיצוני&quot;</li><li>בחר &quot;Moodle Teacher Hub - LTI 1.3 Test&quot;</li><li>שמור והצג - הכלי ייפתח אוטומטית</li></ol></div>
-    </section>
+    </SafePage>
   );
 }
