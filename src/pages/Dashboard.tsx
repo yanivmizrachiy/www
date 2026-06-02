@@ -497,6 +497,13 @@ export default function Dashboard() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-2">
               <h1 className="break-words text-3xl font-black tracking-tight text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)] sm:text-4xl lg:text-5xl">המודל החכם</h1>
               <p className="text-base font-bold text-cyan-200/90 lg:text-lg">לוח הבקרה של המורה</p>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }} className="flex flex-wrap gap-2 pt-1">
+              <Button size="sm" onClick={() => void handleSyncSpace()} disabled={syncing || syncStatus.running} className="bg-white text-[#06152f] hover:bg-white/90 font-black shadow-lg text-xs"><RefreshCw className={(syncing || syncStatus.running) ? "h-3.5 w-3.5 animate-spin ml-1.5" : "h-3.5 w-3.5 ml-1.5"} />סנכרן</Button>
+              <Button asChild size="sm" className="border border-white/35 bg-[#0f3d75]/90 text-white hover:bg-[#15559a] font-black shadow text-xs"><Link to="/smart-import" className="flex items-center gap-1.5"><Import className="h-3.5 w-3.5" />ייבוא חכם</Link></Button>
+              <Button asChild size="sm" variant="outline" className="border-white/40 bg-[#06152f]/55 text-white hover:bg-[#0f3d75]/90 font-black text-xs"><Link to="/students">תלמידים</Link></Button>
+              <Button asChild size="sm" variant="outline" className="border-white/40 bg-[#06152f]/55 text-white hover:bg-[#0f3d75]/90 font-black text-xs"><Link to="/grades">ציונים</Link></Button>
+              <Button asChild size="sm" variant="outline" className="border-white/40 bg-[#06152f]/55 text-white hover:bg-[#0f3d75]/90 font-black text-xs"><Link to="/reports">דוחות</Link></Button>
+            </motion.div>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} className="grid min-w-0 gap-3 xl:grid-cols-3">
               <Link to="/teachers" className="block rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm transition hover:bg-[#15559a]">
