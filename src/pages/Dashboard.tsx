@@ -2,14 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useImportsOverview } from "@/hooks/useImports";
 import { useSyncStatus } from "@/hooks/useSyncStatus";
-import { useLtiSession, getLtiToken } from "@/hooks/useLtiSession";
+import { useLtiSession, getLtiToken, nrpsPreviewUrl } from "@/hooks/useLtiSession";
 import { OnboardingBanner } from "@/components/OnboardingBanner";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, GraduationCap, ClipboardList, Database, Calendar, Import, AlertCircle, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
-import { formatTeacherDateDmyShort } from "@/lib/teacherDateFormat";
+import { formatTeacherDateDmyShort, formatTeacherDateTime } from "@/lib/teacherDateFormat";
 
 // MTH_PREMIUM_DASHBOARD_TEACHER_COUNTS_V1
 // Small, self-contained NRPS teacher card on the dashboard hero. Shows teacher
@@ -33,9 +33,7 @@ function useAutoSyncStatus(onSuccess?: () => void) {
     setLastError(null);
     (async () => {
       try {
-        const ltiPreviewToken = getLtiToken();
-        const ltiPreviewUrl = "/api/lti13/nrps-preview" + (ltiPreviewToken ? "?t=" + encodeURIComponent(ltiPreviewToken) : "");
-        const previewRes = await fetch(ltiPreviewUrl, { headers: { Accept: "application/json" }, credentials: "include" });
+        const previewRes = await fetch(nrpsPreviewUrl(), { headers: { Accept: "application/json" }, credentials: "include" });
         const previewJson = await previewRes.json().catch(() => null);
         if (!alive) return;
         if (!previewRes.ok) {
@@ -47,12 +45,16 @@ function useAutoSyncStatus(onSuccess?: () => void) {
         }
         const named = Array.isArray(previewJson?.members_named) ? previewJson.members_named : [];
         if (!named.length) { setStatus("empty"); setLastError("NRPS זמין אך לא התקבלו שמות משתתפים ממודל."); return; }
+        // Server-owned sync (MTH_NRPS_SERVER_OWNED_SYNC_V1): POST token only. The
+        // server re-fetches the NRPS roster itself and persists only learners, so
+        // the client roster is no longer authoritative. The preview above is used
+        // solely to drive truthful UI states (auth/empty/network).
         const ltiToken = getLtiToken();
         const syncRes = await fetch("/api/imports/nrps-sync", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ students: named, ...(ltiToken ? { token: ltiToken } : {}) }),
+          body: JSON.stringify(ltiToken ? { token: ltiToken } : {}),
         });
         if (!alive) return;
         if (syncRes.ok) {
@@ -141,26 +143,78 @@ function useSourceStatus() {
   }, []);
   return map;
 }
+// MTH_DASHBOARD_NRPS_BREAKDOWN_V1
+// Reads the live NRPS data for the dashboard header. Combines two safe sources:
+//   1. /api/lti13/participants-breakdown — the authoritative, privacy-stripped
+//      aggregate counts (total / learners / instructors) + live course title +
+//      update time. Returns no names by design.
+//   2. /api/lti13/nrps-preview — used for the real instructor *names* and as a
+//      fallback for the counts when the breakdown endpoint is unavailable.
+// Both carry ?t=<token> + credentials so the server resolves the current LTI 1.3
+// session. Exposes ONLY counts/names/title that NRPS actually returned - never
+// invents totals or names.
+function breakdownUrl(): string {
+  const token = getLtiToken();
+  return "/api/lti13/participants-breakdown" + (token ? "?t=" + encodeURIComponent(token) : "");
+}
 function useDashboardTeachers() {
   const [count, setCount] = useState(0);
   const [names, setNames] = useState<string[]>([]);
+  const [participants, setParticipants] = useState<number | null>(null);
+  const [learners, setLearners] = useState<number | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [courseTitle, setCourseTitle] = useState<string | null>(null);
+  const [hasLiveNrps, setHasLiveNrps] = useState(false);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
-        const res = await fetch("/api/lti13/nrps-preview", { headers: { Accept: "application/json" } });
-        const json = await res.json().catch(() => null);
+        const [previewRes, breakdownRes] = await Promise.all([
+          fetch(nrpsPreviewUrl(), { headers: { Accept: "application/json" }, credentials: "include" }),
+          fetch(breakdownUrl(), { headers: { Accept: "application/json" }, credentials: "include" }),
+        ]);
+        const json = await previewRes.json().catch(() => null);
+        const bd = await breakdownRes.json().catch(() => null);
         if (!alive) return;
-        const instructors = Number(json?.role_counts?.Instructor || 0);
+
+        const previewLive = Boolean(json?.ok);
+        const breakdownLive = Boolean(bd?.ok);
+        const live = previewLive || breakdownLive;
+        setHasLiveNrps(live);
+
+        // Instructor names only come from the preview (breakdown returns none).
         const named = Array.isArray(json?.members_named) ? json.members_named : [];
         const realNames: string[] = named
-          .filter((m: { is_instructor?: boolean }) => m?.is_instructor)
+          .filter((m: { is_instructor?: boolean; role_kind?: string }) =>
+            m?.role_kind ? m.role_kind === "instructor" : m?.is_instructor)
           .map((m: { name?: string }) => String(m?.name || "").trim())
           .filter(Boolean);
-        setCount(instructors || realNames.length);
+
+        // Counts: prefer the authoritative breakdown aggregates, fall back to the
+        // preview role_counts, then to the resolved instructor name count.
+        const bdInstructors = breakdownLive ? Number(bd?.instructors_count || 0) : 0;
+        const bdLearners = breakdownLive ? Number(bd?.learners_count || 0) : 0;
+        const bdTotal = breakdownLive ? Number(bd?.total_members || 0) : 0;
+        const previewInstructors = Number(json?.role_counts?.Instructor || 0);
+        const previewLearners = Number(json?.role_counts?.Learner || 0);
+        const previewTotal = Number(json?.members_count || 0);
+
+        const instructors = bdInstructors || previewInstructors || realNames.length;
+        const learnerCount = bdLearners || previewLearners;
+        const total = bdTotal || previewTotal;
+
+        setCount(instructors);
         setNames(Array.from(new Set(realNames)));
+        setParticipants(live && total > 0 ? total : null);
+        setLearners(live && learnerCount > 0 ? learnerCount : null);
+        const bdUpdated = breakdownLive && typeof bd?.updated_at === "string" ? bd.updated_at : null;
+        const previewUpdated = previewLive && typeof json?.now === "string" ? json.now : null;
+        setUpdatedAt(bdUpdated || previewUpdated);
+        // Live-confirmed space name straight from the current LTI 1.3 launch context.
+        const bdTitle = breakdownLive ? String(bd?.course_title || "").trim() : "";
+        setCourseTitle(bdTitle || null);
         setState("ready");
         // Auto-sync of the learner roster is owned by useAutoSyncStatus (above)
         // so failures surface to the teacher via AutoSyncBanner instead of being
@@ -172,7 +226,7 @@ function useDashboardTeachers() {
     return () => { alive = false; };
   }, []);
 
-  return { count, names, state };
+  return { count, names, participants, learners, updatedAt, courseTitle, hasLiveNrps, state };
 }
 
 
@@ -377,15 +431,41 @@ export default function Dashboard() {
 
   const updatedAtText = useMemo(() => formatTeacherDateDmyShort(now), [now]);
   const teacherName = safeTeacherDisplayName(session, teachers.names) || "שם מורה לא התקבל ממודל";
-  const courseName = session?.course_title || site?.site_name || "—";
+  const courseName = teachers.courseTitle || session?.course_title || site?.site_name || "—";
+
+  // Teacher header: pluralize by the real instructor count from NRPS when known,
+  // otherwise fall back to the number of resolved names. Show up to 3 names plus
+  // "ועוד X"; full list lives in the title attribute. When NRPS returned no
+  // teacher names, show a short truthful message instead of inventing one.
+  const teacherCount = teachers.count || teachers.names.length;
+  const teacherCardLabel = teacherCount === 1 ? "מורה" : (teacherCount > 1 ? teacherCount + " מורים" : "מורה");
+  const teacherCardValue = teachers.names.length > 0
+    ? (teachers.names.length <= 3
+        ? teachers.names.join(" · ")
+        : teachers.names.slice(0, 3).join(" · ") + " · ועוד " + (teachers.names.length - 3))
+    : (teachers.state === "ready"
+        ? (safeTeacherDisplayName(session, teachers.names) || "שמות מורים לא התקבלו ממודל")
+        : teacherName);
+  // Truthful participants line: only shown when live NRPS returned real counts.
+  const participantsBreakdownText = (() => {
+    if (!teachers.hasLiveNrps || teachers.participants == null) return "";
+    const parts = [teachers.participants + " משתתפים במרחב"];
+    if (teachers.learners != null) parts.push(teachers.learners + " תלמידים");
+    if (teacherCount > 0) parts.push(teacherCount === 1 ? "מורה אחד" : teacherCount + " מורים");
+    let line = parts.join(" · ") + " · מקור: Moodle NRPS";
+    if (teachers.updatedAt) line += " · עודכן " + formatTeacherDateTime(teachers.updatedAt);
+    return line;
+  })();
 
   const [syncing, setSyncing] = useState(false);
   async function handleSyncSpace() {
     setSyncing(true);
     try {
-      // Pull the live NRPS roster (real names) then persist the learners so each
-      // gets a saved profile. No invented data; instructors are skipped server-side.
-      const res = await fetch("/api/lti13/nrps-preview", { headers: { Accept: "application/json" }, credentials: "include" });
+      // Server-owned sync (MTH_NRPS_SERVER_OWNED_SYNC_V1): POST token only and let
+      // the server fetch + classify + persist learners. The preview is only used to
+      // confirm NRPS returned members before triggering the save. No invented data;
+      // instructors/unknown are skipped server-side.
+      const res = await fetch(nrpsPreviewUrl(), { headers: { Accept: "application/json" }, credentials: "include" });
       const preview = await res.json().catch(() => null);
       const students = Array.isArray(preview?.members_named) ? preview.members_named : [];
       if (students.length) {
@@ -394,10 +474,7 @@ export default function Dashboard() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({
-            students,
-            ...(ltiToken ? { token: ltiToken } : {}),
-          }),
+          body: JSON.stringify(ltiToken ? { token: ltiToken } : {}),
         });
       }
       await syncStatus.runSync();
@@ -420,12 +497,21 @@ export default function Dashboard() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-2">
               <h1 className="break-words text-3xl font-black tracking-tight text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)] sm:text-4xl lg:text-5xl">המודל החכם</h1>
               <p className="text-base font-bold text-cyan-200/90 lg:text-lg">לוח הבקרה של המורה</p>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }} className="flex flex-wrap gap-2 pt-1">
+              <Button size="sm" onClick={() => void handleSyncSpace()} disabled={syncing || syncStatus.running} className="bg-white text-[#06152f] hover:bg-white/90 font-black shadow-lg text-xs"><RefreshCw className={(syncing || syncStatus.running) ? "h-3.5 w-3.5 animate-spin ml-1.5" : "h-3.5 w-3.5 ml-1.5"} />סנכרן</Button>
+              <Button asChild size="sm" className="border border-white/35 bg-[#0f3d75]/90 text-white hover:bg-[#15559a] font-black shadow text-xs"><Link to="/smart-import" className="flex items-center gap-1.5"><Import className="h-3.5 w-3.5" />ייבוא חכם</Link></Button>
+              <Button asChild size="sm" variant="outline" className="border-white/40 bg-[#06152f]/55 text-white hover:bg-[#0f3d75]/90 font-black text-xs"><Link to="/students">תלמידים</Link></Button>
+              <Button asChild size="sm" variant="outline" className="border-white/40 bg-[#06152f]/55 text-white hover:bg-[#0f3d75]/90 font-black text-xs"><Link to="/grades">ציונים</Link></Button>
+              <Button asChild size="sm" variant="outline" className="border-white/40 bg-[#06152f]/55 text-white hover:bg-[#0f3d75]/90 font-black text-xs"><Link to="/reports">דוחות</Link></Button>
+            </motion.div>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} className="grid min-w-0 gap-3 xl:grid-cols-3">
-              <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
-                <div className="text-xs font-bold text-cyan-200/80">{teachers.names.length > 1 ? "מורים" : "מורה"}</div>
-                <div className="mt-0.5 text-base font-black text-white leading-snug">{teachers.names.length > 0 ? (teachers.names.length <= 3 ? teachers.names.join(" · ") : teachers.names.slice(0, 3).join(" · ") + " · ועוד " + (teachers.names.length - 3)) : teacherName}</div>
-              </div>
+              <Link to="/teachers" className="block rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm transition hover:bg-[#15559a]">
+                <div className="text-xs font-bold text-cyan-200/80">{teacherCardLabel}</div>
+                <div className="mt-0.5 text-base font-black text-white leading-snug" title={teachers.names.length > 0 ? teachers.names.join(", ") : undefined}>{teacherCardValue}</div>
+                {participantsBreakdownText && <div className="mt-1 text-xs font-bold text-cyan-200/70">{participantsBreakdownText}</div>}
+                <div className="mt-1.5 text-xs font-bold text-cyan-100/80">צוות הוראה במרחב ←</div>
+              </Link>
               <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
                 <div className="text-xs font-bold text-cyan-200/80">מרחב הלימוד</div>
                 <div className="mt-0.5 truncate text-lg font-black text-white">{courseName}</div>
@@ -475,18 +561,14 @@ export default function Dashboard() {
       <section id="all-actions-menu" className="MTH_DASHBOARD_SECONDARY_MENU_V1 scroll-mt-8 rounded-[2rem] border border-primary/10 bg-muted/30 p-6 shadow-elegant">
         <h2 className="mb-5 text-2xl font-black text-primary">פעולות נוספות</h2>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/smart-import">ייבוא חכם (מומלץ)</Link></Button>
-          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/import">ייבוא נתונים</Link></Button>
-          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/gradebook-import">ייבוא Gradebook</Link></Button>
+          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/smart-import">ייבוא חכם</Link></Button>
+          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/gradebook-import">Gradebook ייבוא</Link></Button>
           <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/logs-import">ייבוא יומני מעקב</Link></Button>
-          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/activity">פעילות / זמנים</Link></Button>
           <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/reports">דוחות</Link></Button>
+          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/activity">פעילות / זמנים</Link></Button>
           <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/export">ייצוא</Link></Button>
-          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/settings">הגדרות</Link></Button>
-          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/setup">חיבור Moodle</Link></Button>
           <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/missing-data">מה חסר</Link></Button>
-          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/capabilities">בדיקת יכולות Moodle</Link></Button>
-          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/isolation">בידוד נתונים</Link></Button>
+          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/setup">חיבור Moodle</Link></Button>
         </div>
       </section>
 

@@ -7,7 +7,7 @@ import crypto from "crypto";
 import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
 import { buildBatchProvenance } from "./provenance.js";
-import { buildPracticeTimeGate } from "./practiceTime.js";
+import { buildPracticeTimeGate, MIN_LOG_EVENTS_FOR_PRACTICE_TIME } from "./practiceTime.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -3150,6 +3150,9 @@ app.get("/api/automation/moodle-webservices/readiness", async (req, res) => {
 // <<< MTH_MOODLE_WS_READINESS_V1 <<<
 
 
+// MTH_KEEPALIVE_V1 — prevents Render cold start
+app.get("/ping", (_req, res) => { res.json({ ok: true, t: Date.now() }); });
+
 app.get("/health", (_req, res) => {
   res.json({
     ok: true,
@@ -3253,6 +3256,38 @@ app.post(CANONICAL_LTI_ENDPOINT, async (req, res) => {
   }
 });
 
+
+// Safe session status endpoint — no secrets, no tokens, no JWTs returned.
+// Returns enough info for the frontend to show a clear diagnostic without
+// exposing any sensitive data to the teacher or browser logs.
+app.get("/api/session/status", (req, res) => {
+  noStore(res);
+  const token = typeof req.query?.t === "string" ? req.query.t : "";
+  const sid = req.cookies?.sid;
+  const hasToken = Boolean(token);
+  const serverKnowsToken = hasToken && tokenSessions.has(token);
+  const hasCookieSid = Boolean(sid && sessions.has(sid));
+  const session = serverKnowsToken
+    ? tokenSessions.get(token)
+    : hasCookieSid
+    ? sessions.get(sid)
+    : null;
+  res.json({
+    ok: Boolean(session),
+    has_token: hasToken,
+    server_knows_token: serverKnowsToken,
+    has_cookie_sid: hasCookieSid,
+    session_source: session?.source ?? null,
+    expired_or_missing: !session,
+    // Human-readable hint for debugging
+    hint: !hasToken
+      ? "no_token_in_request"
+      : !serverKnowsToken
+      ? "token_not_in_memory_server_may_have_restarted"
+      : "session_ok",
+    no_secrets_returned: true,
+  });
+});
 app.get("/api/bootstrap", (req, res) => {
   noStore(res);
   const session = sessionFromRequest(req);
@@ -3662,41 +3697,89 @@ app.post("/api/import/course-structure", async (req, res) => {
 });
 // <<< MTH_COURSE_STRUCTURE_ENDPOINT_V1 <<<
 
-app.get("/api/imports/students", (req, res) => {
+// MTH_API_IMPORTS_STUDENTS_FROM_SUPABASE_V1
+// Known issue #6: this endpoint previously read the volatile in-memory
+// `store.students` (which resets to [] on Render cold-start) before any
+// Supabase fallback. It now queries the persisted `students` rows directly,
+// scoped to the verified import session's space_id, ordered by full_name and
+// capped at 500, and falls back to the in-memory store only when Supabase is
+// unconfigured or the query errors. The { ok, students } response contract and
+// importedStudentDto shape are unchanged.
+app.get("/api/imports/students", async (req, res) => {
   noStore(res);
   const session = importSessionFromRequest(req);
   if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
 
   const spaceId = session.spaceId || "unknown-space";
-  const students = store.students
-    .filter(student => !student.space_id || student.space_id === spaceId)
-    .map(importedStudentDto)
-    .filter(student => student.full_name);
 
-  res.json({ ok: true, students });
+  const fromStore = () =>
+    store.students
+      .filter(student => !student.space_id || student.space_id === spaceId)
+      .map(importedStudentDto)
+      .filter(student => student.full_name);
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return res.json({ ok: true, students: fromStore() });
+
+  try {
+    const { data, error } = await supabase
+      .from("students")
+      .select("id, full_name, email, external_username, external_id, updated_at")
+      .eq("space_id", spaceId)
+      .order("full_name", { ascending: true })
+      .limit(500);
+    if (error) return res.json({ ok: true, students: fromStore() });
+    const students = (Array.isArray(data) ? data : [])
+      .map(importedStudentDto)
+      .filter(student => student.full_name);
+    return res.json({ ok: true, students });
+  } catch {
+    return res.json({ ok: true, students: fromStore() });
+  }
 });
 
-app.post("/api/imports/nrps-sync", (req, res) => {
-  noStore(res);
-  const session = importSessionFromRequest(req);
-  if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
+/* MTH_NRPS_SERVER_OWNED_SYNC_V1
+   Server-owned roster sync. The roster of record is the live NRPS membership the
+   SERVER fetches for the current verified LTI 1.3 session (via the shared
+   lti13FetchCurrentNrpsMembers + classifyNrpsMember), NOT a client-supplied list.
+   The client should now POST token-only. Only role_kind === "learner" members are
+   persisted (space-isolated); instructors and unknown/ambiguous roles are counted
+   but never stored as students. No invented data; numbers come only from the live
+   NRPS response.
 
-  // The client passes the learner roster it already received from
-  // /api/lti13/nrps-preview (members_named). We only persist real learners
-  // (not instructors), space-isolated, with no invented data.
-  const incoming = Array.isArray(req.body?.students) ? req.body.students : [];
-  const spaceId = session.spaceId || "unknown-space";
+   Persisted identity is derived with nrpsMemberIdHash (the same hash the preview
+   exposed as members_named[].id), so learners synced by the legacy client path keep
+   the exact same stable student id and are UPDATED in place — the existing synced
+   learners are preserved, not duplicated.
+
+   Backward compatibility: if the server cannot fetch NRPS itself (env not
+   configured, no live NRPS claim for the session, or token/membership failure) the
+   endpoint falls back to a client-supplied `students` payload when present. This
+   legacy payload is treated as compat/fallback only and is NOT authoritative.
+   Manual report import remains a separate, untouched path. */
+function persistNrpsLearners(members, spaceId) {
   const now = new Date().toISOString();
-
   if (!Array.isArray(store.students)) store.students = [];
   let inserted = 0;
   let updated = 0;
+  let learnersSeen = 0;
+  let instructorsSeen = 0;
+  let unknownSeen = 0;
 
-  for (const m of incoming) {
-    const fullName = String(m?.name || "").trim();
+  for (const member of members) {
+    const fullName = nrpsMemberFullName(member);
+    const roleKind = classifyNrpsMember(member);
+    if (roleKind === "instructor") { instructorsSeen += 1; continue; }
+    if (roleKind !== "learner") { unknownSeen += 1; continue; }
+    learnersSeen += 1;
     if (!fullName) continue;
-    if (m?.is_instructor) continue;
-    const identity = String(m?.id || fullName);
+    // Identity: a raw NRPS member is hashed to the 16-char id the preview
+    // exposed; a legacy client member already carries that hash in `precomputedId`
+    // (sent originally as members_named[].id) so we must NOT hash it again. Either
+    // way the resulting stable student id matches the previously synced learners.
+    const identity = member?.precomputedId != null
+      ? String(member.precomputedId)
+      : nrpsMemberIdHash(member);
     const id = stableId("student", spaceId + "|nrps|" + identity);
     const record = {
       id,
@@ -3723,15 +3806,118 @@ app.post("/api/imports/nrps-sync", (req, res) => {
     }
   }
 
+  // Store a counts-only teacher/team breakdown in the existing settings object
+  // (no new schema, no names, no PII). This is the "safe existing place" for the
+  // instructor/unknown breakdown so the dashboard can read truthful aggregates.
+  if (!store.settings || typeof store.settings !== "object") store.settings = {};
+  store.settings.nrpsRosterBreakdown = {
+    space_id: spaceId,
+    learners: learnersSeen,
+    instructors: instructorsSeen,
+    unknown: unknownSeen,
+    total_members: learnersSeen + instructorsSeen + unknownSeen,
+    updated_at: now
+  };
+
   if (inserted || updated) {
     store.settings.lastSyncAt = now;
-    saveStore();
+  }
+  // Always persist so the counts-only breakdown survives even on a zero-delta sync.
+  saveStore();
+
+  return { inserted, updated, learnersSeen, instructorsSeen, unknownSeen };
+}
+
+// Legacy client-supplied roster shaped like members_named -> classify-equivalent
+// member objects so persistNrpsLearners can treat both paths identically.
+function legacyClientRosterToMembers(incoming) {
+  return (Array.isArray(incoming) ? incoming : []).map(m => {
+    const name = String(m?.name || "").trim();
+    let roles;
+    if (typeof m?.role_kind === "string") {
+      roles = m.role_kind === "instructor" ? ["Instructor"]
+        : m.role_kind === "learner" ? ["Learner"]
+        : ["__unknown__"];
+    } else {
+      roles = m?.is_instructor ? ["Instructor"] : ["Learner"];
+    }
+    // Preserve the client-sent hashed id (already a members_named[].id hash) so the
+    // stable student id matches the original client-path behavior without re-hashing.
+    return { name, roles, precomputedId: m?.id != null ? String(m.id) : undefined };
+  });
+}
+
+app.post("/api/imports/nrps-sync", async (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
+
+  const spaceId = session.spaceId || "unknown-space";
+
+  let members = null;
+  let mode = "server-owned-nrps";
+  let serverFetchStage = null;
+
+  try {
+    const result = await lti13FetchCurrentNrpsMembers(req);
+    if (result.ok) {
+      members = result.members;
+    } else {
+      serverFetchStage = result.stage || "unknown";
+    }
+  } catch (error) {
+    serverFetchStage = "unexpected";
   }
 
-  res.json({ ok: true, inserted, updated, total: inserted + updated });
-});
+  // Backward-compatibility fallback: only when the server could not own the
+  // fetch. The client payload is NOT authoritative; manual import is unaffected.
+  let usedLegacyPayload = false;
+  if (!Array.isArray(members)) {
+    const incoming = Array.isArray(req.body?.students) ? req.body.students : [];
+    if (incoming.length) {
+      members = legacyClientRosterToMembers(incoming);
+      mode = "legacy-client-payload-fallback";
+      usedLegacyPayload = true;
+    }
+  }
 
-app.get("/api/imports/student-profile", (req, res) => {
+  if (!Array.isArray(members)) {
+    return res.status(200).json({
+      ok: false,
+      mode: "server-owned-nrps",
+      error: "NO_SERVER_OWNED_NRPS_AND_NO_CLIENT_FALLBACK",
+      server_fetch_stage: serverFetchStage,
+      next_required: [
+        "Open המודל החכם from Moodle so a live LTI 1.3 NRPS session exists, then retry.",
+        "If NRPS is unavailable in this space, use manual report import."
+      ],
+      no_fake_data: true
+    });
+  }
+
+  const counts = persistNrpsLearners(members, spaceId);
+
+  res.json({
+    ok: true,
+    mode,
+    used_legacy_payload: usedLegacyPayload,
+    learners_inserted: counts.inserted,
+    learners_updated: counts.updated,
+    instructors_seen: counts.instructorsSeen,
+    unknown_seen: counts.unknownSeen,
+    total_members: members.length,
+    // Legacy fields kept so existing clients that read them keep working.
+    inserted: counts.inserted,
+    updated: counts.updated,
+    total: counts.inserted + counts.updated,
+    skipped_instructor: counts.instructorsSeen,
+    skipped_unknown: counts.unknownSeen,
+    no_fake_data: true
+  });
+});
+/* MTH_NRPS_SERVER_OWNED_SYNC_V1_END */
+
+app.get("/api/imports/student-profile", async (req, res) => {
   noStore(res);
   const session = importSessionFromRequest(req);
   if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
@@ -3742,7 +3928,30 @@ app.get("/api/imports/student-profile", (req, res) => {
   const spaceId = session.spaceId || "unknown-space";
   const inSpace = (row) => !row || !row.space_id && !row.course_id || row.space_id === spaceId || row.course_id === spaceId;
 
-  const rawStudent = store.students.find(s => s.id === studentId && (!s.space_id || s.space_id === spaceId));
+  // Resolve the student record. The listing endpoint prefers Supabase, so a
+  // student id shown there may not exist in the local store. To guarantee every
+  // listed student opens a valid profile, fall back to a space-isolated Supabase
+  // lookup before treating the id as unknown. Grades/completion/logs still come
+  // only from the local store (their datasets live there); when none exist the
+  // profile renders the calm empty-data state, not an error.
+  let rawStudent = store.students.find(s => s.id === studentId && (!s.space_id || s.space_id === spaceId));
+  if (!rawStudent) {
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("students")
+          .select("id, full_name, email, external_username, external_id, updated_at")
+          .eq("space_id", spaceId)
+          .eq("id", studentId)
+          .limit(1)
+          .maybeSingle();
+        if (!error && data && data.id) rawStudent = data;
+      } catch {
+        // Fall through to STUDENT_NOT_FOUND below.
+      }
+    }
+  }
   if (!rawStudent) return res.json({ ok: false, error: "STUDENT_NOT_FOUND" });
   const student = importedStudentDto(rawStudent);
 
@@ -3853,24 +4062,248 @@ app.get("/api/imports/grades-matrix", (req, res) => {
   res.json({ ok: true, students, items, grades });
 });
 
-// >>> MTH_SCOPED_IMPORTS_OVERVIEW_V1 >>>
-app.get("/api/imports/overview", (req, res) => {
+// >>> MTH_SCOPED_IMPORTS_OVERVIEW_V2_SUPABASE >>>
+app.get("/api/imports/overview", async (req, res) => {
   noStore(res);
   const session = importSessionFromRequest(req);
   if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
   const spaceId = session.spaceId || "unknown-space";
-  const inSpace = (row) => !row || (!row.space_id && !row.course_id) || row.space_id === spaceId || row.course_id === spaceId;
-  res.json({
-    students_count: store.students.filter(s => !s.space_id || s.space_id === spaceId).length,
-    grade_items_count: (Array.isArray(store.gradeItems) ? store.gradeItems : []).filter(inSpace).length,
-    grades_count: (Array.isArray(store.grades) ? store.grades : []).filter(inSpace).length,
-    chapters_count: (Array.isArray(store.chapters) ? store.chapters : []).filter(inSpace).length,
-    tasks_count: (Array.isArray(store.tasks) ? store.tasks : []).filter(inSpace).length,
-    log_events_count: (Array.isArray(store.logEvents) ? store.logEvents : []).filter(inSpace).length,
-    batches: []
-  });
+  const courseId = session.courseId || session.course_id || spaceId;
+  try {
+    const [stud, gi, gr, le] = await Promise.all([
+      supabase.from("students").select("id", { count: "exact", head: true }).eq("space_id", spaceId),
+      supabase.from("grade_items").select("id", { count: "exact", head: true }).eq("course_id", courseId),
+      supabase.from("grade_results").select("id", { count: "exact", head: true }).eq("course_id", courseId),
+      supabase.from("log_events").select("id", { count: "exact", head: true }).eq("course_id", courseId),
+    ]);
+    return res.json({ students_count: stud.count??0, grade_items_count: gi.count??0, grades_count: gr.count??0, log_events_count: le.count??0, chapters_count: 0, tasks_count: 0, batches: [] });
+  } catch(e) {
+    const inSpace = (row) => !row||(!row.space_id&&!row.course_id)||row.space_id===spaceId||row.course_id===spaceId;
+    return res.json({ students_count: store.students.filter(s=>!s.space_id||s.space_id===spaceId).length, grade_items_count: (Array.isArray(store.gradeItems)?store.gradeItems:[]).filter(inSpace).length, grades_count: (Array.isArray(store.grades)?store.grades:[]).filter(inSpace).length, log_events_count: (Array.isArray(store.logEvents)?store.logEvents:[]).filter(inSpace).length, chapters_count: 0, tasks_count: 0, batches: [] });
+  }
 });
-// <<< MTH_SCOPED_IMPORTS_OVERVIEW_V1 <<<
+// <<< MTH_SCOPED_IMPORTS_OVERVIEW_V2_SUPABASE >>>
+
+// >>> MTH_SCOPED_TIME_RANGE_V1_SUPABASE >>>
+// Practice/time report reads persisted `log_events` from Supabase, scoped to the
+// caller's course_id and an optional [from, to] date range. Practice time is an
+// estimate derived by sessionizing real log events (no invented durations): events
+// for one student are grouped, ordered by event_time, and split into sessions when
+// the gap between consecutive events exceeds PRACTICE_GAP_SECONDS. Falls back to the
+// in-memory store only when Supabase is unconfigured or the query errors.
+const PRACTICE_GAP_SECONDS = 1800; // 30 minutes between events ends a session
+
+// MTH_LOGS_PRACTICE_TIME_TRUTH_V1
+// Detect whether the imported log rows carry an OFFICIAL duration field from
+// Moodle. Moodle standard logs record discrete events, not elapsed time, so a
+// duration source is normally absent. We never invent one: time is presented as
+// an estimate (sessionization heuristic) unless a real duration field exists.
+function rowOfficialDurationSeconds(row) {
+  const raw = row?.duration_seconds ?? row?.duration ?? row?.timeDiff ?? null;
+  const num = Number(raw);
+  if (raw === null || raw === undefined || !Number.isFinite(num) || num <= 0) return null;
+  return num;
+}
+
+function buildPracticeTimeFromLogEvents(rows, { from, to, studentId }) {
+  const allRows = Array.isArray(rows) ? rows : [];
+  // Truthful source detection — is there any real duration field at all?
+  const rowsWithOfficialDuration = allRows.filter(r => rowOfficialDurationSeconds(r) !== null).length;
+  const hasOfficialDuration = rowsWithOfficialDuration > 0;
+
+  // Safe activity-event counts (FACT, not duration) for recent windows.
+  const nowMs = Date.now();
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  let events24h = 0;
+  let eventsWeek = 0;
+
+  const byStudent = new Map();
+  for (const row of allRows) {
+    const at = row.event_time || row.created_at || null;
+    if (!at) continue;
+    const key = String(row.moodle_user_id || row.actor_full_name || "unknown");
+    if (studentId && key !== studentId) continue;
+    const ms = Date.parse(at);
+    if (Number.isFinite(ms)) {
+      if (nowMs - ms <= DAY_MS) events24h += 1;
+      if (nowMs - ms <= 7 * DAY_MS) eventsWeek += 1;
+    }
+    let bucket = byStudent.get(key);
+    if (!bucket) {
+      bucket = { student_id: key, student_name: row.actor_full_name || null, events: [] };
+      byStudent.set(key, bucket);
+    }
+    if (!bucket.student_name && row.actor_full_name) bucket.student_name = row.actor_full_name;
+    bucket.events.push({ at, ms });
+  }
+
+  const days = [];
+  const perStudent = [];
+
+  for (const bucket of byStudent.values()) {
+    const events = bucket.events.filter(e => Number.isFinite(e.ms)).sort((a, b) => a.ms - b.ms);
+    if (!events.length) continue;
+
+    // Split into sessions on gaps, accumulating per ISO day.
+    const dayAgg = new Map();
+    let sessionStart = events[0];
+    let prev = events[0];
+    let sessionEventCount = 1;
+
+    const flushSession = (startEvt, endEvt, evtCount) => {
+      const day = String(startEvt.at).slice(0, 10);
+      const durationSeconds = Math.max(0, Math.round((endEvt.ms - startEvt.ms) / 1000));
+      let d = dayAgg.get(day);
+      if (!d) {
+        d = { day, total_seconds: 0, event_count: 0, session_count: 0, first_ms: startEvt.ms, last_ms: endEvt.ms, windows: [] };
+        dayAgg.set(day, d);
+      }
+      d.total_seconds += durationSeconds;
+      d.event_count += evtCount;
+      d.session_count += 1;
+      d.first_ms = Math.min(d.first_ms, startEvt.ms);
+      d.last_ms = Math.max(d.last_ms, endEvt.ms);
+      d.windows.push({
+        started_at: startEvt.at,
+        ended_at: endEvt.at,
+        duration_seconds: durationSeconds,
+        event_count: evtCount
+      });
+    };
+
+    for (let i = 1; i < events.length; i += 1) {
+      const cur = events[i];
+      if ((cur.ms - prev.ms) / 1000 > PRACTICE_GAP_SECONDS) {
+        flushSession(sessionStart, prev, sessionEventCount);
+        sessionStart = cur;
+        sessionEventCount = 1;
+      } else {
+        sessionEventCount += 1;
+      }
+      prev = cur;
+    }
+    flushSession(sessionStart, prev, sessionEventCount);
+
+    let studentTotal = 0;
+    let studentEvents = 0;
+    let studentSessions = 0;
+    let studentFirst = events[0].ms;
+    let studentLast = events[events.length - 1].ms;
+
+    for (const d of [...dayAgg.values()].sort((a, b) => (a.day < b.day ? -1 : 1))) {
+      studentTotal += d.total_seconds;
+      studentEvents += d.event_count;
+      studentSessions += d.session_count;
+      days.push({
+        day: d.day,
+        student_id: bucket.student_id,
+        student_name: bucket.student_name,
+        total_seconds: d.total_seconds,
+        event_count: d.event_count,
+        session_count: d.session_count,
+        first_at: new Date(d.first_ms).toISOString(),
+        last_at: new Date(d.last_ms).toISOString(),
+        windows: d.windows
+      });
+    }
+
+    perStudent.push({
+      student_id: bucket.student_id,
+      student_name: bucket.student_name,
+      total_seconds: studentTotal,
+      event_count: studentEvents,
+      session_count: studentSessions,
+      active_days: dayAgg.size,
+      first_at: new Date(studentFirst).toISOString(),
+      last_at: new Date(studentLast).toISOString()
+    });
+  }
+
+  perStudent.sort((a, b) => b.total_seconds - a.total_seconds);
+
+  const logCount = allRows.length;
+  const enoughLogs = logCount >= MIN_LOG_EVENTS_FOR_PRACTICE_TIME;
+
+  return {
+    meta: {
+      gap_seconds: PRACTICE_GAP_SECONDS,
+      from: from || null,
+      to: to || null,
+      student_id: studentId || null,
+      // Truth flags: time is an ESTIMATE unless an official duration field exists.
+      has_official_duration: hasOfficialDuration,
+      time_basis: hasOfficialDuration ? "official" : "estimate",
+      rows_with_official_duration: rowsWithOfficialDuration,
+      log_event_count: logCount,
+      min_log_events: MIN_LOG_EVENTS_FOR_PRACTICE_TIME,
+      enough_logs: enoughLogs,
+      no_official_duration_message_he: hasOfficialDuration
+        ? null
+        : "אין שדה משך זמן רשמי — לא ניתן לחשב זמן אמיתי.",
+      events_last_24h: events24h,
+      events_last_week: eventsWeek
+    },
+    days,
+    per_student: perStudent
+  };
+}
+
+app.get("/api/imports/time-range", async (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
+
+  const courseId = gradebookCourseId(session);
+  const from = typeof req.query.from === "string" && req.query.from ? req.query.from : null;
+  const to = typeof req.query.to === "string" && req.query.to ? req.query.to : null;
+  const studentId = typeof req.query.student_id === "string" && req.query.student_id ? req.query.student_id : null;
+
+  // Inclusive day range: [from 00:00:00, to 23:59:59.999].
+  const fromIso = from ? new Date(`${from}T00:00:00.000Z`).toISOString() : null;
+  const toIso = to ? new Date(`${to}T23:59:59.999Z`).toISOString() : null;
+
+  const fromStore = () => {
+    const rows = (Array.isArray(store.logEvents) ? store.logEvents : [])
+      .filter(e => !e.course_id || String(e.course_id) === courseId)
+      .map(e => ({
+        event_time: e.event_time || e.timestamp || e.time || e.created_at || null,
+        created_at: e.created_at || null,
+        actor_full_name: e.actor_full_name || e.actor || e.student_name || null,
+        moodle_user_id: e.moodle_user_id != null ? String(e.moodle_user_id) : null,
+        // Pass through an official duration field only if the source truly carries
+        // one. Never invented — normally absent in Moodle event logs.
+        duration_seconds: e.duration_seconds ?? e.duration ?? e.timeDiff ?? null
+      }))
+      .filter(e => {
+        if (!e.event_time) return false;
+        const ms = Date.parse(e.event_time);
+        if (fromIso && ms < Date.parse(fromIso)) return false;
+        if (toIso && ms > Date.parse(toIso)) return false;
+        return true;
+      });
+    return res.json(buildPracticeTimeFromLogEvents(rows, { from, to, studentId }));
+  };
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return fromStore();
+
+  try {
+    let query = supabase
+      .from("log_events")
+      .select("event_time,created_at,actor_full_name,moodle_user_id,course_id")
+      .eq("course_id", courseId)
+      .order("event_time", { ascending: true });
+    if (fromIso) query = query.gte("event_time", fromIso);
+    if (toIso) query = query.lte("event_time", toIso);
+
+    const { data, error } = await query;
+    if (error) return fromStore();
+    return res.json(buildPracticeTimeFromLogEvents(Array.isArray(data) ? data : [], { from, to, studentId }));
+  } catch {
+    return fromStore();
+  }
+});
+// <<< MTH_SCOPED_TIME_RANGE_V1_SUPABASE >>>
 
 
 const YANIV_MOODLE_WS_AUTOMATIC_ROUTES_V1 = true;
@@ -4089,10 +4522,156 @@ app.get("/api/moodle-ws/enrolled-users-preview", async (req, res) => {
 });
 
 app.get("/api/launches", (_req, res) => res.json([...store.launches].reverse()));
-app.get("/api/students", (_req, res) => res.json(store.students));
-app.get("/api/tasks", (_req, res) => res.json(store.tasks));
-app.get("/api/grades", (_req, res) => res.json(store.grades));
-app.get("/api/activity", (_req, res) => res.json({ sessions: store.activitySessions, dailySummaries: [] }));
+// MTH_API_STUDENTS_FROM_SUPABASE_V1
+// Known issue #1: this endpoint previously returned the volatile in-memory
+// `store.students`, which resets to [] on Render cold-start. It now reads the
+// persisted roster from Supabase, scoped to the caller's space_id (LTI session),
+// and falls back to the in-memory store only when Supabase is unconfigured or errors.
+app.get("/api/students", async (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  const spaceId = session?.spaceId || "unknown-space";
+
+  const fromStore = () =>
+    store.students.filter(student => !student.space_id || student.space_id === spaceId);
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return res.json(fromStore());
+
+  try {
+    const { data, error } = await supabase
+      .from("students")
+      .select("*")
+      .eq("space_id", spaceId);
+    if (error) return res.json(fromStore());
+    return res.json(Array.isArray(data) ? data : []);
+  } catch {
+    return res.json(fromStore());
+  }
+});
+// MTH_API_TASKS_FROM_SUPABASE_V1
+// Known issue #1: this endpoint previously returned the volatile in-memory
+// `store.tasks`, which resets to [] on Render cold-start. Tasks are the
+// `course_tasks` rows the course-structure import persists to Supabase, scoped by
+// course_id (`store.tasks` is populated directly from those same rows). It now reads
+// the persisted `course_tasks` for the caller's course_id, ordered by position, and
+// falls back to the in-memory store only when Supabase is unconfigured or the query errors.
+app.get("/api/tasks", async (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  const courseId = gradebookCourseId(session);
+
+  const inScope = row =>
+    !row || (!row.course_id && !row.space_id) || row.course_id === courseId || row.space_id === courseId;
+  const fromStore = () => (Array.isArray(store.tasks) ? store.tasks.filter(inScope) : []);
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return res.json(fromStore());
+
+  try {
+    const { data, error } = await supabase
+      .from("course_tasks")
+      .select("*")
+      .eq("course_id", courseId)
+      .order("position", { ascending: true });
+    if (error) return res.json(fromStore());
+    return res.json(Array.isArray(data) ? data : []);
+  } catch {
+    return res.json(fromStore());
+  }
+});
+// MTH_API_GRADES_FROM_SUPABASE_V1
+// Known issue #1: this endpoint previously returned the volatile in-memory
+// `store.grades`, which resets to [] on Render cold-start. It now reads the
+// persisted grade results from Supabase, scoped to the caller's course_id (the
+// same scope grade_results are written with on Gradebook import), and falls back
+// to the in-memory store only when Supabase is unconfigured or the query errors.
+app.get("/api/grades", async (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  const courseId = gradebookCourseId(session);
+
+  const inScope = row =>
+    !row || (!row.space_id && !row.course_id) || row.course_id === courseId || row.space_id === courseId;
+  const fromStore = () => (Array.isArray(store.grades) ? store.grades.filter(inScope) : []);
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return res.json(fromStore());
+
+  try {
+    const { data, error } = await supabase
+      .from("grade_results")
+      .select("*")
+      .eq("course_id", courseId);
+    if (error) return res.json(fromStore());
+    const rows = Array.isArray(data) ? data : [];
+    return res.json(
+      rows.map(result => ({
+        id: result.id,
+        student_id: result.student_id,
+        studentId: result.student_id,
+        grade_item_id: result.grade_item_id,
+        task_id: result.grade_item_id,
+        taskId: result.grade_item_id,
+        raw_value: result.raw_value,
+        grade: result.grade,
+        numeric_value: result.grade,
+        updated_at: result.created_at,
+        updatedAt: result.created_at
+      }))
+    );
+  } catch {
+    return res.json(fromStore());
+  }
+});
+// MTH_API_ACTIVITY_FROM_SUPABASE_V1
+// Known issue #1: this endpoint previously returned the volatile in-memory
+// `store.activitySessions`, which is only ever populated at runtime and resets to
+// [] on Render cold-start. Activity is derived from the Moodle log events that the
+// logs import persists to Supabase (`log_events`, scoped by course_id). It now reads
+// those persisted events, scoped to the caller's course_id, and falls back to the
+// in-memory store only when Supabase is unconfigured or the query errors.
+app.get("/api/activity", async (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  const courseId = gradebookCourseId(session);
+
+  const fromStore = () =>
+    res.json({ sessions: Array.isArray(store.activitySessions) ? store.activitySessions : [], dailySummaries: [] });
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return fromStore();
+
+  try {
+    const { data, error } = await supabase
+      .from("log_events")
+      .select("*")
+      .eq("course_id", courseId)
+      .order("event_time", { ascending: false });
+    if (error) return fromStore();
+    const rows = Array.isArray(data) ? data : [];
+    const sessions = rows.map(row => ({
+      id: row.id,
+      course_id: row.course_id,
+      courseId: row.course_id,
+      event_time: row.event_time,
+      eventTime: row.event_time,
+      actor_full_name: row.actor_full_name,
+      actor: row.actor_full_name,
+      context: row.context,
+      component: row.component,
+      event_name: row.event_name,
+      eventName: row.event_name,
+      description: row.description,
+      origin: row.origin,
+      moodle_user_id: row.moodle_user_id,
+      created_at: row.created_at
+    }));
+    return res.json({ sessions, dailySummaries: [] });
+  } catch {
+    return fromStore();
+  }
+});
 app.get("/api/settings", (_req, res) => res.json(store.settings));
 app.get("/api/moodle-captures", (_req, res) => res.json([...store.moodleCaptures].reverse()));
 app.get("/api/moodle-summary", (_req, res) => res.json({ capturesCount: store.moodleCaptures.length, lastCaptureAt: store.moodleCaptures.at(-1)?.createdAt ?? null, lastSource: store.moodleCaptures.at(-1)?.source ?? null, availableKeys: store.moodleCaptures.at(-1)?.keys ?? [] }));
@@ -4183,6 +4762,7 @@ app.get("/api/lti13/token-matrix", async (req, res) => {
   }
 
   try {
+    const liveSession = importSessionFromRequest(req) || sessionFromRequest(req);
     const configuredTokenUrl = env("LTI13_TOKEN_URL");
     const clientId = String(liveSession?.clientId || liveSession?.client_id || env("LTI13_CLIENT_ID"));
     const deploymentIdForAssertion = String(liveSession?.deploymentId || liveSession?.deployment_id || env("LTI13_DEPLOYMENT_ID"));
@@ -4358,6 +4938,97 @@ app.get("/api/lti13/token-matrix", async (req, res) => {
 });
 /* YANIV_LTI13_TOKEN_MATRIX_DIAG_20260510_END */
 
+/* MTH_NRPS_ROLE_CLASSIFICATION_V1
+   Robust, reusable NRPS role classification shared by the preview, the
+   participants-breakdown counts, and the learner sync guard.
+
+   A single member can carry several roles (e.g. both a context Learner role and
+   an institution Instructor role). Classification is therefore evaluated over
+   ALL of a member's roles, and any staff/team signal wins over a learner signal:
+   a Teacher who is also enrolled as a Learner must never be saved as a student.
+
+   Role values may be full IMS URNs/URLs
+   (e.g. ".../membership#Instructor", ".../institution/person#Faculty") or bare
+   short names ("Instructor", "Student"). We normalize to the trailing segment
+   after the last "#" or "/" before matching.
+
+   - isInstructorRole / isManagerRole: teacher/team/staff signals.
+   - isLearnerRole: learner-like signals (Learner/Student; Member only when no
+     staff/team signal exists on the same member — see classifyNrpsMember).
+   - isUnknownRole: not recognized as either.
+   - classifyNrpsMember(member): "instructor" | "learner" | "unknown" over the
+     member's full role set. Ambiguous -> "unknown" (never silently a student). */
+function nrpsShortRole(role) {
+  return String(role || "").split(/[#/]/).pop().trim();
+}
+
+// Manager / admin / course-creator style roles. Kept separate so callers can
+// distinguish a course manager from a teaching role when useful; for the
+// learner-vs-team decision these all count as team (non-learner).
+function isManagerRole(role) {
+  return /^(manager|administrator|admin|coursecreator|sysadmin|accountadmin)$/i.test(nrpsShortRole(role));
+}
+
+// Teacher / team / staff roles. Includes manager roles so any single call is a
+// complete "is this a team member" test.
+function isInstructorRole(role) {
+  const short = nrpsShortRole(role);
+  if (isManagerRole(role)) return true;
+  return /^(instructor|teacher|editingteacher|noneditingteacher|faculty|staff|mentor|teachingassistant|ta|tutor|contentdeveloper)$/i.test(short);
+}
+
+// Learner-like roles. "Member" is intentionally excluded here: a bare Member
+// signal is only treated as a learner by classifyNrpsMember, and only when the
+// member carries no team/staff signal at all.
+function isLearnerRole(role) {
+  return /^(learner|student|guest)$/i.test(nrpsShortRole(role));
+}
+
+function isUnknownRole(role) {
+  return !isInstructorRole(role) && !isLearnerRole(role);
+}
+
+// Classify a whole NRPS member by its full role set.
+// Precedence: any team/staff/manager signal => "instructor"; else any explicit
+// learner signal (or a bare "Member" with no team signal) => "learner";
+// otherwise "unknown". Ambiguous members are NEVER classified as learners.
+function classifyNrpsMember(member) {
+  const roles = Array.isArray(member?.roles) ? member.roles : [];
+  if (roles.some(isInstructorRole)) return "instructor";
+  if (roles.some(isLearnerRole)) return "learner";
+  // A bare context "Member" with no team signal is learner-like (Moodle hands a
+  // plain membership role to enrolled participants who have no elevated role).
+  if (roles.some(role => /^member$/i.test(nrpsShortRole(role)))) return "learner";
+  return "unknown";
+}
+/* MTH_NRPS_ROLE_CLASSIFICATION_V1_END */
+
+/* MTH_NRPS_MEMBER_IDENTITY_V1
+   Shared, privacy-safe member identity helpers used by both the NRPS preview
+   (members_named) and the server-owned learner sync. Keeping the id-hash and
+   full-name logic in one place guarantees the server-owned sync derives the SAME
+   stable student id as the legacy client-payload path (which sent the preview's
+   hashed `id`), so the previously synced learners are UPDATED in place rather
+   than duplicated. The hash is a 16-char SHA-256 prefix over a stable identity
+   source (user_id -> sub -> lis_person_sourcedid -> name); no raw id is exposed. */
+function nrpsMemberFullName(member) {
+  return String(
+    member?.name ||
+    [member?.given_name, member?.family_name].filter(Boolean).join(" ") ||
+    ""
+  ).trim();
+}
+
+function nrpsMemberIdHash(member) {
+  const idSource =
+    member?.user_id ||
+    member?.sub ||
+    member?.lis_person_sourcedid ||
+    nrpsMemberFullName(member);
+  return crypto.createHash("sha256").update(String(idSource || "")).digest("hex").slice(0, 16);
+}
+/* MTH_NRPS_MEMBER_IDENTITY_V1_END */
+
 /* YANIV_NRPS_PREVIEW_SAFE_20260509_START */
 function nrpsPreviewBase64Url(input) {
   return Buffer.from(input)
@@ -4408,48 +5079,287 @@ function nrpsPreviewSanitizeMember(member) {
   };
 }
 
+/* MTH_NRPS_CURRENT_SESSION_FETCH_V1
+   Shared read-only fetch of NRPS membership for the CURRENT verified LTI 1.3
+   session only (token/query/header/cookie via importSessionFromRequest, never
+   the global/latest session). Performs env check -> discovery -> client-credentials
+   token -> membership GET. Returns a discriminated result; never persists anything
+   and never returns the access token / client assertion / private key to callers.
+   Used by both /api/lti13/nrps-preview and /api/lti13/participants-breakdown so the
+   broad token/discovery/membership logic is defined once. */
+async function lti13FetchCurrentNrpsMembers(req) {
+  const envStatus = lti13EnvStatus();
+  if (!envStatus.configured) {
+    return { ok: false, stage: "env", error: "LTI13_ENV_NOT_CONFIGURED", httpStatus: 503, missing: envStatus.missing };
+  }
+
+  const liveSession = importSessionFromRequest(req) || sessionFromRequest(req);
+  const liveServices = liveSession?.automaticServices || {};
+  const membershipUrl = liveServices?.nrps?.context_memberships_url || "";
+  const statusJson = {
+    has_latest_lti13_session: Boolean(liveSession),
+    has_nrps: Boolean(membershipUrl),
+    has_ags: Boolean(liveServices?.has_ags),
+    service_claims: liveServices
+  };
+
+  if (!statusJson.has_latest_lti13_session || !membershipUrl) {
+    return {
+      ok: false,
+      stage: "session-or-nrps-claim",
+      error: "NO_LIVE_LTI13_NRPS_SESSION",
+      httpStatus: 200,
+      has_latest_lti13_session: Boolean(statusJson.has_latest_lti13_session),
+      has_nrps: Boolean(statusJson.has_nrps),
+      has_ags: Boolean(statusJson.has_ags)
+    };
+  }
+
+  /* YANIV_NRPS_TOKEN_DISCOVERY_FIX_20260509_START */
+  const configuredTokenUrl = env("LTI13_TOKEN_URL");
+  const discoveryUrl = env(
+    "LTI13_OPENID_CONFIGURATION_URL",
+    env("LTI13_ISSUER").replace(/\/+$/, "") + "/mod/lti/openid-configuration.php"
+  );
+
+  let tokenUrl = configuredTokenUrl;
+  let tokenEndpointSource = "env";
+  let discoveryHttpStatus = null;
+  let discoveryErrorPreview = "";
+  let discoveryTokenEndpoint = "";
+  let discoveryAuthorizationEndpoint = "";
+  let discoveryJwksUri = "";
+  let discoveryScopes = [];
+
+  try {
+    const discoveryResponse = await fetch(discoveryUrl, {
+      headers: { Accept: "application/json" }
+    });
+    discoveryHttpStatus = discoveryResponse.status;
+    const discoveryText = await discoveryResponse.text();
+
+    if (discoveryResponse.ok) {
+      const discoveryJson = JSON.parse(discoveryText);
+      discoveryTokenEndpoint = discoveryJson.token_endpoint || "";
+      discoveryAuthorizationEndpoint = discoveryJson.authorization_endpoint || "";
+      discoveryJwksUri = discoveryJson.jwks_uri || "";
+      discoveryScopes = Array.isArray(discoveryJson.scopes_supported) ? discoveryJson.scopes_supported : [];
+      if (discoveryTokenEndpoint) {
+        tokenUrl = discoveryTokenEndpoint;
+        tokenEndpointSource = "openid-configuration";
+      }
+    } else {
+      discoveryErrorPreview = nrpsPreviewSafeText(discoveryText, 600);
+    }
+  } catch (error) {
+    discoveryErrorPreview = nrpsPreviewSafeText(error?.message || error, 600);
+  }
+  /* YANIV_NRPS_TOKEN_DISCOVERY_FIX_20260509_END */
+  const clientId = String(liveSession?.clientId || liveSession?.client_id || env("LTI13_CLIENT_ID"));
+  const deploymentIdForAssertion = String(liveSession?.deploymentId || liveSession?.deployment_id || env("LTI13_DEPLOYMENT_ID"));
+  const keyId = env("LTI13_KEY_ID");
+  const privateKeyRaw = env("LTI13_PRIVATE_KEY_PEM");
+  const privateKeyPem = privateKeyRaw.includes("\n")
+    ? privateKeyRaw.replace(/\n/g, String.fromCharCode(10))
+    : privateKeyRaw;
+
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: "RS256", typ: "JWT", kid: keyId };
+  const payload = {
+    iss: clientId,
+    sub: clientId,
+    aud: tokenUrl,
+    "https://purl.imsglobal.org/spec/lti/claim/deployment_id": deploymentIdForAssertion,
+    iat: now - 5,
+    exp: now + 60,
+    jti: crypto.randomUUID()
+  };
+  /* YANIV_NRPS_DEPLOYMENT_CLAIM_20260509 */
+
+  const signingInput = nrpsPreviewBase64UrlJson(header) + "." + nrpsPreviewBase64UrlJson(payload);
+  const signature = crypto
+    .sign("RSA-SHA256", Buffer.from(signingInput), privateKeyPem)
+    .toString("base64")
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+
+  const clientAssertion = signingInput + "." + signature;
+
+  /* YANIV_NRPS_TOKEN_CLIENT_ID_DIAG_20260509_START */
+  function buildTokenBody(includeClientId) {
+    const entries = {
+      grant_type: "client_credentials",
+      client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+      client_assertion: clientAssertion,
+      scope: "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"
+    };
+    if (includeClientId) entries.client_id = clientId;
+    return new URLSearchParams(entries);
+  }
+
+  async function requestTokenVariant(includeClientId) {
+    const body = buildTokenBody(includeClientId);
+    const response = await fetch(tokenUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Accept: "application/json"
+      },
+      body: body.toString()
+    });
+    const text = await response.text();
+    let json = {};
+    try { json = JSON.parse(text); } catch {}
+    return {
+      includeClientId,
+      response,
+      text,
+      json,
+      ok: response.ok && Boolean(json.access_token)
+    };
+  }
+
+  let tokenAttempt = await requestTokenVariant(false);
+  let fallbackAttempt = null;
+  if (!tokenAttempt.ok) {
+    fallbackAttempt = await requestTokenVariant(true);
+    if (fallbackAttempt.ok) tokenAttempt = fallbackAttempt;
+  }
+
+  const tokenResponse = tokenAttempt.response;
+  const tokenText = tokenAttempt.text;
+  const tokenJson = tokenAttempt.json;
+  const tokenVariantUsed = tokenAttempt.includeClientId ? "with_client_id" : "without_client_id";
+  const tokenFallbackSummary = fallbackAttempt ? {
+    tried: true,
+    include_client_id: true,
+    http_status: fallbackAttempt.response.status,
+    got_access_token: Boolean(fallbackAttempt.json?.access_token),
+    error: fallbackAttempt.json?.error || null,
+    error_description_preview: nrpsPreviewSafeText(fallbackAttempt.json?.error_description || fallbackAttempt.text, 500)
+  } : { tried: false };
+  /* YANIV_NRPS_TOKEN_CLIENT_ID_DIAG_20260509_END */
+
+  const tokenDiagnostics = {
+    configured_token_url_host: configuredTokenUrl ? new URL(configuredTokenUrl).host : null,
+    active_token_url_host: tokenUrl ? new URL(tokenUrl).host : null,
+    active_token_url_path: tokenUrl ? new URL(tokenUrl).pathname : null,
+    token_endpoint_source: tokenEndpointSource,
+    discovery_url: discoveryUrl,
+    discovery_http_status: discoveryHttpStatus,
+    discovery_error_preview: discoveryErrorPreview || null,
+    discovery_token_endpoint_host: discoveryTokenEndpoint ? new URL(discoveryTokenEndpoint).host : null,
+    discovery_token_endpoint_path: discoveryTokenEndpoint ? new URL(discoveryTokenEndpoint).pathname : null,
+    discovery_authorization_endpoint_host: discoveryAuthorizationEndpoint ? new URL(discoveryAuthorizationEndpoint).host : null,
+    discovery_jwks_uri_host: discoveryJwksUri ? new URL(discoveryJwksUri).host : null,
+    discovery_scopes_has_nrps: discoveryScopes.includes("https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"),
+    client_id_body_variant_tested: true,
+    deployment_id_claim_in_assertion: true
+  };
+
+  if (!tokenResponse.ok || !tokenJson.access_token) {
+    return {
+      ok: false,
+      stage: "token",
+      httpStatus: 502,
+      token_http_status: tokenResponse.status,
+      token_error: tokenJson.error || "TOKEN_REQUEST_FAILED",
+      token_variant_used: tokenVariantUsed,
+      token_fallback_with_client_id: tokenFallbackSummary,
+      token_error_description: nrpsPreviewSafeText(tokenJson.error_description || tokenText),
+      token_diagnostics: tokenDiagnostics
+    };
+  }
+
+  const memberResponse = await fetch(membershipUrl, {
+    method: "GET",
+    headers: {
+      Authorization: "Bearer " + tokenJson.access_token,
+      Accept: "application/vnd.ims.lti-nrps.v2.membershipcontainer+json"
+    }
+  });
+
+  const memberText = await memberResponse.text();
+  let membership = {};
+  try { membership = JSON.parse(memberText); } catch {}
+
+  if (!memberResponse.ok) {
+    return {
+      ok: false,
+      stage: "membership",
+      httpStatus: 502,
+      membership_http_status: memberResponse.status,
+      membership_error_preview: nrpsPreviewSafeText(memberText)
+    };
+  }
+
+  const members = Array.isArray(membership.members)
+    ? membership.members
+    : Array.isArray(membership)
+      ? membership
+      : [];
+
+  const roleCounts = {};
+  for (const member of members) {
+    const roles = Array.isArray(member?.roles) ? member.roles : [];
+    for (const role of roles) {
+      const shortRole = String(role).split("#").pop() || String(role);
+      roleCounts[shortRole] = (roleCounts[shortRole] || 0) + 1;
+    }
+  }
+
+  return {
+    ok: true,
+    stage: "membership",
+    liveSession,
+    statusJson,
+    clientId,
+    membershipUrl,
+    members,
+    roleCounts,
+    membership,
+    token_http_status: tokenResponse.status,
+    token_variant_used: tokenVariantUsed,
+    membership_http_status: memberResponse.status,
+    token_endpoint_source: tokenEndpointSource,
+    active_token_url_host: tokenUrl ? new URL(tokenUrl).host : null,
+    active_token_url_path: tokenUrl ? new URL(tokenUrl).pathname : null,
+    discovery_http_status: discoveryHttpStatus,
+    discovery_scopes_has_nrps: discoveryScopes.includes("https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly")
+  };
+}
+
 app.get("/api/lti13/nrps-preview", async (req, res) => {
   lti13NoStore(res);
 
-  const envStatus = lti13EnvStatus();
-  if (!envStatus.configured) {
-    return res.status(503).json({
-      ok: false,
-      mode: "lti13-nrps-preview-no-save",
-      stage: "env",
-      error: "LTI13_ENV_NOT_CONFIGURED",
-      missing: envStatus.missing,
-      privacy: {
-        no_secrets_returned: true,
-        no_student_names_returned: true,
-        no_save_performed: true
-      }
-    });
-  }
-
   try {
-    /* MTH_NRPS_CURRENT_LTI13_SESSION_V1
-   Use the current verified LTI 1.3 session directly.
-   Do not depend on global diagnostics/latest-session state.
-*/
-const liveSession = importSessionFromRequest(req) || sessionFromRequest(req);
-const liveServices = liveSession?.automaticServices || {};
-const membershipUrl = liveServices?.nrps?.context_memberships_url || "";
-const statusJson = {
-  has_latest_lti13_session: Boolean(liveSession),
-  has_nrps: Boolean(membershipUrl),
-  has_ags: Boolean(liveServices?.has_ags),
-  service_claims: liveServices
-};
-    if (!statusJson?.has_latest_lti13_session || !membershipUrl) {
+    const result = await lti13FetchCurrentNrpsMembers(req);
+
+    if (!result.ok && result.stage === "env") {
+      return res.status(503).json({
+        ok: false,
+        mode: "lti13-nrps-preview-no-save",
+        stage: "env",
+        error: "LTI13_ENV_NOT_CONFIGURED",
+        missing: result.missing,
+        privacy: {
+          no_secrets_returned: true,
+          no_student_names_returned: true,
+          no_save_performed: true
+        }
+      });
+    }
+
+    if (!result.ok && result.stage === "session-or-nrps-claim") {
       return res.status(200).json({
         ok: false,
         mode: "lti13-nrps-preview-no-save",
         stage: "session-or-nrps-claim",
         error: "NO_LIVE_LTI13_NRPS_SESSION",
-        has_latest_lti13_session: Boolean(statusJson?.has_latest_lti13_session),
-        has_nrps: Boolean(statusJson?.has_nrps),
-        has_ags: Boolean(statusJson?.has_ags),
+        has_latest_lti13_session: Boolean(result.has_latest_lti13_session),
+        has_nrps: Boolean(result.has_nrps),
+        has_ags: Boolean(result.has_ags),
         next_required: [
           "Open המודל החכם from Moodle, then call this endpoint again."
         ],
@@ -4461,158 +5371,17 @@ const statusJson = {
       });
     }
 
-    /* YANIV_NRPS_TOKEN_DISCOVERY_FIX_20260509_START */
-    const configuredTokenUrl = env("LTI13_TOKEN_URL");
-    const discoveryUrl = env(
-      "LTI13_OPENID_CONFIGURATION_URL",
-      env("LTI13_ISSUER").replace(/\/+$/, "") + "/mod/lti/openid-configuration.php"
-    );
-
-    let tokenUrl = configuredTokenUrl;
-    let tokenEndpointSource = "env";
-    let discoveryHttpStatus = null;
-    let discoveryErrorPreview = "";
-    let discoveryTokenEndpoint = "";
-    let discoveryAuthorizationEndpoint = "";
-    let discoveryJwksUri = "";
-    let discoveryScopes = [];
-
-    try {
-      const discoveryResponse = await fetch(discoveryUrl, {
-        headers: { Accept: "application/json" }
-      });
-      discoveryHttpStatus = discoveryResponse.status;
-      const discoveryText = await discoveryResponse.text();
-
-      if (discoveryResponse.ok) {
-        const discoveryJson = JSON.parse(discoveryText);
-        discoveryTokenEndpoint = discoveryJson.token_endpoint || "";
-        discoveryAuthorizationEndpoint = discoveryJson.authorization_endpoint || "";
-        discoveryJwksUri = discoveryJson.jwks_uri || "";
-        discoveryScopes = Array.isArray(discoveryJson.scopes_supported) ? discoveryJson.scopes_supported : [];
-        if (discoveryTokenEndpoint) {
-          tokenUrl = discoveryTokenEndpoint;
-          tokenEndpointSource = "openid-configuration";
-        }
-      } else {
-        discoveryErrorPreview = nrpsPreviewSafeText(discoveryText, 600);
-      }
-    } catch (error) {
-      discoveryErrorPreview = nrpsPreviewSafeText(error?.message || error, 600);
-    }
-    /* YANIV_NRPS_TOKEN_DISCOVERY_FIX_20260509_END */
-    const clientId = String(liveSession?.clientId || liveSession?.client_id || env("LTI13_CLIENT_ID"));
-    const deploymentIdForAssertion = String(liveSession?.deploymentId || liveSession?.deployment_id || env("LTI13_DEPLOYMENT_ID"));
-    const keyId = env("LTI13_KEY_ID");
-    const privateKeyRaw = env("LTI13_PRIVATE_KEY_PEM");
-    const privateKeyPem = privateKeyRaw.includes("\n")
-      ? privateKeyRaw.replace(/\n/g, String.fromCharCode(10))
-      : privateKeyRaw;
-
-    const now = Math.floor(Date.now() / 1000);
-    const header = { alg: "RS256", typ: "JWT", kid: keyId };
-    const payload = {
-      iss: clientId,
-      sub: clientId,
-      aud: tokenUrl,
-      "https://purl.imsglobal.org/spec/lti/claim/deployment_id": deploymentIdForAssertion,
-      iat: now - 5,
-      exp: now + 60,
-      jti: crypto.randomUUID()
-    };
-    /* YANIV_NRPS_DEPLOYMENT_CLAIM_20260509 */
-
-    const signingInput = nrpsPreviewBase64UrlJson(header) + "." + nrpsPreviewBase64UrlJson(payload);
-    const signature = crypto
-      .sign("RSA-SHA256", Buffer.from(signingInput), privateKeyPem)
-      .toString("base64")
-      .replace(/=/g, "")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_");
-
-    const clientAssertion = signingInput + "." + signature;
-
-    /* YANIV_NRPS_TOKEN_CLIENT_ID_DIAG_20260509_START */
-    function buildTokenBody(includeClientId) {
-      const entries = {
-        grant_type: "client_credentials",
-        client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-        client_assertion: clientAssertion,
-        scope: "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"
-      };
-      if (includeClientId) entries.client_id = clientId;
-      return new URLSearchParams(entries);
-    }
-
-    async function requestTokenVariant(includeClientId) {
-      const body = buildTokenBody(includeClientId);
-      const response = await fetch(tokenUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Accept: "application/json"
-        },
-        body: body.toString()
-      });
-      const text = await response.text();
-      let json = {};
-      try { json = JSON.parse(text); } catch {}
-      return {
-        includeClientId,
-        response,
-        text,
-        json,
-        ok: response.ok && Boolean(json.access_token)
-      };
-    }
-
-    let tokenAttempt = await requestTokenVariant(false);
-    let fallbackAttempt = null;
-    if (!tokenAttempt.ok) {
-      fallbackAttempt = await requestTokenVariant(true);
-      if (fallbackAttempt.ok) tokenAttempt = fallbackAttempt;
-    }
-
-    const tokenResponse = tokenAttempt.response;
-    const tokenText = tokenAttempt.text;
-    const tokenJson = tokenAttempt.json;
-    const tokenVariantUsed = tokenAttempt.includeClientId ? "with_client_id" : "without_client_id";
-    const tokenFallbackSummary = fallbackAttempt ? {
-      tried: true,
-      include_client_id: true,
-      http_status: fallbackAttempt.response.status,
-      got_access_token: Boolean(fallbackAttempt.json?.access_token),
-      error: fallbackAttempt.json?.error || null,
-      error_description_preview: nrpsPreviewSafeText(fallbackAttempt.json?.error_description || fallbackAttempt.text, 500)
-    } : { tried: false };
-    /* YANIV_NRPS_TOKEN_CLIENT_ID_DIAG_20260509_END */
-
-    if (!tokenResponse.ok || !tokenJson.access_token) {
+    if (!result.ok && result.stage === "token") {
       return res.status(502).json({
         ok: false,
         mode: "lti13-nrps-preview-no-save",
         stage: "token",
-        token_http_status: tokenResponse.status,
-        token_error: tokenJson.error || "TOKEN_REQUEST_FAILED",
-        token_variant_used: tokenVariantUsed,
-        token_fallback_with_client_id: tokenFallbackSummary,
-        token_error_description: nrpsPreviewSafeText(tokenJson.error_description || tokenText),
-        token_diagnostics: {
-          configured_token_url_host: configuredTokenUrl ? new URL(configuredTokenUrl).host : null,
-          active_token_url_host: tokenUrl ? new URL(tokenUrl).host : null,
-          active_token_url_path: tokenUrl ? new URL(tokenUrl).pathname : null,
-          token_endpoint_source: tokenEndpointSource,
-          discovery_url: discoveryUrl,
-          discovery_http_status: discoveryHttpStatus,
-          discovery_error_preview: discoveryErrorPreview || null,
-          discovery_token_endpoint_host: discoveryTokenEndpoint ? new URL(discoveryTokenEndpoint).host : null,
-          discovery_token_endpoint_path: discoveryTokenEndpoint ? new URL(discoveryTokenEndpoint).pathname : null,
-          discovery_authorization_endpoint_host: discoveryAuthorizationEndpoint ? new URL(discoveryAuthorizationEndpoint).host : null,
-          discovery_jwks_uri_host: discoveryJwksUri ? new URL(discoveryJwksUri).host : null,
-          discovery_scopes_has_nrps: discoveryScopes.includes("https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"),
-          client_id_body_variant_tested: true,
-          deployment_id_claim_in_assertion: true
-        },
+        token_http_status: result.token_http_status,
+        token_error: result.token_error,
+        token_variant_used: result.token_variant_used,
+        token_fallback_with_client_id: result.token_fallback_with_client_id,
+        token_error_description: result.token_error_description,
+        token_diagnostics: result.token_diagnostics,
         privacy: {
           no_secrets_returned: true,
           no_access_token_returned: true,
@@ -4622,25 +5391,13 @@ const statusJson = {
       });
     }
 
-    const memberResponse = await fetch(membershipUrl, {
-      method: "GET",
-      headers: {
-        Authorization: "Bearer " + tokenJson.access_token,
-        Accept: "application/vnd.ims.lti-nrps.v2.membershipcontainer+json"
-      }
-    });
-
-    const memberText = await memberResponse.text();
-    let membership = {};
-    try { membership = JSON.parse(memberText); } catch {}
-
-    if (!memberResponse.ok) {
+    if (!result.ok && result.stage === "membership") {
       return res.status(502).json({
         ok: false,
         mode: "lti13-nrps-preview-no-save",
         stage: "membership",
-        membership_http_status: memberResponse.status,
-        membership_error_preview: nrpsPreviewSafeText(memberText),
+        membership_http_status: result.membership_http_status,
+        membership_error_preview: result.membership_error_preview,
         privacy: {
           no_secrets_returned: true,
           no_access_token_returned: true,
@@ -4650,29 +5407,28 @@ const statusJson = {
       });
     }
 
-    const members = Array.isArray(membership.members)
-      ? membership.members
-      : Array.isArray(membership)
-        ? membership
-        : [];
-
-    const roleCounts = {};
-    for (const member of members) {
-      const roles = Array.isArray(member?.roles) ? member.roles : [];
-      for (const role of roles) {
-        const shortRole = String(role).split("#").pop() || String(role);
-        roleCounts[shortRole] = (roleCounts[shortRole] || 0) + 1;
-      }
-    }
+    const members = result.members;
+    const roleCounts = result.roleCounts;
+    const clientId = result.clientId;
+    const membershipUrl = result.membershipUrl;
+    const tokenVariantUsed = result.token_variant_used;
+    const statusJson = result.statusJson;
 
     const membersNamed = members
       .map(member => {
-        const name = String(member?.name || [member?.given_name, member?.family_name].filter(Boolean).join(" ") || "").trim();
-        const roles = Array.isArray(member?.roles) ? member.roles.map(r => String(r).split("#").pop()) : [];
-        const isInstructor = roles.some(r => /instructor|teacher|faculty|staff|mentor/i.test(String(r)));
-        const idSource = member?.user_id || member?.sub || member?.lis_person_sourcedid || name;
-        const idHash = crypto.createHash("sha256").update(String(idSource || "")).digest("hex").slice(0, 16);
-        return { id: idHash, name, is_instructor: isInstructor, has_email: Boolean(member?.email) };
+        const name = nrpsMemberFullName(member);
+        const roleKind = classifyNrpsMember(member);
+        const idHash = nrpsMemberIdHash(member);
+        return {
+          id: idHash,
+          name,
+          // role_kind is the robust classification ("learner" | "instructor" |
+          // "unknown"); is_instructor stays for backwards compatibility with
+          // existing consumers. Only role_kind === "learner" is safe to save.
+          role_kind: roleKind,
+          is_instructor: roleKind === "instructor",
+          has_email: Boolean(member?.email)
+        };
       })
       .filter(m => m.name);
 
@@ -4680,9 +5436,9 @@ const statusJson = {
       ok: true,
       mode: "lti13-nrps-preview-no-save",
       stage: "membership",
-      token_http_status: tokenResponse.status,
+      token_http_status: result.token_http_status,
       token_variant_used: tokenVariantUsed,
-      membership_http_status: memberResponse.status,
+      membership_http_status: result.membership_http_status,
       members_count: members.length,
       role_counts: roleCounts,
       members_named: membersNamed,
@@ -4701,11 +5457,11 @@ const statusJson = {
         client_id: clientId,
         deployment_id: env("LTI13_DEPLOYMENT_ID"),
         membership_url_host: new URL(membershipUrl).host,
-        token_endpoint_source: tokenEndpointSource,
-        active_token_url_host: tokenUrl ? new URL(tokenUrl).host : null,
-        active_token_url_path: tokenUrl ? new URL(tokenUrl).pathname : null,
-        discovery_http_status: discoveryHttpStatus,
-        discovery_scopes_has_nrps: discoveryScopes.includes("https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"),
+        token_endpoint_source: result.token_endpoint_source,
+        active_token_url_host: result.active_token_url_host,
+        active_token_url_path: result.active_token_url_path,
+        discovery_http_status: result.discovery_http_status,
+        discovery_scopes_has_nrps: result.discovery_scopes_has_nrps,
         service_versions: statusJson?.service_claims?.nrps?.service_versions || []
       },
       privacy: {
@@ -4737,6 +5493,155 @@ const statusJson = {
   }
 });
 /* YANIV_NRPS_PREVIEW_SAFE_20260509_END */
+
+/* MTH_PARTICIPANTS_BREAKDOWN_API_V1
+   Read-only, counts-only breakdown of the CURRENT LTI 1.3 NRPS session.
+   Reuses lti13FetchCurrentNrpsMembers (same current-session token flow as the
+   preview). Returns ONLY aggregate counts and safe diagnostics — no names,
+   no emails, no raw user IDs, no access token, no client assertion, no secrets.
+   Numbers come exclusively from the live NRPS response (never hard-coded).
+   Does not persist anything. Uses the shared robust classifier
+   classifyNrpsMember (MTH_NRPS_ROLE_CLASSIFICATION_V1). */
+app.get("/api/lti13/participants-breakdown", async (req, res) => {
+  lti13NoStore(res);
+
+  const privacy = {
+    no_emails_returned: true,
+    no_raw_ids_returned: true,
+    no_access_token_returned: true,
+    no_names_returned: true,
+    no_save_performed: true
+  };
+
+  try {
+    const result = await lti13FetchCurrentNrpsMembers(req);
+
+    if (!result.ok && result.stage === "env") {
+      return res.status(503).json({
+        ok: false,
+        source: "nrps",
+        stage: "env",
+        error: "LTI13_ENV_NOT_CONFIGURED",
+        missing: result.missing,
+        privacy
+      });
+    }
+
+    if (!result.ok && result.stage === "session-or-nrps-claim") {
+      return res.status(200).json({
+        ok: false,
+        source: "nrps",
+        stage: "session-or-nrps-claim",
+        error: "NO_LIVE_LTI13_NRPS_SESSION",
+        has_latest_lti13_session: Boolean(result.has_latest_lti13_session),
+        has_nrps: Boolean(result.has_nrps),
+        has_ags: Boolean(result.has_ags),
+        next_required: [
+          "Open המודל החכם from Moodle, then call this endpoint again."
+        ],
+        privacy
+      });
+    }
+
+    if (!result.ok && result.stage === "token") {
+      return res.status(502).json({
+        ok: false,
+        source: "nrps",
+        stage: "token",
+        token_http_status: result.token_http_status,
+        token_error: result.token_error,
+        token_variant_used: result.token_variant_used,
+        token_error_description: result.token_error_description,
+        token_diagnostics: result.token_diagnostics,
+        privacy
+      });
+    }
+
+    if (!result.ok && result.stage === "membership") {
+      return res.status(502).json({
+        ok: false,
+        source: "nrps",
+        stage: "membership",
+        membership_http_status: result.membership_http_status,
+        membership_error_preview: result.membership_error_preview,
+        privacy
+      });
+    }
+
+    const members = result.members;
+    const liveSession = result.liveSession;
+
+    let learnersCount = 0;
+    let instructorsCount = 0;
+    let unknownCount = 0;
+    let hasNamesCount = 0;
+    for (const member of members) {
+      const kind = classifyNrpsMember(member);
+      if (kind === "learner") learnersCount += 1;
+      else if (kind === "instructor") instructorsCount += 1;
+      else unknownCount += 1;
+      if (member?.name || member?.given_name || member?.family_name) hasNamesCount += 1;
+    }
+
+    const courseId = String(
+      liveSession?.courseId ||
+      liveSession?.course_id ||
+      liveSession?.contextId ||
+      liveSession?.context_id ||
+      ""
+    );
+    const deploymentId = String(
+      liveSession?.deploymentId ||
+      liveSession?.deployment_id ||
+      env("LTI13_DEPLOYMENT_ID") ||
+      ""
+    );
+    // Installation/course diagnostics only — not personal data. resource_link_id
+    // and course_title come straight from the current LTI 1.3 launch context and
+    // let the isolation-check page prove each space is scoped on its own.
+    const resourceLinkId = String(
+      liveSession?.resourceLinkId ||
+      liveSession?.resource_link_id ||
+      ""
+    );
+    const courseTitle = String(
+      liveSession?.courseTitle ||
+      liveSession?.course_title ||
+      liveSession?.contextTitle ||
+      liveSession?.context_title ||
+      ""
+    );
+
+    return res.json({
+      ok: true,
+      source: "nrps",
+      total_members: members.length,
+      learners_count: learnersCount,
+      instructors_count: instructorsCount,
+      unknown_count: unknownCount,
+      role_counts: result.roleCounts,
+      has_names: hasNamesCount > 0,
+      course_id: courseId || null,
+      course_title: courseTitle || null,
+      resource_link_id: resourceLinkId || null,
+      deployment_id: deploymentId || null,
+      client_id: result.clientId || null,
+      membership_http_status: result.membership_http_status,
+      token_http_status: result.token_http_status,
+      updated_at: new Date().toISOString(),
+      privacy
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      source: "nrps",
+      stage: "unexpected",
+      error: "PARTICIPANTS_BREAKDOWN_FAILED",
+      detail: nrpsPreviewSafeText(error?.message || error),
+      privacy
+    });
+  }
+});
 
 app.get("/api/lti13/status", (req, res) => {
   lti13NoStore(res);
@@ -5029,6 +5934,60 @@ function lti13VerifyCoreClaims(req, payload) {
   };
 }
 
+// PR 13 — Build a safe admin diagnostic report when an unknown
+// client_id/deployment_id launches LTI 1.3. The report never auto-approves,
+// never mutates the allowlist, and never returns secrets, private keys,
+// access tokens, client assertions, the JWT body, or PII.
+function lti13BuildRegistrationDiagnostic(payload, claimVerification, signature) {
+  const audienceRaw = payload && payload.aud;
+  const audClientId = Array.isArray(audienceRaw)
+    ? compactString(audienceRaw[0])
+    : compactString(audienceRaw);
+  const deploymentId = compactString(lti13Claim(payload, "deployment_id"));
+  const messageType = compactString(lti13Claim(payload, "message_type"));
+  const version = compactString(lti13Claim(payload, "version"));
+  const issuer = compactString(payload && payload.iss);
+
+  const checks = (claimVerification && claimVerification.checks) || {};
+  const signatureOk = !!(signature && signature.ok);
+  const nonceOk = !!checks.nonce_matches;
+  const matchedAllowlist = !!checks.deployment_id && !!checks.audience;
+
+  // suggested env line for LTI13_ALLOWED_REGISTRATIONS — identifiers only.
+  const suggestedEnvLine = audClientId && deploymentId
+    ? `${audClientId}:${deploymentId}`
+    : null;
+
+  return {
+    report_type: "lti13-unknown-registration",
+    issuer: issuer || null,
+    audience: audClientId || null,
+    client_id: audClientId || null,
+    deployment_id: deploymentId || null,
+    message_type: messageType || null,
+    version: version || null,
+    signature_ok: signatureOk,
+    nonce_ok: nonceOk,
+    matched_allowlist: matchedAllowlist,
+    suggested_env_line: suggestedEnvLine,
+    suggested_env_var: "LTI13_ALLOWED_REGISTRATIONS",
+    auto_approved: false,
+    allowlist_modified: false,
+    privacy: {
+      no_secrets: true,
+      no_private_key: true,
+      no_access_token: true,
+      no_client_assertion: true,
+      no_jwt_body: true,
+      no_pii: true
+    },
+    admin_action_he:
+      "client_id/deployment_id אינם ברשימת ההרשאות. כדי לאשר התקנה זו, " +
+      "הוסף את השורה המוצעת ל-LTI13_ALLOWED_REGISTRATIONS ב-Render (לעולם לא ב-GitHub) והפעל מחדש את ה-launch.",
+    now: new Date().toISOString()
+  };
+}
+
 function lti13ExtractServiceClaims(payload) {
   const nrps =
     payload?.["https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice"] ||
@@ -5196,6 +6155,30 @@ app.all("/api/lti13/launch", async (req, res) => {
   const claimVerification = lti13VerifyCoreClaims(req, payload);
 
   if (!claimVerification.ok) {
+    // PR 13 — unknown client_id/deployment_id: signature is valid but the
+    // registration is not in the trusted allowlist. Do not auto-approve and do
+    // not modify the allowlist. Return a safe admin diagnostic that excludes
+    // secrets, private keys, access tokens, client assertions, the JWT body,
+    // and the trusted allowlist contents.
+    const checks = claimVerification.checks || {};
+    const unknownRegistration = signature.ok && (!checks.audience || !checks.deployment_id);
+
+    if (unknownRegistration) {
+      return res.status(403).json({
+        ok: false,
+        mode: "phase3-unknown-registration",
+        message: "LTI 1.3 signature is valid, but this client_id/deployment_id is not in the trusted allowlist. Launch was not auto-approved.",
+        registration_diagnostic: lti13BuildRegistrationDiagnostic(payload, claimVerification, signature),
+        safety: {
+          existing_lti11_endpoint_kept: CANONICAL_LTI_ENDPOINT,
+          no_fake_success: true,
+          auto_approved: false,
+          allowlist_modified: false
+        },
+        now: new Date().toISOString()
+      });
+    }
+
     return res.status(401).json({
       ok: false,
       mode: "phase3-core-claims-verification-failed",
@@ -5356,6 +6339,9 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`moodle-teacher-hub running on port ${PORT}`);
   console.log(`canonical LTI endpoint: ${CANONICAL_LTI_ENDPOINT}`);
 });
+
+
+
 
 
 

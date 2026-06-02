@@ -179,6 +179,10 @@ const errorBox: CSSProperties = {
 };
 
 export default function GradebookImport() {
+  const { session, site } = useLtiSession();
+  const courseId = (session as any)?.course_id ?? null;
+  const moodleBase = (site as any)?.site_url ?? null;
+  const gradesUrl = buildMoodleReportUrl(moodleBase, courseId, MOODLE_REPORTS.find(r => r.key === "grades_csv") ?? MOODLE_REPORTS[1]);
   const fileRef = useRef<HTMLInputElement>(null);
   const [result, setResult] = useState<ParseResult | null>(null);
   const [pastedText, setPastedText] = useState("");
@@ -337,3 +341,5 @@ export default function GradebookImport() {
     </main>
   );
 }
+
+
