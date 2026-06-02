@@ -138,7 +138,7 @@ export default function Page() {
       description="גרור קובץ דוח Moodle — המערכת מזהה את הסוג ומייבאת אוטומטית."
       backTo="-1"
     >
-      <div className="space-y-5" dir="rtl">
+      <div className="space-y-6" dir="rtl">
         <div
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
@@ -245,3 +245,5 @@ export default function Page() {
     </SafePage>
   );
 }
+
+
