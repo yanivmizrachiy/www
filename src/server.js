@@ -3256,6 +3256,38 @@ app.post(CANONICAL_LTI_ENDPOINT, async (req, res) => {
   }
 });
 
+
+// Safe session status endpoint — no secrets, no tokens, no JWTs returned.
+// Returns enough info for the frontend to show a clear diagnostic without
+// exposing any sensitive data to the teacher or browser logs.
+app.get("/api/session/status", (req, res) => {
+  noStore(res);
+  const token = typeof req.query?.t === "string" ? req.query.t : "";
+  const sid = req.cookies?.sid;
+  const hasToken = Boolean(token);
+  const serverKnowsToken = hasToken && tokenSessions.has(token);
+  const hasCookieSid = Boolean(sid && sessions.has(sid));
+  const session = serverKnowsToken
+    ? tokenSessions.get(token)
+    : hasCookieSid
+    ? sessions.get(sid)
+    : null;
+  res.json({
+    ok: Boolean(session),
+    has_token: hasToken,
+    server_knows_token: serverKnowsToken,
+    has_cookie_sid: hasCookieSid,
+    session_source: session?.source ?? null,
+    expired_or_missing: !session,
+    // Human-readable hint for debugging
+    hint: !hasToken
+      ? "no_token_in_request"
+      : !serverKnowsToken
+      ? "token_not_in_memory_server_may_have_restarted"
+      : "session_ok",
+    no_secrets_returned: true,
+  });
+});
 app.get("/api/bootstrap", (req, res) => {
   noStore(res);
   const session = sessionFromRequest(req);

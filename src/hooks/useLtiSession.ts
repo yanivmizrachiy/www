@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 /**
  * LTI-only session model. We do NOT use Supabase Auth for teacher login.
@@ -11,7 +10,10 @@ import { supabase } from "@/integrations/supabase/client";
  *   4. The server redirects to /lti?t=<token>.
  *   5. The /lti route stores the token in sessionStorage and redirects to /.
  *   6. This hook first calls /api/bootstrap?t=<token> on Render.
- *   7. Supabase RPC lti_get_context is a fallback only, not the active launch path.
+ *   7. Supabase RPC lti_get_context is a DISABLED fallback — do NOT call it
+ *      automatically after a 401, as it does not exist in production and causes
+ *      noisy 404 errors. If bootstrap returns 401, treat it as a stale/expired
+ *      session and show a clear Hebrew message instead.
  *
  * No teacher accounts. No passwords. The teacher identity and course context come
  * from the real Moodle LTI launch. Student/grade/log data still require real
@@ -19,6 +21,13 @@ import { supabase } from "@/integrations/supabase/client";
  */
 
 const STORAGE_KEY = "lti_session_token";
+
+// Sentinel value exposed via useLtiSession().error when /api/bootstrap returns
+// 401. This means the server-side tokenSessions map no longer knows this token
+// (cold start / deploy / cross-space navigation). The UI should display a clear
+// instruction to re-open the tool from inside Moodle.
+export const SESSION_EXPIRED_OR_SERVER_RESTARTED =
+  "SESSION_EXPIRED_OR_SERVER_RESTARTED";
 
 export type DomainKey =
   | "students" | "tasks" | "chapters" | "grades" | "activity"
@@ -78,22 +87,31 @@ const DEFAULT_REASON: Record<DomainKey, string> = {
   time_accumulated: "לא ניתן לחשב ללא לוגים אמיתיים ממודל",
   reports: "ייפתח לאחר ייבוא נתוני אמת",
   export_data: "אין נתוני אמת לייצוא",
-  settings_write: "עריכה מול Moodle חסומה עד Moodle Web Services token מאומת עם הרשאות כתיבה",
+  settings_write:
+    "עריכה מול Moodle חסומה עד Moodle Web Services token מאומת עם הרשאות כתיבה",
 };
 
 export function getLtiToken(): string | null {
-  try { return sessionStorage.getItem(STORAGE_KEY); } catch { return null; }
+  try {
+    return sessionStorage.getItem(STORAGE_KEY);
+  } catch {
+    return null;
+  }
 }
 
 export function setLtiToken(t: string) {
-  try { sessionStorage.setItem(STORAGE_KEY, t); } catch { /* ignore */ }
+  try {
+    sessionStorage.setItem(STORAGE_KEY, t);
+  } catch { /* ignore */ }
 }
 
 export function clearLtiToken() {
-  try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+  try {
+    sessionStorage.removeItem(STORAGE_KEY);
+  } catch { /* ignore */ }
 }
 
-// Unified NRPS preview URL. Always appends the current LTI token as ?t=<token>
+// Unified NRPS preview URL. Always appends the current LTI token as ?t=
 // so server session resolution (token/query/header/cookie) works the same for
 // every caller. Use together with `{ credentials: "include" }` on the fetch.
 export function nrpsPreviewUrl(): string {
@@ -115,10 +133,14 @@ interface ContextPayload {
 
 export function useLtiSession() {
   const [loading, setLoading] = useState(true);
+  // error is set to SESSION_EXPIRED_OR_SERVER_RESTARTED when /api/bootstrap
+  // returns 401 with a token present. All other errors use plain strings.
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<SessionInfo | null>(null);
   const [site, setSite] = useState<SiteInfo | null>(null);
-  const [domains, setDomains] = useState<Record<DomainKey, DomainState>>(() => buildEmptyDomains());
+  const [domains, setDomains] = useState<Record<DomainKey, DomainState>>(() =>
+    buildEmptyDomains()
+  );
 
   const applyContext = useCallback((ctx: ContextPayload) => {
     setError(null);
@@ -149,11 +171,24 @@ export function useLtiSession() {
     }
 
     setLoading(true);
-
     try {
       const nodeRes = await fetch(`/api/bootstrap?t=${encodeURIComponent(token)}`, {
         credentials: "include",
       });
+
+      // ── 401: server no longer knows this token (restart / cold start / stale) ──
+      // Do NOT fall through to Supabase RPC: lti_get_context does not exist in
+      // production and would only produce a 404 in the console. Instead, clear
+      // the dead token and surface a clear Hebrew instruction to the teacher.
+      if (nodeRes.status === 401) {
+        clearLtiToken();
+        setSession(null);
+        setSite(null);
+        setError(SESSION_EXPIRED_OR_SERVER_RESTARTED);
+        setLoading(false);
+        return;
+      }
+
       if (nodeRes.ok) {
         const nodePayload = await nodeRes.json();
         if (nodePayload?.ok && nodePayload?.session && nodePayload?.site) {
@@ -163,24 +198,25 @@ export function useLtiSession() {
         }
       }
     } catch {
-      // Fall through to Supabase RPC fallback.
-    }
-
-    const { data, error: rpcErr } = await (supabase.rpc)("lti_get_context", { _token: token });
-    setLoading(false);
-    if (rpcErr) { setError(rpcErr.message); return; }
-
-    const payload = data as unknown as ({ error?: string } & ContextPayload) | null;
-    if (!payload || payload.error) {
-      setError(payload?.error ?? "unknown");
-      clearLtiToken();
-      setSession(null); setSite(null);
+      // Network error — do not attempt Supabase RPC fallback.
+      // Surface a generic error; the teacher should retry from Moodle.
+      setSession(null);
+      setSite(null);
+      setError("NETWORK_ERROR");
+      setLoading(false);
       return;
     }
-    applyContext(payload);
+
+    // Bootstrap responded but payload was malformed — treat as no session.
+    setSession(null);
+    setSite(null);
+    setError(null);
+    setLoading(false);
   }, [applyContext]);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   return {
     loading,
@@ -207,4 +243,3 @@ function buildEmptyDomains(): Record<DomainKey, DomainState> {
   });
   return out;
 }
-
