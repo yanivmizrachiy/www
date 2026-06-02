@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { SafePage, EmptyTruth } from "@/components/SafePage";
 import { useActivityOverview } from "@/hooks/useImports";
 import { PracticeTimeSection } from "@/components/PracticeTimeSection";
+import { Skeleton, SkeletonList } from "@/components/Skeleton";
 import { Activity, CalendarDays, Clock3, AlertTriangle } from "lucide-react";
 import { formatTeacherDateDmyShort } from "@/lib/teacherDateFormat";
 
@@ -74,7 +75,14 @@ export default function Page() {
           </div>
 
           {loading ? (
-            <p className="text-sm text-muted-foreground">טוען ראיות פעילות...</p>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" aria-hidden="true">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <Skeleton className="mb-3 h-3 w-24" />
+                  <Skeleton className="h-7 w-16" />
+                </div>
+              ))}
+            </div>
           ) : error ? (
             <EmptyTruth>{error}</EmptyTruth>
           ) : !data || (data.events_count ?? 0) === 0 ? (
@@ -116,7 +124,7 @@ export default function Page() {
         <section>
           <h2 className="mb-3 text-xl font-extrabold">אירועים אחרונים</h2>
           {loading ? (
-            <p className="text-sm text-muted-foreground">טוען...</p>
+            <SkeletonList rows={4} />
           ) : error ? (
             <EmptyTruth>{error}</EmptyTruth>
           ) : !data?.recent?.length ? (

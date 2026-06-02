@@ -84,47 +84,59 @@ export default function StudentProfile() {
           </TabsContent>
 
           <TabsContent value="grades">
-            <Card>
-              <CardContent className="p-0">
+            {data.grades.length > 0 ? (
+              <Card>
+                <CardContent className="p-0">
+                  <Table dir="rtl">
+                    <TableHeader><TableRow><TableHead className="text-right">משימה</TableHead><TableHead className="text-center">ציון</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                      {data.grades.map((g) => (
+                        <TableRow key={g.grade_item_id}>
+                          <TableCell className="text-right">{g.item_name}</TableCell>
+                          <TableCell className="text-center font-bold">{g.is_missing ? "—" : g.numeric_value ?? g.raw_value}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            ) : (
+              <EmptyTruth>אין עדיין ציונים לתלמיד זה. ייבא דוח ציונים כדי לראות נתונים.</EmptyTruth>
+            )}
+          </TabsContent>
+
+          <TabsContent value="completion">
+            {data.completion.length > 0 ? (
+              <Card><CardContent className="p-0">
                 <Table dir="rtl">
-                  <TableHeader><TableRow><TableHead className="text-right">משימה</TableHead><TableHead className="text-center">ציון</TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow><TableHead className="text-right">משימה</TableHead><TableHead className="text-center">סטטוס</TableHead><TableHead className="text-right">בוצע ב-</TableHead></TableRow></TableHeader>
                   <TableBody>
-                    {data.grades.map((g) => (
-                      <TableRow key={g.grade_item_id}>
-                        <TableCell className="text-right">{g.item_name}</TableCell>
-                        <TableCell className="text-center font-bold">{g.is_missing ? "—" : g.numeric_value ?? g.raw_value}</TableCell>
+                    {data.completion.map((c) => (
+                      <TableRow key={c.task_id}>
+                        <TableCell className="text-right">{c.task_name}</TableCell>
+                        <TableCell className="text-center">{c.is_complete ? "✓" : "—"}</TableCell>
+                        <TableCell className="text-right text-xs text-muted-foreground">{c.completed_at ? formatTeacherDateTime(c.completed_at) : "—"}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="completion">
-            <Card><CardContent className="p-0">
-              <Table dir="rtl">
-                <TableHeader><TableRow><TableHead className="text-right">משימה</TableHead><TableHead className="text-center">סטטוס</TableHead><TableHead className="text-right">בוצע ב-</TableHead></TableRow></TableHeader>
-                <TableBody>
-                  {data.completion.map((c) => (
-                    <TableRow key={c.task_id}>
-                      <TableCell className="text-right">{c.task_name}</TableCell>
-                      <TableCell className="text-center">{c.is_complete ? "✓" : "—"}</TableCell>
-                      <TableCell className="text-right text-xs text-muted-foreground">{c.completed_at ? formatTeacherDateTime(c.completed_at) : "—"}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent></Card>
+              </CardContent></Card>
+            ) : (
+              <EmptyTruth>אין עדיין מידע על השלמת משימות לתלמיד זה. ייבא דוח פעילות כדי לראות נתונים.</EmptyTruth>
+            )}
           </TabsContent>
 
           <TabsContent value="activity">
-            <div className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <Card><CardHeader><CardTitle className="text-sm font-medium">אירועים סה\"כ</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{data.activity.event_count}</CardContent></Card>
-                <Card><CardHeader><CardTitle className="text-sm font-medium">פעילות ראשונה</CardTitle></CardHeader><CardContent className="text-sm">{data.activity.first_event ? formatTeacherDateTime(data.activity.first_event) : "—"}</CardContent></Card>
+            {data.activity.event_count > 0 ? (
+              <div className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Card><CardHeader><CardTitle className="text-sm font-medium">אירועים סה\"כ</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{data.activity.event_count}</CardContent></Card>
+                  <Card><CardHeader><CardTitle className="text-sm font-medium">פעילות ראשונה</CardTitle></CardHeader><CardContent className="text-sm">{data.activity.first_event ? formatTeacherDateTime(data.activity.first_event) : "—"}</CardContent></Card>
+                </div>
               </div>
-            </div>
+            ) : (
+              <EmptyTruth>אין עדיין מידע על פעילות לתלמיד זה. ייבא יומני מעקב כדי לראות נתונים.</EmptyTruth>
+            )}
           </TabsContent>
         </Tabs>
       </div>

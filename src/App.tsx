@@ -4,14 +4,15 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useKeepAlive } from "@/hooks/useKeepAlive";
-import { useKeepAlive } from "@/hooks/useKeepAlive";
 import AppLayout from "@/components/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import MissingData from "./pages/MissingData";
 import CapabilityProbe from "./pages/CapabilityProbe";
 import IsolationStatus from "./pages/IsolationStatus";
 import IsolationLiveCheck from "./pages/IsolationLiveCheck";
+import InstallCheck from "./pages/InstallCheck";
 import Students from "./pages/Students";
+import Teachers from "./pages/Teachers";
 import StudentProfile from "./pages/StudentProfile";
 import Tasks from "./pages/Tasks";
 import Chapters from "./pages/Chapters";
@@ -61,6 +62,7 @@ const App = () => {
             <Route path="/" element={<Dashboard />} />
             <Route path="/sites" element={<Navigate to="/" replace />} />
             <Route path="/students" element={<Students />} />
+            <Route path="/teachers" element={<Teachers />} />
             <Route path="/students/:id" element={<StudentProfile />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/chapters" element={<Chapters />} />
@@ -76,15 +78,16 @@ const App = () => {
             <Route path="/export" element={<Export />} />
             <Route path="/automation" element={<Automation />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/import" element={<Import />} />
+            <Route path="/import" element={<Navigate to="/smart-import" replace />} />
             <Route path="/smart-import" element={<SmartImport />} />
-            <Route path="/gradebook-import" element={<GradebookImport />} />
-            <Route path="/logs-import" element={<LogsImport />} />
-            <Route path="/course-structure-import" element={<CourseStructureImport />} />
+            <Route path="/gradebook-import" element={<Navigate to="/smart-import" replace />} />
+            <Route path="/logs-import" element={<Navigate to="/smart-import" replace />} />
+            <Route path="/course-structure-import" element={<Navigate to="/smart-import" replace />} />
             <Route path="/missing-data" element={<MissingData />} />
             <Route path="/capabilities" element={<CapabilityProbe />} />
             <Route path="/isolation" element={<IsolationStatus />} />
             <Route path="/isolation-check" element={<IsolationLiveCheck />} />
+            <Route path="/install-check" element={<InstallCheck />} />
             <Route path="/setup" element={<Setup />} />
           </Route>
           <Route path="*" element={<NotFound />} />

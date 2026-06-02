@@ -15,13 +15,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
 import { formatTeacherDateDmyShort } from "@/lib/teacherDateFormat";
+import { REPORT_STATUS_LABEL } from "@/lib/reportStatus";
 
 function CompletionCell({ isComplete, completedAt }: { isComplete: boolean | null; completedAt: string | null }) {
   if (isComplete === null) {
     return (
       <span className="flex flex-col items-center gap-0.5">
         <HelpCircle className="h-4 w-4 text-slate-300" />
-        <span className="text-[9px] text-slate-400">אין נתון</span>
+        <span className="text-[9px] text-slate-400">{REPORT_STATUS_LABEL.no_data}</span>
       </span>
     );
   }
@@ -38,7 +39,7 @@ function CompletionCell({ isComplete, completedAt }: { isComplete: boolean | nul
   return (
     <span className="flex flex-col items-center gap-0.5">
       <XCircle className="h-4 w-4 text-red-500" />
-      <span className="text-[9px] text-slate-400">לא הושלם</span>
+      <span className="text-[9px] text-slate-400">{REPORT_STATUS_LABEL.not_done}</span>
     </span>
   );
 }
@@ -66,11 +67,11 @@ export default function TaskReport() {
       for (const task of data.tasks) {
         const c = data.rows.find(r => r.student_id === student.id && r.task_id === task.id);
         if (c === undefined || c.is_complete === null) {
-          row[task.task_name] = "אין נתון";
+          row[task.task_name] = REPORT_STATUS_LABEL.no_data;
         } else if (c.is_complete) {
           row[task.task_name] = c.completed_at ? `הושלם ${formatTeacherDateDmyShort(c.completed_at)}` : "הושלם";
         } else {
-          row[task.task_name] = "לא הושלם";
+          row[task.task_name] = REPORT_STATUS_LABEL.not_done;
         }
       }
       return row;
@@ -86,14 +87,14 @@ export default function TaskReport() {
   return (
     <SafePage
       title="דוח משימות"
-      description="מעקב השלמת משימות לפי תלמיד. ✓ הושלם · ✗ לא הושלם · אין נתון = חסר מקור."
+      description="מעקב השלמת משימות לפי תלמיד. ✓ הושלם · ✗ לא עשה · אין נתון = חסר מקור."
     >
       <div className="space-y-4" dir="rtl">
         <Card className="overflow-hidden shadow-elegant">
           <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/30 px-6 py-4">
             <div className="flex items-center gap-3">
               <CardTitle className="text-xl font-bold">השלמת משימות</CardTitle>
-              <TruthBadge status="proven" />
+              <TruthBadge status={students.length ? "proven" : "missing"} />
             </div>
             <Button
               variant="outline"
@@ -157,8 +158,8 @@ export default function TaskReport() {
         {/* Legend */}
         <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 text-green-600" /> הושלם</span>
-          <span className="flex items-center gap-1"><XCircle className="h-3.5 w-3.5 text-red-500" /> לא הושלם (יש נתון)</span>
-          <span className="flex items-center gap-1"><HelpCircle className="h-3.5 w-3.5 text-slate-300" /> אין נתון (חסר מקור)</span>
+          <span className="flex items-center gap-1"><XCircle className="h-3.5 w-3.5 text-red-500" /> {REPORT_STATUS_LABEL.not_done} (יש נתון)</span>
+          <span className="flex items-center gap-1"><HelpCircle className="h-3.5 w-3.5 text-slate-300" /> {REPORT_STATUS_LABEL.no_data} (חסר מקור)</span>
         </div>
       </div>
     </SafePage>
