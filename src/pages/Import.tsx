@@ -408,11 +408,7 @@ export default function Import() {
               <button type="button" style={primaryButton} onClick={handleSubmit} disabled={busy || !canSubmit}>
                 {busy ? "מייבא..." : "ייבוא משתתפים"}
               </button>
-              {serverResult?.ok && (
-                <a href="/students" style={{ ...mutedButton, textDecoration: "none", display: "inline-block" }}>
-                  פתח תלמידים
-                </a>
-              )}
+              {serverResult?.ok && (<><span style={{fontSize:12,color:"#059669",fontWeight:700}}>✓ יובא! מעביר לתלמידים...</span><script dangerouslySetInnerHTML={{__html:"setTimeout(()=>window.location.href=`/students`,1500)"}} /></>)}
             </div>
           </div>
 
@@ -456,3 +452,4 @@ export default function Import() {
     </main>
   );
 }
+
