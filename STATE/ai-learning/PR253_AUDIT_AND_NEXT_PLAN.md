@@ -25,6 +25,17 @@ PR #253 לא הרס את main כי הוא Draft ולא מוזג.
 - החלפת GradebookImport.tsx עלולה למחוק preflight והגנות ציון חסר אינו 0.
 - useLTIContext עלול להיות import לא קיים.
 
+## עדכון אוטומטי נוסף
+
+בוצע תיקון בטוח ב־PR #254:
+
+- הסקריפט `scripts/audit-pr253-safe-consolidation.ps1` הומר למחרוזות ASCII/English בלבד בתוך קוד PowerShell.
+- מטרת התיקון: למנוע שגיאות parser שנגרמו מקידוד עברית בתוך script.
+- אין שינוי בקוד המוצר.
+- אין שינוי SQL/RLS/env/secrets.
+- Teacher Release נשאר NO.
+- PR #127 לא נוגע.
+
 ## תוכנית תיקון
 
 לא לתקן את #253 בכוח אם הוא גדול מדי.
@@ -48,3 +59,15 @@ feat/safe-ui-consolidation-v1
 - npm run typecheck
 - audits קיימים בריפו
 - בדיקה ידנית של דפים מרכזיים
+
+## חסמים ידועים שאינם נגרמים מ־PR #254
+
+מהריצה המקומית האחרונה:
+
+- check עבר.
+- build עבר.
+- doctor עבר.
+- audits עברו.
+- typecheck נכשל בקבצים קיימים: AppLayout.tsx, ChapterDetail.tsx, GradebookImport.tsx, Tasks.tsx.
+
+המשמעות: PR #254 הוא תיעוד/כלים בלבד, אבל לפני הכרזת יציבות מלאה צריך לפתור את typecheck בנפרד.
