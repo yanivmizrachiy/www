@@ -3,7 +3,7 @@ param(
   [int]$PrNumber = 253
 )
 
-$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
 $Report = New-Object System.Collections.Generic.List[string]
 
 function Add-Line([string]$Text) {
@@ -19,7 +19,7 @@ Add-Line ""
 
 if (!(Get-Command gh -ErrorAction SilentlyContinue)) {
   Add-Line "## ERROR"
-  Add-Line "GitHub CLI not found."
+  Add-Line "GitHub CLI not found. This audit requires an authenticated gh CLI."
   $Report -join "`n"
   exit 2
 }
@@ -29,7 +29,7 @@ try {
   $files = gh api "repos/$RepoName/pulls/$PrNumber/files?per_page=100" | ConvertFrom-Json
 } catch {
   Add-Line "## ERROR"
-  Add-Line "Failed to fetch PR data: $($_.Exception.Message)"
+  Add-Line "Failed to fetch PR data from GitHub: $($_.Exception.Message)"
   $Report -join "`n"
   exit 2
 }
@@ -52,9 +52,9 @@ Add-Line ""
 $Risk = 0
 $Warnings = New-Object System.Collections.Generic.List[string]
 
-if ($pr.deletions -gt ($pr.additions * 3)) {
+if ([int]$pr.deletions -gt ([int]$pr.additions * 3)) {
   $Risk += 3
-  $Warnings.Add("מחיקות גדולות בהרבה מהוספות — חשד להחלפה במקום שילוב.") | Out-Null
+  $Warnings.Add("Large deletions compared with additions. Possible replacement instead of careful integration.") | Out-Null
 }
 
 $dangerFiles = @(
@@ -68,29 +68,35 @@ foreach ($df in $dangerFiles) {
   $hit = $files | Where-Object { $_.filename -eq $df }
   if ($hit) {
     $Risk += 2
-    $Warnings.Add("קובץ רגיש השתנה: $df") | Out-Null
-    if ($hit.deletions -gt 50) {
+    $Warnings.Add("Sensitive file changed: $df") | Out-Null
+    if ([int]$hit.deletions -gt 50) {
       $Risk += 2
-      $Warnings.Add("מחיקות גדולות בקובץ רגיש: $df (-$($hit.deletions))") | Out-Null
+      $Warnings.Add("Large deletion in sensitive file: $df (-$($hit.deletions))") | Out-Null
     }
   }
 }
 
 $patchText = ""
 foreach ($f in $files) {
-  if ($f.patch) {
-    $patchText += "`n" + $f.patch
+  if ($null -ne $f.patch) {
+    $patchText += "`n" + [string]$f.patch
   }
 }
 
 if ($patchText -match "useLTIContext") {
   $Risk += 2
-  $Warnings.Add("נמצא useLTIContext — לוודא שה-hook קיים ב-main ובנתיב נכון.") | Out-Null
+  $Warnings.Add("Found useLTIContext. Verify this hook exists on main and has the correct import path.") | Out-Null
 }
 
 if ($patchText -match "Moodle Teacher Hub") {
   $Risk += 1
-  $Warnings.Add("נמצא Moodle Teacher Hub — לוודא שלא מחליף את שם המוצר המודל החכם.") | Out-Null
+  $Warnings.Add("Found Moodle Teacher Hub text. Verify it does not replace the Hebrew product name.") | Out-Null
+}
+
+if ($patchText -match "useImportsOverview|useImportedStudents|useGradesMatrix|useNrpsRoster") {
+  Add-Line "## Important hooks mentioned in patch"
+  Add-Line "The patch mentions existing import/NRPS hooks. Review whether they are preserved or removed."
+  Add-Line ""
 }
 
 Add-Line "## Risk score"
@@ -99,7 +105,7 @@ Add-Line ""
 
 Add-Line "## Warnings"
 if ($Warnings.Count -eq 0) {
-  Add-Line "No major warnings found."
+  Add-Line "No major warnings found by automated audit."
 } else {
   foreach ($w in $Warnings) {
     Add-Line "- $w"
@@ -110,11 +116,20 @@ Add-Line ""
 Add-Line "## Recommendation"
 if ($Risk -ge 6) {
   Add-Line "DO NOT MERGE AS IS."
-  Add-Line "להציל רק חלקים בטוחים בתוך PR חדש ונקי מ-main."
+  Add-Line "Create a clean PR from main and rescue only safe parts."
 } elseif ($Risk -ge 3) {
   Add-Line "REVIEW CAREFULLY BEFORE MERGE."
+  Add-Line "Sensitive files changed. Require build, typecheck, audits, and manual route checks."
 } else {
   Add-Line "LOWER RISK, STILL REQUIRE CHECKS."
+  Add-Line "Run the full test suite and review changed files before merge."
 }
+
+Add-Line ""
+Add-Line "## Protected areas"
+Add-Line "- Do not touch PR #127."
+Add-Line "- Do not change SQL/RLS/env/secrets."
+Add-Line "- Do not set Teacher Release to YES."
+Add-Line "- Preserve manual fallback."
 
 $Report -join "`n"
