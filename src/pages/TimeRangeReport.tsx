@@ -168,13 +168,13 @@ export default function TimeRangeReport() {
               <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
                 <Clock className="h-10 w-10 text-muted-foreground/40" />
                 <p className="font-semibold">אין נתוני זמן לטווח זה</p>
-                <p className="text-sm text-muted-foreground">יש לייבא דוח לוגים (Logs) ממודל כדי לחשב זמני תרגול. בחר טווח תאריכים אחר או ייבא לוגים.</p>
+                <p className="text-sm text-muted-foreground">יש לייבא דוח לוגים (Logs) ממודל כדי להציג הערכת חלונות פעילות. זמן רשמי דורש שדה משך מאומת.</p>
               </div>
             ) : !enoughLogs ? (
               <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
                 <Clock className="h-10 w-10 text-muted-foreground/40" />
                 <p className="font-semibold">אין מספיק לוגים לחישוב זמן</p>
-                <p className="text-sm text-muted-foreground">נדרשים לפחות {data?.meta?.min_log_events ?? 2} אירועי לוג בטווח כדי להעריך זמן. ייבא דוח Logs מלא יותר או בחר טווח רחב יותר.</p>
+                <p className="text-sm text-muted-foreground">נדרשים לפחות {data?.meta?.min_log_events ?? 2} אירועי לוג בטווח כדי להציג הערכת חלונות פעילות. ייבא דוח Logs מלא יותר או בחר טווח רחב יותר.</p>
               </div>
             ) : (
               <Table dir="rtl">

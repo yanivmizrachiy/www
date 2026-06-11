@@ -25,7 +25,7 @@ const BLOCKER_HE: Record<string, string> = {
   missing_moodle_launch:       "לא ניתן להציג את מרכז המורה ללא פתיחה אמיתית מתוך Moodle.",
   missing_participants_report:  "חסר דוח משתתפים",
   missing_gradebook_report:     "חסר דוח ציונים",
-  missing_logs_report:          "לא ניתן לחשב זמן תרגול ללא לוגים.",
+  missing_logs_report:          "חסרים לוגים לראיות פעילות; זמן רשמי דורש שדה משך מאומת.",
   no_lti_configured:            "לא הוגדר LTI",
   moodle_ws_token_missing:      "חסר טוקן Moodle WS",
   missing_log_data:             "חסרים נתוני לוג",

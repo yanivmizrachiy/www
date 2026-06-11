@@ -1,4 +1,138 @@
-﻿<!-- MTH_SOURCE_OF_TRUTH_AUTOMATION_PLAN_20260519_START -->
+﻿<!-- MTH_DEEP_TRUTH_SYNC_20260612_START -->
+# אמת מוצר נוכחית — Moodle Teacher Hub / Deep Truth Sync
+
+עודכן: 2026-06-12
+Runtime קנוני: `https://www-tijc.onrender.com`
+Teacher Release: **NO**
+
+בלוק זה הוא שכבת האמת העדכנית מעל ההיסטוריה השמורה בהמשך הקובץ. אין למחוק היסטוריה בלי הוראה מפורשת, אבל בכל סתירה בין בלוק זה לבין בלוקים ישנים יותר — בלוק זה קובע.
+
+## היחס בין RULES.md לבין PROJECT_RULES.md
+
+- `RULES.md` הוא גבול הריפו: מה שייך ל־`yanivmizrachiy/www`, מה אסור לערבב, ומה לא מוחקים.
+- `PROJECT_RULES.md` הוא אמת המוצר של Moodle Teacher Hub: מה מאומת, מה קיים בקוד, מה חסום, ומה מותר להציג למורה.
+- `luz-teddy/` הוא חריג זמני קיים, לא חלק מ־Moodle Teacher Hub, ואסור למחוק אותו בלי העברה מאומתת ואישור מפורש.
+
+## מה מאומת בפועל
+
+ראיות aggregate קיימות בלבד:
+
+```text
+students = 62
+grade_items = 243
+grade_results = 1693
+log_events = 89995
+Teacher Release = NO
+```
+
+גבולות הראיה:
+
+- הנתונים אמיתיים ומקורם בייבוא/אימות Moodle קיים, אך אין להכניס לריפו שורות תלמידים, ציונים גולמיים, לוגים גולמיים או קבצי export.
+- Gradebook מאומת כייבוא אמיתי; ציון חסר נשאר חסר ואסור להפוך אותו ל־0.
+- Logs מאומתים כאירועי פעילות, לא כמשך זמן רשמי.
+- Practice Time רשמי חסום כל עוד אין שדה `duration`/`duration_seconds`/`timeDiff` רשמי ממודל.
+- `STATE/evidence-log.md` כולל הערת RLS מ־2026-05-31 על policies שנצפו ב־Supabase Dashboard, אך אין לטעון ש־RLS enforcement עובד עד שתהיה בדיקה חיה מתועדת של קריאה חוצת־מורה שנחסמת.
+
+## מה קיים בקוד אבל לא מאומת live
+
+- LTI 1.1 launch קנוני: `/api/lti/launch`.
+- LTI 1.3 diagnostic/login/launch endpoints קיימים, כולל JWKS ושירותי NRPS/AGS אם claims קיימים, אבל אין להסיק מהם readiness לכל מורה.
+- `/api/automation/capabilities`, `/api/automation/export-links`, `/api/automation/auto-extraction/sources` מחזירים metadata בטוח בלבד.
+- `/api/import/course-structure` וקוד Course Structure / Activity Completion קיימים, אך Course Structure אינו `proven` עד ייבוא completion/course-structure אמיתי ומתועד.
+- `/api/students`, `/api/tasks`, `/api/grades`, `/api/activity` הם API חדש יותר שמעדיף Supabase ונופל ל־runtime store רק כשצריך; יש להמשיך למפות אותם מול הסכמה לפני הרחבה.
+- RPC hooks כמו `lti_get_course_structure`, `lti_get_activity_overview`, `lti_get_student_reports`, `lti_get_task_completion_detail`, `lti_get_daily_activity`, `lti_get_practice_time`, `lti_get_student_profile`, `lti_delete_batch` קיימים בצד frontend כנתיב legacy/fallback. כל RPC חייב SQL/source/evidence או סימון legacy ברור לפני שנסמכים עליו כמקור אמת.
+
+## מה חסום
+
+- Teacher Release נשאר **NO**.
+- Moodle Web Services auto-sync חסום עד `MOODLE_WS_TOKEN` אמיתי בסביבת Render ובדיקת API חיה מתועדת.
+- NRPS/AGS full sync חסום עד claims, הרשאות וקריאות חיות מתועדות בלי raw PII.
+- Multi-teacher / multi-course isolation לא מאומת live.
+- DB-layer RLS enforcement לא מאומת live.
+- Practice Time רשמי חסום ללא duration רשמי.
+- Course Structure proven חסום ללא completion/course-structure evidence.
+
+## מה אסור לקלקל
+
+- אין direct commit ל־`main`; עובדים בענף PR בלבד.
+- אין Teacher Release YES.
+- אין fake data, demo data, fake sync או כפתורי דמה.
+- אין מחיקת `luz-teddy/`.
+- אין מחיקת קבצים בלי אישור.
+- אין שינוי LTI launch flow, Participants/Gradebook/Logs import, Supabase migrations, Teacher Release gate, deploy או `render.yaml` בלי הוראה מפורשת ובעיה מוכחת.
+- אין secrets בקוד, docs, STATE, logs או outputs.
+- אין חשיפת raw student rows, raw logs, raw Moodle responses, מיילים ברשימות פשוטות, תעודות זהות או מזהים פנימיים מיותרים.
+
+## מפת מסכים
+
+- בית: `/`
+- LTI bootstrap: `/lti`
+- תלמידים: `/students`, `/students/:id`
+- מורים: `/teachers`
+- פרקים/פעילויות: `/chapters`, `/chapters/:sectionId`
+- משימות legacy/view: `/tasks`
+- ציונים: `/grades`
+- פעילות וזמנים: `/activity`, דוח טווח: `/times`
+- דוחות: `/reports`, `/reports/students`, `/reports/tasks`, `/reports/days`, `/reports/gaps`
+- ייצוא: `/export`
+- ייבוא: `/smart-import`; נתיבי `/import`, `/gradebook-import`, `/logs-import`, `/course-structure-import` מפנים אליו או נשמרים כתאימות.
+- אוטומציה/אבחון: `/automation`, `/missing-data`, `/capabilities`, `/isolation`, `/isolation-check`, `/install-check`, `/setup`
+
+## מפת API קנונית
+
+- Health/runtime: `/health`, `/ping`
+- LTI: `/api/lti/launch`, `/api/bootstrap`, `/api/session/status`, `/api/lti/diagnostics`
+- LTI 1.3: `/api/lti13/status`, `/api/lti13/config`, `/api/lti13/jwks`, `/api/lti13/login`, `/api/lti13/launch`, `/api/lti13/nrps-preview`, `/api/lti13/participants-breakdown`, `/api/lti13/services-status`, `/api/lti13/token-matrix`
+- Imports: `POST /api/import`, `POST /api/import/course-structure`, `/api/imports/students`, `/api/imports/overview`, `/api/imports/grades-matrix`, `/api/imports/student-profile`, `/api/imports/time-range`, `/api/imports/nrps-sync`
+- Product data API: `/api/students`, `/api/tasks`, `/api/grades`, `/api/activity`
+- Automation/capabilities: `/api/sync/status`, `/api/sync/run`, `/api/capabilities/status`, `/api/automation/capabilities`, `/api/automation/export-links`, `/api/automation/lti-capability-probes`, `/api/automation/auto-extraction/sources`, `/api/automation/moodle-webservices/readiness`
+- Persistence/release: `/api/persistence/status`, `/api/persistence/validate`, `/api/import/schema-diagnostics`, `/api/practice-time/status`, `/api/release/readiness`
+
+## מפת schema ואמת נתונים
+
+- `src/server.js` משתמש כיום בעיקר בטבלאות החדשות: `students`, `import_batches`, `grade_items`, `grade_results`, `log_events`, `teachers`, `courses`, `teacher_sessions`, `lti_launches`, ובחלק מהמקומות `course_tasks`.
+- `src/integrations/supabase/types.ts` עדיין כולל מודל ישן/מקביל: `imported_students`, `imported_grade_items`, `imported_grades`, `imported_log_events`, `imported_chapters`, `imported_tasks`, `imported_task_completion`.
+- חובה להפריד מונחים:
+  - `moodle_course_id` = מזהה הקורס כפי שמודל נותן.
+  - `course_db_id` / `course_uuid` = UUID פנימי יציב בטבלת `courses`.
+  - `course_id` בקוד קיים אינו אחיד; לפני הרחבה צריך לציין אם הוא Moodle ID, UUID, או context/space id.
+- זהות תלמיד אינה אחידה עדיין:
+  - Participants עשוי להביא שם, מייל, username, idnumber/source id.
+  - Gradebook/Completions עשויים לזהות תלמיד לפי שם/מזהה אחר.
+  - NRPS עשוי להביא identifiers/roles בלי שמות/מיילים.
+  - אין להציג התאמה כ־proven בלי evidence שמראה את source וה־matching rule.
+
+## מפת CI ובדיקות
+
+- `npm run check` בודק scripts maintenance ו־`node --check src/server.js`.
+- `npm run typecheck` בודק TypeScript.
+- `npm run build` בונה Vite אחרי בדיקת server.
+- `npm run doctor` סורק קבצים מסוכנים/secrets ומוודא מקורות אמת בסיסיים.
+- audits סטטיים קיימים ל־automation, launch context, Moodle WS readiness, date format, auto extraction, multi-teacher isolation evidence, Supabase RLS readiness.
+- live scripts קיימים, אך אין להריץ אותם בלי סביבת live מוכנה: `validate:lti:live`, `validate:teacher-release:live`, `validate:imports:live`, `validate:finish:live`, gradebook/logs/capability live checks.
+- workflows של `luz-teddy` נפרדים לפי paths ואינם שער release של Moodle Teacher Hub.
+
+## Design System
+
+- צבעים חדשים חייבים להיות HSL דרך tokens ב־`src/index.css` ו־`tailwind.config.cjs`.
+- אין להוסיף raw HEX חדש.
+- `status-proven` = רק כשיש evidence אמיתי.
+- `status-missing` = מקור חסר.
+- `status-pending` = ערך קיים אך לא הושלם/לא הוכח, למשל grade missing.
+- `status-blocked` = חסם אמת או פעולה שאסור לבצע.
+- אין redesign גדול בלי הוראה מפורשת.
+
+## מסמכי truth משלימים
+
+- `docs/API_CANONICAL_MAP.md`
+- `docs/DATA_MODEL_TRUTH.md`
+- `docs/CI_TRUTH_MAP.md`
+- `docs/REPO_BOUNDARY_AND_LUZ_TEDDY.md`
+- `docs/PR_RISK_MAP.md`
+
+<!-- MTH_DEEP_TRUTH_SYNC_20260612_END -->
+
+<!-- MTH_SOURCE_OF_TRUTH_AUTOMATION_PLAN_20260519_START -->
 # מקור אמת נוכחי — Moodle Teacher Hub / www
 
 עודכן: 2026-05-19
@@ -936,4 +1070,3 @@ PR #127 remains draft-only and untouched.
 Remaining gap to 100%: final live Moodle automation verified, multi-teacher isolation proof, release hardening.
 
 <!-- MTH_CURRENT_STATUS_AFTER_PR168_END -->
-

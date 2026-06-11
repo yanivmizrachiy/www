@@ -40,6 +40,8 @@
     --status-proven-bg: 142 65% 95%;
     --status-missing: 38 92% 50%;
     --status-missing-bg: 38 92% 95%;
+    --status-pending: 38 92% 45%;
+    --status-pending-bg: 38 92% 95%;
     --status-blocked: 0 75% 50%;
     --status-blocked-bg: 0 75% 96%;
 
@@ -101,6 +103,8 @@
     --status-proven-bg: 142 50% 14%;
     --status-missing: 38 90% 60%;
     --status-missing-bg: 38 60% 14%;
+    --status-pending: 38 90% 62%;
+    --status-pending-bg: 38 60% 14%;
     --status-blocked: 0 70% 60%;
     --status-blocked-bg: 0 50% 14%;
 

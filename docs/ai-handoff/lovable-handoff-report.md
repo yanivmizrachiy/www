@@ -415,7 +415,7 @@ migrations 20260427
 | LTI 1.1 implementation | implemented, needs real Moodle install test |
 | Manual import | working for students/grades/completion/logs |
 | Reports | working from imported data |
-| Practice time | working, log-derived |
+| Practice time | legacy claim only; current truth: blocked without official duration, estimates must be labeled |
 | Student profile | working |
 | CSV export | working |
 | XLSX/PDF | not implemented |

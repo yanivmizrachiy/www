@@ -91,7 +91,7 @@ function tableCount(persistence, tableName) {
       title_he: "ייבוא Logs אמיתי",
       can_do_now: done.participants_imported,
       result_needed: "log_events > 0",
-      blocker_if_false: "עדיף לסיים Participants לפני Logs כדי לחשב זמן תרגול לפי תלמיד."
+      blocker_if_false: "עדיף לסיים Participants לפני Logs כדי לשייך ראיות פעילות לתלמידים; זמן רשמי דורש duration מאומת."
     });
   }
 

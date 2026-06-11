@@ -1,7 +1,8 @@
 import { useMemo, useRef, useState } from "react";
 import type { ChangeEvent, CSSProperties } from "react";
 import { parseMoodleFile, parsePastedTable } from "@/lib/moodleImport";
-import { getLtiToken } from "@/hooks/useLtiSession";
+import { getLtiToken, useLtiSession } from "@/hooks/useLtiSession";
+import { buildMoodleReportUrl, MOODLE_REPORTS } from "@/lib/moodleReportLinks";
 
 const MARKER = "YANIV_GRADEBOOK_PREFLIGHT_UI_V1 MTH_WIDE_GRADEBOOK_IMPORT_UI_V1";
 

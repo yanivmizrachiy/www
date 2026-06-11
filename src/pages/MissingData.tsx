@@ -26,7 +26,7 @@ const gateInfo: Record<keyof SyncStatus["capabilities"], { title: string; report
   logs: {
     title: "זמנים ולוגים",
     report: "Logs / לוגים",
-    why: "בלי לוגים אי אפשר לחשב זמן תרגול אמיתי.",
+    why: "בלי לוגים אין ראיות פעילות. זמן תרגול רשמי דורש שדה משך מאומת ממודל.",
   },
 };
 
