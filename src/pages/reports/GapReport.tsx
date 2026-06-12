@@ -52,7 +52,7 @@ export default function GapReport() {
                 <div className="text-status-blocked shrink-0"><Import className="h-5 w-5" /></div>
                 <div>
                   <div className="font-bold">חישוב זמן תרגול חסום</div>
-                  <p className="text-muted-foreground mt-1 text-xs">לא הועלה דוח לוגים. ללא לוגים לא ניתן לחשב זמני שהייה ופעילות יומיים.</p>
+                  <p className="text-muted-foreground mt-1 text-xs">לא הועלה דוח לוגים. ללא לוגים אין ראיות פעילות; זמן תרגול רשמי דורש שדה משך מאומת ממודל.</p>
                   <Link to="/import" className="text-primary hover:underline font-bold text-[10px] mt-2 block">עבור לייבוא לוגים</Link>
                 </div>
               </div>

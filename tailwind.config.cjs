@@ -58,8 +58,8 @@ module.exports = {
           'missing-bg': "hsl(var(--status-missing-bg))",
           blocked: "hsl(var(--status-blocked))",
           'blocked-bg': "hsl(var(--status-blocked-bg))",
-          pending: "hsl(var(--status-missing))",
-          'pending-bg': "hsl(var(--status-missing-bg))",
+          pending: "hsl(var(--status-pending))",
+          'pending-bg': "hsl(var(--status-pending-bg))",
         }
       },
       borderRadius: {

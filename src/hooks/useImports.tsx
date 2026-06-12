@@ -234,7 +234,8 @@ export interface CourseTask {
   position: number | null; due_date: string | null;
   moodle_url?: string | null; status?: string | null;
 }
-export interface CourseStructure { chapters: CourseChapter[]; tasks: CourseTask[]; completion_summary: Record<string, unknown>; }
+export interface CourseCompletionSummary { complete: number; incomplete: number; unknown: number; total: number }
+export interface CourseStructure { chapters: CourseChapter[]; tasks: CourseTask[]; completion_summary: Record<string, CourseCompletionSummary>; }
 
 export function useCourseStructure() {
   const [data, setData] = useState<CourseStructure | null>(null);

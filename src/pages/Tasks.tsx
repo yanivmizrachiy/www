@@ -40,6 +40,7 @@ function TaskRow({
 
 export default function Page() {
   const { data, loading, error } = useCourseStructure();
+  const hasCourseStructureEvidence = Boolean(data && (data.chapters.length > 0 || data.tasks.length > 0));
 
   const getChapterTasks = (chapterId: string | null) => {
     return data?.tasks.filter(t => t.chapter_id === chapterId) ?? [];
@@ -137,7 +138,7 @@ export default function Page() {
           </Accordion>
         )}
         <div className="flex justify-end">
-          <TruthBadge status="proven" />
+          <TruthBadge status={hasCourseStructureEvidence ? "proven" : "missing"} />
         </div>
       </div>
     </SafePage>

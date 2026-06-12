@@ -1583,7 +1583,7 @@ function buildSyncStatus(req, sbCounts) {
     !hasStudents ? "ייבא דוח Participants ממודל כדי להציג רשימת תלמידים אמיתית." : null,
     !hasTasks ? "ייבא דוח Activity Completion או מבנה קורס כדי להציג פרקים ומשימות אמיתיים." : null,
     !hasGrades ? "ייבא Gradebook ממודל כדי להציג ציונים ודוחות ציונים אמיתיים." : null,
-    !hasLogs ? "ייבא דוח Logs ממודל כדי לחשב זמני תרגול אמיתיים." : null
+    !hasLogs ? "ייבא דוח Logs ממודל כדי להציג ראיות פעילות. זמן תרגול רשמי דורש שדה משך מאומת." : null
   ].filter(Boolean);
 
   return {
@@ -1641,7 +1641,7 @@ function buildSyncStatus(req, sbCounts) {
         priority: 4,
         required_report_he: hasLogs ? null : "Logs / לוגים",
         target_href: hasLogs ? "/activity" : "/missing-data",
-        teacher_message_he: hasLogs ? "קיימים לוגים לחישוב זמן תרגול." : "חסרים לוגים ולכן אי אפשר לחשב זמן תרגול."
+        teacher_message_he: hasLogs ? "קיימים לוגים לראיות פעילות ולהערכת חלונות פעילות בלבד." : "חסרים לוגים ולכן אין ראיות פעילות; זמן רשמי דורש שדה משך מאומת."
       }
     ],
     capabilities: {
@@ -2047,7 +2047,7 @@ function buildReleaseReadiness(req, sbCounts) {
       blockers.push({
         key: "practice_time_no_duration_field",
         severity: "data_required",
-        message_he: "קיימים לוגים אך אין שדה משך זמן — לא ניתן לחשב זמן תרגול אמיתי."
+        message_he: "קיימים לוגים אך אין שדה משך זמן — ניתן להציג רק הערכת חלונות פעילות, לא זמן תרגול רשמי."
       });
     }
   }
@@ -2565,7 +2565,7 @@ app.get("/api/automation/capabilities", async (req, res) => {
       : !hasGradebook
         ? "העלה דוח Gradebook אמיתי כדי להשלים את סט הייבוא הפנימי."
         : !hasLogs
-          ? "העלה דוח Logs אמיתי כדי להשלים את תמונת הפעילות והזמן."
+          ? "העלה דוח Logs אמיתי כדי להשלים את תמונת הפעילות. זמן רשמי עדיין דורש שדה משך מאומת."
           : !hasCourseStructure
             ? "העלה דוח Course Structure / Activity Completion אמיתי כדי לקבל דוחות מלאים יותר."
             : !moodleWsConfigured
@@ -6339,8 +6339,6 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`moodle-teacher-hub running on port ${PORT}`);
   console.log(`canonical LTI endpoint: ${CANONICAL_LTI_ENDPOINT}`);
 });
-
-
 
 
 

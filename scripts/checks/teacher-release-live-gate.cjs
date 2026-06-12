@@ -90,7 +90,7 @@ function tableCount(persistence, tableName) {
       key: "logs_imported",
       pass: counts.log_events > 0,
       severity: "data_required",
-      message_he: "נדרש ייבוא Logs אמיתי כדי לחשב זמן תרגול."
+      message_he: "נדרש ייבוא Logs אמיתי לראיות פעילות; זמן תרגול רשמי דורש duration מאומת."
     },
     {
       key: "teacher_sessions_seen",

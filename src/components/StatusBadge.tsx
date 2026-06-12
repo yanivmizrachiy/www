@@ -10,11 +10,12 @@ const statusLabel: Record<DomainStatus, string> = {
 
 interface StatusBadgeProps {
   status: DomainStatus;
+  label?: string;
   className?: string;
   size?: "sm" | "md";
 }
 
-export function StatusBadge({ status, className, size = "md" }: StatusBadgeProps) {
+export function StatusBadge({ status, label, className, size = "md" }: StatusBadgeProps) {
   const Icon = status === "proven" ? CheckCircle2 : status === "missing" ? AlertCircle : XCircle;
   const styles =
     status === "proven"
@@ -33,7 +34,7 @@ export function StatusBadge({ status, className, size = "md" }: StatusBadgeProps
       )}
     >
       <Icon className={size === "sm" ? "h-3 w-3" : "h-3.5 w-3.5"} />
-      {statusLabel[status]}
+      {label ?? statusLabel[status]}
     </span>
   );
 }

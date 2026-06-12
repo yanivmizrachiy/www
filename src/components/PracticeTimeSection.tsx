@@ -58,7 +58,7 @@ export function PracticeTimeSection({ studentId = null, title = "זמן תרגו
         <CardContent className="flex flex-col items-center justify-center py-10 text-center">
           <Clock className="mb-2 h-10 w-10 text-muted-foreground/50" />
           <h3 className="font-semibold">אין נתוני זמן תרגול</h3>
-          <p className="text-sm text-muted-foreground">נדרש ייבוא של דוח לוגים (Logs) כדי לחשב זמנים.</p>
+          <p className="text-sm text-muted-foreground">נדרש ייבוא דוח לוגים כדי להציג הערכת חלונות פעילות. זמן רשמי דורש שדה משך מאומת.</p>
         </CardContent>
       </Card>
     );
@@ -70,7 +70,7 @@ export function PracticeTimeSection({ studentId = null, title = "זמן תרגו
         <CardContent className="flex flex-col items-center justify-center py-10 text-center">
           <Clock className="mb-2 h-10 w-10 text-muted-foreground/50" />
           <h3 className="font-semibold">אין מספיק לוגים לחישוב זמן</h3>
-          <p className="text-sm text-muted-foreground">נדרשים לפחות {data?.meta?.min_log_events ?? 2} אירועי לוג כדי להעריך זמן.</p>
+          <p className="text-sm text-muted-foreground">נדרשים לפחות {data?.meta?.min_log_events ?? 2} אירועי לוג כדי להציג הערכת חלונות פעילות.</p>
         </CardContent>
       </Card>
     );
