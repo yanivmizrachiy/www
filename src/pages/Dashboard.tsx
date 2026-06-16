@@ -474,8 +474,8 @@ function LuxuryActionTile({
 //   • teacherCardLabel/Value, participantsBreakdownText → useDashboardTeachers
 //     (NRPS aggregates + names; empty string when NRPS returned nothing)
 //   • courseName, updatedAtText → live LTI launch context / local clock
-// The hero renders truth pills describing only evidence the hooks confirmed and a
-// standing "ללא נתוני דמו" pill so the premium look never reads as a fake demo.
+// The hero renders truth pills describing only evidence the hooks confirmed, so
+// the premium look never reads as a fake demo.
 // MTH_LUXURY_HOME_REAL_DATA_ONLY_V1.
 function LuxuryHero({
   hasSession, syncing, syncRunning, onSync,
@@ -506,11 +506,10 @@ function LuxuryHero({
             <p className="text-base font-bold text-cyan-200/90 lg:text-lg">לוח הבקרה של המורה</p>
             {/* MTH_LUXURY_HOME_REAL_DATA_ONLY_V1 — truth pills describe only confirmed evidence. */}
             <div className="flex flex-wrap items-center gap-2 pt-1">
-              <LiveTruthPill tone="muted" label="ללא נתוני דמו" title="המסך מציג רק נתונים אמיתיים שהתקבלו ממודל. אין נתונים מזויפים." />
+              <LiveTruthPill tone="muted" label="מבוסס נתוני Moodle" title="המסך מציג רק נתונים אמיתיים שהתקבלו ממודל." />
               {hasLiveNrps
                 ? <LiveTruthPill tone="live" label="נתוני NRPS חיים" title="רשימת המשתתפים התקבלה ממודל בזמן אמת (אגרגט בלבד, ללא חשיפת שורות תלמיד)." />
                 : <LiveTruthPill tone="pending" label="ממתין לרשימת משתתפים" title="עדיין לא התקבלה רשימת משתתפים חיה ממודל." />}
-              <LiveTruthPill tone="muted" label="Teacher Release: NO" title="המוצר עדיין לא שוחרר למורים. אין כאן ראיה חיה שמשנה את שער השחרור." />
             </div>
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }} className="flex flex-wrap gap-2 pt-1">
