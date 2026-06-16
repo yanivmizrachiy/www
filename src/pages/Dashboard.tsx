@@ -395,6 +395,163 @@ function ActionCard({ to, marker, icon: Icon, title, value, unit }: { to: string
   );
 }
 
+// MTH_LUXURY_HOME_V1
+// MTH_LUXURY_HOME_REAL_DATA_ONLY_V1
+// MTH_LUXURY_HOME_NO_DEMO_V1
+// Premium homepage building blocks for the teacher dashboard. These are pure
+// presentation: every count/status they render is passed in from the real hooks
+// (useImportsOverview, useDashboardTeachers, useSourceStatus, useLtiSession).
+// They NEVER invent data. When a value is missing they fall back to an explicit
+// empty/unknown state ("—" / "ממתין למודל") instead of a fabricated number.
+// Teacher Release stays NO: nothing here flips a release gate or claims live
+// proof; pills only describe evidence the hooks actually returned.
+
+// MTH_LUXURY_HOME_V1 — a single live "truth pill". `tone` describes the kind of
+// evidence: "live" only when a real source confirmed it, "pending"/"manual" when
+// the teacher still needs to act, "muted" for neutral context. The dot + label
+// are the only thing shown; no value is ever invented here.
+type TruthTone = "live" | "pending" | "manual" | "muted";
+function LiveTruthPill({ tone, label, title }: { tone: TruthTone; label: string; title?: string }) {
+  const styles: Record<TruthTone, string> = {
+    live: "border-status-proven/30 bg-status-proven-bg text-status-proven",
+    pending: "border-status-pending/30 bg-status-pending-bg text-status-pending",
+    manual: "border-status-missing/30 bg-status-missing-bg text-status-missing",
+    muted: "border-border bg-muted text-muted-foreground",
+  };
+  const dot: Record<TruthTone, string> = {
+    live: "bg-status-proven",
+    pending: "bg-status-pending",
+    manual: "bg-status-missing",
+    muted: "bg-muted-foreground/60",
+  };
+  return (
+    <span
+      title={title}
+      className={`MTH_LUXURY_HOME_REAL_DATA_ONLY_V1 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${styles[tone]}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${dot[tone]} ${tone === "live" ? "animate-pulse" : ""}`} />
+      {label}
+    </span>
+  );
+}
+
+// MTH_LUXURY_HOME_V1 — section header with an optional kicker + truthful subtitle.
+function HomeSectionHeader({ kicker, title, subtitle }: { kicker?: string; title: string; subtitle?: string }) {
+  return (
+    <header className="mb-4 min-w-0">
+      {kicker && <div className="text-xs font-black uppercase tracking-wide text-primary/70">{kicker}</div>}
+      <h2 className="mt-0.5 break-words text-xl font-black tracking-tight text-foreground sm:text-2xl">{title}</h2>
+      {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
+    </header>
+  );
+}
+
+// MTH_LUXURY_HOME_V1 — premium action tile. `value` is rendered verbatim from the
+// caller (a real count, "—", "...", or a syncing label) so the tile cannot show a
+// number the data layer didn't produce. MTH_LUXURY_HOME_NO_DEMO_V1.
+function LuxuryActionTile({
+  to, marker, icon: Icon, title, value, unit, hint,
+}: { to: string; marker: string; icon: any; title: string; value: number | string; unit: string; hint?: string }) {
+  return (
+    <Link
+      to={to}
+      className={`${marker} MTH_DASHBOARD_DARK_BLUE_CARD_V1 MTH_LUXURY_HOME_NO_DEMO_V1 group relative block min-w-0 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-6 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]`}
+    >
+      <div className="absolute -left-10 -top-10 h-32 w-32 rounded-full bg-cyan-300/10 blur-2xl transition group-hover:bg-cyan-300/20" aria-hidden />
+      <Icon className="mb-3 h-10 w-10" />
+      <div className="break-words text-2xl font-black leading-tight tracking-tight sm:text-3xl">{title}</div>
+      <div className="mt-3 inline-flex items-baseline gap-1.5 rounded-full border border-white/25 bg-white/15 px-4 py-1.5 text-sm font-black text-white shadow-lg">
+        <span className="font-mono text-base leading-none">{value}</span>
+        <span className="text-xs font-bold opacity-90">{unit}</span>
+      </div>
+      {hint && <div className="mt-2 text-xs font-bold text-cyan-100/80">{hint}</div>}
+    </Link>
+  );
+}
+
+// MTH_LUXURY_HOME_V1 — refined hero. All inputs are real:
+//   • hasSession      → useLtiSession (drives the connection pill, never faked)
+//   • teacherCardLabel/Value, participantsBreakdownText → useDashboardTeachers
+//     (NRPS aggregates + names; empty string when NRPS returned nothing)
+//   • courseName, updatedAtText → live LTI launch context / local clock
+// The hero renders truth pills describing only evidence the hooks confirmed, so
+// the premium look never reads as a fake demo.
+// MTH_LUXURY_HOME_REAL_DATA_ONLY_V1.
+function LuxuryHero({
+  hasSession, syncing, syncRunning, onSync,
+  teacherCardLabel, teacherCardValue, teacherNames, participantsBreakdownText,
+  hasLiveNrps, courseName, updatedAtText,
+}: {
+  hasSession: boolean;
+  syncing: boolean;
+  syncRunning: boolean;
+  onSync: () => void;
+  teacherCardLabel: string;
+  teacherCardValue: string;
+  teacherNames: string[];
+  participantsBreakdownText: string;
+  hasLiveNrps: boolean;
+  courseName: string;
+  updatedAtText: string;
+}) {
+  return (
+    <section className="MTH_LUXURY_HOME_V1 relative max-w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#06152f] via-[#082b66] to-[#0b4f8f] p-5 text-white shadow-[0_30px_90px_rgba(6,21,47,0.45)] sm:p-7 lg:p-10">
+      <div className="relative z-10 flex min-w-0 flex-col items-stretch gap-6 xl:flex-row xl:items-center xl:justify-between">
+        <div className="min-w-0 flex-1 space-y-5">
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-[#0b2b5c]/90 px-4 py-2 text-sm font-black text-white shadow-lg backdrop-blur-md">
+            <div className={`h-2 w-2 rounded-full ${hasSession ? "bg-emerald-400" : "bg-amber-400"} animate-pulse`} />{hasSession ? "מחובר מתוך Moodle" : "נדרשת פתיחה מתוך Moodle"}
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-2">
+            <h1 className="break-words text-3xl font-black tracking-tight text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)] sm:text-4xl lg:text-5xl">המודל החכם</h1>
+            <p className="text-base font-bold text-cyan-200/90 lg:text-lg">לוח הבקרה של המורה</p>
+            {/* MTH_LUXURY_HOME_REAL_DATA_ONLY_V1 — truth pills describe only confirmed evidence. */}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <LiveTruthPill tone="muted" label="מבוסס נתוני Moodle" title="המסך מציג רק נתונים אמיתיים שהתקבלו ממודל." />
+              {hasLiveNrps
+                ? <LiveTruthPill tone="live" label="נתוני NRPS חיים" title="רשימת המשתתפים התקבלה ממודל בזמן אמת (אגרגט בלבד, ללא חשיפת שורות תלמיד)." />
+                : <LiveTruthPill tone="pending" label="ממתין לרשימת משתתפים" title="עדיין לא התקבלה רשימת משתתפים חיה ממודל." />}
+            </div>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }} className="flex flex-wrap gap-2 pt-1">
+            <Button size="sm" onClick={onSync} disabled={syncing || syncRunning} className="bg-white text-[#06152f] hover:bg-white/90 font-black shadow-lg text-xs"><RefreshCw className={(syncing || syncRunning) ? "h-3.5 w-3.5 animate-spin ml-1.5" : "h-3.5 w-3.5 ml-1.5"} />סנכרן</Button>
+            <Button asChild size="sm" className="border border-white/35 bg-[#0f3d75]/90 text-white hover:bg-[#15559a] font-black shadow text-xs"><Link to="/smart-import" className="flex items-center gap-1.5"><Import className="h-3.5 w-3.5" />ייבוא חכם</Link></Button>
+            <Button asChild size="sm" variant="outline" className="border-white/40 bg-[#06152f]/55 text-white hover:bg-[#0f3d75]/90 font-black text-xs"><Link to="/students">תלמידים</Link></Button>
+            <Button asChild size="sm" variant="outline" className="border-white/40 bg-[#06152f]/55 text-white hover:bg-[#0f3d75]/90 font-black text-xs"><Link to="/grades">ציונים</Link></Button>
+            <Button asChild size="sm" variant="outline" className="border-white/40 bg-[#06152f]/55 text-white hover:bg-[#0f3d75]/90 font-black text-xs"><Link to="/reports">דוחות</Link></Button>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} className="grid min-w-0 gap-3 xl:grid-cols-3">
+            <Link to="/teachers" className="block rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm transition hover:bg-[#15559a]">
+              <div className="text-xs font-bold text-cyan-200/80">{teacherCardLabel}</div>
+              <div className="mt-0.5 text-base font-black text-white leading-snug" title={teacherNames.length > 0 ? teacherNames.join(", ") : undefined}>{teacherCardValue}</div>
+              {participantsBreakdownText && <div className="mt-1 text-xs font-bold text-cyan-200/70">{participantsBreakdownText}</div>}
+              <div className="mt-1.5 text-xs font-bold text-cyan-100/80">צוות הוראה במרחב ←</div>
+            </Link>
+            <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
+              <div className="text-xs font-bold text-cyan-200/80">מרחב הלימוד</div>
+              <div className="mt-0.5 truncate text-lg font-black text-white">{courseName}</div>
+            </div>
+            <div className="flex items-center gap-2 rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
+              <Calendar className="h-5 w-5 text-cyan-200/80" />
+              <div>
+                <div className="text-xs font-bold text-cyan-200/80">עודכן</div>
+                <div className="mt-0.5 truncate text-lg font-black text-white">{updatedAtText}</div>
+              </div>
+            </div>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24 }} className="flex min-w-0 flex-wrap gap-3 pt-2">
+            <Button size="lg" onClick={onSync} disabled={syncing || syncRunning} className="bg-white text-[#06152f] hover:bg-white/90 font-black shadow-xl"><RefreshCw className={(syncing || syncRunning) ? "h-4 w-4 animate-spin" : "h-4 w-4"} />סנכרן מרחב</Button>
+            <Button asChild size="lg" className="border border-white/35 bg-[#0f3d75]/90 text-white hover:bg-[#15559a] font-black shadow-lg"><Link to="/smart-import" className="flex items-center gap-2"><Import className="h-4 w-4" />ייבוא חכם</Link></Button>
+            <Button asChild variant="outline" size="lg" className="border-white/40 bg-[#06152f]/55 text-white hover:bg-[#0f3d75]/90 font-black"><Link to="/reports">דוחות</Link></Button>
+          </motion.div>
+        </div>
+        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.35, type: "spring" }}><StatusBadge status={hasSession ? "proven" : "missing"} className="self-start shadow-2xl xl:scale-125 2xl:scale-150" /></motion.div>
+      </div>
+      <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-cyan-300/15 blur-3xl" />
+      <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-blue-300/20 blur-3xl" />
+    </section>
+  );
+}
+
 export default function Dashboard() {
   const { session, site } = useLtiSession();
   const { data, loading, error, refresh } = useImportsOverview();
@@ -488,78 +645,52 @@ export default function Dashboard() {
       <span className="sr-only">MTH_DASHBOARD_ACTION_ONLY_NO_EXPLAINER_TEXT_V1</span>
       <AutoSyncBanner status={autoSync.status} lastError={autoSync.lastError} onRetry={autoSync.retry} />
       <OnboardingBanner hasSession={hasSession} studentsCount={data?.students_count ?? 0} gradesCount={data?.grades_count ?? 0} logsCount={data?.log_events_count ?? 0} />
-      <section className="relative max-w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#06152f] via-[#082b66] to-[#0b4f8f] p-5 text-white shadow-[0_30px_90px_rgba(6,21,47,0.45)] sm:p-7 lg:p-10">
-        <div className="relative z-10 flex min-w-0 flex-col items-stretch gap-6 xl:flex-row xl:items-center xl:justify-between">
-          <div className="min-w-0 flex-1 space-y-5">
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-[#0b2b5c]/90 px-4 py-2 text-sm font-black text-white shadow-lg backdrop-blur-md">
-              <div className={`h-2 w-2 rounded-full ${hasSession ? "bg-emerald-400" : "bg-amber-400"} animate-pulse`} />{hasSession ? "מחובר מתוך Moodle" : "נדרשת פתיחה מתוך Moodle"}
-            </motion.div>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-2">
-              <h1 className="break-words text-3xl font-black tracking-tight text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.45)] sm:text-4xl lg:text-5xl">המודל החכם</h1>
-              <p className="text-base font-bold text-cyan-200/90 lg:text-lg">לוח הבקרה של המורה</p>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }} className="flex flex-wrap gap-2 pt-1">
-              <Button size="sm" onClick={() => void handleSyncSpace()} disabled={syncing || syncStatus.running} className="bg-white text-[#06152f] hover:bg-white/90 font-black shadow-lg text-xs"><RefreshCw className={(syncing || syncStatus.running) ? "h-3.5 w-3.5 animate-spin ml-1.5" : "h-3.5 w-3.5 ml-1.5"} />סנכרן</Button>
-              <Button asChild size="sm" className="border border-white/35 bg-[#0f3d75]/90 text-white hover:bg-[#15559a] font-black shadow text-xs"><Link to="/smart-import" className="flex items-center gap-1.5"><Import className="h-3.5 w-3.5" />ייבוא חכם</Link></Button>
-              <Button asChild size="sm" variant="outline" className="border-white/40 bg-[#06152f]/55 text-white hover:bg-[#0f3d75]/90 font-black text-xs"><Link to="/students">תלמידים</Link></Button>
-              <Button asChild size="sm" variant="outline" className="border-white/40 bg-[#06152f]/55 text-white hover:bg-[#0f3d75]/90 font-black text-xs"><Link to="/grades">ציונים</Link></Button>
-              <Button asChild size="sm" variant="outline" className="border-white/40 bg-[#06152f]/55 text-white hover:bg-[#0f3d75]/90 font-black text-xs"><Link to="/reports">דוחות</Link></Button>
-            </motion.div>
-            </motion.div>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} className="grid min-w-0 gap-3 xl:grid-cols-3">
-              <Link to="/teachers" className="block rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm transition hover:bg-[#15559a]">
-                <div className="text-xs font-bold text-cyan-200/80">{teacherCardLabel}</div>
-                <div className="mt-0.5 text-base font-black text-white leading-snug" title={teachers.names.length > 0 ? teachers.names.join(", ") : undefined}>{teacherCardValue}</div>
-                {participantsBreakdownText && <div className="mt-1 text-xs font-bold text-cyan-200/70">{participantsBreakdownText}</div>}
-                <div className="mt-1.5 text-xs font-bold text-cyan-100/80">צוות הוראה במרחב ←</div>
-              </Link>
-              <div className="rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
-                <div className="text-xs font-bold text-cyan-200/80">מרחב הלימוד</div>
-                <div className="mt-0.5 truncate text-lg font-black text-white">{courseName}</div>
-              </div>
-              <div className="flex items-center gap-2 rounded-2xl border border-white/25 bg-[#0f3d75]/95 px-5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.22)] backdrop-blur-sm">
-                <Calendar className="h-5 w-5 text-cyan-200/80" />
-                <div>
-                  <div className="text-xs font-bold text-cyan-200/80">עודכן</div>
-                  <div className="mt-0.5 truncate text-lg font-black text-white">{updatedAtText}</div>
-                </div>
-              </div>
-            </motion.div>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24 }} className="flex min-w-0 flex-wrap gap-3 pt-2">
-              <Button size="lg" onClick={() => void handleSyncSpace()} disabled={syncing || syncStatus.running} className="bg-white text-[#06152f] hover:bg-white/90 font-black shadow-xl"><RefreshCw className={(syncing || syncStatus.running) ? "h-4 w-4 animate-spin" : "h-4 w-4"} />סנכרן מרחב</Button>
-              <Button asChild size="lg" className="border border-white/35 bg-[#0f3d75]/90 text-white hover:bg-[#15559a] font-black shadow-lg"><Link to="/smart-import" className="flex items-center gap-2"><Import className="h-4 w-4" />ייבוא חכם</Link></Button>
-              <Button asChild variant="outline" size="lg" className="border-white/40 bg-[#06152f]/55 text-white hover:bg-[#0f3d75]/90 font-black"><Link to="/reports">דוחות</Link></Button>
-            </motion.div>
-          </div>
-          <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.35, type: "spring" }}><StatusBadge status={hasSession ? "proven" : "missing"} className="self-start shadow-2xl xl:scale-125 2xl:scale-150" /></motion.div>
-        </div>
-        <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-cyan-300/15 blur-3xl" />
-        <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-blue-300/20 blur-3xl" />
-      </section>
 
-      <section className="grid min-w-0 gap-5 sm:grid-cols-2 xl:grid-cols-4" aria-label="כפתורי פעולה ראשיים בעמוד הבית החכם">
-        <div className="relative">
-          <ActionCard to="/students" marker="MTH_DASHBOARD_MAIN_PARTICIPANTS_BUTTON_V1" icon={Users} title="תלמידים" value={studentsValue} unit="תלמידים" />
-          {(data?.students_count ?? 0) === 0 && autoSync.status !== "syncing" && (
-            <button
-              type="button"
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); autoSync.retry(); }}
-              className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white backdrop-blur transition hover:bg-white/30"
-              title="נסה לסנכרן שוב"
-            >
-              <RefreshCw className="h-3 w-3" />רענן
-            </button>
-          )}
+      <LuxuryHero
+        hasSession={hasSession}
+        syncing={syncing}
+        syncRunning={syncStatus.running}
+        onSync={() => void handleSyncSpace()}
+        teacherCardLabel={teacherCardLabel}
+        teacherCardValue={teacherCardValue}
+        teacherNames={teachers.names}
+        participantsBreakdownText={participantsBreakdownText}
+        hasLiveNrps={teachers.hasLiveNrps}
+        courseName={courseName}
+        updatedAtText={updatedAtText}
+      />
+
+      <section className="min-w-0" aria-label="כפתורי פעולה ראשיים בעמוד הבית החכם">
+        <HomeSectionHeader
+          kicker="פעולות מהירות"
+          title="מה תרצה לעשות עכשיו"
+          subtitle="המספרים מציגים רק נתונים אמיתיים שהתקבלו ממודל. אין נתוני דמו ואין מספרים מומצאים."
+        />
+        <div className="grid min-w-0 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="relative">
+            <LuxuryActionTile to="/students" marker="MTH_DASHBOARD_MAIN_PARTICIPANTS_BUTTON_V1" icon={Users} title="תלמידים" value={studentsValue} unit="תלמידים" hint={teachers.hasLiveNrps ? "מקור: Moodle NRPS" : undefined} />
+            {(data?.students_count ?? 0) === 0 && autoSync.status !== "syncing" && (
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); autoSync.retry(); }}
+                className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white backdrop-blur transition hover:bg-white/30"
+                title="נסה לסנכרן שוב"
+              >
+                <RefreshCw className="h-3 w-3" />רענן
+              </button>
+            )}
+          </div>
+          <LuxuryActionTile to="/tasks" marker="MTH_DASHBOARD_MAIN_ACTIVITIES_BUTTON_V1" icon={ClipboardList} title="פרקים ופעילויות" value={realActivitiesCount} unit={realActivitiesUnit} />
+          <LuxuryActionTile to="/grades" marker="MTH_DASHBOARD_MAIN_GRADES_BUTTON_V1" icon={GraduationCap} title="ציונים" value={v(data?.grades_count)} unit="ציונים" />
+          <a href="#all-actions-menu" className="MTH_DASHBOARD_MAIN_ALL_BUTTON_V1 MTH_DASHBOARD_DARK_BLUE_CARD_V1 MTH_LUXURY_HOME_NO_DEMO_V1 group relative block overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-6 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]"><div className="absolute -left-10 -top-10 h-32 w-32 rounded-full bg-cyan-300/10 blur-2xl transition group-hover:bg-cyan-300/20" aria-hidden /><Database className="mb-3 h-10 w-10" /><div className="break-words text-2xl font-black leading-tight tracking-tight sm:text-3xl">כל השאר</div><div className="mt-3 inline-flex rounded-full border border-white/25 bg-white/15 px-4 py-1.5 text-sm font-black text-white shadow-lg">תפריט</div></a>
         </div>
-        <ActionCard to="/tasks" marker="MTH_DASHBOARD_MAIN_ACTIVITIES_BUTTON_V1" icon={ClipboardList} title="פרקים ופעילויות" value={realActivitiesCount} unit={realActivitiesUnit} />
-        <ActionCard to="/grades" marker="MTH_DASHBOARD_MAIN_GRADES_BUTTON_V1" icon={GraduationCap} title="ציונים" value={v(data?.grades_count)} unit="ציונים" />
-        <a href="#all-actions-menu" className="MTH_DASHBOARD_MAIN_ALL_BUTTON_V1 MTH_DASHBOARD_DARK_BLUE_CARD_V1 rounded-3xl border border-white/10 bg-gradient-to-br from-[#06152f] via-[#0b3d91] to-[#0e7490] p-6 text-white shadow-[0_24px_70px_rgba(6,21,47,0.34)] transition hover:-translate-y-1 hover:shadow-[0_32px_95px_rgba(6,21,47,0.45)]"><Database className="mb-3 h-10 w-10" /><div className="break-words text-2xl font-black leading-tight tracking-tight sm:text-3xl">כל השאר</div><div className="mt-3 inline-flex rounded-full border border-white/25 bg-white/15 px-4 py-1.5 text-sm font-black text-white shadow-lg">תפריט</div></a>
       </section>
 
       {error && <div className="rounded-xl border border-status-blocked/30 bg-status-blocked-bg/10 p-4 flex gap-3 text-sm text-status-blocked items-start"><AlertCircle className="h-5 w-5 mt-0.5 shrink-0" /><div><div className="font-bold">שגיאה בסנכרון נתונים</div><p className="opacity-80 mt-1">{error}</p></div></div>}
       {syncStatus.error && <div className="rounded-xl border border-status-missing/30 bg-status-missing-bg/10 p-4 text-sm text-status-missing"><div className="font-bold">בדיקת סנכרון לא הצליחה</div><p className="opacity-80 mt-1">{syncStatus.error}</p></div>}
 
       <section id="all-actions-menu" className="MTH_DASHBOARD_SECONDARY_MENU_V1 scroll-mt-8 rounded-[2rem] border border-primary/10 bg-muted/30 p-6 shadow-elegant">
-        <h2 className="mb-5 text-2xl font-black text-primary">פעולות נוספות</h2>
+        <HomeSectionHeader kicker="תפריט מלא" title="פעולות נוספות" subtitle="כל מסכי הייבוא, הדוחות והחיבור במקום אחד." />
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/smart-import">ייבוא חכם</Link></Button>
           <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/gradebook-import">Gradebook ייבוא</Link></Button>
@@ -572,39 +703,35 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <StatCard label="תלמידים" value={v(data?.students_count)} icon={Users} delay={0.1} />
-        <StatCard label="מורים במרחב" value={teachers.state === "ready" ? teachers.count : "—"} icon={GraduationCap} delay={0.15} />
-        <StatCard label="פריטי ציון" value={v(data?.grade_items_count)} icon={GraduationCap} delay={0.2} />
-        <StatCard label="ציונים" value={v(data?.grades_count)} icon={Database} delay={0.3} />
-        <StatCard label="פרקים" value={v(data?.chapters_count)} icon={ClipboardList} delay={0.4} />
-        <StatCard label="פעילויות" value={realActivitiesCount} icon={ClipboardList} delay={0.5} />
-        <StatCard label="לוגים" value={v(data?.log_events_count)} icon={Calendar} delay={0.6} />
+      <section aria-label="מדדי מרחב הלימוד">
+        <HomeSectionHeader kicker="תמונת מצב" title="המדדים של המרחב" subtitle="כל ערך נשלף ישירות ממודל. '—' מציין שעדיין אין נתון; אין מספרים מומצאים." />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <StatCard label="תלמידים" value={v(data?.students_count)} icon={Users} delay={0.1} />
+          <StatCard label="מורים במרחב" value={teachers.state === "ready" ? teachers.count : "—"} icon={GraduationCap} delay={0.15} />
+          <StatCard label="פריטי ציון" value={v(data?.grade_items_count)} icon={GraduationCap} delay={0.2} />
+          <StatCard label="ציונים" value={v(data?.grades_count)} icon={Database} delay={0.3} />
+          <StatCard label="פרקים" value={v(data?.chapters_count)} icon={ClipboardList} delay={0.4} />
+          <StatCard label="פעילויות" value={realActivitiesCount} icon={ClipboardList} delay={0.5} />
+          <StatCard label="לוגים" value={v(data?.log_events_count)} icon={Calendar} delay={0.6} />
+        </div>
       </section>
 
       {sourceStatus && (
-        <section className="flex flex-wrap items-center gap-3 rounded-2xl border bg-background/60 p-4 text-sm" aria-label="סטטוס חיבור מהיר">
+        <section className="MTH_LUXURY_HOME_REAL_DATA_ONLY_V1 flex flex-wrap items-center gap-3 rounded-2xl border bg-background/60 p-4 text-sm" aria-label="סטטוס חיבור מהיר">
           <span className="font-bold text-muted-foreground">מצב אוטומציה:</span>
           <span className="text-xs text-muted-foreground">({data?.students_count ?? 0} תלמידים נשלפו · {data?.grade_items_count ?? 0} פריטי ציון · {data?.tasks_count ?? 0} משימות · {data?.log_events_count ?? 0} לוגים)</span>
           <span className="font-bold text-muted-foreground">|</span>
-          <span className={"inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold " + (sourceStatus.nrps === "available" ? "bg-emerald-100 text-emerald-900" : "bg-slate-100 text-slate-600")}>
-            {sourceStatus.nrps === "available" ? "✓" : "○"} תלמידים אוטומטיים
-          </span>
-          <span className={"inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold " + (sourceStatus.ags === "available" ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900")}>
-            {sourceStatus.ags === "available" ? "✓" : "○"} ציונים אוטומטיים
-          </span>
-          <span className={"inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold " + (sourceStatus.moodle_ws === "available" ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900")}>
-            {sourceStatus.moodle_ws === "available" ? "✓" : "○"} שאיבה מלאה
-          </span>
+          <LiveTruthPill tone={sourceStatus.nrps === "available" ? "live" : "pending"} label="תלמידים אוטומטיים" title="זמין רק כאשר NRPS מאשר חיבור חי ממודל." />
+          <LiveTruthPill tone={sourceStatus.ags === "available" ? "live" : "manual"} label="ציונים אוטומטיים" title="זמין רק כאשר AGS מאשר; אחרת נדרש ייבוא Gradebook." />
+          <LiveTruthPill tone={sourceStatus.moodle_ws === "available" ? "live" : "manual"} label="שאיבה מלאה" title="Web Services מלא — דורש הרשאת מנהל במודל." />
         </section>
       )}
       <NextBestActionPanel action={nextAction} />
 
       {/* MTH_HONEST_SOURCE_STATUS_V1 — truthful "where does the data come from" panel */}
       {sourceStatus && (
-        <section className="rounded-3xl border bg-background/60 p-5 sm:p-6" aria-label="מקורות הנתונים">
-          <h2 className="mb-1 text-lg font-bold">מאיפה מגיעים הנתונים</h2>
-          <p className="mb-4 text-sm text-muted-foreground">מה נטען אוטומטית מ-Moodle, ומה דורש ייבוא דוח.</p>
+        <section className="MTH_LUXURY_HOME_REAL_DATA_ONLY_V1 rounded-3xl border bg-background/60 p-5 sm:p-6" aria-label="מקורות הנתונים">
+          <HomeSectionHeader kicker="שקיפות מקורות" title="מאיפה מגיעים הנתונים" subtitle="מה נטען אוטומטית מ-Moodle, ומה דורש ייבוא דוח. הסטטוסים משקפים יכולת חיה בלבד." />
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <SourceRow label="תלמידים ומורים" hint="רשימת המשתתפים (NRPS)" status={sourceStatus.nrps} />
             <SourceRow label="ציונים" hint="AGS אוטומטי או ייבוא Gradebook" status={sourceStatus.ags === "available" ? "available" : sourceStatus.gradebook} />
