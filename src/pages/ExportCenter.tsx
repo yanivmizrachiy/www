@@ -2,8 +2,35 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileSpreadsheet, Download, FileText, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useLtiSession } from '@/hooks/useLtiSession';
+import { exportGradesCsv, exportStudentsCsv } from '@/lib/exportGrades';
+import { toast } from 'sonner';
 
 export default function ExportCenter() {
+  const { session } = useLtiSession();
+
+  async function handleExport(reportId: string) {
+    if (!session) {
+      toast.error("יש לפתוח את המערכת מתוך Moodle כדי לייצא נתונים");
+      return;
+    }
+    try {
+      if (reportId === 'grades') {
+        await exportGradesCsv(session.site_id, session.course_id);
+        toast.success("הקובץ הורד בהצלחה");
+      } else if (reportId === 'students') {
+        await exportStudentsCsv(session.site_id, session.course_id);
+        toast.success("הקובץ הורד בהצלחה");
+      } else if (reportId === 'activity') {
+        toast.info("ייצוא פעילות — בקרוב");
+      } else if (reportId === 'logs') {
+        toast.info("ייצוא לוגים — בקרוב");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "שגיאה בייצוא");
+    }
+  }
+
   const reports = [
     { id: 'grades', name: 'דוח ציונים מלא', type: 'Excel', ready: true },
     { id: 'students', name: 'רשימת תלמידים', type: 'Excel', ready: true },
@@ -34,7 +61,7 @@ export default function ExportCenter() {
               <CardTitle className="text-lg mt-4">{report.name}</CardTitle>
             </CardHeader>
             <CardContent>
-              <Button disabled={!report.ready} variant={report.ready ? "default" : "secondary"} className="w-full gap-2">
+              <Button disabled={!report.ready} variant={report.ready ? "default" : "secondary"} className="w-full gap-2" onClick={() => handleExport(report.id)}>
                 {report.ready ? (
                   <>
                     <Download className="h-4 w-4" />

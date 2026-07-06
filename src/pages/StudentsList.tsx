@@ -1,17 +1,34 @@
 import React, { useState } from 'react';
 import { useStudents } from '@/hooks/useImports';
+import { useLtiSession } from '@/hooks/useLtiSession';
+import { exportStudentsCsv } from '@/lib/exportGrades';
 import { Card, CardContent } from '@/components/ui/card';
 import { Users, Mail, Search, FileDown, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Link } from 'react-router-dom';
 import { motion } from "motion/react";
+import { toast } from "sonner";
 
 import { SafePage } from "@/components/SafePage";
 
 export default function StudentsList() {
+  const { session } = useLtiSession();
   const { students, loading, error } = useStudents();
   const [search, setSearch] = useState("");
+
+  async function handleExport() {
+    if (!session) {
+      toast.error("יש לפתוח את המערכת מתוך Moodle כדי לייצא");
+      return;
+    }
+    try {
+      await exportStudentsCsv(session.site_id, session.course_id);
+      toast.success("הקובץ הורד בהצלחה");
+    } catch (err: any) {
+      toast.error(err.message || "שגיאה בייצוא");
+    }
+  }
   
   const filtered = students.filter(s => 
     s.full_name?.toLowerCase().includes(search.toLowerCase()) || 
@@ -27,7 +44,7 @@ export default function StudentsList() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex gap-2">
             {students.length > 0 && (
-              <Button className="font-bold bg-primary text-white hover:bg-primary/90">
+              <Button className="font-bold bg-primary text-white hover:bg-primary/90" onClick={handleExport}>
                 <FileDown className="h-4 w-4 ml-2" />
                 ייצוא רשימה
               </Button>
