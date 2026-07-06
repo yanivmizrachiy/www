@@ -1,12 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLtiSession } from '@/hooks/useLtiSession';
 import { useImportsOverview } from '@/hooks/useImports';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle2, XCircle, Info, Activity, Database, Server } from 'lucide-react';
 
 export default function SystemStatus() {
   const { session, site, loading: sessionLoading } = useLtiSession();
   const { data, loading: dataLoading } = useImportsOverview();
+  const [dbStatus, setDbStatus] = useState<"connected" | "missing" | "checking">("checking");
+
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const { error } = await supabase.from("moodle_sites").select("id").limit(1);
+        setDbStatus(error ? "missing" : "connected");
+      } catch {
+        setDbStatus("missing");
+      }
+    })();
+  }, []);
 
   const statuses = [
     {
@@ -17,8 +30,9 @@ export default function SystemStatus() {
     },
     {
       name: "Supabase (Database)",
-      status: "connected", // Assuming if app loaded
-      description: "בסיס הנתונים מחובר וזמין",
+      status: dbStatus,
+      description: dbStatus === "checking" ? "בודק חיבור..." :
+                   dbStatus === "connected" ? "בסיס הנתונים מחובר וזמין" : "בסיס הנתונים אינו זמין",
       icon: Database
     },
     {
