@@ -13,13 +13,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { User, ClipboardList, GraduationCap, History } from "lucide-react";
+import { User, ClipboardList, GraduationCap, History, CheckCircle2, Circle, Minus } from "lucide-react";
 
 export default function StudentProfile() {
   const { id } = useParams();
-  const { student, grades, activity, loading, error } = useStudentProfile(id);
+  const { student, grades, activity, completion, loading, error } = useStudentProfile(id);
 
-  const activityData = Array.isArray(activity) ? { active_days: 0, event_count: 0, first_event: null } : activity;
+  const avgGrade = grades.length > 0
+    ? (grades.filter(g => g.numeric_value !== null).reduce((sum, g) => sum + (g.numeric_value ?? 0), 0) / grades.filter(g => g.numeric_value !== null).length)
+    : null;
+  const completedTasks = completion.filter(c => c.is_complete === true).length;
 
   if (loading) return <SafePage title="פרופיל תלמיד" description="טוען..."><div className="animate-pulse space-y-4"><div className="h-40 bg-muted rounded-xl" /></div></SafePage>;
   if (error || !student) return <SafePage title="פרופיל תלמיד" description="שגיאה"><EmptyData message={error ?? "תלמיד לא נמצא"} /></SafePage>;
@@ -49,9 +52,9 @@ export default function StudentProfile() {
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid gap-4 md:grid-cols-3">
-              <Card><CardHeader><CardTitle className="text-sm text-muted-foreground font-medium">ממוצע ציונים</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{activityData.active_days > 0 ? "85" : "—"}</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-sm text-muted-foreground font-medium">משימות שהושלמו</CardTitle></CardHeader><CardContent className="text-2xl font-bold">0</CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-sm text-muted-foreground font-medium">ימי פעילות</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{activityData.active_days}</CardContent></Card>
+              <Card><CardHeader><CardTitle className="text-sm text-muted-foreground font-medium">ממוצע ציונים</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{avgGrade !== null ? Math.round(avgGrade) : "—"}</CardContent></Card>
+              <Card><CardHeader><CardTitle className="text-sm text-muted-foreground font-medium">משימות שהושלמו</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{completedTasks} / {completion.length}</CardContent></Card>
+              <Card><CardHeader><CardTitle className="text-sm text-muted-foreground font-medium">ימי פעילות</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{activity?.active_days ?? 0}</CardContent></Card>
             </div>
             <PracticeTimeSection studentId={id} title="זמן תרגול אישי" />
           </TabsContent>
@@ -79,7 +82,21 @@ export default function StudentProfile() {
                 <Table dir="rtl">
                   <TableHeader><TableRow><TableHead className="text-right">משימה</TableHead><TableHead className="text-center">סטטוס</TableHead><TableHead className="text-right">בוצע ב-</TableHead></TableRow></TableHeader>
                   <TableBody>
-                    {[]}
+                    {completion.length === 0 ? (
+                      <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">אין נתוני השלמה</TableCell></TableRow>
+                    ) : completion.map((c: any) => (
+                      <TableRow key={c.task_id}>
+                        <TableCell className="text-right">{c.task_name}</TableCell>
+                        <TableCell className="text-center">
+                          {c.is_complete === true ? <CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" /> :
+                           c.is_complete === false ? <Circle className="h-5 w-5 text-muted-foreground mx-auto" /> :
+                           <Minus className="h-5 w-5 text-muted-foreground mx-auto" />}
+                        </TableCell>
+                        <TableCell className="text-right text-sm text-muted-foreground">
+                          {c.completed_at ? new Date(c.completed_at).toLocaleDateString('he-IL') : '—'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </CardContent></Card>
@@ -88,8 +105,8 @@ export default function StudentProfile() {
           <TabsContent value="activity">
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <Card><CardHeader><CardTitle className="text-sm font-medium">אירועים סה"כ</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{activityData.event_count}</CardContent></Card>
-                <Card><CardHeader><CardTitle className="text-sm font-medium">פעילות ראשונה</CardTitle></CardHeader><CardContent className="text-sm">{activityData.first_event ? new Date(activityData.first_event).toLocaleString() : "—"}</CardContent></Card>
+                <Card><CardHeader><CardTitle className="text-sm font-medium">אירועים סה"כ</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{activity?.event_count ?? 0}</CardContent></Card>
+                <Card><CardHeader><CardTitle className="text-sm font-medium">פעילות ראשונה</CardTitle></CardHeader><CardContent className="text-sm">{activity?.first_event ? new Date(activity.first_event).toLocaleString() : "—"}</CardContent></Card>
               </div>
             </div>
           </TabsContent>

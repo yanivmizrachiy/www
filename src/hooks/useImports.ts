@@ -214,13 +214,108 @@ export function useStudents() {
 }
 
 export function useStudentProfile(id?: string) {
-  return {
-    student: null,
-    grades: [],
-    activity: [],
-    loading: false,
-    error: null
-  };
+  const { session } = useLtiSession();
+  const [student, setStudent] = useState<any>(null);
+  const [grades, setGrades] = useState<any[]>([]);
+  const [activity, setActivity] = useState<any>(null);
+  const [completion, setCompletion] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) {
+      setLoading(false);
+      return;
+    }
+
+    async function fetchData() {
+      try {
+        const { data: s, error: sErr } = await supabase
+          .from('imported_students')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (sErr || !s) {
+          setError(sErr?.message ?? 'תלמיד לא נמצא');
+          setLoading(false);
+          return;
+        }
+        setStudent(s);
+
+        if (!session) {
+          setLoading(false);
+          return;
+        }
+
+        const [
+          { data: gradesData },
+          { data: logsData },
+          { data: completionData }
+        ] = await Promise.all([
+          supabase
+            .from('imported_grades')
+            .select('*, imported_grade_items(item_name)')
+            .eq('student_id', id)
+            .eq('course_id', session.course_id),
+          supabase
+            .from('imported_log_events')
+            .select('occurred_at')
+            .eq('student_id', id)
+            .eq('course_id', session.course_id)
+            .order('occurred_at', { ascending: true }),
+          supabase
+            .from('imported_task_completion')
+            .select('*, imported_tasks(task_name)')
+            .eq('student_id', id)
+            .eq('course_id', session.course_id)
+        ]);
+
+        const gradesWithNames = (gradesData || []).map((g: any) => ({
+          grade_item_id: g.grade_item_id,
+          item_name: g.imported_grade_items?.item_name ?? '—',
+          numeric_value: g.numeric_value,
+          raw_value: g.raw_value,
+          is_missing: g.is_missing
+        }));
+        setGrades(gradesWithNames);
+
+        const logDays = new Set<string>();
+        let eventCount = 0;
+        let firstEvent: string | null = null;
+        (logsData || []).forEach((l: any) => {
+          eventCount++;
+          const day = new Date(l.occurred_at).toISOString().split('T')[0];
+          logDays.add(day);
+          if (!firstEvent) firstEvent = l.occurred_at;
+        });
+
+        setActivity({
+          active_days: logDays.size,
+          event_count: eventCount,
+          first_event: firstEvent
+        });
+
+        const completionWithNames = (completionData || []).map((c: any) => ({
+          task_id: c.task_id,
+          task_name: c.imported_tasks?.task_name ?? '—',
+          is_complete: c.is_complete,
+          completed_at: c.completed_at,
+          status: c.status
+        }));
+        setCompletion(completionWithNames);
+
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, [id, session]);
+
+  return { student, grades, activity, completion, loading, error };
 }
 
 export interface PracticeDayRow {
