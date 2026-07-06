@@ -1,39 +1,38 @@
-import { CheckCircle2, AlertCircle, XCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
-import type { DomainStatus } from "@/hooks/useMoodleConnection";
-
-const statusLabel: Record<DomainStatus, string> = {
-  proven: "מחובר",
-  missing: "לא מחובר",
-  blocked: "חסום",
-};
+import React from 'react';
+import { Badge } from './ui/badge';
+import { ShieldCheck, ShieldAlert, Shield } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface StatusBadgeProps {
-  status: DomainStatus;
+  status: 'proven' | 'missing' | 'warning';
   className?: string;
-  size?: "sm" | "md";
 }
 
-export function StatusBadge({ status, className, size = "md" }: StatusBadgeProps) {
-  const Icon = status === "proven" ? CheckCircle2 : status === "missing" ? AlertCircle : XCircle;
-  const styles =
-    status === "proven"
-      ? "bg-status-proven-bg text-status-proven"
-      : status === "missing"
-        ? "bg-status-missing-bg text-status-missing"
-        : "bg-status-blocked-bg text-status-blocked";
+export function StatusBadge({ status, className }: StatusBadgeProps) {
+  const configs = {
+    proven: {
+      label: 'נתונים קיימים',
+      icon: ShieldCheck,
+      color: 'bg-green-100 text-green-700 border-green-200',
+    },
+    missing: {
+      label: 'חסר סנכרון',
+      icon: ShieldAlert,
+      color: 'bg-red-100 text-red-700 border-red-200',
+    },
+    warning: {
+      label: 'דרוש עדכון',
+      icon: Shield,
+      color: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+    },
+  };
+
+  const { label, icon: Icon, color } = configs[status];
 
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full font-medium",
-        size === "sm" ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-xs",
-        styles,
-        className,
-      )}
-    >
-      <Icon className={size === "sm" ? "h-3 w-3" : "h-3.5 w-3.5"} />
-      {statusLabel[status]}
-    </span>
+    <Badge variant="outline" className={cn("gap-1 py-1 px-3 font-bold", color, className)}>
+      <Icon className="h-3 w-3" />
+      {label}
+    </Badge>
   );
 }

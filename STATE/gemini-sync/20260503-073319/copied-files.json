@@ -1,0 +1,262 @@
+[
+  {
+    "RelativePath": "components.json",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "index.html",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "metadata.json",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "package-lock.json",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "package.json",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "postcss.config.js",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "tailwind.config.cjs",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "tailwind.config.ts",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "tsconfig.app.json",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "tsconfig.json",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "tsconfig.node.json",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "vite.config.ts",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/App.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/index.css",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/main.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/EmptyDomain.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/ImportEmptyState.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/LaunchDiagnostics.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/PracticeTimeSection.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/SafePage.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/StatusBadge.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/VerifiedBadge.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/ui/accordion.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/ui/alert-dialog.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/ui/badge.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/ui/button.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/ui/card.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/ui/dialog.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/ui/dropdown-menu.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/ui/input.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/ui/scroll-area.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/ui/separator.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/ui/switch.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/ui/table.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/ui/tabs.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/ui/textarea.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/components/ui/tooltip.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/hooks/useImports.ts",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/hooks/useLtiSession.ts",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/integrations/supabase/client.ts",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/lib/csv.ts",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/lib/duration.ts",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/lib/moodleImport.ts",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/lib/utils.ts",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/pages/ActivityPage.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/pages/Dashboard.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/pages/ExportCenter.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/pages/Grades.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/pages/Import.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/pages/LtiBootstrap.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/pages/MoodleInstall.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/pages/ReportsCenter.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/pages/StudentProfile.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/pages/StudentsList.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/pages/SystemStatus.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/pages/Tasks.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/pages/TeacherHelp.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/pages/reports/DayReport.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/pages/reports/GapReport.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/pages/reports/StudentReport.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "src/pages/reports/TaskReport.tsx",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "supabase/functions/lti-launch/index.ts",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "supabase/migrations/00_initial_schema.sql",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "supabase/migrations/20240428_initial_reconstruction.sql",
+    "Status": "copied"
+  },
+  {
+    "RelativePath": "supabase/migrations/20240429_moodle_data_tables.sql",
+    "Status": "copied"
+  }
+]

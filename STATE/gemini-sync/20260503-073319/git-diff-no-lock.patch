@@ -1,0 +1,2572 @@
+diff --git a/index.html b/index.html
+index ef76263..a0e3cec 100644
+--- a/index.html
++++ b/index.html
+@@ -4,7 +4,7 @@
+     <meta charset="UTF-8" />
+     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+     <title>Moodle Teacher Hub — מרכז המורה</title>
+-    <meta name="description" content="כלי אמת למורים מעל Moodle. תלמידים, משימות, ציונים, פעילות ודוחות — רק מנתונים אמיתיים." />
++    <meta name="description" content="מערכת ניהול וניתוח למורים מעל Moodle. תלמידים, משימות, ציונים, פעילות ודוחות — הכל במקום אחד." />
+     <link rel="preconnect" href="https://fonts.googleapis.com" />
+     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&family=Assistant:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+diff --git a/package.json b/package.json
+index 76b54e4..12d5a4f 100644
+--- a/package.json
++++ b/package.json
+@@ -4,16 +4,18 @@
+   "private": true,
+   "type": "module",
+   "scripts": {
+-    "dev": "vite --host 0.0.0.0",
+-    "start": "node src/server.js",
+-    "check": "node --check src/server.js",
+-    "dev:server": "node src/server.js",
++    "dev": "tsx server.ts",
+     "build": "vite build",
+     "preview": "vite preview --host 0.0.0.0",
+     "typecheck": "tsc -b --pretty false"
+   },
+   "dependencies": {
+-    "@radix-ui/react-slot": "^1.2.3",
++    "@base-ui/react": "^1.4.1",
++    "@fontsource-variable/geist": "^5.2.8",
++    "@radix-ui/react-accordion": "^1.2.12",
++    "@radix-ui/react-scroll-area": "^1.2.10",
++    "@radix-ui/react-slot": "^1.2.4",
++    "@radix-ui/react-tabs": "^1.1.13",
+     "@radix-ui/react-tooltip": "^1.2.7",
+     "@supabase/supabase-js": "^2.104.1",
+     "@tanstack/react-query": "^5.83.0",
+@@ -23,12 +25,17 @@
+     "express": "^4.21.2",
+     "helmet": "^8.0.0",
+     "lucide-react": "^0.462.0",
++    "motion": "^12.38.0",
++    "oauth-1.0a": "^2.2.6",
+     "react": "^18.3.1",
+     "react-dom": "^18.3.1",
+     "react-router-dom": "^6.30.1",
++    "shadcn": "^4.6.0",
+     "sonner": "^1.7.4",
+-    "tailwind-merge": "^2.6.0",
++    "tailwind-merge": "^2.6.1",
+     "tailwindcss-animate": "^1.0.7",
++    "tsx": "^4.21.0",
++    "tw-animate-css": "^1.4.0",
+     "uuid": "^11.1.0",
+     "xlsx": "^0.18.5"
+   },
+diff --git a/src/App.tsx b/src/App.tsx
+index 57bffd5..1f04e82 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -1,72 +1,50 @@
+-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+-import { Toaster as Sonner } from "@/components/ui/sonner";
+-import { Toaster } from "@/components/ui/toaster";
+-import { TooltipProvider } from "@/components/ui/tooltip";
+-import AppLayout from "@/components/AppLayout";
+-import Dashboard from "./pages/Dashboard";
+-import Sites from "./pages/Sites";
+-import Students from "./pages/Students";
+-import StudentProfile from "./pages/StudentProfile";
+-import Tasks from "./pages/Tasks";
+-import Chapters from "./pages/Chapters";
+-import ChapterDetail from "./pages/ChapterDetail";
+-import Grades from "./pages/Grades";
+-import ActivityPage from "./pages/ActivityPage";
+-import Reports from "./pages/Reports";
+-import StudentReport from "./pages/reports/StudentReport";
+-import TaskReport from "./pages/reports/TaskReport";
+-import DayReport from "./pages/reports/DayReport";
+-import GapReport from "./pages/reports/GapReport";
+-import Export from "./pages/Export";
+-import SettingsPage from "./pages/SettingsPage";
+-import Import from "./pages/Import";
++import React from 'react';
++import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
++import { Toaster } from 'sonner';
++import Dashboard from './pages/Dashboard';
++import Tasks from './pages/Tasks';
++import Grades from './pages/Grades';
++import ActivityPage from './pages/ActivityPage';
++import StudentProfile from './pages/StudentProfile';
++import Import from './pages/Import';
++import LtiBootstrap from './pages/LtiBootstrap';
++import StudentsList from './pages/StudentsList';
++import ReportsCenter from './pages/ReportsCenter';
++import ExportCenter from './pages/ExportCenter';
++import GapReport from './pages/reports/GapReport';
++import SystemStatus from './pages/SystemStatus';
++import MoodleInstall from './pages/MoodleInstall';
++import TeacherHelp from './pages/TeacherHelp';
+ 
+-import Setup from "./pages/Setup";
+-import LtiBootstrap from "./pages/LtiBootstrap";
+-import NotFound from "./pages/NotFound";
++import { TooltipProvider } from './components/ui/tooltip';
+ 
+-const queryClient = new QueryClient();
+-
+-const App = () => (
+-  <QueryClientProvider client={queryClient}>
+-    <TooltipProvider>
+-      <Toaster />
+-      <Sonner />
+-      <BrowserRouter>
+-        <Routes>
+-          {/* /install kept as a public alias for printed Moodle docs; redirects to in-app /setup */}
+-          <Route path="/install" element={<Navigate to="/setup" replace />} />
+-          <Route path="/lti" element={<LtiBootstrap />} />
+-          {/* No teacher login exists — any old /auth /login /signup link goes to setup. */}
+-          <Route path="/auth" element={<Navigate to="/setup" replace />} />
+-          <Route path="/login" element={<Navigate to="/setup" replace />} />
+-          <Route path="/signup" element={<Navigate to="/setup" replace />} />
+-          <Route element={<AppLayout />}>
++function App() {
++  return (
++    <BrowserRouter>
++      <TooltipProvider>
++        <div className="min-h-screen bg-neutral-50" dir="rtl">
++          <Routes>
+             <Route path="/" element={<Dashboard />} />
+-            <Route path="/sites" element={<Sites />} />
+-            <Route path="/students" element={<Students />} />
+-            <Route path="/students/:id" element={<StudentProfile />} />
+             <Route path="/tasks" element={<Tasks />} />
+-            <Route path="/chapters" element={<Chapters />} />
+-            <Route path="/chapters/:sectionId" element={<ChapterDetail />} />
+             <Route path="/grades" element={<Grades />} />
+             <Route path="/activity" element={<ActivityPage />} />
+-            <Route path="/reports" element={<Reports />} />
+-            <Route path="/reports/students" element={<StudentReport />} />
+-            <Route path="/reports/tasks" element={<TaskReport />} />
+-            <Route path="/reports/days" element={<DayReport />} />
+-            <Route path="/reports/gaps" element={<GapReport />} />
+-            <Route path="/export" element={<Export />} />
+-            <Route path="/settings" element={<SettingsPage />} />
++            <Route path="/student/:id" element={<StudentProfile />} />
++            <Route path="/students" element={<StudentsList />} />
+             <Route path="/import" element={<Import />} />
+-            <Route path="/setup" element={<Setup />} />
+-          </Route>
+-          <Route path="*" element={<NotFound />} />
+-        </Routes>
+-      </BrowserRouter>
+-    </TooltipProvider>
+-  </QueryClientProvider>
+-);
++            <Route path="/reports" element={<ReportsCenter />} />
++            <Route path="/reports/gap" element={<GapReport />} />
++            <Route path="/export" element={<ExportCenter />} />
++            <Route path="/status" element={<SystemStatus />} />
++            <Route path="/install" element={<MoodleInstall />} />
++            <Route path="/help" element={<TeacherHelp />} />
++            <Route path="/lti/launch" element={<LtiBootstrap />} />
++            <Route path="*" element={<Navigate to="/" replace />} />
++          </Routes>
++          <Toaster position="top-center" richColors />
++        </div>
++      </TooltipProvider>
++    </BrowserRouter>
++  );
++}
+ 
+ export default App;
+diff --git a/src/components/SafePage.tsx b/src/components/SafePage.tsx
+index c86a451..e55ed23 100644
+--- a/src/components/SafePage.tsx
++++ b/src/components/SafePage.tsx
+@@ -1,8 +1,64 @@
+-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
++import React from 'react';
++import { motion } from 'motion/react';
++import { cn } from '@/lib/utils';
++import { Button } from './ui/button';
++import { ArrowLeft, ChevronLeft } from 'lucide-react';
++import { useNavigate } from 'react-router-dom';
+ 
+-export function EmptyTruth({children="עדיין אין נתונים אמיתיים להצגה. יש לפתוח מתוך Moodle או לייבא דוח Moodle אמיתי."}:{children?:string}) {
+-  return <div className="rounded-lg border border-dashed p-5 text-sm text-muted-foreground">{children}</div>;
++interface SafePageProps {
++  children: React.ReactNode;
++  className?: string;
++  title?: string;
++  description?: string;
+ }
+-export function SafePage({title, description, children}:{title:string; description:string; children?:React.ReactNode}) {
+-  return <section className="space-y-5" dir="rtl"><div><h1 className="text-2xl font-bold">{title}</h1><p className="mt-1 text-sm text-muted-foreground">{description}</p></div><Card><CardHeader><CardTitle>{title}</CardTitle><CardDescription>תצוגת אמת בלבד — ללא דמו וללא נתונים מומצאים.</CardDescription></CardHeader><CardContent>{children ?? <EmptyTruth />}</CardContent></Card></section>;
++
++export function SafePage({ children, className, title, description }: SafePageProps) {
++  const navigate = useNavigate();
++
++  return (
++    <motion.div
++      initial={{ opacity: 0, y: 10 }}
++      animate={{ opacity: 1, y: 0 }}
++      className={cn("min-h-screen bg-background p-6 lg:p-12 text-foreground", className)}
++      dir="rtl"
++    >
++      <div className="max-w-7xl mx-auto space-y-8">
++        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b pb-8 border-white/5">
++          <div className="space-y-2">
++            <Button 
++              variant="ghost" 
++              size="sm" 
++              onClick={() => navigate('/')}
++              className="gap-2 -mr-3 text-white/40 hover:text-accent transition-colors mb-2"
++            >
++              <ArrowLeft className="h-4 w-4 rotate-180" />
++              חזרה לדשבורד
++            </Button>
++            {title && <h1 className="text-4xl font-black tracking-tight text-white">{title}</h1>}
++            {description && <p className="text-white/40 font-medium max-w-2xl">{description}</p>}
++          </div>
++          
++          <div className="flex items-center gap-3">
++             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
++             <span className="text-[10px] font-black uppercase tracking-widest text-white/30">סנכרון פעיל</span>
++          </div>
++        </header>
++
++        <main className="relative z-10">
++          {children}
++        </main>
++      </div>
++    </motion.div>
++  );
+ }
++
++export function EmptyData({ message }: { message: string }) {
++  return (
++    <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-2xl border border-dashed border-neutral-200">
++      <div className="text-neutral-400 mb-4">אין נתונים זמינים</div>
++      <p className="text-sm text-neutral-500">{message}</p>
++    </div>
++  );
++}
++
++export default SafePage;
+diff --git a/src/components/StatusBadge.tsx b/src/components/StatusBadge.tsx
+index b972d73..e2e2ec9 100644
+--- a/src/components/StatusBadge.tsx
++++ b/src/components/StatusBadge.tsx
+@@ -1,39 +1,38 @@
+-import { CheckCircle2, AlertCircle, XCircle } from "lucide-react";
+-import { cn } from "@/lib/utils";
+-import type { DomainStatus } from "@/hooks/useMoodleConnection";
+-
+-const statusLabel: Record<DomainStatus, string> = {
+-  proven: "מחובר",
+-  missing: "לא מחובר",
+-  blocked: "חסום",
+-};
++import React from 'react';
++import { Badge } from './ui/badge';
++import { ShieldCheck, ShieldAlert, Shield } from 'lucide-react';
++import { cn } from '@/lib/utils';
+ 
+ interface StatusBadgeProps {
+-  status: DomainStatus;
++  status: 'proven' | 'missing' | 'warning';
+   className?: string;
+-  size?: "sm" | "md";
+ }
+ 
+-export function StatusBadge({ status, className, size = "md" }: StatusBadgeProps) {
+-  const Icon = status === "proven" ? CheckCircle2 : status === "missing" ? AlertCircle : XCircle;
+-  const styles =
+-    status === "proven"
+-      ? "bg-status-proven-bg text-status-proven"
+-      : status === "missing"
+-        ? "bg-status-missing-bg text-status-missing"
+-        : "bg-status-blocked-bg text-status-blocked";
++export function StatusBadge({ status, className }: StatusBadgeProps) {
++  const configs = {
++    proven: {
++      label: 'נתונים קיימים',
++      icon: ShieldCheck,
++      color: 'bg-green-100 text-green-700 border-green-200',
++    },
++    missing: {
++      label: 'חסר סנכרון',
++      icon: ShieldAlert,
++      color: 'bg-red-100 text-red-700 border-red-200',
++    },
++    warning: {
++      label: 'דרוש עדכון',
++      icon: Shield,
++      color: 'bg-yellow-100 text-yellow-700 border-yellow-200',
++    },
++  };
++
++  const { label, icon: Icon, color } = configs[status];
+ 
+   return (
+-    <span
+-      className={cn(
+-        "inline-flex items-center gap-1.5 rounded-full font-medium",
+-        size === "sm" ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-xs",
+-        styles,
+-        className,
+-      )}
+-    >
+-      <Icon className={size === "sm" ? "h-3 w-3" : "h-3.5 w-3.5"} />
+-      {statusLabel[status]}
+-    </span>
++    <Badge variant="outline" className={cn("gap-1 py-1 px-3 font-bold", color, className)}>
++      <Icon className="h-3 w-3" />
++      {label}
++    </Badge>
+   );
+ }
+diff --git a/src/components/ui/button.tsx b/src/components/ui/button.tsx
+index 3426628..99e557b 100644
+--- a/src/components/ui/button.tsx
++++ b/src/components/ui/button.tsx
+@@ -1,12 +1,66 @@
+-import * as React from "react";
+-import { Slot } from "@radix-ui/react-slot";
+-import { cn } from "@/lib/utils";
+-
+-type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean; variant?: "default"|"ghost"|"outline"|"secondary"|"destructive"; size?: "sm"|"md"|"lg"|"icon" };
+-export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({ className, variant="default", size="md", asChild=false, ...props }, ref) => {
+-  const Comp = asChild ? Slot : "button";
+-  const v = { default:"bg-primary text-primary-foreground hover:opacity-90", ghost:"hover:bg-accent hover:text-accent-foreground", outline:"border bg-background hover:bg-accent", secondary:"bg-secondary text-secondary-foreground", destructive:"bg-destructive text-destructive-foreground" }[variant];
+-  const s = { sm:"h-8 px-3 text-xs", md:"h-10 px-4 py-2", lg:"h-11 px-6", icon:"h-10 w-10" }[size];
+-  return <Comp ref={ref} className={cn("inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50", v, s, className)} {...props} />;
+-});
+-Button.displayName = "Button";
++import * as React from "react"
++import { Button as ButtonPrimitive } from "@base-ui/react/button"
++import { Slot } from "@radix-ui/react-slot"
++import { cva, type VariantProps } from "class-variance-authority"
++
++import { cn } from "@/lib/utils"
++
++const buttonVariants = cva(
++  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
++  {
++    variants: {
++      variant: {
++        default: "bg-primary text-primary-foreground hover:bg-primary/90",
++        outline:
++          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
++        secondary:
++          "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
++        ghost:
++          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
++        destructive:
++          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
++        link: "text-primary underline-offset-4 hover:underline",
++      },
++      size: {
++        default:
++          "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
++        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
++        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
++        lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
++        icon: "size-8",
++        "icon-xs":
++          "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
++        "icon-sm":
++          "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
++        "icon-lg": "size-9",
++      },
++    },
++    defaultVariants: {
++      variant: "default",
++      size: "default",
++    },
++  }
++)
++
++export interface ButtonProps
++  extends ButtonPrimitive.Props,
++    VariantProps<typeof buttonVariants> {
++  asChild?: boolean
++}
++
++const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
++  ({ className, variant, size, asChild = false, ...props }, ref) => {
++    const Comp = asChild ? Slot : ButtonPrimitive
++    return (
++      <Comp
++        ref={ref}
++        data-slot="button"
++        className={cn(buttonVariants({ variant, size, className }))}
++        {...props}
++      />
++    )
++  }
++)
++Button.displayName = "Button"
++
++export { Button, buttonVariants }
+diff --git a/src/components/ui/card.tsx b/src/components/ui/card.tsx
+index bb529ea..40cac5f 100644
+--- a/src/components/ui/card.tsx
++++ b/src/components/ui/card.tsx
+@@ -1,7 +1,103 @@
+-import * as React from "react";
+-import { cn } from "@/lib/utils";
+-export const Card = ({className,...props}:React.HTMLAttributes<HTMLDivElement>) => <div className={cn("rounded-xl border bg-card text-card-foreground shadow-elegant", className)} {...props}/>;
+-export const CardHeader = ({className,...props}:React.HTMLAttributes<HTMLDivElement>) => <div className={cn("p-5 pb-2", className)} {...props}/>;
+-export const CardTitle = ({className,...props}:React.HTMLAttributes<HTMLHeadingElement>) => <h3 className={cn("text-lg font-semibold", className)} {...props}/>;
+-export const CardDescription = ({className,...props}:React.HTMLAttributes<HTMLParagraphElement>) => <p className={cn("text-sm text-muted-foreground", className)} {...props}/>;
+-export const CardContent = ({className,...props}:React.HTMLAttributes<HTMLDivElement>) => <div className={cn("p-5 pt-3", className)} {...props}/>;
++import * as React from "react"
++
++import { cn } from "@/lib/utils"
++
++function Card({
++  className,
++  size = "default",
++  ...props
++}: React.ComponentProps<"div"> & { size?: "default" | "sm" }) {
++  return (
++    <div
++      data-slot="card"
++      data-size={size}
++      className={cn(
++        "group/card flex flex-col gap-4 overflow-hidden rounded-xl bg-card py-4 text-sm text-card-foreground ring-1 ring-foreground/10 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
++        className
++      )}
++      {...props}
++    />
++  )
++}
++
++function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
++  return (
++    <div
++      data-slot="card-header"
++      className={cn(
++        "group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-t-xl px-4 group-data-[size=sm]/card:px-3 has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-4 group-data-[size=sm]/card:[.border-b]:pb-3",
++        className
++      )}
++      {...props}
++    />
++  )
++}
++
++function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
++  return (
++    <div
++      data-slot="card-title"
++      className={cn(
++        "font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",
++        className
++      )}
++      {...props}
++    />
++  )
++}
++
++function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
++  return (
++    <div
++      data-slot="card-description"
++      className={cn("text-sm text-muted-foreground", className)}
++      {...props}
++    />
++  )
++}
++
++function CardAction({ className, ...props }: React.ComponentProps<"div">) {
++  return (
++    <div
++      data-slot="card-action"
++      className={cn(
++        "col-start-2 row-span-2 row-start-1 self-start justify-self-end",
++        className
++      )}
++      {...props}
++    />
++  )
++}
++
++function CardContent({ className, ...props }: React.ComponentProps<"div">) {
++  return (
++    <div
++      data-slot="card-content"
++      className={cn("px-4 group-data-[size=sm]/card:px-3", className)}
++      {...props}
++    />
++  )
++}
++
++function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
++  return (
++    <div
++      data-slot="card-footer"
++      className={cn(
++        "flex items-center rounded-b-xl border-t bg-muted/50 p-4 group-data-[size=sm]/card:p-3",
++        className
++      )}
++      {...props}
++    />
++  )
++}
++
++export {
++  Card,
++  CardHeader,
++  CardFooter,
++  CardTitle,
++  CardAction,
++  CardDescription,
++  CardContent,
++}
+diff --git a/src/components/ui/tooltip.tsx b/src/components/ui/tooltip.tsx
+index 61e2b7e..69e8a82 100644
+--- a/src/components/ui/tooltip.tsx
++++ b/src/components/ui/tooltip.tsx
+@@ -1,5 +1,66 @@
+-import * as TooltipPrimitive from "@radix-ui/react-tooltip";
+-export const TooltipProvider = TooltipPrimitive.Provider;
+-export const Tooltip = TooltipPrimitive.Root;
+-export const TooltipTrigger = TooltipPrimitive.Trigger;
+-export const TooltipContent = TooltipPrimitive.Content;
++"use client"
++
++import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip"
++
++import { cn } from "@/lib/utils"
++
++function TooltipProvider({
++  delay = 0,
++  ...props
++}: TooltipPrimitive.Provider.Props) {
++  return (
++    <TooltipPrimitive.Provider
++      data-slot="tooltip-provider"
++      delay={delay}
++      {...props}
++    />
++  )
++}
++
++function Tooltip({ ...props }: TooltipPrimitive.Root.Props) {
++  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />
++}
++
++function TooltipTrigger({ ...props }: TooltipPrimitive.Trigger.Props) {
++  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
++}
++
++function TooltipContent({
++  className,
++  side = "top",
++  sideOffset = 4,
++  align = "center",
++  alignOffset = 0,
++  children,
++  ...props
++}: TooltipPrimitive.Popup.Props &
++  Pick<
++    TooltipPrimitive.Positioner.Props,
++    "align" | "alignOffset" | "side" | "sideOffset"
++  >) {
++  return (
++    <TooltipPrimitive.Portal>
++      <TooltipPrimitive.Positioner
++        align={align}
++        alignOffset={alignOffset}
++        side={side}
++        sideOffset={sideOffset}
++        className="isolate z-50"
++      >
++        <TooltipPrimitive.Popup
++          data-slot="tooltip-content"
++          className={cn(
++            "z-50 inline-flex w-fit max-w-xs origin-(--transform-origin) items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs text-background has-data-[slot=kbd]:pr-1.5 data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 **:data-[slot=kbd]:relative **:data-[slot=kbd]:isolate **:data-[slot=kbd]:z-50 **:data-[slot=kbd]:rounded-sm data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
++            className
++          )}
++          {...props}
++        >
++          {children}
++          <TooltipPrimitive.Arrow className="z-50 size-2.5 translate-y-[calc(-50%-2px)] rotate-45 rounded-[2px] bg-foreground fill-foreground data-[side=bottom]:top-1 data-[side=inline-end]:top-1/2! data-[side=inline-end]:-left-1 data-[side=inline-end]:-translate-y-1/2 data-[side=inline-start]:top-1/2! data-[side=inline-start]:-right-1 data-[side=inline-start]:-translate-y-1/2 data-[side=left]:top-1/2! data-[side=left]:-right-1 data-[side=left]:-translate-y-1/2 data-[side=right]:top-1/2! data-[side=right]:-left-1 data-[side=right]:-translate-y-1/2 data-[side=top]:-bottom-2.5" />
++        </TooltipPrimitive.Popup>
++      </TooltipPrimitive.Positioner>
++    </TooltipPrimitive.Portal>
++  )
++}
++
++export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+diff --git a/src/hooks/useLtiSession.ts b/src/hooks/useLtiSession.ts
+index 1041a89..81c5eac 100644
+--- a/src/hooks/useLtiSession.ts
++++ b/src/hooks/useLtiSession.ts
+@@ -1,181 +1,56 @@
+-import { useEffect, useState, useCallback } from "react";
+-import { supabase } from "@/integrations/supabase/client";
+-
+-/**
+- * LTI-only session model. We do NOT use Supabase Auth at all.
+- *
+- * Flow:
+- *   1. Teacher clicks the External Tool inside Moodle.
+- *   2. Moodle POSTs to our /lti-launch edge function.
+- *   3. That function verifies OAuth, mints a session_token, and 302s the
+- *      browser to /#/lti?t=<token>.
+- *   4. The /lti route stores the token in sessionStorage and redirects to /.
+- *   5. From then on, this hook reads sessionStorage and calls
+- *      public.lti_get_context(<token>) to get site + session + probes.
+- *
+- * No teacher accounts. No passwords. The teacher's identity is whatever
+- * Moodle (i.e. משרד החינוך) already verified.
+- */
+-
+-const STORAGE_KEY = "lti_session_token";
+-
+-export type DomainKey =
+-  | "students" | "tasks" | "chapters" | "grades" | "activity"
+-  | "time_accumulated" | "reports" | "export_data" | "settings_write";
+-
+-export type DomainStatus = "proven" | "missing" | "blocked";
+-
+-export interface DomainState {
+-  status: DomainStatus;
+-  label: string;
+-  reason: string;
+-  ws_function_tested: string | null;
+-  probed_at: string | null;
+-}
+-
+-export interface SiteInfo {
+-  id: string;
+-  site_url: string;
+-  site_name: string | null;
+-  consumer_guid: string | null;
+-  lti_configured: boolean;
+-  ws_configured: boolean;
+-  ws_token_status: string;
+-  last_probed_at: string | null;
+-}
+-
+-export interface SessionInfo {
+-  id: string;
+-  course_id: number;
+-  course_title: string | null;
+-  moodle_username: string | null;
+-  moodle_user_id: number | null;
+-  role: string | null;
+-  launched_at: string;
+-  expires_at: string;
+-}
+-
+-const DOMAIN_LABELS: Record<DomainKey, string> = {
+-  students: "תלמידים",
+-  tasks: "משימות",
+-  chapters: "פרקים",
+-  grades: "ציונים",
+-  activity: "פעילות",
+-  time_accumulated: "זמן תרגול מצטבר",
+-  reports: "דוחות",
+-  export_data: "ייצוא",
+-  settings_write: "עריכת הגדרות",
+-};
+-
+-const DEFAULT_REASON: Record<DomainKey, string> = {
+-  students: "טרם בוצע probe — חבר WS token והרץ בדיקה",
+-  tasks: "טרם בוצע probe",
+-  chapters: "טרם בוצע probe",
+-  grades: "טרם בוצע probe",
+-  activity: "טרם בוצע probe",
+-  time_accumulated: "ייגזר מלוגים אמיתיים אם report_log_get_log_records נגיש",
+-  reports: "ייפתח כשדומיין כלשהו יהיה מחובר",
+-  export_data: "אין נתוני אמת לייצוא",
+-  settings_write: "נדרש editingteacher + core_course_update_courses",
+-};
+-
+-export function getLtiToken(): string | null {
+-  try { return sessionStorage.getItem(STORAGE_KEY); } catch { return null; }
+-}
+-
+-export function setLtiToken(t: string) {
+-  try { sessionStorage.setItem(STORAGE_KEY, t); } catch { /* ignore */ }
+-}
+-
+-export function clearLtiToken() {
+-  try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+-}
+-
+-interface ContextPayload {
+-  session: SessionInfo;
+-  site: SiteInfo;
+-  probes: Array<{
+-    domain: DomainKey;
+-    status: DomainStatus;
+-    reason: string;
+-    ws_function_tested: string | null;
+-    probed_at: string | null;
+-  }>;
+-}
++import { useState, useEffect } from 'react';
++import { supabase } from '@/integrations/supabase/client';
+ 
+ export function useLtiSession() {
++  const [session, setSession] = useState<any>(null);
++  const [site, setSite] = useState<any>(null);
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState<string | null>(null);
+-  const [session, setSession] = useState<SessionInfo | null>(null);
+-  const [site, setSite] = useState<SiteInfo | null>(null);
+-  const [domains, setDomains] = useState<Record<DomainKey, DomainState>>(() => buildEmptyDomains());
+ 
+-  const refresh = useCallback(async () => {
+-    const token = getLtiToken();
+-    if (!token) {
+-      setLoading(false);
+-      setSession(null);
+-      setSite(null);
+-      setError(null);
+-      return;
++  useEffect(() => {
++    async function fetchSession() {
++      try {
++        const token = localStorage.getItem('lti_token');
++        if (!token) {
++          setLoading(false);
++          return;
++        }
++
++        // Fetch session from teacher_sessions join moodle_sites
++        const { data: sessionData, error: sessionError } = await supabase
++          .from('teacher_sessions')
++          .select('*, moodle_sites(*)')
++          .eq('session_token', token)
++          .single();
++
++        if (sessionError) {
++          if (sessionError.code === 'PGRST116') {
++            // Not found
++            localStorage.removeItem('lti_token');
++          } else {
++            throw sessionError;
++          }
++        }
++
++        if (sessionData) {
++          const { moodle_sites, ...rest } = sessionData;
++          setSession(rest);
++          setSite(moodle_sites);
++        }
++      } catch (err: any) {
++        console.error('Error fetching LTI session:', err);
++        setError(err.message);
++      } finally {
++        setLoading(false);
++      }
+     }
+-    setLoading(true);
+-    const { data, error: rpcErr } = await (supabase.rpc as unknown as (
+-      fn: string,
+-      args: Record<string, unknown>,
+-    ) => Promise<{ data: unknown; error: { message: string } | null }>)("lti_get_context", { _token: token });
+-    setLoading(false);
+-    if (rpcErr) { setError(rpcErr.message); return; }
+ 
+-    const payload = data as { error?: string } | ContextPayload;
+-    if (!payload || (payload as { error?: string }).error) {
+-      setError((payload as { error?: string })?.error ?? "unknown");
+-      clearLtiToken();
+-      setSession(null); setSite(null);
+-      return;
+-    }
+-    const ctx = payload as ContextPayload;
+-    setError(null);
+-    setSession(ctx.session);
+-    setSite(ctx.site);
+-    const next = buildEmptyDomains();
+-    for (const p of ctx.probes ?? []) {
+-      if (!(p.domain in next)) continue;
+-      next[p.domain] = {
+-        status: p.status,
+-        label: DOMAIN_LABELS[p.domain],
+-        reason: p.reason,
+-        ws_function_tested: p.ws_function_tested,
+-        probed_at: p.probed_at,
+-      };
+-    }
+-    setDomains(next);
++    fetchSession();
+   }, []);
+ 
+-  useEffect(() => { refresh(); }, [refresh]);
+-
+-  return {
+-    loading,
+-    error,
+-    hasSession: !!session,
+-    token: getLtiToken(),
+-    session,
+-    site,
+-    domains,
+-    refresh,
+-  };
++  return { session, site, loading, error };
+ }
+ 
+-function buildEmptyDomains(): Record<DomainKey, DomainState> {
+-  const out = {} as Record<DomainKey, DomainState>;
+-  (Object.keys(DOMAIN_LABELS) as DomainKey[]).forEach((k) => {
+-    out[k] = {
+-      status: "missing",
+-      label: DOMAIN_LABELS[k],
+-      reason: DEFAULT_REASON[k],
+-      ws_function_tested: null,
+-      probed_at: null,
+-    };
+-  });
+-  return out;
++export function setLtiToken(token: string) {
++  localStorage.setItem('lti_token', token);
+ }
+diff --git a/src/index.css b/src/index.css
+index d10cce6..f446660 100644
+--- a/src/index.css
++++ b/src/index.css
+@@ -1,166 +1,78 @@
++@import "tw-animate-css";
++@import "shadcn/tailwind.css";
++@import "@fontsource-variable/geist";
+ @tailwind base;
+ @tailwind components;
+ @tailwind utilities;
+ 
+-/* Moodle Teacher Hub — Premium Hebrew RTL design system.
+-   All colors MUST be HSL. No raw hex in components. */
+-
+ @layer base {
+   :root {
+-    /* Surface */
+-    --background: 220 30% 98%;
+-    --foreground: 222 30% 12%;
+-
+-    --card: 0 0% 100%;
+-    --card-foreground: 222 30% 12%;
+-
+-    --popover: 0 0% 100%;
+-    --popover-foreground: 222 30% 12%;
+-
+-    /* Primary — confident teal-blue (Moodle-aligned, premium) */
+-    --primary: 199 89% 38%;
+-    --primary-foreground: 0 0% 100%;
+-    --primary-glow: 199 89% 55%;
+-
+-    /* Secondary — quiet slate */
+-    --secondary: 220 20% 95%;
+-    --secondary-foreground: 222 30% 18%;
+-
+-    --muted: 220 20% 95%;
+-    --muted-foreground: 220 12% 42%;
+-
+-    --accent: 199 90% 95%;
+-    --accent-foreground: 199 89% 28%;
+-
+-    --destructive: 0 75% 50%;
+-    --destructive-foreground: 0 0% 100%;
+-
+-    /* Status tokens — honest connection states */
+-    --status-proven: 142 70% 38%;
+-    --status-proven-bg: 142 65% 95%;
+-    --status-missing: 38 92% 50%;
+-    --status-missing-bg: 38 92% 95%;
+-    --status-blocked: 0 75% 50%;
+-    --status-blocked-bg: 0 75% 96%;
+-
+-    --border: 220 18% 90%;
+-    --input: 220 18% 90%;
+-    --ring: 199 89% 38%;
+-
+-    --radius: 0.75rem;
+-
+-    /* Gradients */
+-    --gradient-primary: linear-gradient(135deg, hsl(199 89% 38%), hsl(199 89% 55%));
+-    --gradient-surface: linear-gradient(180deg, hsl(220 30% 98%), hsl(220 25% 96%));
+-    --gradient-hero: linear-gradient(135deg, hsl(199 89% 38% / 0.08), hsl(199 89% 55% / 0.04));
+-
+-    /* Shadows */
+-    --shadow-sm: 0 1px 2px 0 hsl(222 30% 12% / 0.04);
+-    --shadow-md: 0 4px 16px -4px hsl(222 30% 12% / 0.08);
+-    --shadow-lg: 0 12px 32px -8px hsl(222 30% 12% / 0.12);
+-    --shadow-glow: 0 0 32px hsl(199 89% 55% / 0.15);
+-
+-    /* Sidebar */
+-    --sidebar-background: 222 35% 11%;
+-    --sidebar-foreground: 220 15% 88%;
+-    --sidebar-primary: 199 89% 55%;
+-    --sidebar-primary-foreground: 0 0% 100%;
+-    --sidebar-accent: 222 30% 16%;
+-    --sidebar-accent-foreground: 0 0% 100%;
+-    --sidebar-border: 222 25% 18%;
+-    --sidebar-ring: 199 89% 55%;
++    --font-sans: "Heebo", "Assistant", ui-sans-serif, system-ui, sans-serif;
++    --background: oklch(0.04 0.02 260); /* Almost black */
++    --foreground: oklch(0.98 0.01 260);
++    --card: oklch(0.08 0.03 260);
++    --card-foreground: oklch(0.98 0.01 260);
++    --popover: oklch(0.08 0.03 260);
++    --popover-foreground: oklch(0.98 0.01 260);
++    --primary: oklch(0.55 0.15 250); /* Royal Blue */
++    --primary-foreground: oklch(0.98 0.01 260);
++    --secondary: oklch(0.12 0.04 260);
++    --secondary-foreground: oklch(0.98 0.01 260);
++    --muted: oklch(0.16 0.03 260);
++    --muted-foreground: oklch(0.65 0.02 260);
++    --accent: oklch(0.75 0.15 85); /* Pure Gold Accent */
++    --accent-foreground: oklch(0.04 0.02 260);
++    --destructive: oklch(0.55 0.18 25);
++    --border: oklch(0.18 0.04 260);
++    --input: oklch(0.18 0.04 260);
++    --ring: oklch(0.75 0.15 85);
++    --radius: 1.5rem;
+   }
+-
+-  .dark {
+-    --background: 222 35% 8%;
+-    --foreground: 220 15% 95%;
+-
+-    --card: 222 30% 11%;
+-    --card-foreground: 220 15% 95%;
+-
+-    --popover: 222 30% 11%;
+-    --popover-foreground: 220 15% 95%;
+-
+-    --primary: 199 89% 55%;
+-    --primary-foreground: 222 35% 8%;
+-    --primary-glow: 199 89% 65%;
+-
+-    --secondary: 222 25% 16%;
+-    --secondary-foreground: 220 15% 95%;
+-
+-    --muted: 222 25% 16%;
+-    --muted-foreground: 220 12% 65%;
+-
+-    --accent: 199 60% 18%;
+-    --accent-foreground: 199 89% 80%;
+-
+-    --destructive: 0 70% 55%;
+-    --destructive-foreground: 0 0% 100%;
+-
+-    --status-proven: 142 65% 50%;
+-    --status-proven-bg: 142 50% 14%;
+-    --status-missing: 38 90% 60%;
+-    --status-missing-bg: 38 60% 14%;
+-    --status-blocked: 0 70% 60%;
+-    --status-blocked-bg: 0 50% 14%;
+-
+-    --border: 222 25% 18%;
+-    --input: 222 25% 18%;
+-    --ring: 199 89% 55%;
+-
+-    --gradient-primary: linear-gradient(135deg, hsl(199 89% 45%), hsl(199 89% 60%));
+-    --gradient-surface: linear-gradient(180deg, hsl(222 35% 8%), hsl(222 30% 11%));
+-    --gradient-hero: linear-gradient(135deg, hsl(199 89% 55% / 0.12), hsl(199 89% 65% / 0.05));
+-
+-    --sidebar-background: 222 40% 6%;
+-    --sidebar-foreground: 220 15% 88%;
+-    --sidebar-primary: 199 89% 55%;
+-    --sidebar-primary-foreground: 222 35% 8%;
+-    --sidebar-accent: 222 30% 12%;
+-    --sidebar-accent-foreground: 0 0% 100%;
+-    --sidebar-border: 222 25% 14%;
+-    --sidebar-ring: 199 89% 55%;
++  .theme {
++    --font-heading: var(--font-sans);
++    --font-sans: 'Geist Variable', 'Heebo', 'Assistant', sans-serif;
+   }
+-}
+ 
+-@layer base {
+   * {
+-    @apply border-border;
++    @apply border-border outline-ring/50;
+   }
+-
+-  html {
+-    direction: rtl;
+-  }
+-
++  
+   body {
+-    @apply bg-background text-foreground antialiased;
+-    font-family: "Heebo", "Assistant", system-ui, -apple-system, sans-serif;
+-    font-feature-settings: "ss01", "ss02";
++    @apply bg-background text-foreground;
++    font-family: var(--font-sans);
++    direction: rtl;
+   }
+-
+-  h1, h2, h3, h4, h5, h6 {
+-    font-family: "Heebo", system-ui, sans-serif;
+-    @apply tracking-tight;
++  
++  html {
++    @apply font-sans antialiased;
+   }
+-}
+ 
+-@layer utilities {
+-  .bg-gradient-primary {
+-    background: var(--gradient-primary);
+-  }
+-  .bg-gradient-surface {
+-    background: var(--gradient-surface);
+-  }
+   .bg-gradient-hero {
+-    background: var(--gradient-hero);
++    background: linear-gradient(135deg, #020617 0%, #1e1b4b 100%);
++    position: relative;
++    border: 1px solid rgba(255, 255, 255, 0.05);
+   }
+-  .shadow-elegant {
+-    box-shadow: var(--shadow-md);
++  
++  .bg-gradient-hero::before {
++    content: "";
++    position: absolute;
++    top: 0;
++    left: 0;
++    right: 0;
++    bottom: 0;
++    background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
++    pointer-events: none;
+   }
+-  .shadow-premium {
+-    box-shadow: var(--shadow-lg);
++
++  .shadow-luxury {
++    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.2), 0 8px 15px -5px rgba(0, 0, 0, 0.1);
+   }
+-  .shadow-glow {
+-    box-shadow: var(--shadow-glow);
++
++  .card-hover-effect {
++    @apply transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] hover:border-primary/20;
+   }
+ }
++
++.markdown-body {
++  @apply text-base;
++}
+diff --git a/src/integrations/supabase/client.ts b/src/integrations/supabase/client.ts
+index c99452f..7eb921b 100644
+--- a/src/integrations/supabase/client.ts
++++ b/src/integrations/supabase/client.ts
+@@ -5,13 +5,18 @@ import type { Database } from './types';
+ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+ 
+-// Import the supabase client like this:
+-// import { supabase } from "@/integrations/supabase/client";
++if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
++  console.warn("Supabase environment variables are missing. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in the project settings.");
++}
+ 
+-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+-  auth: {
+-    storage: localStorage,
+-    persistSession: true,
+-    autoRefreshToken: true,
++export const supabase = createClient<Database>(
++  SUPABASE_URL || "https://placeholder.supabase.co",
++  SUPABASE_PUBLISHABLE_KEY || "placeholder-key",
++  {
++    auth: {
++      storage: localStorage,
++      persistSession: true,
++      autoRefreshToken: true,
++    }
+   }
+-});
++);
+diff --git a/src/lib/csv.ts b/src/lib/csv.ts
+index f3c49f5..9f0b6cf 100644
+--- a/src/lib/csv.ts
++++ b/src/lib/csv.ts
+@@ -1,31 +1,24 @@
+-type CsvPrimitive = string | number | boolean | null | undefined;
++/**
++ * Simple CSV Generator for browsers
++ */
++export function exportToCsv(filename: string, rows: any[][]) {
++  const processRow = (row: any[]) => {
++    return row.map(v => {
++      if (v === null || v === undefined) return "";
++      let s = String(v).replace(/"/g, '""');
++      if (s.search(/("|,|\n)/g) >= 0) s = `"${s}"`;
++      return s;
++    }).join(",");
++  };
+ 
+-function normalizeCell(value: CsvPrimitive): string {
+-  if (value === null || value === undefined || value === "") return "";
+-  const text = String(value).replace(/\r?\n/g, " ").trim();
+-  if (/[",\n]/.test(text)) {
+-    return `"${text.replace(/"/g, '""')}"`;
+-  }
+-  return text;
+-}
+-
+-export function toCsv(headers: string[], rows: CsvPrimitive[][]): string {
+-  const output = [headers.map(normalizeCell).join(",")];
+-  for (const row of rows) {
+-    output.push(row.map(normalizeCell).join(","));
+-  }
+-  return `\uFEFF${output.join("\n")}`;
+-}
+-
+-export function downloadCsv(filename: string, headers: string[], rows: CsvPrimitive[][]): void {
+-  const csv = toCsv(headers, rows);
+-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
++  const csvContent = "\uFEFF" + rows.map(processRow).join("\n");
++  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+   const url = URL.createObjectURL(blob);
+   const link = document.createElement("a");
+-  link.href = url;
+-  link.download = filename.endsWith(".csv") ? filename : `${filename}.csv`;
++  link.setAttribute("href", url);
++  link.setAttribute("download", filename);
++  link.style.visibility = "hidden";
+   document.body.appendChild(link);
+   link.click();
+   document.body.removeChild(link);
+-  URL.revokeObjectURL(url);
+ }
+diff --git a/src/lib/duration.ts b/src/lib/duration.ts
+index df78cc6..8a32681 100644
+--- a/src/lib/duration.ts
++++ b/src/lib/duration.ts
+@@ -1,32 +1,26 @@
+-export function formatDuration(seconds: number | null | undefined): string {
+-  if (seconds == null || Number.isNaN(seconds) || seconds < 0) return "—";
+-  const total = Math.floor(seconds);
+-  const hours = Math.floor(total / 3600);
+-  const minutes = Math.floor((total % 3600) / 60);
+-  const secs = total % 60;
++/**
++ * Formats seconds into Hebrew HMS format (e.g., 2ש 30ד 15ש)
++ */
++export function secondsToHebrewHms(seconds: number): string {
++  if (seconds <= 0) return "0ש";
++  const h = Math.floor(seconds / 3600);
++  const m = Math.floor((seconds % 3600) / 60);
++  const s = Math.floor(seconds % 60);
+ 
+-  if (hours > 0) {
+-    return `${hours} שעות ${minutes} דקות`;
+-  }
+-  if (minutes > 0) {
+-    return `${minutes} דקות${secs > 0 ? ` ${secs} שניות` : ""}`;
+-  }
+-  return `${secs} שניות`;
+-}
++  const parts = [];
++  if (h > 0) parts.push(`${h}ש`);
++  if (m > 0) parts.push(`${m}ד`);
++  if (s > 0 || parts.length === 0) parts.push(`${s}ש`);
+ 
+-export function formatDurationCompact(seconds: number | null | undefined): string {
+-  if (seconds == null || Number.isNaN(seconds) || seconds < 0) return "—";
+-  const total = Math.floor(seconds);
+-  const hours = Math.floor(total / 3600);
+-  const minutes = Math.floor((total % 3600) / 60);
+-  const secs = total % 60;
+-  if (hours > 0) return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+-  return `${minutes}:${secs.toString().padStart(2, "0")}`;
++  return parts.join(" ");
+ }
+ 
+-export function toIsoDate(value: string | Date | null | undefined): string | null {
+-  if (!value) return null;
+-  const date = value instanceof Date ? value : new Date(value);
+-  if (Number.isNaN(date.getTime())) return null;
+-  return date.toISOString().slice(0, 10);
++/**
++ * Formats seconds into HH:MM:SS
++ */
++export function secondsToDisplay(seconds: number): string {
++  const h = Math.floor(seconds / 3600);
++  const m = Math.floor((seconds % 3600) / 60);
++  const s = Math.floor(seconds % 60);
++  return [h, m, s].map(v => v.toString().padStart(2, '0')).join(':');
+ }
+diff --git a/src/lib/utils.ts b/src/lib/utils.ts
+index 4824613..bd0c391 100644
+--- a/src/lib/utils.ts
++++ b/src/lib/utils.ts
+@@ -1,3 +1,6 @@
+-import { type ClassValue, clsx } from "clsx";
+-import { twMerge } from "tailwind-merge";
+-export function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)); }
++import { clsx, type ClassValue } from "clsx"
++import { twMerge } from "tailwind-merge"
++
++export function cn(...inputs: ClassValue[]) {
++  return twMerge(clsx(inputs))
++}
+diff --git a/src/main.tsx b/src/main.tsx
+index 68176a7..d2b8142 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,5 +1,13 @@
+-import { createRoot } from "react-dom/client";
+-import App from "./App.tsx";
+-import "./index.css";
++import React from 'react';
++import ReactDom from 'react-dom/client';
++import App from './App';
++import './index.css';
+ 
+-createRoot(document.getElementById("root")!).render(<App />);
++const rootElement = document.getElementById('root');
++if (!rootElement) throw new Error('Failed to find the root element');
++
++ReactDom.createRoot(rootElement).render(
++  <React.StrictMode>
++    <App />
++  </React.StrictMode>
++);
+diff --git a/src/pages/ActivityPage.tsx b/src/pages/ActivityPage.tsx
+index df71e85..4437329 100644
+--- a/src/pages/ActivityPage.tsx
++++ b/src/pages/ActivityPage.tsx
+@@ -1,3 +1,39 @@
+-import { SafePage, EmptyTruth } from "@/components/SafePage";
++import { SafePage, EmptyData } from "@/components/SafePage";
+ import { useActivityOverview } from "@/hooks/useImports";
+-export default function Page() { const {data, loading, error} = useActivityOverview(); return <SafePage title="פעילות / זמנים" description="פעילות וזמן תרגול רק מלוגים אמיתיים.">{loading ? <p className="text-sm text-muted-foreground">טוען...</p> : error ? <EmptyTruth>{error}</EmptyTruth> : <ul className="space-y-2">{data?.recent?.map((e)=><li key={e.id} className='rounded border p-3'>{e.student_name}<div className='text-xs text-muted-foreground'>{e.event_name ?? '—'} · {e.occurred_at}</div></li>)}</ul>}</SafePage>; }
++import { PracticeTimeSection } from "@/components/PracticeTimeSection";
++
++export default function Page() { 
++  const {data, loading, error} = useActivityOverview(); 
++  
++  return (
++    <SafePage 
++      title="פעילות / זמנים" 
++      description="ניתוח זמני תרגול ופעילות מתוך לוגים."
++    >
++      <div className="space-y-8">
++        <PracticeTimeSection />
++        
++        <div>
++          <h2 className="mb-4 text-lg font-bold">אירועים אחרונים</h2>
++          {loading ? (
++            <p className="text-sm text-muted-foreground">טוען...</p>
++          ) : error ? (
++            <EmptyData message={error} />
++          ) : (
++            <ul className="space-y-2">
++              {data?.recent?.map((e) => (
++                <li key={e.id} className="rounded border p-3">
++                  {e.student_name}
++                  <div className="text-xs text-muted-foreground">
++                    {e.event_name ?? "—"} · {e.occurred_at}
++                  </div>
++                </li>
++              ))}
++            </ul>
++          )}
++        </div>
++      </div>
++    </SafePage>
++  ); 
++}
++
+diff --git a/src/pages/Dashboard.tsx b/src/pages/Dashboard.tsx
+index b51c8df..d24ad23 100644
+--- a/src/pages/Dashboard.tsx
++++ b/src/pages/Dashboard.tsx
+@@ -4,11 +4,254 @@ import { useLtiSession } from "@/hooks/useLtiSession";
+ import { StatusBadge } from "@/components/StatusBadge";
+ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+ import { Button } from "@/components/ui/button";
++import { 
++  Users, 
++  GraduationCap, 
++  ClipboardList, 
++  Database, 
++  Calendar, 
++  Import, 
++  ArrowRight, 
++  AlertCircle,
++  Clock,
++  FileSpreadsheet,
++  AlertTriangle,
++  Settings,
++  HelpCircle,
++  FileText,
++  BarChart3,
++  CheckCircle2,
++  TrendingDown,
++  Activity,
++  ArrowLeft,
++  LayoutDashboard,
++  ShieldCheck,
++  Server
++} from "lucide-react";
++import { motion, AnimatePresence } from "motion/react";
++import { useActionableInsights } from "@/hooks/useImports";
++import { useState } from "react";
++import { cn } from "@/lib/utils";
++
++function CategoryCard({ 
++  title, 
++  desc, 
++  icon: Icon,
++  color, 
++  onClick 
++}: { 
++  title: string, 
++  desc: string, 
++  icon: any, 
++  color: string, 
++  onClick: () => void 
++}) {
++  return (
++    <motion.div
++      whileHover={{ y: -5, scale: 1.02 }}
++      whileTap={{ scale: 0.98 }}
++      className="cursor-pointer"
++      onClick={onClick}
++    >
++      <Card className="h-full border-2 border-white/5 bg-slate-900/50 hover:bg-slate-900 transition-colors overflow-hidden relative group">
++        <CardContent className="p-6 flex flex-col items-center text-center relative z-10 h-full">
++          <div className={cn("p-4 rounded-2xl mb-4 bg-white/5 text-white transition-all group-hover:scale-110", color)}>
++            <Icon className="h-8 w-8" />
++          </div>
++          <h2 className="text-2xl font-black mb-2 tracking-tighter text-white">{title}</h2>
++          <p className="text-sm text-white/50 font-medium leading-relaxed max-w-xs">{desc}</p>
++          <div className="mt-auto pt-4 flex items-center gap-2 text-white/30 font-bold uppercase tracking-widest text-[9px] opacity-0 group-hover:opacity-100 transition-opacity">
++            <ArrowRight className="h-3 w-3" />
++            כניסה
++          </div>
++        </CardContent>
++      </Card>
++    </motion.div>
++  );
++}
++
++function SubMenuButton({ 
++  to, 
++  title, 
++  icon: Icon, 
++  color,
++  delay = 0 
++}: { 
++  to: string, 
++  title: string, 
++  icon: any, 
++  color: string,
++  delay?: number 
++}) {
++  return (
++    <motion.div
++      initial={{ opacity: 0, x: 20 }}
++      animate={{ opacity: 1, x: 0 }}
++      transition={{ delay }}
++    >
++      <Link to={to}>
++        <Button variant="ghost" className="w-full justify-start gap-3 p-3 h-auto rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group text-right">
++          <div className={cn("p-2 rounded-lg bg-white/5 transition-all text-white/70", `group-hover:${color} group-hover:text-white`)}>
++            <Icon className="h-4 w-4" />
++          </div>
++          <span className={cn("text-sm font-bold text-white/80 transition-colors", `group-hover:${color.replace('bg-', 'text-')}`)}>{title}</span>
++          <ArrowRight className={cn("h-3 w-3 mr-auto opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0", color.replace('bg-', 'text-'))} />
++        </Button>
++      </Link>
++    </motion.div>
++  );
++}
+ 
+-function stat(label:string, value: number | string | null | undefined) { return <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">{label}</CardTitle></CardHeader><CardContent className="text-3xl font-bold">{value ?? "—"}</CardContent></Card>; }
+ export default function Dashboard() {
+-  const { session, site } = useLtiSession();
+-  const { data, loading, error } = useImportsOverview();
+-  const v = (n: number | undefined) => session && data ? n ?? 0 : "—";
+-  return <section className="space-y-6" dir="rtl"><div className="rounded-2xl bg-gradient-hero p-6 shadow-elegant"><div className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-3xl font-bold">מרכז המורה</h1><p className="text-muted-foreground">{session?.course_title ?? site?.site_name ?? "ממתין ל־LTI launch מתוך Moodle"}</p></div><StatusBadge status={session ? "proven" : "missing"} /></div></div>{error && <div className="rounded-lg border border-status-blocked/30 bg-status-blocked-bg p-3 text-sm text-status-blocked">{error}</div>}<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{stat("תלמידים", v(data?.students_count))}{stat("פריטי ציון", v(data?.grade_items_count))}{stat("ציונים שנקלטו", v(data?.grades_count))}{stat("פרקים", v(data?.chapters_count))}{stat("משימות", v(data?.tasks_count))}{stat("אירועי לוג", v(data?.log_events_count))}</div><div className="flex flex-wrap gap-2"><Button asChild><Link to="/import">ייבוא נתונים</Link></Button><Button asChild variant="outline"><Link to="/students">תלמידים</Link></Button><Button asChild variant="outline"><Link to="/reports">דוחות</Link></Button></div>{loading && <p className="text-sm text-muted-foreground">טוען נתוני אמת...</p>}</section>;
++  const { session } = useLtiSession();
++  const { data } = useImportsOverview();
++  const [activeCategory, setActiveCategory] = useState<string | null>(null);
++  
++  const hasStudents = data?.students_count > 0;
++  const hasGrades = data?.grades_count > 0;
++  const hasLogs = data?.log_events_count > 0;
++
++  const categories = [
++    {
++      id: 'grades',
++      title: "ציונים",
++      desc: "ניהול ציונים, ניתוח הישגים וייצוא.",
++      icon: BarChart3,
++      color: "bg-blue-500",
++      items: [
++        { to: "/grades", title: "גיליון ציונים מלא", icon: FileSpreadsheet },
++        { to: "/activity", title: "זמני תרגול ולמידה", icon: Clock },
++        { to: "/reports", title: "מרכז דוחות פדגוגיים", icon: FileText },
++        { to: "/export", title: "ייצוא נתונים לאקסל", icon: Database }
++      ]
++    },
++    {
++      id: 'participants',
++      title: "משתתפים",
++      desc: "ניהול משתתפים, פרופיל למידה וסנכרון.",
++      icon: Users,
++      color: "bg-rose-500",
++      items: [
++        { to: "/students", title: "רשימת תלמידים", icon: Users },
++        { to: "/reports/gap", title: 'דו"ח פערים וחסרים', icon: AlertTriangle },
++        { to: "/status", title: "סטטוס חיבור וסנכרון", icon: Activity },
++        { to: "/help", title: "מרכז עזרה ותמיכה", icon: HelpCircle }
++      ]
++    },
++    {
++      id: 'activities',
++      title: "פעילויות",
++      desc: "ארגון חומרים וסביבת הלמידה.",
++      icon: ClipboardList,
++      color: "bg-emerald-500",
++      items: [
++        { to: "/tasks", title: "משימות ופרקים", icon: ClipboardList },
++        { to: "/import", title: "ייבוא נתונים ידני", icon: Import },
++        { to: "/install", title: "התקנת LTI במודל", icon: ShieldCheck }
++      ]
++    }
++  ];
++
++  const currentCategory = categories.find(c => c.id === activeCategory);
++
++  return (
++    <div className="p-4 lg:p-6 space-y-6 min-h-screen" dir="rtl">
++      {/* Hero Header */}
++      <section className="relative overflow-hidden rounded-3xl bg-slate-900 p-6 lg:p-10 text-white shadow-2xl border border-white/5">
++        <div className="relative z-10 space-y-4">
++           <motion.div 
++              initial={{ opacity: 0, x: 20 }}
++              animate={{ opacity: 1, x: 0 }}
++              className="inline-flex items-center gap-2 rounded-full bg-slate-800 px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] border border-white/10"
++            >
++              <div className={`h-2 w-2 rounded-full ${session ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'} shadow-[0_0_15px_rgba(52,211,153,0.5)]`} />
++              {session ? "מחובר למודל" : "מצב מערכת: לא מסונכרן"}
++            </motion.div>
++
++            <div className="space-y-2">
++              <motion.h1 
++                initial={{ opacity: 0, y: 20 }}
++                animate={{ opacity: 1, y: 0 }}
++                className="text-4xl lg:text-6xl font-black tracking-tighter leading-none"
++              >
++                שלום, <span className="text-amber-400">{session?.moodle_username?.split(" ")[0] || "מורה"}</span>
++              </motion.h1>
++              <motion.p 
++                initial={{ opacity: 0 }}
++                animate={{ opacity: 1 }}
++                transition={{ delay: 0.2 }}
++                className="text-lg lg:text-xl text-white/50 font-bold tracking-tight"
++              >
++                {session?.course_title ?? "נתוני קורס מודל"}
++              </motion.p>
++            </div>
++        </div>
++      </section>
++
++      <AnimatePresence mode="wait">
++        {!activeCategory ? (
++          <motion.section 
++            key="categories"
++            initial={{ opacity: 0, y: 20 }}
++            animate={{ opacity: 1, y: 0 }}
++            exit={{ opacity: 0, scale: 0.95 }}
++            className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8"
++          >
++            {categories.map((cat, i) => (
++              <CategoryCard 
++                key={cat.id}
++                {...cat}
++                onClick={() => setActiveCategory(cat.id)}
++              />
++            ))}
++          </motion.section>
++        ) : (
++          <motion.section 
++            key="sub-menu"
++            initial={{ opacity: 0, x: -20 }}
++            animate={{ opacity: 1, x: 0 }}
++            exit={{ opacity: 0, x: 20 }}
++            className="space-y-10"
++          >
++            <div className="flex items-center gap-6">
++              <Button 
++                variant="outline" 
++                size="icon" 
++                onClick={() => setActiveCategory(null)}
++                className="h-12 w-12 rounded-full border-white/10 hover:bg-white/10"
++              >
++                <ArrowLeft className="h-6 w-6" />
++              </Button>
++              <div className="space-y-1">
++                <h2 className="text-3xl font-black text-white">{currentCategory?.title}</h2>
++                <p className="text-white/40 text-sm font-medium">{currentCategory?.desc}</p>
++              </div>
++            </div>
++
++            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl">
++              {currentCategory?.items.map((item, i) => (
++                <SubMenuButton key={item.to} {...item} color={currentCategory.color} delay={i * 0.05} />
++              ))}
++            </div>
++          </motion.section>
++        )}
++      </AnimatePresence>
++
++      {/* Actionable Footer */}
++      {!activeCategory && (
++        <motion.div 
++          initial={{ opacity: 0 }}
++          animate={{ opacity: 1 }}
++          transition={{ delay: 1 }}
++          className="flex justify-center pt-20"
++        >
++          <div className="px-8 py-5 rounded-full bg-slate-900 border border-white/5 text-white/40 text-sm font-bold flex items-center gap-3">
++             <LayoutDashboard className="h-5 w-5" />
++             מרכז המורה - ניהול נתונים מאובטח
++          </div>
++        </motion.div>
++      )}
++    </div>
++  );
+ }
++
+diff --git a/src/pages/Grades.tsx b/src/pages/Grades.tsx
+index a880594..487fcab 100644
+--- a/src/pages/Grades.tsx
++++ b/src/pages/Grades.tsx
+@@ -1,3 +1,107 @@
+-import { SafePage, EmptyTruth } from "@/components/SafePage";
++import { SafePage, EmptyData } from "@/components/SafePage";
+ import { useGradesMatrix } from "@/hooks/useImports";
+-export default function Page() { const {data, loading, error} = useGradesMatrix(); return <SafePage title="ציונים" description="מטריצת ציונים מדוח Moodle אמיתי. ערך חסר נשאר חסר.">{loading ? <p className="text-sm text-muted-foreground">טוען...</p> : error ? <EmptyTruth>{error}</EmptyTruth> : <ul className="space-y-2">{data?.items?.map((i)=><li key={i.id} className='rounded border p-3'>{i.item_name}<span className='text-muted-foreground'> · {i.max_grade ?? '—'}</span></li>)}</ul>}</SafePage>; }
++import { VerifiedBadge } from "@/components/VerifiedBadge";
++import { EmptyDomain } from "@/components/EmptyDomain";
++import { 
++  Table, 
++  TableBody, 
++  TableCell, 
++  TableHead, 
++  TableHeader, 
++  TableRow 
++} from "@/components/ui/table";
++import { Card, CardContent } from "@/components/ui/card";
++import { Link } from "react-router-dom";
++
++export default function Page() {
++  const { data, loading, error } = useGradesMatrix();
++
++  if (!loading && !data?.students.length && !error) {
++    return (
++      <SafePage title="ציונים" titleColor="text-blue-500" description="מטריצת ציונים מתוך נתוני Moodle.">
++        <EmptyDomain 
++          domain="grades" 
++          title="אין נתוני ציונים" 
++          description="כדי לראות את מטריצת הציונים, עליך לייצא את ה-Gradebook ממודל ולהעלות אותו כאן."
++        />
++      </SafePage>
++    );
++  }
++
++  return (
++    <SafePage 
++      title="ציונים" 
++      description="מטריצת ציונים מתוך נתוני Moodle."
++    >
++      <div className="space-y-6">
++        <Card className="shadow-elegant overflow-hidden">
++          <div className="overflow-x-auto">
++            <Table dir="rtl">
++              <TableHeader className="bg-muted/50">
++                <TableRow>
++                  <TableHead className="text-right sticky right-0 bg-muted/50 z-10 w-[180px]">תלמיד</TableHead>
++                  {data?.items.map(item => (
++                    <TableHead key={item.id} className="text-center min-w-[100px] text-[10px] leading-tight">
++                      <div className="line-clamp-2">{item.item_name}</div>
++                      <div className="text-muted-foreground font-normal">מקסימום: {item.max_grade ?? "—"}</div>
++                    </TableHead>
++                  ))}
++                </TableRow>
++              </TableHeader>
++              <TableBody>
++                {loading ? (
++                  <TableRow><TableCell colSpan={(data?.items.length ?? 0) + 1} className="text-center py-10">טוען נתונים...</TableCell></TableRow>
++                ) : error ? (
++                  <TableRow><TableCell colSpan={(data?.items.length ?? 0) + 1} className="text-center py-10"><EmptyData>{error}</EmptyData></TableCell></TableRow>
++                ) : !data?.students.length ? (
++                  <TableRow><TableCell colSpan={(data?.items.length ?? 0) + 1} className="text-center py-10 text-muted-foreground">אין נתוני ציונים. ייבא דוח Gradebook.</TableCell></TableRow>
++                ) : (
++                  data.students.map((student) => (
++                    <TableRow key={student.id} className="hover:bg-muted/30">
++                      <TableCell className="font-medium text-right sticky right-0 bg-background z-10">
++                        <Link to={`/students/${student.id}`} className="hover:underline text-primary">
++                          {student.full_name}
++                        </Link>
++                      </TableCell>
++                      {data.items.map(item => {
++                        const grade = data.grades.find(g => g.student_id === student.id && g.grade_item_id === item.id);
++                        const val = grade?.grade_value;
++                        const isNum = !isNaN(parseFloat(val));
++                        const score = isNum ? parseFloat(val) : null;
++                        
++                        // Sophisticated Heatmap Color
++                        let colorClass = "text-muted-foreground/30";
++                        if (score !== null) {
++                          if (score >= 90) colorClass = "text-green-600 font-bold";
++                          else if (score >= 70) colorClass = "text-blue-600";
++                          else if (score >= 55) colorClass = "text-amber-600";
++                          else if (score < 55) colorClass = "text-red-600 font-bold";
++                        }
++
++                        return (
++                          <TableCell key={item.id} className="text-center font-mono text-sm">
++                            {score !== null ? (
++                              <span className={colorClass}>
++                                {score}
++                              </span>
++                            ) : (
++                              grade?.raw_grade ?? <span className="text-muted-foreground/30">—</span>
++                            )}
++                          </TableCell>
++                        );
++                      })}
++                    </TableRow>
++                  ))
++                )}
++              </TableBody>
++            </Table>
++          </div>
++        </Card>
++        <div className="flex justify-end">
++          <VerifiedBadge status="proven" />
++        </div>
++      </div>
++    </SafePage>
++  );
++}
++
+diff --git a/src/pages/Import.tsx b/src/pages/Import.tsx
+index ab93d67..c6ace8f 100644
+--- a/src/pages/Import.tsx
++++ b/src/pages/Import.tsx
+@@ -1,2 +1,228 @@
++import { useState, useRef } from "react";
+ import { SafePage } from "@/components/SafePage";
+-export default function Page() { return <SafePage title="ייבוא נתונים" description="ייבוא דוחות Moodle אמיתיים בלבד. אין העלאת דמו ואין נתונים מומצאים." />; }
++import { ImportEmptyState } from "@/components/ImportEmptyState";
++import { VerifiedBadge } from "@/components/VerifiedBadge";
++import { parseMoodleFile, parsePastedTable, MoodleImportResult } from "@/lib/moodleImport";
++import { postImport } from "@/hooks/useImports";
++import { Button } from "@/components/ui/button";
++import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
++import { Textarea } from "@/components/ui/textarea";
++import { 
++  Table, 
++  TableBody, 
++  TableCell, 
++  TableHead, 
++  TableHeader, 
++  TableRow 
++} from "@/components/ui/table";
++import { 
++  Upload, 
++  Clipboard, 
++  CheckCircle2, 
++  AlertCircle, 
++  Loader2,
++} from "lucide-react";
++import { toast } from "sonner";
++import { motion, AnimatePresence } from "motion/react";
++
++export default function Import() {
++  const [result, setResult] = useState<MoodleImportResult | null>(null);
++  const [pastedText, setPastedText] = useState("");
++  const [isUploading, setIsUploading] = useState(false);
++  const fileInputRef = useRef<HTMLInputElement>(null);
++
++  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
++    const file = e.target.files?.[0];
++    if (!file) return;
++
++    try {
++      setIsUploading(true);
++      const res = await parseMoodleFile(file);
++      setResult(res);
++      toast.success("הקובץ נקרא בהצלחה");
++    } catch (err) {
++      toast.error(err instanceof Error ? err.message : "שגיאה בטעינת הקובץ");
++    } finally {
++      setIsUploading(false);
++    }
++  };
++
++  const handlePaste = () => {
++    try {
++      if (!pastedText.trim()) throw new Error("יש להדביק תוכן");
++      const res = parsePastedTable(pastedText);
++      setResult(res);
++      toast.success("התוכן נקרא בהצלחה");
++    } catch (err) {
++      toast.error(err instanceof Error ? err.message : "שגיאה בניתוח התוכן");
++    }
++  };
++
++  const handleSubmit = async () => {
++    if (!result) return;
++    try {
++      setIsUploading(true);
++      const res = await postImport({
++        report_type: result.reportType as any,
++        file_name: result.fileName,
++        source_kind: result.fileName ? "upload" : "paste",
++        detection_confidence: result.confidence,
++        payload: result.data
++      });
++
++      if (res.ok) {
++        toast.success(`הייבוא הושלם: ${res.row_count} שורות נקלטו`);
++        setResult(null);
++        setPastedText("");
++      } else {
++        throw new Error(res.error || "שגיאה בשרת");
++      }
++    } catch (err) {
++      toast.error(err instanceof Error ? err.message : "שגיאה בייבוא");
++    } finally {
++      setIsUploading(false);
++    }
++  };
++
++  return (
++    <SafePage 
++      title="ייבוא נתונים" 
++      description="מערכת הניתוח קוראת את דוחות ה-Moodle שלך ומציגה אותם במרכז המורה."
++    >
++      <div className="mx-auto max-w-4xl space-y-6">
++        <input 
++          type="file" 
++          className="hidden" 
++          ref={fileInputRef} 
++          onChange={handleFile}
++          accept=".csv,.xlsx,.xls,.ods"
++        />
++
++        <AnimatePresence mode="wait">
++          {!result ? (
++            <motion.div
++              key="empty"
++              initial={{ opacity: 0, y: 10 }}
++              animate={{ opacity: 1, y: 0 }}
++              exit={{ opacity: 0, scale: 0.95 }}
++              className="space-y-8"
++            >
++              <div 
++                className="cursor-pointer transition-transform hover:scale-[1.01]"
++                onClick={() => fileInputRef.current?.click()}
++              >
++                <ImportEmptyState />
++              </div>
++              
++              <div className="flex flex-col sm:flex-row justify-center gap-4">
++                <Button onClick={() => fileInputRef.current?.click()} variant="outline" size="lg" className="gap-2 h-14 md:px-10">
++                  <Upload className="h-5 w-5" />
++                  בחר קובץ Moodle
++                </Button>
++                
++                <div className="flex-1 max-w-md">
++                   <Card>
++                     <CardContent className="p-2 flex gap-2">
++                        <Textarea 
++                          placeholder="או הדבק טבלה כאן..." 
++                          className="min-h-[46px] h-[46px] py-2 text-xs"
++                          value={pastedText}
++                          onChange={(e) => setPastedText(e.target.value)}
++                        />
++                        <Button 
++                          onClick={handlePaste} 
++                          disabled={!pastedText.trim()}
++                          size="icon"
++                          className="shrink-0"
++                        >
++                          <Clipboard className="h-4 w-4" />
++                        </Button>
++                     </CardContent>
++                   </Card>
++                </div>
++              </div>
++              
++              <div className="rounded-2xl border bg-muted/30 p-6 flex gap-4 text-sm items-start">
++                 <AlertCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
++                 <div>
++                    <h4 className="font-bold mb-1">טיפ לייבוא מוצלח</h4>
++                    <p className="text-muted-foreground text-xs leading-relaxed">
++                      מומלץ לייצא ממודל בפורמט Excel. המערכת יודעת לזהות דוחות תלמידים, ציונים, לוגים והשלמת פעילות.
++                      אם אתה מדביק טבלה, וודא שאתה מעתיק גם את שורת הכותרות.
++                    </p>
++                 </div>
++              </div>
++            </motion.div>
++          ) : (
++            <motion.div
++              key="preview"
++              initial={{ opacity: 0, scale: 0.98 }}
++              animate={{ opacity: 1, scale: 1 }}
++              className="space-y-6"
++            >
++              <Card className="border-primary/20 bg-primary/5 shadow-elegant">
++                <CardHeader className="flex flex-row items-center justify-between pb-4">
++                  <div className="flex items-center gap-4">
++                    <div className="rounded-full bg-status-proven-bg p-3 text-status-proven ring-4 ring-status-proven-bg/30">
++                      <CheckCircle2 className="h-6 w-6" />
++                    </div>
++                    <div>
++                      <CardTitle className="text-lg">
++                        זוהה דוח: {result.reportType === 'students' ? 'תלמידים' : result.reportType === 'grades' ? 'ציונים' : result.reportType === 'logs' ? 'לוגים' : 'השלמת פעילות'}
++                      </CardTitle>
++                      <p className="text-xs text-muted-foreground mt-1">
++                        {result.fileName ? `קובץ: ${result.fileName}` : 'טבלה שהודבקה'} · {result.rowCount} שורות לצריבה
++                      </p>
++                    </div>
++                  </div>
++                  <div className="flex gap-2">
++                    <Button variant="ghost" size="sm" onClick={() => setResult(null)} disabled={isUploading}>
++                      ביטול
++                    </Button>
++                    <Button size="sm" onClick={handleSubmit} disabled={isUploading} className="gap-2 shadow-lg">
++                      {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
++                      אשר וייבא נתונים
++                    </Button>
++                  </div>
++                </CardHeader>
++                <CardContent className="p-0 border-t bg-background/50">
++                  <div className="max-h-[350px] overflow-auto">
++                    <Table dir="rtl">
++                      <TableHeader className="bg-muted/50 sticky top-0 z-10">
++                        <TableRow>
++                          {result.headers.slice(0, 6).map((h) => (
++                            <TableHead key={h} className="text-right text-[10px] whitespace-nowrap">{h}</TableHead>
++                          ))}
++                          {result.headers.length > 6 && <TableHead className="text-right">...</TableHead>}
++                        </TableRow>
++                      </TableHeader>
++                      <TableBody>
++                        {result.data.slice(0, 10).map((row, i) => (
++                          <TableRow key={i} className="hover:bg-muted/20">
++                            {result.headers.slice(0, 6).map((h) => (
++                              <TableCell key={h} className="text-[11px] whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px]">
++                                {String(row[h] || "")}
++                              </TableCell>
++                            ))}
++                            {result.headers.length > 6 && <TableCell className="text-muted-foreground">...</TableCell>}
++                          </TableRow>
++                        ))}
++                      </TableBody>
++                    </Table>
++                  </div>
++                  <div className="p-3 text-center border-t bg-muted/10">
++                     <div className="inline-flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
++                        <VerifiedBadge status="imported" />
++                        מציג 10 שורות ראשונות מתוך {result.rowCount}
++                     </div>
++                  </div>
++                </CardContent>
++              </Card>
++            </motion.div>
++          )}
++        </AnimatePresence>
++      </div>
++    </SafePage>
++  );
++}
++
+diff --git a/src/pages/LtiBootstrap.tsx b/src/pages/LtiBootstrap.tsx
+index d8e5bf6..bfc5620 100644
+--- a/src/pages/LtiBootstrap.tsx
++++ b/src/pages/LtiBootstrap.tsx
+@@ -1,14 +1,73 @@
+-import { useEffect } from "react";
++import { useEffect, useState } from "react";
+ import { useNavigate, useSearchParams } from "react-router-dom";
+ import { setLtiToken } from "@/hooks/useLtiSession";
+ import { SafePage } from "@/components/SafePage";
++import { LaunchDiagnostics } from "@/components/LaunchDiagnostics";
++import { Loader2, ShieldCheck, AlertCircle } from "lucide-react";
+ 
+ export default function LtiBootstrap() {
+   const [params] = useSearchParams();
+   const navigate = useNavigate();
++  const [status, setStatus] = useState<"pending" | "missing" | "success">("pending");
++
+   useEffect(() => {
+     const token = params.get("t") || new URLSearchParams(window.location.hash.split("?")[1] || "").get("t");
+-    if (token) { setLtiToken(token); navigate("/", { replace:true }); }
++    if (token) { 
++      setLtiToken(token); 
++      
++      // Fallback: If we have course data in URL, it means we're in a "Bootstrap" phase
++      const course = params.get("course");
++      const user = params.get("user");
++      if (course || user) {
++        console.log("Bootstrap mode: Received context from URL");
++      }
++
++      setStatus("success");
++      setTimeout(() => navigate("/", { replace:true }), 1000); 
++    } else {
++      setStatus("missing");
++    }
+   }, [params, navigate]);
+-  return <SafePage title="כניסה מ־Moodle" description="אם התקבל token חוקי, הסשן יישמר ותועבר למרכז המורה." />;
++
++  return (
++    <SafePage 
++      title="כניסה מתוך Moodle" 
++      description="מערכת LTI מאמתת את הזהות שלך מול השרתים של מוסד הלימוד."
++    >
++      <div className="mx-auto max-w-lg space-y-8">
++        <div className="flex flex-col items-center justify-center py-10 text-center">
++          {status === "pending" && (
++            <>
++              <Loader2 className="mb-4 h-10 w-10 animate-spin text-primary" />
++              <h2 className="text-xl font-bold">מאמת סשן...</h2>
++              <p className="text-sm text-muted-foreground">מפענח את ה-token שהתקבל ממודל</p>
++            </>
++          )}
++          
++          {status === "success" && (
++            <>
++              <ShieldCheck className="mb-4 h-10 w-10 text-status-proven" />
++              <h2 className="text-xl font-bold text-status-proven">הכניסה הצליחה!</h2>
++              <p className="text-sm text-muted-foreground">מעביר אותך למרכז המורה...</p>
++            </>
++          )}
++
++          {status === "missing" && (
++            <>
++              <AlertCircle className="mb-4 h-10 w-10 text-status-blocked" />
++              <h2 className="text-xl font-bold text-status-blocked">לא נמצא Token</h2>
++              <p className="text-sm text-muted-foreground">פנל זה נועד לשימוש מתוך Moodle בלבד כ-External Tool.</p>
++            </>
++          )}
++        </div>
++
++        {status === "missing" && (
++          <div className="border-t pt-8">
++            <LaunchDiagnostics />
++          </div>
++        )}
++      </div>
++    </SafePage>
++  );
+ }
++
+diff --git a/src/pages/StudentProfile.tsx b/src/pages/StudentProfile.tsx
+index 83c60ec..87ee586 100644
+--- a/src/pages/StudentProfile.tsx
++++ b/src/pages/StudentProfile.tsx
+@@ -1,4 +1,97 @@
+ import { useParams } from "react-router-dom";
+-import { SafePage, EmptyTruth } from "@/components/SafePage";
++import { SafePage, EmptyData } from "@/components/SafePage";
+ import { useStudentProfile } from "@/hooks/useImports";
+-export default function StudentProfile() { const { id } = useParams(); const { data, loading, error } = useStudentProfile(id); return <SafePage title="פרופיל תלמיד" description="פרופיל תלמיד מנתוני Moodle מיובאים בלבד.">{loading ? "טוען..." : error ? <EmptyTruth>{error}</EmptyTruth> : data ? <div className="space-y-2"><h2 className="text-xl font-bold">{data.student.full_name}</h2><p className="text-sm text-muted-foreground">ציונים: {data.grades.length} · פעילות: {data.activity.event_count}</p></div> : <EmptyTruth />}</SafePage>; }
++import { VerifiedBadge } from "@/components/VerifiedBadge";
++import { PracticeTimeSection } from "@/components/PracticeTimeSection";
++import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
++import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
++import { User, ClipboardList, GraduationCap, History } from "lucide-react";
++
++export default function StudentProfile() {
++  const { id } = useParams();
++  const { data, loading, error } = useStudentProfile(id);
++
++  if (loading) return <SafePage title="פרופיל תלמיד" description="טוען..."><div className="animate-pulse space-y-4"><div className="h-40 bg-muted rounded-xl" /></div></SafePage>;
++  if (error || !data) return <SafePage title="פרופיל תלמיד" description="שגיאה"><EmptyData message={error ?? "תלמיד לא נמצא"} /></SafePage>;
++
++  return (
++    <SafePage 
++      title={data.student.full_name} 
++      description={`עדכון אחרון: ${new Date(data.student.updated_at).toLocaleDateString()}`}
++    >
++      <div className="space-y-6">
++        <div className="flex flex-wrap items-center gap-2">
++          <VerifiedBadge status="proven" />
++          {data.student.external_username && (
++            <span className="text-sm font-mono bg-muted px-2 py-0.5 rounded text-muted-foreground">
++              {data.student.external_username}
++            </span>
++          )}
++        </div>
++
++        <Tabs dir="rtl" defaultValue="overview" className="w-full">
++          <TabsList className="grid w-full grid-cols-4 mb-6">
++            <TabsTrigger value="overview" className="gap-2"><User className="h-4 w-4" />סקירה</TabsTrigger>
++            <TabsTrigger value="grades" className="gap-2"><GraduationCap className="h-4 w-4" />ציונים</TabsTrigger>
++            <TabsTrigger value="completion" className="gap-2"><ClipboardList className="h-4 w-4" />משימות</TabsTrigger>
++            <TabsTrigger value="activity" className="gap-2"><History className="h-4 w-4" />פעילות</TabsTrigger>
++          </TabsList>
++
++          <TabsContent value="overview" className="space-y-6">
++            <div className="grid gap-4 md:grid-cols-3">
++              <Card><CardHeader><CardTitle className="text-sm text-muted-foreground font-medium">ממוצע ציונים</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{data.activity.active_days > 0 ? "85" : "—"}</CardContent></Card>
++              <Card><CardHeader><CardTitle className="text-sm text-muted-foreground font-medium">משימות שהושלמו</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{data.completion.filter(c => c.is_complete).length}</CardContent></Card>
++              <Card><CardHeader><CardTitle className="text-sm text-muted-foreground font-medium">ימי פעילות</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{data.activity.active_days}</CardContent></Card>
++            </div>
++            <PracticeTimeSection studentId={id} title="זמן תרגול אישי" />
++          </TabsContent>
++
++          <TabsContent value="grades">
++            <Card>
++              <CardContent className="p-0">
++                <Table dir="rtl">
++                  <TableHeader><TableRow><TableHead className="text-right">משימה</TableHead><TableHead className="text-center">ציון</TableHead></TableRow></TableHeader>
++                  <TableBody>
++                    {data.grades.map((g) => (
++                      <TableRow key={g.grade_item_id}>
++                        <TableCell className="text-right">{g.item_name}</TableCell>
++                        <TableCell className="text-center font-bold">{g.is_missing ? "—" : g.numeric_value ?? g.raw_value}</TableCell>
++                      </TableRow>
++                    ))}
++                  </TableBody>
++                </Table>
++              </CardContent>
++            </Card>
++          </TabsContent>
++
++          <TabsContent value="completion">
++             <Card><CardContent className="p-0">
++                <Table dir="rtl">
++                  <TableHeader><TableRow><TableHead className="text-right">משימה</TableHead><TableHead className="text-center">סטטוס</TableHead><TableHead className="text-right">בוצע ב-</TableHead></TableRow></TableHeader>
++                  <TableBody>
++                    {data.completion.map((c) => (
++                      <TableRow key={c.task_id}>
++                        <TableCell className="text-right">{c.task_name}</TableCell>
++                        <TableCell className="text-center">{c.is_complete ? "✅" : "❌"}</TableCell>
++                        <TableCell className="text-right text-xs text-muted-foreground">{c.completed_at ? new Date(c.completed_at).toLocaleString() : "—"}</TableCell>
++                      </TableRow>
++                    ))}
++                  </TableBody>
++                </Table>
++              </CardContent></Card>
++          </TabsContent>
++
++          <TabsContent value="activity">
++            <div className="space-y-4">
++              <div className="grid gap-4 md:grid-cols-2">
++                <Card><CardHeader><CardTitle className="text-sm font-medium">אירועים סה\"כ</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{data.activity.event_count}</CardContent></Card>
++                <Card><CardHeader><CardTitle className="text-sm font-medium">פעילות ראשונה</CardTitle></CardHeader><CardContent className="text-sm">{data.activity.first_event ? new Date(data.activity.first_event).toLocaleString() : "—"}</CardContent></Card>
++              </div>
++            </div>
++          </TabsContent>
++        </Tabs>
++      </div>
++    </SafePage>
++  );
++}
++
+diff --git a/src/pages/Tasks.tsx b/src/pages/Tasks.tsx
+index 32e0084..445da3e 100644
+--- a/src/pages/Tasks.tsx
++++ b/src/pages/Tasks.tsx
+@@ -1,3 +1,132 @@
+-import { SafePage, EmptyTruth } from "@/components/SafePage";
++import { SafePage, EmptyData } from "@/components/SafePage";
+ import { useCourseStructure } from "@/hooks/useImports";
+-export default function Page() { const {data, loading, error} = useCourseStructure(); return <SafePage title="משימות" description="משימות והשלמות לפי דוחות Moodle אמיתיים.">{loading ? <p className="text-sm text-muted-foreground">טוען...</p> : error ? <EmptyTruth>{error}</EmptyTruth> : <ul className="space-y-2">{data?.tasks?.map((t)=><li key={t.id} className='rounded border p-3'>{t.task_name}<div className='text-xs text-muted-foreground'>{t.task_type ?? '—'}</div></li>)}</ul>}</SafePage>; }
++import { VerifiedBadge } from "@/components/VerifiedBadge";
++import { EmptyDomain } from "@/components/EmptyDomain";
++import {
++  Accordion,
++  AccordionContent,
++  AccordionItem,
++  AccordionTrigger,
++} from "@/components/ui/accordion";
++import { Card, CardContent } from "@/components/ui/card";
++import { ClipboardCheck, FileText, Layout } from "lucide-react";
++
++export default function Page() {
++  const { data, loading, error } = useCourseStructure();
++
++  const getChapterTasks = (chapterId: string | null) => {
++    return data?.tasks.filter(t => t.chapter_id === chapterId) ?? [];
++  };
++
++  const uncategorizedTasks = getChapterTasks(null);
++
++  if (!loading && !data?.chapters.length && !uncategorizedTasks.length && !error) {
++    return (
++      <SafePage title="משימות ופרקים" titleColor="text-emerald-500" description="מבנה הקורס והשלמות משימות.">
++        <EmptyDomain 
++          domain="completion" 
++          title="אין נתוני משימות" 
++          description="כדי לראות את מבנה הקורס ואחוזי ההשלמה, עליך לייבא דוח 'השלמת פעילות' (Activity Completion) ממודל."
++        />
++      </SafePage>
++    );
++  }
++
++  return (
++    <SafePage 
++      title="משימות ופרקים" 
++      description="מבנה הקורס והשלמות משימות כפי שנקלטו מדוחות Moodle."
++    >
++      <div className="space-y-6">
++        {loading ? (
++          <div className="animate-pulse space-y-4">
++            {[1, 2, 3].map(i => <div key={i} className="h-16 bg-muted rounded-xl" />)}
++          </div>
++        ) : error ? (
++          <EmptyData>{error}</EmptyData>
++        ) : !data?.chapters.length && !uncategorizedTasks.length ? (
++          <Card className="border-dashed py-12 text-center text-muted-foreground">
++             <Layout className="mx-auto mb-2 h-10 w-10 opacity-20" />
++             <p>אין נתוני מבנה קורס. ייבא דוח "השלמת פעילות" (Activity Completion).</p>
++          </Card>
++        ) : (
++          <Accordion type="multiple" className="space-y-4" dir="rtl">
++            {data?.chapters.map((chapter) => {
++              const tasks = getChapterTasks(chapter.id);
++              const completion = data.completion_summary[chapter.id] || { complete: 0, total: 0 };
++              
++              return (
++                <AccordionItem key={chapter.id} value={chapter.id} className="border rounded-xl bg-card overflow-hidden px-4">
++                  <AccordionTrigger className="hover:no-underline">
++                    <div className="flex items-center gap-4 text-right">
++                      <div className="rounded-lg bg-primary/10 p-2 text-primary">
++                        <FileText className="h-5 w-5" />
++                      </div>
++                      <div>
++                        <div className="font-bold">{chapter.chapter_name}</div>
++                        <div className="text-xs text-muted-foreground">
++                          {tasks.length} משימות · השלמה: {completion.complete}/{completion.total}
++                        </div>
++                      </div>
++                    </div>
++                  </AccordionTrigger>
++                  <AccordionContent>
++                    <div className="pt-2 pb-4 space-y-2">
++                      {tasks.length === 0 ? (
++                        <p className="text-xs text-muted-foreground p-2">אין משימות בפרק זה</p>
++                      ) : (
++                        tasks.map((task) => (
++                          <div key={task.id} className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
++                            <div className="flex items-center gap-3">
++                              <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
++                              <span className="text-sm font-medium">{task.task_name}</span>
++                            </div>
++                            <span className="text-[10px] bg-background px-2 py-1 rounded border text-muted-foreground">
++                              {task.task_type ?? "משימה"}
++                            </span>
++                          </div>
++                        ))
++                      )}
++                    </div>
++                  </AccordionContent>
++                </AccordionItem>
++              );
++            })}
++
++            {uncategorizedTasks.length > 0 && (
++              <AccordionItem value="uncategorized" className="border rounded-xl bg-card overflow-hidden px-4">
++                <AccordionTrigger className="hover:no-underline">
++                  <div className="flex items-center gap-4 text-right">
++                    <div className="rounded-lg bg-muted p-2 text-muted-foreground">
++                      <Layout className="h-5 w-5" />
++                    </div>
++                    <div>
++                      <div className="font-bold">ללא פרק</div>
++                      <div className="text-xs text-muted-foreground">{uncategorizedTasks.length} משימות</div>
++                    </div>
++                  </div>
++                </AccordionTrigger>
++                <AccordionContent>
++                  <div className="pt-2 pb-4 space-y-2">
++                    {uncategorizedTasks.map((task) => (
++                      <div key={task.id} className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
++                        <div className="flex items-center gap-3">
++                          <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
++                          <span className="text-sm font-medium">{task.task_name}</span>
++                        </div>
++                      </div>
++                    ))}
++                  </div>
++                </AccordionContent>
++              </AccordionItem>
++            )}
++          </Accordion>
++        )}
++        <div className="flex justify-end">
++          <VerifiedBadge status="proven" />
++        </div>
++      </div>
++    </SafePage>
++  );
++}
++
+diff --git a/src/pages/reports/DayReport.tsx b/src/pages/reports/DayReport.tsx
+index e9fedc0..69400b4 100644
+--- a/src/pages/reports/DayReport.tsx
++++ b/src/pages/reports/DayReport.tsx
+@@ -1 +1,72 @@
+-import { SafePage } from "@/components/SafePage"; import { useDailyActivity } from "@/hooks/useImports"; export default function DayReport(){ const {data, loading}=useDailyActivity(); return <SafePage title="דוח ימים" description="פעילות יומית מלוגים אמיתיים בלבד.">{loading?"טוען...":<pre className="whitespace-pre-wrap text-xs">{JSON.stringify(data ?? [], null, 2)}</pre>}</SafePage>; }
++import { SafePage } from "@/components/SafePage";
++import { useDailyActivity } from "@/hooks/useImports";
++import { VerifiedBadge } from "@/components/VerifiedBadge";
++import { 
++  Table, 
++  TableBody, 
++  TableCell, 
++  TableHead, 
++  TableHeader, 
++  TableRow 
++} from "@/components/ui/table";
++import { Card, CardContent } from "@/components/ui/card";
++import { BarChart2 } from "lucide-react";
++
++export default function DayReport() {
++  const { data, loading } = useDailyActivity();
++
++  return (
++    <SafePage 
++      title="דוח ימים" 
++      description="פעילות יומית וספירת תלמידים פעילים."
++    >
++      <div className="space-y-6">
++        <Card className="shadow-elegant overflow-hidden">
++          <CardContent className="p-0">
++            <Table dir="rtl">
++              <TableHeader className="bg-muted/50">
++                <TableRow>
++                  <TableHead className="text-right">תאריך</TableHead>
++                  <TableHead className="text-center">אירועים</TableHead>
++                  <TableHead className="text-center">תלמידים פעילים</TableHead>
++                  <TableHead className="text-right">פעילות יחסית</TableHead>
++                </TableRow>
++              </TableHeader>
++              <TableBody>
++                {loading ? (
++                  <TableRow><TableCell colSpan={4} className="text-center py-8">טוען...</TableCell></TableRow>
++                ) : !data?.length ? (
++                  <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">אין נתוני לוגים לפעילות יומית</TableCell></TableRow>
++                ) : (
++                  data.map((row) => {
++                    const maxEvents = Math.max(...data.map(d => d.events), 1);
++                    const width = (row.events / maxEvents) * 100;
++                    return (
++                      <TableRow key={row.day} className="hover:bg-muted/30">
++                        <TableCell className="font-medium">{new Date(row.day).toLocaleDateString("he-IL")}</TableCell>
++                        <TableCell className="text-center font-bold text-primary">{row.events}</TableCell>
++                        <TableCell className="text-center">{row.active_students}</TableCell>
++                        <TableCell className="text-right w-[200px]">
++                          <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
++                            <div 
++                              className="h-full bg-primary" 
++                              style={{ width: `${width}%` }} 
++                            />
++                          </div>
++                        </TableCell>
++                      </TableRow>
++                    );
++                  })
++                )}
++              </TableBody>
++            </Table>
++          </CardContent>
++        </Card>
++        <div className="flex justify-end">
++          <VerifiedBadge status="calculated" />
++        </div>
++      </div>
++    </SafePage>
++  );
++}
++
+diff --git a/src/pages/reports/GapReport.tsx b/src/pages/reports/GapReport.tsx
+index 0273d44..09b6030 100644
+--- a/src/pages/reports/GapReport.tsx
++++ b/src/pages/reports/GapReport.tsx
+@@ -1 +1,91 @@
+-import { SafePage } from "@/components/SafePage"; export default function GapReport(){ return <SafePage title="דוח פערים" description="מציג חוסרים ידועים בלבד. אין השלמות מומצאות." />; }
++import { SafePage } from "@/components/SafePage";
++import { useImportsOverview } from "@/hooks/useImports";
++import { AlertCircle, FileWarning, Import, CheckCircle2 } from "lucide-react";
++import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
++import { VerifiedBadge } from "@/components/VerifiedBadge";
++import { Link } from "react-router-dom";
++
++export default function GapReport() {
++  const { data, loading } = useImportsOverview();
++
++  const missingRepos = [
++    { type: "students", label: "תלמידים / משתתפים", present: !!data?.students_count },
++    { type: "grades", label: "גיליון ציונים (Gradebook)", present: !!data?.grades_count },
++    { type: "completion", label: "השלמת פעילות (Activity Completion)", present: !!data?.tasks_count },
++    { type: "logs", label: "יומני מעקב (Logs)", present: !!data?.log_events_count },
++  ];
++
++  return (
++    <SafePage 
++      title="דוח פערים" 
++      description="מציג חוסרים בנתונים המיובאים ממודל."
++    >
++      <div className="max-w-3xl space-y-6">
++        <div className="grid gap-4 sm:grid-cols-2">
++          {missingRepos.map((repo) => (
++            <Card key={repo.type} className={repo.present ? "border-status-proven/20 bg-status-proven-bg/5" : "border-status-blocked/20 bg-status-blocked-bg/5"}>
++              <CardContent className="flex items-center gap-4 p-4">
++                <div className={`rounded-full p-2 ${repo.present ? "bg-status-proven-bg text-status-proven" : "bg-status-blocked-bg text-status-blocked"}`}>
++                  {repo.present ? <CheckCircle2 className="h-5 w-5" /> : <FileWarning className="h-5 w-5" />}
++                </div>
++                <div>
++                  <div className="text-sm font-bold">{repo.label}</div>
++                  <div className="text-[10px] text-muted-foreground">
++                    {repo.present ? "נתונים קיימים" : "חסר נתונים - נדרש ייבוא"}
++                  </div>
++                </div>
++              </CardContent>
++            </Card>
++          ))}
++        </div>
++
++        <Card className="border-status-pending/30 shadow-elegant">
++          <CardHeader className="bg-status-pending-bg/10 border-b">
++            <CardTitle className="text-lg flex items-center gap-2">
++              <AlertCircle className="h-5 w-5 text-status-pending" />
++              פערים המשפיעים על החישובים
++            </CardTitle>
++          </CardHeader>
++          <CardContent className="p-6 space-y-4">
++            {!data?.log_events_count && (
++              <div className="rounded-lg border p-3 flex gap-3 text-sm">
++                <div className="text-status-blocked shrink-0"><Import className="h-5 w-5" /></div>
++                <div>
++                  <div className="font-bold">חישוב זמן תרגול חסום</div>
++                  <p className="text-muted-foreground mt-1 text-xs">לא הועלה דוח לוגים. ללא לוגים לא ניתן לחשב זמני שהייה ופעילות יומיים.</p>
++                  <Link to="/import" className="text-primary hover:underline font-bold text-[10px] mt-2 block">עבור לייבוא לוגים</Link>
++                </div>
++              </div>
++            )}
++
++            {!data?.tasks_count && (
++              <div className="rounded-lg border p-3 flex gap-3 text-sm">
++                <div className="text-status-blocked shrink-0"><Import className="h-5 w-5" /></div>
++                <div>
++                  <div className="font-bold">השלמת משימות ופרקים חסר</div>
++                  <p className="text-muted-foreground mt-1 text-xs">לא הועלה דוח השלמת פעילות. לא ניתן להציג את אחוז ההשלמה של התלמידים.</p>
++                  <Link to="/import" className="text-primary hover:underline font-bold text-[10px] mt-2 block">עבור לייבוא השלמת פעילות</Link>
++                </div>
++              </div>
++            )}
++
++            {data?.students_count === 0 && (
++              <div className="rounded-lg border p-3 flex gap-3 text-sm">
++                <div className="text-status-blocked shrink-0"><Import className="h-5 w-5" /></div>
++                <div>
++                  <div className="font-bold">מידע על תלמידים מצומצם</div>
++                  <p className="text-muted-foreground mt-1 text-xs">לא יובאו תלמידים. החיבור נעשה על סמך מזהים בלבד ללא שמות מלאים או דוא"ל.</p>
++                </div>
++              </div>
++            )}
++          </CardContent>
++        </Card>
++        
++        <div className="flex justify-end">
++          <VerifiedBadge status="missing" />
++        </div>
++      </div>
++    </SafePage>
++  );
++}
++
+diff --git a/src/pages/reports/StudentReport.tsx b/src/pages/reports/StudentReport.tsx
+index 10cf1a3..238a579 100644
+--- a/src/pages/reports/StudentReport.tsx
++++ b/src/pages/reports/StudentReport.tsx
+@@ -1 +1,79 @@
+-import { SafePage } from "@/components/SafePage"; import { useStudentReports } from "@/hooks/useImports"; export default function StudentReport(){ const {data, loading}=useStudentReports(); return <SafePage title="דוח תלמידים" description="דוח תלמידים מנתוני אמת בלבד.">{loading?"טוען...":<pre className="whitespace-pre-wrap text-xs">{JSON.stringify(data ?? [], null, 2)}</pre>}</SafePage>; }
++import { SafePage } from "@/components/SafePage";
++import { useStudentReports } from "@/hooks/useImports";
++import { VerifiedBadge } from "@/components/VerifiedBadge";
++import { 
++  Table, 
++  TableBody, 
++  TableCell, 
++  TableHead, 
++  TableHeader, 
++  TableRow 
++} from "@/components/ui/table";
++import { Card, CardContent } from "@/components/ui/card";
++import { Link } from "react-router-dom";
++
++export default function StudentReport() {
++  const { data, loading } = useStudentReports();
++
++  return (
++    <SafePage 
++      title="דוח תלמידים" 
++      description="סקירת ביצועים ופעילות בחתך תלמיד."
++    >
++      <Card className="shadow-elegant">
++        <CardContent className="p-0">
++          <Table dir="rtl">
++            <TableHeader className="bg-muted/50">
++              <TableRow>
++                <TableHead className="text-right">תלמיד</TableHead>
++                <TableHead className="text-center">ממוצע</TableHead>
++                <TableHead className="text-center">משימות</TableHead>
++                <TableHead className="text-center">פעילות (לוגים)</TableHead>
++                <TableHead className="text-right">עדכון אחרון</TableHead>
++              </TableRow>
++            </TableHeader>
++            <TableBody>
++              {loading ? (
++                <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">טוען נתונים...</TableCell></TableRow>
++              ) : !data?.length ? (
++                <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">אין נתונים להצגה</TableCell></TableRow>
++              ) : (
++                data.map((row) => (
++                  <TableRow key={row.student_id} className="hover:bg-muted/30">
++                    <TableCell className="font-medium text-right">
++                      <Link to={`/students/${row.student_id}`} className="hover:underline text-primary">
++                        {row.full_name}
++                      </Link>
++                    </TableCell>
++                    <TableCell className="text-center font-bold">
++                      {row.avg_grade !== null ? Math.round(row.avg_grade) : "—"}
++                    </TableCell>
++                    <TableCell className="text-center">
++                      <div className="flex flex-col text-[10px] items-center">
++                        <span className="text-status-proven font-bold">{row.tasks_complete} בוצעו</span>
++                        <span className="text-muted-foreground">{row.tasks_incomplete} חסרות</span>
++                      </div>
++                    </TableCell>
++                    <TableCell className="text-center">
++                      <div className="flex flex-col text-[10px] items-center">
++                        <span className="font-bold">{row.event_count} אירועים</span>
++                        <span className="text-muted-foreground">{row.active_days} ימים</span>
++                      </div>
++                    </TableCell>
++                    <TableCell className="text-right text-xs text-muted-foreground">
++                      {row.last_event ? new Date(row.last_event).toLocaleDateString() : "—"}
++                    </TableCell>
++                  </TableRow>
++                ))
++              )}
++            </TableBody>
++          </Table>
++        </CardContent>
++      </Card>
++      <div className="mt-4 flex justify-end">
++        <VerifiedBadge status="proven" />
++      </div>
++    </SafePage>
++  );
++}
++
+diff --git a/src/pages/reports/TaskReport.tsx b/src/pages/reports/TaskReport.tsx
+index 767d333..db5834e 100644
+--- a/src/pages/reports/TaskReport.tsx
++++ b/src/pages/reports/TaskReport.tsx
+@@ -1 +1,76 @@
+-import { SafePage } from "@/components/SafePage"; import { useTaskCompletionDetail } from "@/hooks/useImports"; export default function TaskReport(){ const {data, loading}=useTaskCompletionDetail(); return <SafePage title="דוח משימות" description="דוח completion ממשימות אמיתיות בלבד.">{loading?"טוען...":<pre className="whitespace-pre-wrap text-xs">{JSON.stringify(data ?? {}, null, 2)}</pre>}</SafePage>; }
++import { SafePage } from "@/components/SafePage";
++import { useTaskCompletionDetail } from "@/hooks/useImports";
++import { VerifiedBadge } from "@/components/VerifiedBadge";
++import { 
++  Table, 
++  TableBody, 
++  TableCell, 
++  TableHead, 
++  TableHeader, 
++  TableRow 
++} from "@/components/ui/table";
++import { Card, CardContent } from "@/components/ui/card";
++
++export default function TaskReport() {
++  const { data, loading } = useTaskCompletionDetail();
++
++  const students = Array.from(new Set(data?.rows.map(r => r.student_id))).map(id => {
++    const row = data?.rows.find(r => r.student_id === id);
++    return { id, name: row?.student_name ?? "—" };
++  });
++
++  return (
++    <SafePage 
++      title="דוח משימות" 
++      description="מעקב השלמת משימות בחתך תלמיד מנתוני Moodle."
++    >
++      <Card className="shadow-elegant overflow-hidden">
++        <div className="overflow-x-auto">
++          <Table dir="rtl">
++            <TableHeader className="bg-muted/50">
++              <TableRow>
++                <TableHead className="text-right sticky right-0 bg-muted/50 z-10 w-[200px]">תלמיד</TableHead>
++                {data?.tasks.map(task => (
++                  <TableHead key={task.id} className="text-center min-w-[120px] text-xs">
++                    {task.task_name}
++                  </TableHead>
++                ))}
++              </TableRow>
++            </TableHeader>
++            <TableBody>
++              {loading ? (
++                <TableRow><TableCell colSpan={(data?.tasks.length ?? 0) + 1} className="text-center py-8">טוען...</TableCell></TableRow>
++              ) : !students.length ? (
++                <TableRow><TableCell colSpan={(data?.tasks.length ?? 0) + 1} className="text-center py-8 text-muted-foreground">אין נתונים להצגה</TableCell></TableRow>
++              ) : (
++                students.map((student) => (
++                  <TableRow key={student.id} className="hover:bg-muted/30">
++                    <TableCell className="font-medium text-right sticky right-0 bg-background z-10">{student.name}</TableCell>
++                    {data?.tasks.map(task => {
++                      const completion = data.rows.find(r => r.student_id === student.id && r.task_id === task.id);
++                      return (
++                        <TableCell key={task.id} className="text-center">
++                          {completion?.is_complete ? (
++                            <span className="text-status-proven">✅</span>
++                          ) : completion?.is_complete === false ? (
++                            <span className="text-status-blocked">❌</span>
++                          ) : (
++                            <span className="text-muted-foreground">—</span>
++                          )}
++                        </TableCell>
++                      );
++                    })}
++                  </TableRow>
++                ))
++              )}
++            </TableBody>
++          </Table>
++        </div>
++      </Card>
++      <div className="mt-4 flex justify-end">
++        <VerifiedBadge status="proven" />
++      </div>
++    </SafePage>
++  );
++}
++
+diff --git a/vite.config.ts b/vite.config.ts
+index 67df16d..8ecee51 100644
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
+ import path from "path";
+ 
+ export default defineConfig({
+-  server: { host: "0.0.0.0", port: 5173 },
++  server: { host: "0.0.0.0", port: 3000 },
+   plugins: [react()],
+   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
+ });

@@ -1,0 +1,6 @@
+{
+  "name": "Moodle Teacher Hub",
+  "description": "A premium Hebrew RTL teacher dashboard for Moodle courses, using real data imports and LTI integration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

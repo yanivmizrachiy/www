@@ -1,0 +1,458 @@
+[
+  {
+    "RelativePath": ".env.example",
+    "SizeBytes": 664,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": false
+  },
+  {
+    "RelativePath": ".gitignore",
+    "SizeBytes": 73,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": false
+  },
+  {
+    "RelativePath": "components.json",
+    "SizeBytes": 534,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "index.html",
+    "SizeBytes": 840,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "metadata.json",
+    "SizeBytes": 219,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "MOODLE_SETUP_GUIDE.md",
+    "SizeBytes": 2911,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": false
+  },
+  {
+    "RelativePath": "package-lock.json",
+    "SizeBytes": 302404,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "package.json",
+    "SizeBytes": 1483,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "postcss.config.js",
+    "SizeBytes": 67,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "PROJECT_RULES.md",
+    "SizeBytes": 11186,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": false
+  },
+  {
+    "RelativePath": "README.md",
+    "SizeBytes": 4714,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": false
+  },
+  {
+    "RelativePath": "server.ts",
+    "SizeBytes": 4053,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": false
+  },
+  {
+    "RelativePath": "sync_to_github.ps1",
+    "SizeBytes": 1618,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": false
+  },
+  {
+    "RelativePath": "tailwind.config.cjs",
+    "SizeBytes": 2785,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "tailwind.config.ts",
+    "SizeBytes": 2029,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "tsconfig.app.json",
+    "SizeBytes": 576,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "tsconfig.json",
+    "SizeBytes": 181,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "tsconfig.node.json",
+    "SizeBytes": 402,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "vite.config.ts",
+    "SizeBytes": 269,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "docs/plan.md",
+    "SizeBytes": 515,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": false
+  },
+  {
+    "RelativePath": "src/App.tsx",
+    "SizeBytes": 2119,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/index.css",
+    "SizeBytes": 2148,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/main.tsx",
+    "SizeBytes": 339,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/EmptyDomain.tsx",
+    "SizeBytes": 2118,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/ImportEmptyState.tsx",
+    "SizeBytes": 2387,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/LaunchDiagnostics.tsx",
+    "SizeBytes": 3762,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/PracticeTimeSection.tsx",
+    "SizeBytes": 6286,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/SafePage.tsx",
+    "SizeBytes": 2336,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/StatusBadge.tsx",
+    "SizeBytes": 1016,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/VerifiedBadge.tsx",
+    "SizeBytes": 1553,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/ui/accordion.tsx",
+    "SizeBytes": 1977,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/ui/alert-dialog.tsx",
+    "SizeBytes": 5258,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/ui/badge.tsx",
+    "SizeBytes": 1925,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/ui/button.tsx",
+    "SizeBytes": 3484,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/ui/card.tsx",
+    "SizeBytes": 2641,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/ui/dialog.tsx",
+    "SizeBytes": 4075,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/ui/dropdown-menu.tsx",
+    "SizeBytes": 8722,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/ui/input.tsx",
+    "SizeBytes": 824,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/ui/scroll-area.tsx",
+    "SizeBytes": 1642,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/ui/separator.tsx",
+    "SizeBytes": 545,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/ui/switch.tsx",
+    "SizeBytes": 1693,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/ui/table.tsx",
+    "SizeBytes": 2764,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/ui/tabs.tsx",
+    "SizeBytes": 1883,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/ui/textarea.tsx",
+    "SizeBytes": 772,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/components/ui/tooltip.tsx",
+    "SizeBytes": 2846,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/hooks/useImports.ts",
+    "SizeBytes": 15227,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/hooks/useLtiSession.ts",
+    "SizeBytes": 1555,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/integrations/supabase/client.ts",
+    "SizeBytes": 775,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/lib/csv.ts",
+    "SizeBytes": 789,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/lib/duration.ts",
+    "SizeBytes": 769,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/lib/moodleImport.ts",
+    "SizeBytes": 3614,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/lib/utils.ts",
+    "SizeBytes": 166,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/pages/ActivityPage.tsx",
+    "SizeBytes": 1254,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/pages/Dashboard.tsx",
+    "SizeBytes": 9343,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/pages/ExportCenter.tsx",
+    "SizeBytes": 2286,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/pages/Grades.tsx",
+    "SizeBytes": 4905,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/pages/Import.tsx",
+    "SizeBytes": 9678,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/pages/LtiBootstrap.tsx",
+    "SizeBytes": 2799,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/pages/MoodleInstall.tsx",
+    "SizeBytes": 6833,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/pages/ReportsCenter.tsx",
+    "SizeBytes": 2465,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/pages/StudentProfile.tsx",
+    "SizeBytes": 5849,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/pages/StudentsList.tsx",
+    "SizeBytes": 5417,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/pages/SystemStatus.tsx",
+    "SizeBytes": 3557,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/pages/Tasks.tsx",
+    "SizeBytes": 6120,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/pages/TeacherHelp.tsx",
+    "SizeBytes": 3447,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/pages/reports/DayReport.tsx",
+    "SizeBytes": 3027,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/pages/reports/GapReport.tsx",
+    "SizeBytes": 4806,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/pages/reports/StudentReport.tsx",
+    "SizeBytes": 3527,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "src/pages/reports/TaskReport.tsx",
+    "SizeBytes": 3118,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "STATE/evidence-log.md",
+    "SizeBytes": 1267,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": false
+  },
+  {
+    "RelativePath": "STATE/project-status.md",
+    "SizeBytes": 938,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": false
+  },
+  {
+    "RelativePath": "STATE/recovery-complete.md",
+    "SizeBytes": 1482,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": false
+  },
+  {
+    "RelativePath": "supabase/functions/lti-launch/index.ts",
+    "SizeBytes": 4200,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "supabase/migrations/00_initial_schema.sql",
+    "SizeBytes": 1445,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "supabase/migrations/20240428_initial_reconstruction.sql",
+    "SizeBytes": 1561,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  },
+  {
+    "RelativePath": "supabase/migrations/20240429_moodle_data_tables.sql",
+    "SizeBytes": 2536,
+    "LastWriteTime": "2026-04-30T21:51:16",
+    "SafeToCopy": true
+  }
+]

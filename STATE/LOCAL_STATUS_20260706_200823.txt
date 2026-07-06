@@ -1,0 +1,76 @@
+BRANCH:
+gemini/recovery-sync-20260503-073319
+
+STATUS:
+ M index.html
+ M package-lock.json
+ M package.json
+ M src/App.tsx
+ M src/components/SafePage.tsx
+ M src/components/StatusBadge.tsx
+ M src/components/ui/button.tsx
+ M src/components/ui/card.tsx
+ M src/components/ui/tooltip.tsx
+ M src/hooks/useLtiSession.ts
+ M src/index.css
+ M src/integrations/supabase/client.ts
+ M src/lib/csv.ts
+ M src/lib/duration.ts
+ M src/lib/utils.ts
+ M src/main.tsx
+ M src/pages/ActivityPage.tsx
+ M src/pages/Dashboard.tsx
+ M src/pages/Grades.tsx
+ M src/pages/Import.tsx
+ M src/pages/LtiBootstrap.tsx
+ M src/pages/StudentProfile.tsx
+ M src/pages/Tasks.tsx
+ M src/pages/reports/DayReport.tsx
+ M src/pages/reports/GapReport.tsx
+ M src/pages/reports/StudentReport.tsx
+ M src/pages/reports/TaskReport.tsx
+ M tailwind.config.ts
+ M vite.config.ts
+?? STATE/LOCAL_STATUS_20260706_200823.txt
+?? STATE/gemini-sync/
+?? components.json
+?? metadata.json
+?? src/components/EmptyDomain.tsx
+?? src/components/ImportEmptyState.tsx
+?? src/components/LaunchDiagnostics.tsx
+?? src/components/PracticeTimeSection.tsx
+?? src/components/VerifiedBadge.tsx
+?? src/components/ui/accordion.tsx
+?? src/components/ui/alert-dialog.tsx
+?? src/components/ui/badge.tsx
+?? src/components/ui/dialog.tsx
+?? src/components/ui/dropdown-menu.tsx
+?? src/components/ui/input.tsx
+?? src/components/ui/scroll-area.tsx
+?? src/components/ui/separator.tsx
+?? src/components/ui/switch.tsx
+?? src/components/ui/table.tsx
+?? src/components/ui/tabs.tsx
+?? src/components/ui/textarea.tsx
+?? src/hooks/useImports.ts
+?? src/lib/moodleImport.ts
+?? src/pages/ExportCenter.tsx
+?? src/pages/MoodleInstall.tsx
+?? src/pages/ReportsCenter.tsx
+?? src/pages/StudentsList.tsx
+?? src/pages/SystemStatus.tsx
+?? src/pages/TeacherHelp.tsx
+?? supabase/
+?? tailwind.config.cjs
+
+LOG:
+765edbd docs: sync branding and data usage principles
+e4099b4 docs: sync Hebrew UI real product principles
+0098ab0 docs: sync PROJECT_MEMORY locally
+2949518 Add truth-safe CSV utilities
+bd825b4 Add duration formatting utilities
+a368313 Record PR 1 current truth and blockers
+d72f268 Add critical Lovable Gemini gap audit
+1511f59 Harden mobile schedule rendering without demo text
+49d701d Polish mobile scrolling typography and premium colors
+f1dccc0 Load mobile optimized schedule assets
