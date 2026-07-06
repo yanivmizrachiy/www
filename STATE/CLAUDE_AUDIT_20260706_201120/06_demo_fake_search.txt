@@ -1,0 +1,30 @@
+
+src\pages\Import.tsx:127:                          placeholder="או הדבק טבלה כאן..." 
+src\pages\StudentsList.tsx:64:               placeholder="חיפוש לפי שם, דואיל או מזהה..." 
+PROJECT_MEMORY.md:47:- אם חסרה תמונה: מציגים placeholder ברור.
+PROJECT_MEMORY.md:64:- אין דמו.
+PROJECT_MEMORY.md:348:- fake data.
+PROJECT_MEMORY.md:349:- demo data.
+PROJECT_MEMORY.md:350:- fake sync.
+PROJECT_RULES.md:7:אם קיימת סתירה בין README, docs, קוד, STATE או הודעות קודמות — המסמך הזה קובע עד שיעודכן במפורש ובצורה מנומקת.
+PROJECT_RULES.md:37:- נתוני דמו.
+PROJECT_RULES.md:224:2. אין demo fallback.
+README.md:15:המערכת לא מציגה דמו ולא ממציאה נתונים. כל נתון חייב להגיע ממקור Moodle אמיתי: LTI/API מאומת או ייבוא ידני של דוחות Moodle אמיתיים.
+README.md:29:- לא דמו.
+STATE\CLAUDE_HANDOFF_20260706_201004.md:77:1511f59 Harden mobile schedule rendering without demo text
+STATE\CLAUDE_HANDOFF_20260706_201004.md:120:3. כל UI בעברית, כל כפתור אמיתי, אין דמו.
+STATE\evidence-log.md:48:- No demo data added.
+STATE\evidence-log.md:62:- No demo data added.
+STATE\gemini-ai-studio-run-2026-04-28.md:94:Gemini תיאר את התיקון כ־defensive initialization / placeholder values כדי שה־UI לא יקרוס כאשר חסרות הגדרות `VITE_SUPABASE_URL` ו־`VITE_SUPABASE_PUBLISHABLE_KEY`.
+STATE\gemini-ai-studio-run-2026-04-28.md:221:5. שימוש ב־placeholder Supabase URL עלול להסתיר בעיית קונפיגורציה במקום להציג blocked state ברור. יש לבדוק את הקוד לפני אימוץ.
+STATE\PRINCIPLES_HEBREW_UI_REAL_PRODUCT.md:8:The project must be a real product, not a demo.
+STATE\PRINCIPLES_HEBREW_UI_REAL_PRODUCT.md:28:No demo buttons.
+STATE\PRINCIPLES_HEBREW_UI_REAL_PRODUCT.md:29:No demo labels.
+STATE\PRINCIPLES_HEBREW_UI_REAL_PRODUCT.md:30:No fake links.
+STATE\PRINCIPLES_HEBREW_UI_REAL_PRODUCT.md:31:No fake sync.
+STATE\PRINCIPLES_HEBREW_UI_REAL_PRODUCT.md:32:No fake data.
+STATE\PRINCIPLES_HEBREW_UI_REAL_PRODUCT.md:69:- No unused demo code
+STATE\project-status.md:34:- תועד שהדרישה הסופית כוללת מערכת Moodle מחוברת באמת, ללא דמו, עם SSO/LTI/API, דוחות, ייצוא ועריכה דו־כיוונית רק אם קיימות הרשאות Moodle אמיתיות.
+STATE\project-status.md:43:- אין דמו ואין מידע מומצא.
+STATE\TODO-NEXT.md:1:# TODO NEXT
+

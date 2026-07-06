@@ -1,0 +1,31 @@
+LOG
+1eebfb0 chore: snapshot before Claude Code cleanup
+765edbd docs: sync branding and data usage principles
+e4099b4 docs: sync Hebrew UI real product principles
+0098ab0 docs: sync PROJECT_MEMORY locally
+2949518 Add truth-safe CSV utilities
+bd825b4 Add duration formatting utilities
+a368313 Record PR 1 current truth and blockers
+d72f268 Add critical Lovable Gemini gap audit
+1511f59 Harden mobile schedule rendering without demo text
+49d701d Polish mobile scrolling typography and premium colors
+f1dccc0 Load mobile optimized schedule assets
+68e36ed Force no dash date layout in clean page
+ffa47db Load latest date layout assets
+1e60775 Place event name below date line
+c301434 Place event name below date without dash
+b33e475 Load latest premium schedule code assets
+ca903d7 Add premium date background styling
+02f27fe Format multi-day events and premium date spans
+a2fce38 Highlight date text in premium color
+bb72b55 Upgrade premium visual design and title
+3c5563e Restore visible schedule title
+9ca1d95 Load latest clean view assets
+6afda2c Style premium May June navigation
+90a6433 Add premium month navigation and full Hebrew day names
+6a7c8e3 Apply real event background colors
+4a7d5b4 Use one sentence event renderer
+877dc9d Add one sentence event renderer
+24785da Add real May June schedule events
+4d327cb Prefer extracted May June events JSON
+782ffc8 Add real May June event extractor

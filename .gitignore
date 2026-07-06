@@ -15,4 +15,6 @@ STATE/backup_*/
 dist/
 coverage/
 Thumbs.db
-.DS_Store
+.DS_Store*.tsbuildinfo
+*.tsbuildinfo
+STATE/CLAUDE_TESTS_*/99_summary.txt

@@ -1,0 +1,92 @@
+
+src\components\AppSidebar.tsx:5:import { Button } from "@/components/ui/button";
+src\components\AppSidebar.tsx:9:  SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton,
+src\components\AppSidebar.tsx:64:          {!collapsed && <SidebarGroupLabel>ניווט</SidebarGroupLabel>}
+src\components\AppSidebar.tsx:69:                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+src\components\AppSidebar.tsx:83:                  </SidebarMenuButton>
+src\components\AppSidebar.tsx:91:          {!collapsed && <SidebarGroupLabel>תמיכה</SidebarGroupLabel>}
+src\components\AppSidebar.tsx:96:                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+src\components\AppSidebar.tsx:109:                  </SidebarMenuButton>
+src\components\AppSidebar.tsx:124:          <Button
+src\components\AppSidebar.tsx:132:          </Button>
+src\components\EmptyDomain.tsx:3:import { Button } from "@/components/ui/button";
+src\components\EmptyDomain.tsx:41:      <Button asChild className="w-full shadow-lg h-12">
+src\components\EmptyDomain.tsx:46:      </Button>
+src\components\ImportEmptyState.tsx:15:          { icon: UploadCloud, label: "גרירת קבצים", desc: "XLSX, CSV, ODS" },
+src\components\ImportEmptyState.tsx:16:          { icon: Copy, label: "הדבקת טבלה", desc: "העתק-הדבק ישירות" },
+src\components\ImportEmptyState.tsx:17:          { icon: FileSpreadsheet, label: "זיהוי אוטומטי", desc: "אנחנו נזהה את הדוח" }
+src\components\ImportEmptyState.tsx:31:                  <div className="text-sm font-bold">{item.label}</div>
+src\components\PracticeTimeSection.tsx:7:import { Button } from "@/components/ui/button";
+src\components\PracticeTimeSection.tsx:73:        <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
+src\components\PracticeTimeSection.tsx:76:        </Button>
+src\components\SafePage.tsx:4:import { Button } from './ui/button';
+src\components\SafePage.tsx:28:            <Button 
+src\components\SafePage.tsx:36:            </Button>
+src\components\StatusBadge.tsx:14:      label: 'נתונים קיימים',
+src\components\StatusBadge.tsx:19:      label: 'חסר סנכרון',
+src\components\StatusBadge.tsx:24:      label: 'דרוש עדכון',
+src\components\StatusBadge.tsx:30:  const { label, icon: Icon, color } = configs[status];
+src\components\StatusBadge.tsx:35:      {label}
+src\components\VerifiedBadge.tsx:9:  showLabel?: boolean;
+src\components\VerifiedBadge.tsx:12:export function VerifiedBadge({ status, className, showLabel = true }: VerifiedBadgeProps) {
+src\components\VerifiedBadge.tsx:50:      {showLabel && <span>{text}</span>}
+src\pages\ActivityPage.tsx:10:      title="פעילות / זמנים" 
+src\pages\ChapterDetail.tsx:3:export default function ChapterDetail() { const { sectionId } = useParams(); return <SafePage title="פרק" description={`תצוגת פרק ${sectionId ?? "—"}. הנתונים יוצגו רק ממקור Moodle אמיתי.`} />; }
+src\pages\Chapters.tsx:3:export default function Page() { const {data, loading, error} = useCourseStructure(); return <SafePage title="פרקים" description="פרקים מתוך מבנה הקורס או דוחות completion.">{loading ? <p className="text-sm text-muted-foreground">טוען...</p> : error ? <EmptyTruth>{error}</EmptyTruth> : <ul className="space-y-2">{data?.chapters?.map((c)=><li key={c.id} className='rounded border p-3'>{c.chapter_name}</li>)}</ul>}</SafePage>; }
+src\pages\Dashboard.tsx:6:import { Button } from "@/components/ui/button";
+src\pages\Dashboard.tsx:73:function SubMenuButton({ 
+src\pages\Dashboard.tsx:93:        <Button variant="ghost" className="w-full justify-start gap-3 p-3 h-auto rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group text-right">
+src\pages\Dashboard.tsx:99:        </Button>
+src\pages\Dashboard.tsx:217:              <Button 
+src\pages\Dashboard.tsx:224:              </Button>
+src\pages\Dashboard.tsx:233:                <SubMenuButton key={item.to} {...item} color={currentCategory.color} delay={i * 0.05} />
+src\pages\Export.tsx:1:import { SafePage } from "@/components/SafePage"; export default function Export(){ return <SafePage title="ייצוא" description="CSV/Excel/PDF יוצגו רק כאשר קיימת יכולת אמיתית שנבדקה." />; }
+src\pages\ExportCenter.tsx:4:import { Button } from '@/components/ui/button';
+src\pages\ExportCenter.tsx:37:              <Button disabled={!report.ready} variant={report.ready ? "default" : "secondary"} className="w-full gap-2">
+src\pages\ExportCenter.tsx:44:              </Button>
+src\pages\Grades.tsx:21:      <SafePage title="ציונים" titleColor="text-blue-500" description="מטריצת ציונים מתוך נתוני Moodle.">
+src\pages\Grades.tsx:24:          title="אין נתוני ציונים" 
+src\pages\Grades.tsx:33:      title="ציונים" 
+src\pages\Import.tsx:7:import { Button } from "@/components/ui/button";
+src\pages\Import.tsx:89:      title="ייבוא נתונים" 
+src\pages\Import.tsx:118:                <Button onClick={() => fileInputRef.current?.click()} variant="outline" size="lg" className="gap-2 h-14 md:px-10">
+src\pages\Import.tsx:121:                </Button>
+src\pages\Import.tsx:127:                          placeholder="או הדבק טבלה כאן..." 
+src\pages\Import.tsx:132:                        <Button 
+src\pages\Import.tsx:139:                        </Button>
+src\pages\Import.tsx:179:                    <Button variant="ghost" size="sm" onClick={() => setResult(null)} disabled={isUploading}>
+src\pages\Import.tsx:181:                    </Button>
+src\pages\Import.tsx:182:                    <Button size="sm" onClick={handleSubmit} disabled={isUploading} className="gap-2 shadow-lg">
+src\pages\Import.tsx:185:                    </Button>
+src\pages\LtiBootstrap.tsx:34:      title="כניסה מתוך Moodle" 
+src\pages\MoodleInstall.tsx:5:import { Button } from '@/components/ui/button';
+src\pages\MoodleInstall.tsx:18:      title="התקנת הכלי במודל" 
+src\pages\MoodleInstall.tsx:37:                <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">Tool URL (כתובת הכלי)</label>
+src\pages\MoodleInstall.tsx:42:                  <Button variant="secondary" size="icon" onClick={() => copy(toolUrl)} className="h-14 w-14 shrink-0 rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm">
+src\pages\MoodleInstall.tsx:44:                  </Button>
+src\pages\MoodleInstall.tsx:50:                   <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">LTI Version</label>
+src\pages\MoodleInstall.tsx:54:                   <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">Consumer Key / Secret</label>
+src\pages\MoodleInstall.tsx:101:                 <Button variant="secondary" className="w-full font-black text-primary">
+src\pages\MoodleInstall.tsx:103:                 </Button>
+src\pages\NotFound.tsx:2:export default function Page() { return <SafePage title="העמוד לא נמצא" description="הנתיב המבוקש לא קיים באפליקציה." />; }
+src\pages\Reports.tsx:3:import { Button } from "@/components/ui/button";
+src\pages\Reports.tsx:4:export default function Reports() { return <SafePage title="דוחות" description="דוחות רק על בסיס נתונים שיובאו או אומתו."><div className="flex flex-wrap gap-2"><Button asChild variant="outline"><Link to="/reports/students">דוח תלמידים</Link></Button><Button asChild variant="outline"><Link to="/reports/tasks">דוח משימות</Link></Button><Button asChild variant="outline"><Link to="/reports/days">דוח ימים</Link></Button><Button asChild variant="outline"><Link to="/reports/gaps">פערים</Link></Button></div></SafePage>; }
+src\pages\SettingsPage.tsx:2:export default function Page() { return <SafePage title="הגדרות" description="סטטוס חיבורים והגדרות לפי LTI/API אמיתי בלבד." />; }
+src\pages\Setup.tsx:2:export default function Page() { return <SafePage title="התקנה / חיבור Moodle" description="הנחיות לחיבור הכלי מתוך Moodle. אין סיסמת Moodle באתר." />; }
+src\pages\Sites.tsx:2:export default function Page() { return <SafePage title="מרחבי Moodle" description="ניהול והצגת מרחבים רק לפי session/context אמיתי." />; }
+src\pages\StudentProfile.tsx:14:  if (loading) return <SafePage title="פרופיל תלמיד" description="טוען..."><div className="animate-pulse space-y-4"><div className="h-40 bg-muted rounded-xl" /></div></SafePage>;
+src\pages\StudentProfile.tsx:15:  if (error || !data) return <SafePage title="פרופיל תלמיד" description="שגיאה"><EmptyData message={error ?? "תלמיד לא נמצא"} /></SafePage>;
+src\pages\StudentProfile.tsx:19:      title={data.student.full_name} 
+src\pages\StudentProfile.tsx:46:            <PracticeTimeSection studentId={id} title="זמן תרגול אישי" />
+src\pages\Students.tsx:3:export default function Page() { const {data, loading, error} = useImportedStudents(); return <SafePage title="תלמידים" description="רשימת תלמידים מיובאת מדוח Moodle אמיתי.">{loading ? <p className="text-sm text-muted-foreground">טוען...</p> : error ? <EmptyTruth>{error}</EmptyTruth> : <ul className="space-y-2">{data?.map((s)=><li key={s.id} className='rounded border p-3'><b>{s.full_name}</b><div className='text-xs text-muted-foreground'>{s.external_username ?? s.email ?? '—'}</div></li>)}</ul>}</SafePage>; }
+src\pages\StudentsList.tsx:5:import { Button } from '@/components/ui/button';
+src\pages\StudentsList.tsx:23:      title="תלמידים" 
+src\pages\StudentsList.tsx:30:              <Button className="font-bold bg-primary text-white hover:bg-primary/90">
+src\pages\StudentsList.tsx:33:              </Button>
+src\pages\StudentsList.tsx:54:            <Button asChild size="lg" className="font-black px-10">
+src\pages\StudentsList.tsx:56:            </Button>
+src\pages\StudentsList.tsx:64:               placeholder="חיפוש לפי שם, דואיל או מזהה..." 
+src\pages\Tasks.tsx:25:      <SafePage title="משימות ופרקים" titleColor="text-emerald-500" description="מבנה הקורס והשלמות משימות.">
+src\pages\Tasks.tsx:28:          title="אין נתוני משימות" 
+src\pages\Tasks.tsx:37:      title="משימות ופרקים" 
+
