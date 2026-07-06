@@ -76,7 +76,8 @@ export default function StudentsList() {
                  animate={{ opacity: 1, y: 0 }}
                  transition={{ delay: idx * 0.03 }}
                >
-                 <Card className="group hover:ring-2 hover:ring-primary/20 transition-all border-none shadow-elegant bg-background/50 backdrop-blur-sm overflow-hidden h-full">
+               <Link to={`/student/${student.id}`} className="block">
+                 <Card className="group hover:ring-2 hover:ring-primary/20 transition-all border-none shadow-elegant bg-background/50 backdrop-blur-sm overflow-hidden h-full cursor-pointer">
                     <CardContent className="p-6">
                       <div className="flex items-center gap-4 mb-4">
                         <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black text-xl">
@@ -90,14 +91,15 @@ export default function StudentsList() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center gap-2 mt-4 pt-4 border-t">
                         <div className="px-2 py-1 bg-muted rounded-md text-[10px] font-bold text-muted-foreground">
-                          ID: {student.moodle_id || "—"}
+                          ID: {student.external_id || "—"}
                         </div>
                       </div>
                     </CardContent>
                  </Card>
+               </Link>
                </motion.div>
              ))}
            </div>

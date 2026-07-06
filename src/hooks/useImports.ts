@@ -229,24 +229,26 @@ export function useStudentProfile(id?: string) {
     }
 
     async function fetchData() {
+      if (!session) {
+        setError("יש לפתוח את המערכת מתוך Moodle כדי לצפות בפרופיל תלמיד");
+        setLoading(false);
+        return;
+      }
+
       try {
         const { data: s, error: sErr } = await supabase
           .from('imported_students')
           .select('*')
           .eq('id', id)
+          .eq('course_id', session.course_id)
           .single();
 
         if (sErr || !s) {
-          setError(sErr?.message ?? 'תלמיד לא נמצא');
+          setError(sErr?.message ?? 'תלמיד לא נמצא בקורס הזה');
           setLoading(false);
           return;
         }
         setStudent(s);
-
-        if (!session) {
-          setLoading(false);
-          return;
-        }
 
         const [
           { data: gradesData },
