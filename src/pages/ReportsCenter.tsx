@@ -9,7 +9,7 @@ export default function ReportsCenter() {
     { title: "דוח ציונים", path: "/grades", icon: BarChart3, desc: "ריכוז הישגים מכל המשימות" },
     { title: "דוח משימות", path: "/reports/tasks", icon: ListChecks, desc: "ניתוח הצלחה לפי משימה" },
     { title: "דוח פעילות", path: "/activity", icon: Activity, desc: "לוגים ואירועי למידה" },
-    { title: "דוח זמני תרגול", path: "/reports/day", icon: Clock, desc: "חישוב משך עבודה יומי" },
+    { title: "דוח זמני תרגול", path: "/reports/days", icon: Clock, desc: "חישוב משך עבודה יומי" },
     { title: "דוח פערים", path: "/reports/gap", icon: AlertTriangle, desc: "מה חסר במערכת" },
   ];
 

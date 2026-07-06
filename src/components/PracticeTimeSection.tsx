@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { usePracticeTime, PracticeDayRow } from "@/hooks/useImports";
+import React from "react";
+import { usePracticeTime } from "@/hooks/useImports";
 import { secondsToHebrewHms } from "@/lib/duration";
 import { exportToCsv } from "@/lib/csv";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download, Calendar, Users, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { Download, Clock } from "lucide-react";
 
 interface PracticeTimeSectionProps {
   studentId?: string | null;
@@ -21,28 +21,18 @@ interface PracticeTimeSectionProps {
 }
 
 export function PracticeTimeSection({ studentId = null, title = "זמן תרגול יומי" }: PracticeTimeSectionProps) {
-  const [expandedDays, setExpandedDays] = useState<string[]>([]);
   const { rows, loading, error } = usePracticeTime({ studentId });
-
-  const toggleDay = (day: string) => {
-    setExpandedDays(prev => 
-      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
-    );
-  };
 
   const handleExport = () => {
     if (!rows?.length) return;
 
     const rowsToExport = [
-      ["תאריך", "תלמיד", "זמן כולל", "אירועים", "סשנים", "התחלה", "סיום"],
+      ["תאריך", "תלמיד", "זמן כולל (שניות)", "אירועים"],
       ...rows.map(d => [
         d.day,
         d.student_name ?? "—",
-        secondsToHebrewHms(d.total_seconds),
+        d.total_seconds,
         d.event_count,
-        d.session_count,
-        d.first_at ? new Date(d.first_at).toLocaleTimeString() : "—",
-        d.last_at ? new Date(d.last_at).toLocaleTimeString() : "—",
       ])
     ];
 
@@ -83,55 +73,18 @@ export function PracticeTimeSection({ studentId = null, title = "זמן תרגו
               <TableHead className="text-right">תלמיד</TableHead>
               <TableHead className="text-center">זמן כולל</TableHead>
               <TableHead className="text-center">אירועים</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.map((day) => (
-              <React.Fragment key={`${day.day}-${day.student_id}`}>
-                <TableRow 
-                  className="cursor-pointer hover:bg-muted/30"
-                  onClick={() => toggleDay(`${day.day}-${day.student_id}`)}
-                >
-                  <TableCell className="font-medium">{day.day}</TableCell>
-                  <TableCell>{day.student_name}</TableCell>
-                  <TableCell className="text-center font-bold text-primary">
-                    {secondsToHebrewHms(day.total_seconds)}
-                  </TableCell>
-                  <TableCell className="text-center text-muted-foreground">{day.event_count}</TableCell>
-                  <TableCell>
-                    {expandedDays.includes(`${day.day}-${day.student_id}`) ? (
-                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </TableCell>
-                </TableRow>
-                {expandedDays.includes(`${day.day}-${day.student_id}`) && (
-                  <TableRow className="bg-muted/20">
-                    <TableCell colSpan={5} className="p-4">
-                      <div className="space-y-3">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">סשנים מחושבים</h4>
-                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                          {day.windows.map((win, idx) => (
-                            <div key={idx} className="flex flex-col rounded-lg border bg-background p-2 text-sm shadow-sm">
-                              <div className="flex items-center justify-between font-medium">
-                                <span>{secondsToHebrewHms(win.duration_seconds)}</span>
-                                <span className="text-[10px] text-muted-foreground">{win.event_count} אירועים</span>
-                              </div>
-                              <div className="mt-1 text-[10px] text-muted-foreground">
-                                {new Date(win.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} 
-                                {" - "}
-                                {new Date(win.ended_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </React.Fragment>
+              <TableRow key={`${day.day}-${day.student_id}`} className="hover:bg-muted/30">
+                <TableCell className="font-medium">{day.day}</TableCell>
+                <TableCell>{day.student_name}</TableCell>
+                <TableCell className="text-center font-bold text-primary">
+                  {secondsToHebrewHms(day.total_seconds)}
+                </TableCell>
+                <TableCell className="text-center text-muted-foreground">{day.event_count}</TableCell>
+              </TableRow>
             ))}
           </TableBody>
         </Table>

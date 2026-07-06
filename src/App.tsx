@@ -12,6 +12,9 @@ import StudentsList from './pages/StudentsList';
 import ReportsCenter from './pages/ReportsCenter';
 import ExportCenter from './pages/ExportCenter';
 import GapReport from './pages/reports/GapReport';
+import StudentReport from './pages/reports/StudentReport';
+import TaskReport from './pages/reports/TaskReport';
+import DayReport from './pages/reports/DayReport';
 import SystemStatus from './pages/SystemStatus';
 import MoodleInstall from './pages/MoodleInstall';
 import TeacherHelp from './pages/TeacherHelp';
@@ -33,6 +36,9 @@ function App() {
             <Route path="/import" element={<Import />} />
             <Route path="/reports" element={<ReportsCenter />} />
             <Route path="/reports/gap" element={<GapReport />} />
+            <Route path="/reports/students" element={<StudentReport />} />
+            <Route path="/reports/tasks" element={<TaskReport />} />
+            <Route path="/reports/days" element={<DayReport />} />
             <Route path="/export" element={<ExportCenter />} />
             <Route path="/status" element={<SystemStatus />} />
             <Route path="/install" element={<MoodleInstall />} />

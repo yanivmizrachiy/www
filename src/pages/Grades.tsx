@@ -65,9 +65,9 @@ export default function Page() {
                       </TableCell>
                       {data.items.map(item => {
                         const grade = data.grades.find(g => g.student_id === student.id && g.grade_item_id === item.id);
-                        const val = grade?.grade_value;
-                        const isNum = !isNaN(parseFloat(val));
-                        const score = isNum ? parseFloat(val) : null;
+                        const val = grade?.numeric_value;
+                        const isNum = val !== null && val !== undefined && !isNaN(val as any);
+                        const score = isNum ? val : null;
                         
                         // Sophisticated Heatmap Color
                         let colorClass = "text-muted-foreground/30";
@@ -85,7 +85,7 @@ export default function Page() {
                                 {score}
                               </span>
                             ) : (
-                              grade?.raw_grade ?? <span className="text-muted-foreground/30">—</span>
+                              grade?.raw_value ?? <span className="text-muted-foreground/30">—</span>
                             )}
                           </TableCell>
                         );
