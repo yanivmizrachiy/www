@@ -6,10 +6,11 @@ import { ArrowLeft, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface SafePageProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
   title?: string;
   description?: string;
+  titleColor?: string;
 }
 
 export function SafePage({ children, className, title, description }: SafePageProps) {
@@ -52,11 +53,11 @@ export function SafePage({ children, className, title, description }: SafePagePr
   );
 }
 
-export function EmptyData({ message }: { message: string }) {
+export function EmptyData({ message, children }: { message?: string; children?: React.ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-2xl border border-dashed border-neutral-200">
       <div className="text-neutral-400 mb-4">אין נתונים זמינים</div>
-      <p className="text-sm text-neutral-500">{message}</p>
+      {message ? <p className="text-sm text-neutral-500">{message}</p> : children}
     </div>
   );
 }

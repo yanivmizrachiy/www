@@ -22,7 +22,7 @@ interface PracticeTimeSectionProps {
 
 export function PracticeTimeSection({ studentId = null, title = "זמן תרגול יומי" }: PracticeTimeSectionProps) {
   const [expandedDays, setExpandedDays] = useState<string[]>([]);
-  const { data, loading, error } = usePracticeTime({ studentId });
+  const { rows, loading, error } = usePracticeTime({ studentId });
 
   const toggleDay = (day: string) => {
     setExpandedDays(prev => 
@@ -31,11 +31,11 @@ export function PracticeTimeSection({ studentId = null, title = "זמן תרגו
   };
 
   const handleExport = () => {
-    if (!data?.days?.length) return;
-    
-    const rows = [
+    if (!rows?.length) return;
+
+    const rowsToExport = [
       ["תאריך", "תלמיד", "זמן כולל", "אירועים", "סשנים", "התחלה", "סיום"],
-      ...data.days.map(d => [
+      ...rows.map(d => [
         d.day,
         d.student_name ?? "—",
         secondsToHebrewHms(d.total_seconds),
@@ -46,12 +46,12 @@ export function PracticeTimeSection({ studentId = null, title = "זמן תרגו
       ])
     ];
 
-    exportToCsv(`practice_time_${new Date().toISOString().split('T')[0]}.csv`, rows);
+    exportToCsv(`practice_time_${new Date().toISOString().split('T')[0]}.csv`, rowsToExport);
   };
 
   if (loading) return <div className="space-y-4"><div className="h-40 animate-pulse rounded-lg bg-muted" /></div>;
 
-  if (error || !data?.days?.length) {
+  if (error || !rows?.length) {
     return (
       <Card className="border-dashed">
         <CardContent className="flex flex-col items-center justify-center py-10 text-center">
@@ -87,7 +87,7 @@ export function PracticeTimeSection({ studentId = null, title = "זמן תרגו
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.days.map((day) => (
+            {rows.map((day) => (
               <React.Fragment key={`${day.day}-${day.student_id}`}>
                 <TableRow 
                   className="cursor-pointer hover:bg-muted/30"

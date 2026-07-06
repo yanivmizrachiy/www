@@ -10,14 +10,14 @@ export type {
 } from "./useLtiSession";
 
 export function useMoodleConnection() {
-  const { loading, site, session, domains, refresh } = useLtiSession();
+  const { loading, site, session } = useLtiSession();
   return {
     loading,
     user: null,
     sites: site ? [site] : [],
     activeSite: site,
     session,
-    domains,
-    refresh,
+    domains: [],
+    refresh: () => {},
   };
 }

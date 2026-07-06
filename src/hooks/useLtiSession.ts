@@ -54,3 +54,15 @@ export function useLtiSession() {
 export function setLtiToken(token: string) {
   localStorage.setItem('lti_token', token);
 }
+
+export function getLtiToken(): string | null {
+  return localStorage.getItem('lti_token');
+}
+
+export function clearLtiToken() {
+  localStorage.removeItem('lti_token');
+}
+
+export type DomainKey = string;
+export type DomainStatus = 'pending' | 'proven' | 'blocked';
+export type DomainState = 'idle' | 'checking' | 'active' | 'error';
