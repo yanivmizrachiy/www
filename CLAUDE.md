@@ -34,3 +34,43 @@
 7. בסיום להריץ npm run build ו-npm run typecheck.
 
 תוצאה נדרשת: אתר אחד, ריפו אחד, שני מוצרים מופרדים, כל הכפתורים בעברית ועובדים באמת, ללא דמו וללא זיופים.
+
+## Sync Rule — Local / GitHub / Deployment
+
+The www repo is the single source of truth.
+
+Claude Code must keep the project synchronized across:
+
+1. Local folder: C:\Users\yaniv\www
+2. GitHub repo: yanivmizrachiy/www
+3. Connected deployment service: Vercel / Render / active runtime
+
+Required workflow:
+
+Local file changes
+        ↓
+git status
+        ↓
+git add
+        ↓
+git commit
+        ↓
+git push to GitHub
+        ↓
+deployment updates from GitHub connection
+
+Do not treat Vercel as a separate source of truth.
+Do not create a separate Vercel-only file.
+Do not create another repo.
+Do not create another deployment unless Yaniv explicitly asks.
+
+Every meaningful project-memory update must be written into the local files, committed to GitHub, and pushed so the connected deployment can rebuild from the repo.
+
+Before finishing work, Claude Code must report:
+
+- local branch
+- git status
+- latest commit
+- whether changes were pushed to GitHub
+- whether deployment should update from the pushed branch
+
