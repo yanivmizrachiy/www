@@ -725,6 +725,132 @@ export type Database = {
           },
         ]
       }
+      sync_batches: {
+        Row: {
+          chapters_synced: number | null
+          course_id: number
+          created_at: string
+          duration_ms: number | null
+          error_summary: string | null
+          finished_at: string | null
+          grades_synced: number | null
+          id: string
+          lti_launch_id: string | null
+          logs_synced: number | null
+          site_id: string
+          started_at: string
+          status: string
+          students_synced: number | null
+          tasks_synced: number | null
+          completions_synced: number | null
+          trigger: string
+          ws_token_used: boolean | null
+        }
+        Insert: {
+          chapters_synced?: number | null
+          course_id: number
+          created_at?: string
+          duration_ms?: number | null
+          error_summary?: string | null
+          finished_at?: string | null
+          grades_synced?: number | null
+          id?: string
+          lti_launch_id?: string | null
+          logs_synced?: number | null
+          site_id: string
+          started_at?: string
+          status?: string
+          students_synced?: number | null
+          tasks_synced?: number | null
+          completions_synced?: number | null
+          trigger?: string
+          ws_token_used?: boolean | null
+        }
+        Update: {
+          chapters_synced?: number | null
+          course_id?: number
+          created_at?: string
+          duration_ms?: number | null
+          error_summary?: string | null
+          finished_at?: string | null
+          grades_synced?: number | null
+          id?: string
+          lti_launch_id?: string | null
+          logs_synced?: number | null
+          site_id?: string
+          started_at?: string
+          status?: string
+          students_synced?: number | null
+          tasks_synced?: number | null
+          completions_synced?: number | null
+          trigger?: string
+          ws_token_used?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_batches_lti_launch_id_fkey"
+            columns: ["lti_launch_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sync_batches_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "moodle_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_logs: {
+        Row: {
+          batch_id: string | null
+          created_at: string
+          detail: import("@/integrations/supabase/types").Json | null
+          domain: string
+          id: string
+          message: string
+          severity: string
+          site_id: string
+        }
+        Insert: {
+          batch_id?: string | null
+          created_at?: string
+          detail?: import("@/integrations/supabase/types").Json | null
+          domain: string
+          id?: string
+          message: string
+          severity?: string
+          site_id: string
+        }
+        Update: {
+          batch_id?: string | null
+          created_at?: string
+          detail?: import("@/integrations/supabase/types").Json | null
+          domain?: string
+          id?: string
+          message?: string
+          severity?: string
+          site_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_logs_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "sync_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sync_logs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "moodle_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       launch_summary: {

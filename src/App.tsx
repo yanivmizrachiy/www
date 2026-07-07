@@ -19,6 +19,8 @@ import SystemStatus from './pages/SystemStatus';
 import MoodleInstall from './pages/MoodleInstall';
 import Settings from './pages/Settings';
 import Setup from './pages/Setup';
+import Sync from './pages/Sync';
+import Guide from './pages/Guide';
 import TeacherHelp from './pages/TeacherHelp';
 import AppLayout from './components/AppLayout';
 
@@ -45,11 +47,13 @@ function App() {
               <Route path="/reports/tasks" element={<TaskReport />} />
               <Route path="/reports/days" element={<DayReport />} />
               <Route path="/export" element={<ExportCenter />} />
+              <Route path="/sync" element={<Sync />} />
               <Route path="/status" element={<SystemStatus />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/setup" element={<Setup />} />
               <Route path="/install" element={<MoodleInstall />} />
               <Route path="/help" element={<TeacherHelp />} />
+              <Route path="/guide" element={<Guide />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

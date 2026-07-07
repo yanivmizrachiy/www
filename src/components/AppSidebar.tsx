@@ -1,6 +1,7 @@
 import {
   LayoutDashboard, Users, ListChecks, BookOpen, GraduationCap,
   Activity, FileBarChart2, Download, Settings, Server, LogOut, Wrench, Upload,
+  RefreshCw, BookText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
@@ -21,12 +22,14 @@ const navItems = [
   { title: "ציונים", url: "/grades", icon: GraduationCap },
   { title: "פעילות / זמנים", url: "/activity", icon: Activity },
   { title: "דוחות", url: "/reports", icon: FileBarChart2 },
+  { title: "סנכרון", url: "/sync", icon: RefreshCw },
   { title: "ייצוא", url: "/export", icon: Download },
   { title: "הגדרות", url: "/settings", icon: Settings },
 ];
 
 const supportItems = [
   { title: "התקנה / חיבור Moodle", url: "/setup", icon: Wrench },
+  { title: "מדריך למורה", url: "/guide", icon: BookText },
 ];
 
 export function AppSidebar() {
