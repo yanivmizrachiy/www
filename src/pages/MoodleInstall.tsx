@@ -1,4 +1,4 @@
-import React from 'react';
+import { Link } from "react-router-dom";
 import { SafePage } from '@/components/SafePage';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ExternalLink, Copy, HelpCircle, Settings, ShieldCheck, Terminal } from 'lucide-react';
@@ -98,8 +98,8 @@ export default function MoodleInstall() {
                  <p className="text-white/70 text-sm font-medium leading-relaxed">
                     הצפנת LTI מבטיחה שהמידע עובר ממודל למערכת הניתוח בצורה מאובטחת ופרטית לחלוטין.
                  </p>
-                 <Button variant="secondary" className="w-full font-black text-primary">
-                    למידע נוסף
+                 <Button asChild variant="secondary" className="w-full font-black text-primary">
+                    <Link to="/guide">למידע נוסף</Link>
                  </Button>
               </CardContent>
            </Card>
