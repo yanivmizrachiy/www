@@ -8,6 +8,11 @@ export type SyncLog = Tables<'sync_logs'>;
 
 export type SyncDomain = 'students' | 'grades' | 'tasks' | 'chapters' | 'logs' | 'completions';
 
+export type SyncStatusResult =
+  | { ok: true; batchId: string }
+  | { ok: false; status: 'BLOCKED'; reason: string }
+  | { ok: false; status: 'ERROR'; error: string };
+
 const DOMAIN_LABELS: Record<SyncDomain, string> = {
   students: 'תלמידים',
   grades: 'ציונים',
@@ -28,6 +33,18 @@ const DOMAIN_ICONS: Record<SyncDomain, string> = {
 
 export { DOMAIN_LABELS, DOMAIN_ICONS };
 
+const STALE_BATCH_MINUTES = 30;
+
+async function cleanupStaleBatches(siteId: string) {
+  const cutoff = new Date(Date.now() - STALE_BATCH_MINUTES * 60 * 1000).toISOString();
+  await supabase
+    .from('sync_batches')
+    .update({ status: 'failed', finished_at: new Date().toISOString(), error_summary: 'בוטל אוטומטית — batch נשאר במצב running מעל זמן סביר' })
+    .eq('site_id', siteId)
+    .eq('status', 'running')
+    .lt('started_at', cutoff);
+}
+
 export function useSyncBatches(limit = 10) {
   const { session } = useLtiSession();
   const [batches, setBatches] = useState<SyncBatch[]>([]);
@@ -38,6 +55,7 @@ export function useSyncBatches(limit = 10) {
     if (!session) { setLoading(false); return; }
     setLoading(true);
     try {
+      await cleanupStaleBatches(session.site_id);
       const { data, error: err } = await supabase
         .from('sync_batches')
         .select('*')
@@ -93,6 +111,7 @@ export function useSyncStatus() {
     lastBatch: SyncBatch | null;
     hasData: boolean;
     checkLoading: boolean;
+    edgeFunctionReady: boolean;
   }>({
     wsConfigured: false,
     wsStatus: 'not_configured',
@@ -100,6 +119,7 @@ export function useSyncStatus() {
     lastBatch: null,
     hasData: false,
     checkLoading: true,
+    edgeFunctionReady: false,
   });
 
   useEffect(() => {
@@ -109,8 +129,10 @@ export function useSyncStatus() {
         return;
       }
 
-      const wsConfigured = !!(site?.ws_token && site?.ws_token_status === 'active');
+      const wsConfigured = !!(site?.ws_token_status === 'active');
       const wsStatus = site?.ws_token_status ?? 'not_configured';
+
+      await cleanupStaleBatches(session.site_id);
 
       const { data: running } = await supabase
         .from('sync_batches')
@@ -133,6 +155,8 @@ export function useSyncStatus() {
         .select('*', { count: 'exact', head: true })
         .eq('site_id', session.site_id);
 
+      const edgeFunctionReady = wsConfigured;
+
       setStatus({
         wsConfigured,
         wsStatus,
@@ -140,6 +164,7 @@ export function useSyncStatus() {
         lastBatch: last ?? null,
         hasData: (studentsCount ?? 0) > 0,
         checkLoading: false,
+        edgeFunctionReady,
       });
     }
 
@@ -149,8 +174,41 @@ export function useSyncStatus() {
   return status;
 }
 
-export async function triggerSync(sessionId: string, siteId: string, courseId: number): Promise<{ ok: boolean; batchId?: string; error?: string }> {
+export async function triggerSync(sessionId: string, siteId: string, courseId: number): Promise<SyncStatusResult> {
+  if (!sessionId || !siteId || !courseId) {
+    return { ok: false, status: 'BLOCKED', reason: 'חסר פרמטרים — לא ניתן להפעיל סנכרון' };
+  }
+
+  const { data: site, error: siteError } = await supabase
+    .from('moodle_sites')
+    .select('ws_token_status')
+    .eq('id', siteId)
+    .single();
+
+  if (siteError || !site) {
+    return { ok: false, status: 'ERROR', error: 'לא נמצא אתר מודל' };
+  }
+
+  if (site.ws_token_status !== 'active') {
+    return {
+      ok: false,
+      status: 'BLOCKED',
+      reason: 'סנכרון אוטומטי חסום: Moodle Web Services לא מוגדר. יש להגדיר Web Service token במודל או להשתמש בייבוא ידני.',
+    };
+  }
+
   try {
+    const { data: existingRunning } = await supabase
+      .from('sync_batches')
+      .select('id')
+      .eq('site_id', siteId)
+      .eq('status', 'running')
+      .single();
+
+    if (existingRunning) {
+      return { ok: false, status: 'BLOCKED', reason: 'סנכרון כבר בריצה. יש להמתין לסיום.' };
+    }
+
     const { data: batch, error: batchErr } = await supabase
       .from('sync_batches')
       .insert({
@@ -170,12 +228,12 @@ export async function triggerSync(sessionId: string, siteId: string, courseId: n
       site_id: siteId,
       domain: 'students',
       severity: 'info',
-      message: 'סנכרון ידני הופעל',
+      message: 'סנכרון ידני הופעל — בהמתנה ל-Edge Function',
     });
 
     return { ok: true, batchId: batch.id };
   } catch (err: any) {
-    return { ok: false, error: err.message };
+    return { ok: false, status: 'ERROR', error: err.message };
   }
 }
 
@@ -197,7 +255,6 @@ export async function finishSyncBatch(
     .update({
       status: result.status,
       finished_at: new Date().toISOString(),
-      duration_ms: null,
       ...result,
     })
     .eq('id', batchId);

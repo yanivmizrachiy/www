@@ -180,10 +180,16 @@ export default function Sync() {
     toast.info('מתחיל סנכרון...');
     const result = await triggerSync(session.id, session.site_id, session.course_id);
     if (result.ok) {
-      toast.success('סנכרון הופעל');
+      toast.success('סנכרון הופעל — בהמתנה לסנכרון');
       refreshBatches();
     } else {
-      toast.error(`שגיאה: ${result.error}`);
+      const blockedResult = result as { ok: false; status: 'BLOCKED'; reason: string };
+      const errorResult = result as { ok: false; status: 'ERROR'; error: string };
+      if (blockedResult.status === 'BLOCKED') {
+        toast.error(blockedResult.reason);
+      } else {
+        toast.error(`שגיאה: ${errorResult.error}`);
+      }
     }
     setSyncing(false);
   }
@@ -280,7 +286,7 @@ export default function Sync() {
 
               {wsBlocked && (
                 <BlockedBanner
-                  reason="Web Service token לא הוגדר. יש לבקש ממנהל מודל ליצור Web Service token עם הרשאות מתאימות."
+                  reason="סנכרון אוטומטי חסום: Moodle Web Services לא מוגדר"
                 />
               )}
 

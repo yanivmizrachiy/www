@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+const SAFE_SITE_FIELDS = `
+  id,
+  site_url,
+  site_name,
+  ws_token_status,
+  lti_consumer_key,
+  created_at,
+  updated_at
+`.trim().replace(/\s+/g, ' ');
+
 export function useLtiSession() {
   const [session, setSession] = useState<any>(null);
   const [site, setSite] = useState<any>(null);
@@ -16,16 +26,17 @@ export function useLtiSession() {
           return;
         }
 
-        // Fetch session from teacher_sessions join moodle_sites
         const { data: sessionData, error: sessionError } = await supabase
           .from('teacher_sessions')
-          .select('*, moodle_sites(*)')
+          .select(`
+            *,
+            moodle_sites(${SAFE_SITE_FIELDS})
+          `)
           .eq('session_token', token)
           .single();
 
         if (sessionError) {
           if (sessionError.code === 'PGRST116') {
-            // Not found
             localStorage.removeItem('lti_token');
           } else {
             throw sessionError;
@@ -33,9 +44,10 @@ export function useLtiSession() {
         }
 
         if (sessionData) {
-          const { moodle_sites, ...rest } = sessionData;
+          const siteData = (sessionData as any).moodle_sites as any;
+          const { moodle_sites: _ignored, ...rest } = sessionData as any;
           setSession(rest);
-          setSite(moodle_sites);
+          setSite(siteData);
         }
       } catch (err: any) {
         console.error('Error fetching LTI session:', err);
