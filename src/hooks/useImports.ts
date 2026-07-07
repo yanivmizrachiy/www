@@ -19,7 +19,6 @@ export function useImportsOverview() {
         const siteId = session.site_id;
         const courseId = session.course_id;
 
-        // Fetch counts from various tables
         const [
           studentsCount,
           gradeItemsCount,
@@ -28,12 +27,12 @@ export function useImportsOverview() {
           tasksCount,
           logsCount
         ] = await Promise.all([
-          supabase.from("imported_students").select("*", { count: "exact", head: true }).eq("site_id", siteId),
-          supabase.from("imported_grade_items").select("*", { count: "exact", head: true }).eq("site_id", siteId).eq("course_id", courseId),
-          supabase.from("imported_grades").select("*, imported_grade_items!inner(*)", { count: "exact", head: true }).eq("imported_grade_items.site_id", siteId).eq("imported_grade_items.course_id", courseId),
-          supabase.from("imported_chapters").select("*", { count: "exact", head: true }).eq("site_id", siteId).eq("course_id", courseId),
-          supabase.from("imported_tasks").select("*", { count: "exact", head: true }).eq("site_id", siteId).eq("course_id", courseId),
-          supabase.from("imported_log_events").select("*", { count: "exact", head: true }).eq("site_id", siteId).eq("course_id", courseId)
+          supabase.from('imported_students').select('*', { count: 'exact', head: true }).eq('site_id', siteId).eq('course_id', courseId),
+          supabase.from('imported_grade_items').select('*', { count: 'exact', head: true }).eq('site_id', siteId).eq('course_id', courseId),
+          supabase.from('imported_grades').select('*', { count: 'exact', head: true }).eq('site_id', siteId).eq('course_id', courseId),
+          supabase.from('imported_chapters').select('*', { count: 'exact', head: true }).eq('site_id', siteId).eq('course_id', courseId),
+          supabase.from('imported_tasks').select('*', { count: 'exact', head: true }).eq('site_id', siteId).eq('course_id', courseId),
+          supabase.from('imported_log_events').select('*', { count: 'exact', head: true }).eq('site_id', siteId).eq('course_id', courseId)
         ]);
 
         setData({
@@ -44,9 +43,8 @@ export function useImportsOverview() {
           tasks_count: tasksCount.count || 0,
           log_events_count: logsCount.count || 0,
         });
-
       } catch (err: any) {
-        console.error("Error fetching stats:", err);
+        console.error('Error fetching stats:', err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -71,16 +69,19 @@ export function useCourseStructure() {
         setLoading(false);
         return;
       }
+
       try {
         const { data: chapters, error: cErr } = await supabase
           .from('imported_chapters')
           .select('*')
+          .eq('site_id', session.site_id)
           .eq('course_id', session.course_id)
-          .order('order_index');
+          .order('position', { ascending: true });
 
         const { data: tasks, error: tErr } = await supabase
           .from('imported_tasks')
           .select('*')
+          .eq('site_id', session.site_id)
           .eq('course_id', session.course_id);
 
         if (cErr || tErr) throw cErr || tErr;
@@ -92,6 +93,7 @@ export function useCourseStructure() {
         setLoading(false);
       }
     }
+
     fetchData();
   }, [session]);
 
@@ -110,15 +112,16 @@ export function useGradesMatrix() {
         setLoading(false);
         return;
       }
+
       try {
         const [
           { data: students },
           { data: items },
           { data: grades }
         ] = await Promise.all([
-          supabase.from('imported_students').select('*').eq('site_id', session.site_id),
-          supabase.from('imported_grade_items').select('*').eq('course_id', session.course_id),
-          supabase.from('imported_grades').select('*, imported_students!inner(*), imported_grade_items!inner(*)').eq('imported_grade_items.course_id', session.course_id)
+          supabase.from('imported_students').select('*').eq('site_id', session.site_id).eq('course_id', session.course_id),
+          supabase.from('imported_grade_items').select('*').eq('site_id', session.site_id).eq('course_id', session.course_id),
+          supabase.from('imported_grades').select('*, imported_students!inner(*), imported_grade_items!inner(*)').eq('site_id', session.site_id).eq('course_id', session.course_id)
         ]);
 
         setData({
@@ -132,6 +135,7 @@ export function useGradesMatrix() {
         setLoading(false);
       }
     }
+
     fetchData();
   }, [session]);
 
@@ -150,10 +154,12 @@ export function useActivityOverview() {
         setLoading(false);
         return;
       }
+
       try {
         const { data: logs, error: lErr } = await supabase
           .from('imported_log_events')
           .select('*')
+          .eq('site_id', session.site_id)
           .eq('course_id', session.course_id)
           .order('occurred_at', { ascending: false })
           .limit(20);
@@ -163,7 +169,7 @@ export function useActivityOverview() {
         setData({
           recent: logs?.map(l => ({
             id: l.id,
-            student_name: l.raw_user_full_name || l.raw_user_username || "משתמש לא ידוע",
+            student_name: l.raw_user_full_name || l.raw_user_username || 'משתמש לא ידוע',
             event_name: l.event_name,
             occurred_at: new Date(l.occurred_at).toLocaleString('he-IL')
           }))
@@ -174,6 +180,7 @@ export function useActivityOverview() {
         setLoading(false);
       }
     }
+
     fetchData();
   }, [session]);
 
@@ -192,13 +199,15 @@ export function useStudents() {
         setLoading(false);
         return;
       }
+
       try {
         const { data, error } = await supabase
           .from('imported_students')
           .select('*')
           .eq('site_id', session.site_id)
+          .eq('course_id', session.course_id)
           .order('full_name');
-        
+
         if (error) throw error;
         setStudents(data || []);
       } catch (err: any) {
@@ -207,6 +216,7 @@ export function useStudents() {
         setLoading(false);
       }
     }
+
     fetchData();
   }, [session]);
 
@@ -230,7 +240,7 @@ export function useStudentProfile(id?: string) {
 
     async function fetchData() {
       if (!session) {
-        setError("יש לפתוח את המערכת מתוך Moodle כדי לצפות בפרופיל תלמיד");
+        setError('יש לפתוח את המערכת מתוך Moodle כדי לצפות בפרופיל תלמיד');
         setLoading(false);
         return;
       }
@@ -240,6 +250,7 @@ export function useStudentProfile(id?: string) {
           .from('imported_students')
           .select('*')
           .eq('id', id)
+          .eq('site_id', session.site_id)
           .eq('course_id', session.course_id)
           .single();
 
@@ -248,6 +259,7 @@ export function useStudentProfile(id?: string) {
           setLoading(false);
           return;
         }
+
         setStudent(s);
 
         const [
@@ -259,17 +271,20 @@ export function useStudentProfile(id?: string) {
             .from('imported_grades')
             .select('*, imported_grade_items(item_name)')
             .eq('student_id', id)
+            .eq('site_id', session.site_id)
             .eq('course_id', session.course_id),
           supabase
             .from('imported_log_events')
             .select('occurred_at')
             .eq('student_id', id)
+            .eq('site_id', session.site_id)
             .eq('course_id', session.course_id)
             .order('occurred_at', { ascending: true }),
           supabase
             .from('imported_task_completion')
             .select('*, imported_tasks(task_name)')
             .eq('student_id', id)
+            .eq('site_id', session.site_id)
             .eq('course_id', session.course_id)
         ]);
 
@@ -306,7 +321,6 @@ export function useStudentProfile(id?: string) {
           status: c.status
         }));
         setCompletion(completionWithNames);
-
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -340,39 +354,42 @@ export function useActionableInsights() {
         setLoading(false);
         return;
       }
+
       try {
-        // Average grades per student
         const { data: grades } = await supabase
           .from('imported_grades')
-          .select('student_id, numeric_value, imported_grade_items!inner(course_id)')
-          .eq('imported_grade_items.course_id', session.course_id);
+          .select('student_id, numeric_value')
+          .eq('site_id', session.site_id)
+          .eq('course_id', session.course_id);
 
         if (grades) {
-           const studentSums: Record<string, { sum: number, count: number }> = {};
-           grades.forEach(g => {
-             const val = g.numeric_value;
-             if (val !== null && !isNaN(val)) {
-                if (!studentSums[g.student_id]) studentSums[g.student_id] = { sum: 0, count: 0 };
-                studentSums[g.student_id].sum += val;
-                studentSums[g.student_id].count += 1;
-             }
-           });
-           
-           const low = Object.values(studentSums).filter(s => (s.sum / s.count) < 60).length;
-           setInsights(prev => ({ ...prev, low_performers: low }));
+          const studentSums: Record<string, { sum: number; count: number }> = {};
+          grades.forEach(g => {
+            const val = g.numeric_value;
+            if (val !== null && !isNaN(val)) {
+              if (!studentSums[g.student_id]) studentSums[g.student_id] = { sum: 0, count: 0 };
+              studentSums[g.student_id].sum += val;
+              studentSums[g.student_id].count += 1;
+            }
+          });
+
+          const low = Object.values(studentSums).filter(s => (s.sum / s.count) < 60).length;
+          setInsights(prev => ({ ...prev, low_performers: low }));
         }
 
         setLoading(false);
       } catch (err) {
-        console.error("Insights error:", err);
+        console.error('Insights error:', err);
         setLoading(false);
       }
     }
+
     fetchInsights();
   }, [session]);
 
   return { insights, loading };
 }
+
 export async function postImport(result: {
   report_type: 'students' | 'grades' | 'logs' | 'completion';
   payload: any[];
@@ -388,7 +405,7 @@ export async function postImport(result: {
       .eq('session_token', token)
       .single();
 
-    if (!sessionData) throw new Error("No active session");
+    if (!sessionData) throw new Error('No active session');
 
     const siteId = sessionData.site_id;
     const courseId = sessionData.course_id;
@@ -397,8 +414,8 @@ export async function postImport(result: {
       const studentData = result.payload.map(row => {
         const moodleId = row['ID number'] || row['מזהה'] || row['ID'] || null;
         const email = row['Email address'] || row['כתובת דוא"ל'] || row['דוא"ל'] || null;
-        const firstName = row['First name'] || row['שם פרטי'] || "";
-        const lastName = row['Surname'] || row['שם משפחה'] || "";
+        const firstName = row['First name'] || row['שם פרטי'] || '';
+        const lastName = row['Surname'] || row['שם משפחה'] || '';
         const externalUsername = row['Username'] || row['שם משתמש'] || null;
 
         return {
@@ -407,24 +424,22 @@ export async function postImport(result: {
           external_id: moodleId ? String(moodleId) : null,
           email,
           external_username: externalUsername,
-          full_name: `${firstName} ${lastName}`.trim() || "—",
+          full_name: `${firstName} ${lastName}`.trim() || '—',
         };
       }).filter(s => s.email || s.external_id);
 
       const { error } = await supabase.from('imported_students').upsert(studentData, {
-        onConflict: 'site_id, email'
+        onConflict: 'site_id,course_id,external_id'
       });
       if (error) throw error;
       return { ok: true, row_count: studentData.length };
     }
 
     if (result.report_type === 'grades') {
-      // 1. Extract grade items (columns that aren't user info)
       const userKeyHeaders = ['First name', 'שם פרטי', 'Surname', 'שם משפחה', 'ID number', 'מזהה', 'Email address', 'כתובת דוא"ל', 'Institution', 'Department', 'מוסד', 'מחלקה', 'Last downloaded from this course', 'הורדה אחרונה מקורס זה'];
       const headers = Object.keys(result.payload[0] || {});
       const gradeItemNames = headers.filter(h => !userKeyHeaders.includes(h) && h !== 'ID');
 
-      // 2. Create/Get grade items
       const gradeItems = gradeItemNames.map(name => ({
         site_id: siteId,
         course_id: courseId,
@@ -434,81 +449,86 @@ export async function postImport(result: {
 
       const { data: insertedItems, error: itemsError } = await supabase
         .from('imported_grade_items')
-        .upsert(gradeItems, { onConflict: 'site_id, course_id, item_name' })
+        .upsert(gradeItems, { onConflict: 'site_id,course_id,item_name' })
         .select();
 
       if (itemsError) throw itemsError;
 
-      // 3. Insert grades
       const gradeInserts: any[] = [];
       for (const row of result.payload) {
-         // Find or create student reference (need student ID)
-         const email = row['Email address'] || row['כתובת דוא"ל'];
-         if (!email) continue;
+        const email = row['Email address'] || row['כתובת דוא"ל'];
+        if (!email) continue;
 
-         // We assume student exists from 'students' import or we create a stub
-         const { data: student } = await supabase
-            .from('imported_students')
-            .select('id')
-            .eq('site_id', siteId)
-            .eq('email', email)
-            .single();
-         
-         if (!student) continue;
+        const { data: student } = await supabase
+          .from('imported_students')
+          .select('id')
+          .eq('site_id', siteId)
+          .eq('course_id', courseId)
+          .eq('email', email)
+          .single();
 
-         for (const item of insertedItems) {
-            const val = row[item.item_name];
-            if (val !== undefined && val !== null && val !== '-') {
-               gradeInserts.push({
-                  student_id: student.id,
-                  grade_item_id: item.id,
-                  numeric_value: parseFloat(String(val)) || null,
-                  raw_value: String(val)
-               });
-            }
-         }
+        if (!student) continue;
+
+        for (const item of insertedItems || []) {
+          const val = row[item.item_name];
+          const isMissing = val === undefined || val === null || val === '-' || String(val).trim() === '';
+          gradeInserts.push({
+            site_id: siteId,
+            course_id: courseId,
+            student_id: student.id,
+            grade_item_id: item.id,
+            numeric_value: isMissing ? null : parseFloat(String(val).replace(',', '.')) || null,
+            raw_value: isMissing ? null : String(val),
+            is_missing: isMissing,
+          });
+        }
       }
 
-      const { error: gradesError } = await supabase.from('imported_grades').upsert(gradeInserts, {
-        onConflict: 'student_id, grade_item_id'
-      });
-      if (gradesError) throw gradesError;
+      if (gradeInserts.length > 0) {
+        await supabase.from('imported_grades').delete().eq('site_id', siteId).eq('course_id', courseId);
+        const { error: gradesError } = await supabase.from('imported_grades').insert(gradeInserts);
+        if (gradesError) throw gradesError;
+      }
       return { ok: true, row_count: gradeInserts.length };
     }
 
     if (result.report_type === 'logs') {
-       const logs = [];
-       for (const row of result.payload) {
-          const fullName = row['User full name'] || row['שם מלא'];
-          const { data: student } = await supabase
-             .from('imported_students')
-             .select('id')
-             .eq('site_id', siteId)
-             .eq('full_name', fullName)
-             .limit(1)
-             .single();
-          
-          if (!student) continue;
+      const logs = [];
+      for (const row of result.payload) {
+        const fullName = row['User full name'] || row['שם מלא'];
+        const { data: student } = await supabase
+          .from('imported_students')
+          .select('id')
+          .eq('site_id', siteId)
+          .eq('course_id', courseId)
+          .eq('full_name', fullName)
+          .limit(1)
+          .single();
 
-          logs.push({
-             site_id: siteId,
-             student_id: student.id,
-             course_id: courseId,
-             occurred_at: new Date(row['Time'] || row['זמן']),
-             event_name: row['Event name'] || row['שם האירוע'],
-             event_context: row['Event context'] || row['הקשר האירוע'],
-             origin_data: row
-          });
-       }
+        if (!student) continue;
 
-       const { error } = await supabase.from('imported_log_events').insert(logs);
-       if (error) throw error;
-       return { ok: true, row_count: logs.length };
+        logs.push({
+          site_id: siteId,
+          course_id: courseId,
+          student_id: student.id,
+          occurred_at: new Date(row['Time'] || row['זמן']).toISOString(),
+          event_name: row['Event name'] || row['שם האירוע'] || null,
+          event_context: row['Event context'] || row['הקשר האירוע'] || null,
+          raw_user_full_name: fullName ?? null,
+          raw_user_username: row['Username'] || row['שם משתמש'] || null,
+          component: row['Component'] || row['רכיב'] || null,
+          description: row['Description'] || row['תיאור'] || null,
+        });
+      }
+
+      const { error } = await supabase.from('imported_log_events').insert(logs);
+      if (error) throw error;
+      return { ok: true, row_count: logs.length };
     }
 
     return { ok: true, row_count: 0 };
   } catch (err: any) {
-    console.error("Import error:", err);
+    console.error('Import error:', err);
     return { ok: false, error: err.message };
   }
 }
@@ -524,10 +544,12 @@ export function useDailyActivity() {
         setLoading(false);
         return;
       }
+
       try {
         const { data: logs } = await supabase
           .from('imported_log_events')
           .select('occurred_at, student_id')
+          .eq('site_id', session.site_id)
           .eq('course_id', session.course_id);
 
         if (!logs) {
@@ -543,7 +565,7 @@ export function useDailyActivity() {
             dayMap[day] = { events: 0, students: new Set() };
           }
           dayMap[day].events++;
-          dayMap[day].students.add(log.student_id);
+          if (log.student_id) dayMap[day].students.add(log.student_id);
         });
 
         const result = Object.entries(dayMap)
@@ -556,12 +578,13 @@ export function useDailyActivity() {
 
         setData(result);
       } catch (err) {
-        console.error("Daily activity error:", err);
+        console.error('Daily activity error:', err);
         setData([]);
       } finally {
         setLoading(false);
       }
     }
+
     fetchData();
   }, [session]);
 
@@ -579,11 +602,13 @@ export function useStudentReports() {
         setLoading(false);
         return;
       }
+
       try {
         const { data: students } = await supabase
           .from('imported_students')
           .select('id, full_name')
-          .eq('site_id', session.site_id);
+          .eq('site_id', session.site_id)
+          .eq('course_id', session.course_id);
 
         if (!students) {
           setData([]);
@@ -594,11 +619,13 @@ export function useStudentReports() {
         const { data: grades } = await supabase
           .from('imported_grades')
           .select('student_id, numeric_value')
+          .eq('site_id', session.site_id)
           .eq('course_id', session.course_id);
 
         const { data: logs } = await supabase
           .from('imported_log_events')
           .select('student_id, occurred_at')
+          .eq('site_id', session.site_id)
           .eq('course_id', session.course_id);
 
         const studentStats: Record<string, any> = {};
@@ -629,29 +656,20 @@ export function useStudentReports() {
         }
 
         if (logs) {
-          const daySet = new Set<string>();
+          const daysByStudent: Record<string, Set<string>> = {};
           logs.forEach(l => {
-            if (studentStats[l.student_id]) {
-              studentStats[l.student_id].event_count++;
-              daySet.add(l.student_id + '|' + new Date(l.occurred_at).toISOString().split('T')[0]);
-              const lastKnown = studentStats[l.student_id].last_event;
-              if (!lastKnown || new Date(l.occurred_at) > new Date(lastKnown)) {
-                studentStats[l.student_id].last_event = l.occurred_at;
-              }
+            if (!l.student_id || !studentStats[l.student_id]) return;
+            const day = new Date(l.occurred_at).toISOString().split('T')[0];
+            studentStats[l.student_id].event_count++;
+            if (!daysByStudent[l.student_id]) daysByStudent[l.student_id] = new Set();
+            daysByStudent[l.student_id].add(day);
+            const lastKnown = studentStats[l.student_id].last_event;
+            if (!lastKnown || new Date(l.occurred_at) > new Date(lastKnown)) {
+              studentStats[l.student_id].last_event = l.occurred_at;
             }
           });
-          const dayMap: Record<string, Set<string>> = {};
-          logs.forEach(l => {
-            const day = new Date(l.occurred_at).toISOString().split('T')[0];
-            if (!dayMap[day]) dayMap[day] = new Set();
-            dayMap[day].add(l.student_id);
-          });
-          Object.keys(dayMap).forEach(day => {
-            Object.keys(studentStats).forEach(sid => {
-              if (dayMap[day].has(sid)) {
-                studentStats[sid].active_days++;
-              }
-            });
+          Object.entries(daysByStudent).forEach(([studentId, days]) => {
+            if (studentStats[studentId]) studentStats[studentId].active_days = days.size;
           });
         }
 
@@ -664,12 +682,13 @@ export function useStudentReports() {
 
         setData(result);
       } catch (err) {
-        console.error("Student reports error:", err);
+        console.error('Student reports error:', err);
         setData([]);
       } finally {
         setLoading(false);
       }
     }
+
     fetchData();
   }, [session]);
 
@@ -687,15 +706,18 @@ export function useTaskCompletionDetail() {
         setLoading(false);
         return;
       }
+
       try {
         const { data: tasks } = await supabase
           .from('imported_tasks')
           .select('*')
+          .eq('site_id', session.site_id)
           .eq('course_id', session.course_id);
 
         const { data: completion } = await supabase
           .from('imported_task_completion')
           .select('*')
+          .eq('site_id', session.site_id)
           .eq('course_id', session.course_id);
 
         setData({
@@ -703,12 +725,13 @@ export function useTaskCompletionDetail() {
           rows: completion || []
         });
       } catch (err) {
-        console.error("Task completion error:", err);
+        console.error('Task completion error:', err);
         setData({ tasks: [], rows: [] });
       } finally {
         setLoading(false);
       }
     }
+
     fetchData();
   }, [session]);
 
@@ -727,10 +750,12 @@ export function usePracticeTime(opts?: { studentId?: string | null }) {
         setLoading(false);
         return;
       }
+
       try {
         let query = supabase
           .from('imported_log_events')
           .select('occurred_at, student_id')
+          .eq('site_id', session.site_id)
           .eq('course_id', session.course_id)
           .order('occurred_at', { ascending: true });
 
@@ -739,7 +764,6 @@ export function usePracticeTime(opts?: { studentId?: string | null }) {
         }
 
         const { data: logs, error: lErr } = await query;
-
         if (lErr) throw lErr;
 
         const dayMap: Record<string, { total_seconds: number; student_id: string; student_name: string; event_count: number; windows: any[] }> = {};
@@ -748,21 +772,22 @@ export function usePracticeTime(opts?: { studentId?: string | null }) {
         const { data: students } = await supabase
           .from('imported_students')
           .select('id, full_name')
-          .eq('site_id', session.site_id);
+          .eq('site_id', session.site_id)
+          .eq('course_id', session.course_id);
 
         students?.forEach(s => { studentMap[s.id] = s.full_name; });
 
-        let lastTime: Record<string, number> = {};
-        let sessionStart: Record<string, number> = {};
-        let sessionCount: Record<string, number> = {};
+        const lastTime: Record<string, number> = {};
 
         logs?.forEach(log => {
+          if (!log.student_id) return;
           const time = new Date(log.occurred_at).getTime();
           const day = new Date(log.occurred_at).toISOString().split('T')[0];
           const sid = log.student_id;
+          const key = `${day}|${sid}`;
 
-          if (!dayMap[day + sid]) {
-            dayMap[day + sid] = {
+          if (!dayMap[key]) {
+            dayMap[key] = {
               total_seconds: 0,
               student_id: sid,
               student_name: studentMap[sid] || '—',
@@ -771,10 +796,10 @@ export function usePracticeTime(opts?: { studentId?: string | null }) {
             };
           }
 
-          dayMap[day + sid].event_count++;
+          dayMap[key].event_count++;
 
           if (lastTime[sid] && (time - lastTime[sid]) < 10 * 60 * 1000) {
-            dayMap[day + sid].total_seconds += (time - lastTime[sid]) / 1000;
+            dayMap[key].total_seconds += (time - lastTime[sid]) / 1000;
           }
 
           lastTime[sid] = time;
@@ -793,6 +818,7 @@ export function usePracticeTime(opts?: { studentId?: string | null }) {
         setLoading(false);
       }
     }
+
     fetchData();
   }, [session, opts?.studentId]);
 
