@@ -13,6 +13,15 @@ export type SyncStatusResult =
   | { ok: false; status: 'BLOCKED'; reason: string }
   | { ok: false; status: 'ERROR'; error: string };
 
+async function invokeMoodleSync(batchId: string, siteId: string, courseId: number): Promise<void> {
+  const { error } = await supabase.functions.invoke('moodle-sync', {
+    body: { batch_id: batchId, site_id: siteId, course_id: courseId },
+  });
+  if (error) {
+    console.error('moodle-sync invoke error:', error);
+  }
+}
+
 const DOMAIN_LABELS: Record<SyncDomain, string> = {
   students: 'תלמידים',
   grades: 'ציונים',
@@ -111,7 +120,6 @@ export function useSyncStatus() {
     lastBatch: SyncBatch | null;
     hasData: boolean;
     checkLoading: boolean;
-    edgeFunctionReady: boolean;
   }>({
     wsConfigured: false,
     wsStatus: 'not_configured',
@@ -119,7 +127,6 @@ export function useSyncStatus() {
     lastBatch: null,
     hasData: false,
     checkLoading: true,
-    edgeFunctionReady: false,
   });
 
   useEffect(() => {
@@ -155,8 +162,6 @@ export function useSyncStatus() {
         .select('*', { count: 'exact', head: true })
         .eq('site_id', session.site_id);
 
-      const edgeFunctionReady = wsConfigured;
-
       setStatus({
         wsConfigured,
         wsStatus,
@@ -164,7 +169,6 @@ export function useSyncStatus() {
         lastBatch: last ?? null,
         hasData: (studentsCount ?? 0) > 0,
         checkLoading: false,
-        edgeFunctionReady,
       });
     }
 
@@ -203,7 +207,7 @@ export async function triggerSync(sessionId: string, siteId: string, courseId: n
       .select('id')
       .eq('site_id', siteId)
       .eq('status', 'running')
-      .single();
+      .maybeSingle();
 
     if (existingRunning) {
       return { ok: false, status: 'BLOCKED', reason: 'סנכרון כבר בריצה. יש להמתין לסיום.' };
@@ -228,8 +232,11 @@ export async function triggerSync(sessionId: string, siteId: string, courseId: n
       site_id: siteId,
       domain: 'students',
       severity: 'info',
-      message: 'סנכרון ידני הופעל — בהמתנה ל-Edge Function',
+      message: 'סנכרון ידני הופעל — מפעיל Edge Function',
     });
+
+    // Trigger the Edge Function asynchronously — it will update the batch when done
+    invokeMoodleSync(batch.id, siteId, courseId);
 
     return { ok: true, batchId: batch.id };
   } catch (err: any) {
