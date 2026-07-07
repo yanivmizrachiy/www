@@ -113,6 +113,19 @@ export default function MoodleInstall() {
                 אם נתקלת בבעיה בתהליך ההגדרה, פנה למנהל המודל של המוסד וודא שהרשאות LTI מאופשרות עבור האתר.
               </p>
            </div>
+
+           <div className="p-8 bg-primary/5 rounded-[2.5rem] border border-primary/10 space-y-4">
+              <div className="flex items-center gap-2 text-primary">
+                <ShieldCheck className="h-5 w-5" />
+                <span className="font-black text-sm uppercase tracking-wider">פרטיות והפרדה</span>
+              </div>
+              <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                כל מורה מתקין את הכלי במרחב ה-Moodle האישי שלו, נכנס מתוך הקורס, ורואה במקום אחד את נתוני התלמידים, המשימות, הציונים והפעילות של <strong>אותו מרחב בלבד</strong>. אין ערבוב נתונים בין מורים, קורסים או אתרי Moodle.
+              </p>
+              <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                הכלי נבנה ומנוהל על ידי יניב רז.
+              </p>
+           </div>
         </div>
       </div>
     </SafePage>

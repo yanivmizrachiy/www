@@ -46,6 +46,20 @@ export default function AppLayout() {
               <Outlet />
             </div>
           </main>
+
+          <footer className="border-t bg-muted/20 px-6 py-4 text-center">
+            <p className="text-xs text-muted-foreground font-medium">
+              הכלי נבנה ומנוהל על ידי יניב רז —{' '}
+              <a
+                href="https://www.instagram.com/yani__raz"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                @yani__raz באינסטגרם
+              </a>
+            </p>
+          </footer>
         </div>
       </div>
     </SidebarProvider>

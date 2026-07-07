@@ -239,16 +239,23 @@ export default function Dashboard() {
 
       {/* Actionable Footer */}
       {!activeCategory && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1 }}
-          className="flex justify-center pt-20"
+          className="flex flex-col items-center gap-3 pt-20"
         >
           <div className="px-8 py-5 rounded-full bg-slate-900 border border-white/5 text-white/40 text-sm font-bold flex items-center gap-3">
              <LayoutDashboard className="h-5 w-5" />
              מרכז המורה - ניהול נתונים מאובטח
           </div>
+          <p className="text-xs text-white/20 font-medium">
+            הכלי נבנה ומנוהל על ידי{' '}
+            <a href="https://www.instagram.com/yani__raz" target="_blank" rel="noopener noreferrer" className="text-primary/60 hover:text-primary/80 underline">
+              יניב רז
+            </a>{' '}
+            — ניהול, מעקב ושיפור הוראת המתמטיקה באמצעות נתוני Moodle
+          </p>
         </motion.div>
       )}
     </div>

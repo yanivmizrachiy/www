@@ -32,12 +32,34 @@ const TOPICS = [
     content: `
       <p class="mb-4">Teacher Hub הוא כלי ניהול נתונים שפותח במיוחד עבור מורים במערכת Moodle. הכלי מאפשר לך לראות, לנתח ולייצא נתונים מהקורס שלך ב-Moodle — בלי לעבור בין מסכים שונים.</p>
       <p class="mb-4">הכלי פותח מתוך Moodle ומקבל את הזהות וההרשאות שלך באופן אוטומטי. אין צורך בססמה נוספת — הכל מבוסס על LTI.</p>
+
+      <div class="p-5 bg-blue-50 border border-blue-200 rounded-2xl mb-4 space-y-3">
+        <h4 class="font-black text-sm uppercase tracking-wider text-blue-700 flex items-center gap-2">
+          <CheckCircle2 class="h-4 w-4" />
+          3 דברים חשובים שכדאי לדעת
+        </h4>
+        <ul class="space-y-2 text-sm text-blue-800 font-medium">
+          <li class="flex items-start gap-2">
+            <span class="font-black mt-0.5">1.</span>
+            <span><strong>כל מורה מתקין את הכלי במרחב ה-Moodle האישי שלו</strong> — לאחר התקנה וכניסה מתוך Moodle, המורה רואה רק את הנתונים של הקורס/מרחב שלו. אין ערבוב נתונים בין מורים, קורסים או אתרי Moodle.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="font-black mt-0.5">2.</span>
+            <span><strong>מורה יכול לבדוק כמה זמן תלמיד תרגל</strong> — בעמוד פעילות אפשר לסנן לפי יממה אחרונה, 7 ימים או 30 ימים, ולראות זמני תרגול לפי תאריך ולפי תלמיד.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="font-black mt-0.5">3.</span>
+            <span><strong>הכלי נבנה ומנוהל על ידי יניב רז</strong> — לצורך ניהול, מעקב ושיפור הוראת המתמטיקה באמצעות נתוני Moodle אמיתיים. יניב מנהל את הכלי מהאתר המרכזי שלו: עדכונים, הדרכה ובקרת התקנות.</span>
+          </li>
+        </ul>
+      </div>
+
       <p class="mb-4"><strong>מה אפשר לעשות כאן:</strong></p>
       <ul class="list-disc pr-5 space-y-1 mb-4">
         <li>לראות את כל התלמידים בקורס</li>
         <li>לעקוב אחר הציונים וההישגים</li>
         <li>לראות מי השלים משימות ומי לא</li>
-        <li>לנתח זמני פעילות ולמידה</li>
+        <li>לנתח זמני פעילות ולמידה — <strong>כמה זמן כל תלמיד תרגל ביממה/שבוע/חודש</strong></li>
         <li>לייצא דוחות לאקסל</li>
         <li>לקבל התראות על נתונים חסרים</li>
       </ul>
@@ -46,7 +68,8 @@ const TOPICS = [
     steps: null,
     tips: [
       'הכלי עובד רק כשפותחים אותו מתוך Moodle — לא דרך כתובת ישירה',
-      'כל הנתונים מסוננים לפי הקורס שלך בלבד',
+      'כל הנתונים מסוננים לפי הקורס שלך בלבד — אין גישה לנתוני קורסים אחרים',
+      'יניב רז מנהל את הכלי מהאתר המרכזי — עדכונים והדרכה נמצאים בשליטתו',
     ],
   },
   {
@@ -190,12 +213,33 @@ const TOPICS = [
   },
   {
     id: 'logs',
-    title: 'יומני פעילות',
+    title: 'יומני פעילות וזמני תרגול',
     icon: Activity,
     color: 'bg-blue-500',
-    short: 'זמני למידה ופעילות יומית',
+    short: 'כמה זמן כל תלמיד תרגל ביממה, בשבוע או בחודש',
     content: `
-      <p class="mb-4">יומני הפעילות (Logs) מכילים מידע על כניסות ויציאות של תלמידים מהקורס. זה מאפשר לחשב זמני תרגול.</p>
+      <p class="mb-4">יומני הפעילות (Logs) מכילים מידע על כניסות ויציאות של תלמידים מהקורס. זה מאפשר לחשב זמני תרגול לפי תקופה.</p>
+
+      <div class="p-5 bg-blue-50 border border-blue-200 rounded-2xl mb-4">
+        <h4 class="font-black text-sm uppercase tracking-wider text-blue-700 mb-3 flex items-center gap-2">
+          <CheckCircle2 class="h-4 w-4" />
+          בדיקת זמן תרגול לפי פרק זמן
+        </h4>
+        <p class="text-sm text-blue-800 font-medium leading-relaxed mb-2">
+          <strong>מתי וכמה זמן התלמיד תרגל?</strong> — זו השאלה המרכזית שאפשר לענות עליה עכשיו.
+        </p>
+        <ul class="text-sm text-blue-800 space-y-1">
+          <li>• <strong>יממה אחרונה</strong> — מה קרה היום</li>
+          <li>• <strong>7 ימים אחרונים</strong> — מה קרה השבוע</li>
+          <li>• <strong>30 ימים אחרונים</strong> — מה קרה החודש</li>
+          <li>• <strong>טווח מותאם</strong> — בחר תאריך התחלה וסיום</li>
+        </ul>
+        <p class="text-sm text-blue-700 mt-3 font-medium">
+          המערכת מחשבת זמן משך לפי פער בין כניסה ליציאה, ומציגה את סך הזמן לכל תלמיד לכל יום בטווח הנבחר.
+        </p>
+      </div>
+
+      <p class="mb-4"><strong>איך לייבא לוגים:</strong></p>
     `,
     screenshot: '<!-- תמונת מסך: עמוד פעילות עם גרף פעילות יומית -->',
     steps: [
@@ -206,9 +250,9 @@ const TOPICS = [
       'בחר "יומני פעילות" והעלה את הקובץ',
     ],
     tips: [
-      'בלי לוגים — לא יהיו נתוני זמן תרגול',
-      'המערכת מחשבת זמן משך לפי פער בין כניסה ליציאה',
+      'בלי לוגים — לא יהיו נתוני זמן תרגול בכלל',
       'אפשר לראות פעילות לפי תאריך או לפי תלמיד',
+      'ללא לוגים — מוצג הודעה ברורה שמדידת זמן תרגול דורשת סנכרון לוגים',
     ],
   },
   {
@@ -318,7 +362,8 @@ const TOPICS = [
     color: 'bg-slate-500',
     short: 'יצירת קשר ומידע נוסף',
     content: `
-      <p class="mb-4">Teacher Hub נמצא בפיתוח מתמשך. אם יש הצעות, בעיות, או בקשות — נשמח לשמוע.</p>
+      <p class="mb-4">Teacher Hub נבנה ומנוהל על ידי יניב רז, לצורך ניהול, מעקב ושיפור הוראת המתמטיקה באמצעות נתוני Moodle אמיתיים.</p>
+      <p class="mb-4">יניב רז מנהל את הכלי מהאתר המרכזי שלו: עדכונים, הדרכה, בקרת התקנות וניהול גרסאות. כל מורה משתמש בכלי מתוך מרחב ה-Moodle האישי שלו.</p>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         <div class="p-6 bg-slate-50 rounded-xl text-center">
           <Info class="h-8 w-8 mx-auto mb-3 text-slate-400" />

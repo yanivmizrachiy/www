@@ -65,6 +65,18 @@ export default function TeacherHelp() {
             <p className="text-xs text-muted-foreground">צרו קשר עם מנהל המערכת</p>
          </Card>
       </div>
+
+      <div className="pt-8 border-top text-center space-y-2">
+        <p className="text-sm text-muted-foreground font-medium">
+          הכלי נבנה ומנוהל על ידי יניב רז
+        </p>
+        <p className="text-xs text-muted-foreground">
+          יניב מנהל את הכלי מהאתר המרכזי שלו: עדכונים, הדרכה, בקרת התקנות וניהול גרסאות.{' '}
+          <a href="https://www.instagram.com/yani__raz" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+            @yani__raz באינסטגרם
+          </a>
+        </p>
+      </div>
     </div>
   );
 }
