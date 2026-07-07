@@ -171,7 +171,9 @@ serve(async (req) => {
   let tasksSynced = 0;
   const chaptersSynced = 0;
   let logsSynced = 0;
+  let logsPartiallyFailed = false;
   let completionsSynced = 0;
+  let completionsPartiallyFailed = false;
 
   try {
     // --- Students (core_enrol_get_enrolled_users) ---
@@ -638,7 +640,12 @@ serve(async (req) => {
     await logEvent(supabase, batch_id, site_id, "chapters", "info",
       "פרקים לא נתמכים דרך Web Services (אפשר לייבא ידנית)");
 
-    // --- Logs: core_report_get_log_data (read-only, not imported) ---
+    // --- Logs: core_report_get_log_data ---
+    let logsPartiallyFailed = false;
+
+    await logEvent(supabase, batch_id, site_id, "logs", "info",
+      `מתחיל סנכרון לוגים מקורס ${course_id}`);
+
     try {
       const logsParams = new URLSearchParams({
         wstoken: wsToken,
@@ -657,57 +664,247 @@ serve(async (req) => {
 
       if (logsRes.ok) {
         const logsData = await logsRes.json();
-        if (!logsData?.exception && Array.isArray(logsData?.logs)) {
-          logsSynced = logsData.logs.length;
-          if (logsSynced > 0) {
-            await logEvent(supabase, batch_id, site_id, "logs", "info",
-              `נמצאו ${logsSynced} אירועי לוג — לא יובאו אוטומטית (נדרש ייבוא ידני)`);
+
+        if (logsData?.exception) {
+          await logEvent(supabase, batch_id, site_id, "logs", "warn",
+            `Moodle exception בלוגים: ${logsData.message ?? "unknown"} — ייתכן שאין הרשאות`);
+          logsPartiallyFailed = true;
+        } else if (Array.isArray(logsData?.logs) && logsData.logs.length > 0) {
+          // Build external_userid → internal student_id mapping
+          const userIdToStudentId: Record<string, string> = {};
+          if (localStudents && localStudents.length > 0) {
+            for (const s of localStudents) {
+              if (s.external_id) userIdToStudentId[String(s.external_id)] = s.id;
+            }
           }
+
+          // Delete existing log events for this site+course (dedup without unique constraint)
+          await supabase
+            .from("imported_log_events")
+            .delete()
+            .eq("site_id", site_id)
+            .eq("course_id", course_id);
+
+          const logsToInsert = logsData.logs.map((log: any) => {
+            const rawUserId = String(log.userid ?? "");
+            const studentId = userIdToStudentId[rawUserId] ?? null;
+
+            return {
+              site_id,
+              course_id,
+              student_id: studentId,
+              occurred_at: log.timecreated
+                ? new Date(log.timecreated * 1000).toISOString()
+                : new Date().toISOString(),
+              event_name: log.eventname ?? null,
+              description: log.description ?? null,
+              component: log.component ?? null,
+              origin: log.origin ?? null,
+              // IP address: store null to avoid PII concerns
+              ip_address: null,
+              raw_user_full_name: log.userfullname ?? null,
+              raw_user_username: log.username ?? null,
+              event_context: log.contextinstanceid ? String(log.contextinstanceid) : null,
+              affected_user: log.relateduserid ? String(log.relateduserid) : null,
+              batch_id: null,
+              created_at: now,
+              updated_at: now,
+            };
+          });
+
+          const { error: logsErr } = await supabase
+            .from("imported_log_events")
+            .insert(logsToInsert);
+
+          if (logsErr) {
+            await logEvent(supabase, batch_id, site_id, "logs", "error",
+              `שגיאת הכנסת לוגים: ${logsErr.message}`);
+            logsPartiallyFailed = true;
+          } else {
+            logsSynced = logsToInsert.length;
+            await logEvent(supabase, batch_id, site_id, "logs", "info",
+              `סונכרנו ${logsSynced} אירועי לוג`);
+          }
+        } else {
+          await logEvent(supabase, batch_id, site_id, "logs", "info",
+            "לא נמצאו אירועי לוג בקורס זה");
         }
+      } else {
+        await logEvent(supabase, batch_id, site_id, "logs", "warn",
+          `שליפת לוגים נכשלה: HTTP ${logsRes.status}`);
+        logsPartiallyFailed = true;
       }
     } catch (e) {
       await logEvent(supabase, batch_id, site_id, "logs", "warn",
         `שליפת לוגים לא הצליחה: ${String(e)}`);
+      logsPartiallyFailed = true;
     }
 
     // --- Completions: core_completion_get_activities_completion_status ---
-    try {
-      const completionParams = new URLSearchParams({
-        wstoken: wsToken,
-        wsfunction: "core_completion_get_activities_completion_status",
-        moodlewsrestformat: "json",
-        courseid: String(course_id),
-      });
+    let completionsPartiallyFailed = false;
 
-      const completionRes = await fetch(`${moodleApiUrl}?${completionParams}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
+    await logEvent(supabase, batch_id, site_id, "completions", "info",
+      `מתחיל סנכרון השלמויות מקורס ${course_id}`);
 
-      if (completionRes.ok) {
-        const completionData = await completionRes.json();
-        if (!completionData?.exception) {
-          await logEvent(supabase, batch_id, site_id, "completions", "info",
-            "בדיקת השלמויות הסתיימה");
+    // Build task name → internal task_id mapping (from tasks synced earlier)
+    const { data: localTasks } = await supabase
+      .from("imported_tasks")
+      .select("id, task_name")
+      .eq("site_id", site_id)
+      .eq("course_id", course_id);
+
+    const taskNameToId: Record<string, string> = {};
+    if (localTasks) {
+      for (const t of localTasks) {
+        taskNameToId[t.task_name] = t.id;
+      }
+    }
+
+    if (localTasks && localTasks.length > 0 && localStudents && localStudents.length > 0) {
+      const extUserIdToStudentId: Record<string, string> = {};
+      for (const s of localStudents) {
+        if (s.external_id) extUserIdToStudentId[String(s.external_id)] = s.id;
+      }
+
+      // Call completion API per enrolled student
+      let completionUserCount = 0;
+      let completionSuccessCount = 0;
+
+      for (const student of studentsData) {
+        const studentInternalId = extUserIdToStudentId[String(student.id)];
+        if (!studentInternalId) continue;
+
+        try {
+          const completionParams = new URLSearchParams({
+            wstoken: wsToken,
+            wsfunction: "core_completion_get_activities_completion_status",
+            moodlewsrestformat: "json",
+            courseid: String(course_id),
+            userid: String(student.id),
+          });
+
+          const completionRes = await fetch(`${moodleApiUrl}?${completionParams}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          });
+
+          if (!completionRes.ok) {
+            completionUserCount++;
+            continue;
+          }
+
+          const completionData = await completionRes.json();
+
+          if (completionData?.exception || !completionData?.activities) {
+            completionUserCount++;
+            continue;
+          }
+
+          const activities: any[] = completionData.activities ?? [];
+          if (activities.length === 0) {
+            completionUserCount++;
+            continue;
+          }
+
+          // Delete existing completions for this student in this course
+          await supabase
+            .from("imported_task_completion")
+            .delete()
+            .eq("site_id", site_id)
+            .eq("course_id", course_id)
+            .eq("student_id", studentInternalId);
+
+          const completionsToInsert: Array<{
+            site_id: string; course_id: number; student_id: string; task_id: string;
+            is_complete: boolean | null; status: string | null; raw_value: string | null;
+            completed_at: string | null; batch_id: string | null;
+            created_at: string; updated_at: string;
+          }> = [];
+
+          for (const activity of activities) {
+            // Match by cmid → task_name or by activity name
+            let taskId: string | undefined;
+            const cmid = activity.cmid;
+            const actName = activity.name ?? "";
+
+            // Try to find task by name (from mod_assign_get_assignments results)
+            taskId = taskNameToId[actName];
+
+            // If no match by name, try with cmid-based lookup
+            if (!taskId && localTasks) {
+              for (const lt of localTasks) {
+                if (lt.task_name.includes(String(cmid)) || String(cmid).includes(lt.task_name)) {
+                  taskId = lt.id;
+                  break;
+                }
+              }
+            }
+
+            if (!taskId) continue;
+
+            const completed = activity.completed === true || activity.completed === 1;
+            const timeCompleted = activity.timecompleted
+              ? new Date(activity.timecompleted * 1000).toISOString()
+              : null;
+
+            completionsToInsert.push({
+              site_id,
+              course_id,
+              student_id: studentInternalId,
+              task_id: taskId,
+              is_complete: completed,
+              status: activity.tracking ?? null,
+              raw_value: String(activity.completed ?? ""),
+              completed_at: timeCompleted,
+              batch_id: null,
+              created_at: now,
+              updated_at: now,
+            });
+          }
+
+          if (completionsToInsert.length > 0) {
+            const { error: compErr } = await supabase
+              .from("imported_task_completion")
+              .insert(completionsToInsert);
+
+            if (!compErr) {
+              completionsSynced += completionsToInsert.length;
+              completionSuccessCount++;
+            }
+          }
+          completionUserCount++;
+        } catch (e) {
+          await logEvent(supabase, batch_id, site_id, "completions", "warn",
+            `שליפת השלמויות נכשלה למשתמש ${student.id}: ${String(e)}`);
+          completionsPartiallyFailed = true;
         }
       }
-    } catch (e) {
-      await logEvent(supabase, batch_id, site_id, "completions", "warn",
-        `שליפת השלמויות לא הצליחה: ${String(e)}`);
+
+      await logEvent(supabase, batch_id, site_id, "completions", "info",
+        `השלמויות: ${completionSuccessCount}/${completionUserCount} תלמידים עובדו, ${completionsSynced} רשומות`);
+    } else {
+      await logEvent(supabase, batch_id, site_id, "completions", "info",
+        "דילוג על השלמויות: אין משימות או תלמידים מקומיים");
     }
 
     // 7. Finish batch
     let finalStatus: "success" | "partial" | "failed" = "success";
     let errorSummary: string | undefined;
 
+    const allPartialFailures = [
+      gradesPartiallyFailed ? "ציונים" : null,
+      logsPartiallyFailed ? "לוגים" : null,
+      completionsPartiallyFailed ? "השלמויות" : null,
+    ].filter(Boolean);
+
     if (studentsSynced === 0) {
       finalStatus = "failed";
     } else if (gradesFailed) {
       finalStatus = "partial";
       errorSummary = "ציונים לא נמשכו: Moodle החזיר שגיאה או חסרות הרשאות צפייה בציונים";
-    } else if (gradesPartiallyFailed) {
+    } else if (allPartialFailures.length > 0) {
       finalStatus = "partial";
-      errorSummary = "חלק מהציונים נמשכו, אך היו שגיאות בשליפת ציונים לחלק מהתלמידים";
+      errorSummary = `חלק מהנתונים לא סונכרנו: ${allPartialFailures.join(", ")}`;
     }
 
     await finishBatch(supabase, batch_id, {
