@@ -1,105 +1,78 @@
 # Moodle Teacher Hub — www
 
-הריפו הרשמי והמחייב של הפרויקט הוא:
+הריפו הרשמי והמחייב של הפרויקט הוא `yanivmizrachiy/www`.
 
-```text
-yanivmizrachiy/www
+## מה זה
+
+כלי נתונים למורה המופעל מתוך Moodle באמצעות LTI 1.1. מאפשר ייבוא דוחות מ-Moodle, ניתוח הישגי תלמידים, מעקב אחר פעילות, וייצוא ל-Excel — הכל בעברית מלאה, RTL.
+
+**אין דמו. אין נתונים מומצאים. אין ססמה נפרדת.**
+
+## איך זה עובד
+
+```
+מורה ב-Moodle → לוחץ על External Tool → LTI OAuth1 → מרכז המורה (WWW)
 ```
 
-הריפו הזה הוא מקור האמת היחיד להמשך העבודה על אתר Moodle Teacher Hub המשודרג.
+הכניסה היא **רק** דרך Moodle. אין טופס התחברות — האימות מתבצע באמצעות LTI של מודל, שמעביר את זהות המורה ואת מזהה הקורס. כל נתוני התלמידים מסוננים לפי `course_id` של המורה.
 
-## מטרה
+## תנאים מוקדמים
 
-מוצר אמיתי למורים מתוך Moodle באמצעות LTI 1.1, עם Dashboard בעברית מלאה, RTL, API פנימי, דוחות, ייצוא וארגון ריפו לקראת הרחבות עתידיות.
-
-המערכת לא מציגה דמו ולא ממציאה נתונים. כל נתון חייב להגיע ממקור Moodle אמיתי: LTI/API מאומת או ייבוא ידני של דוחות Moodle אמיתיים.
-
-## סטטוס איחוד ריפואים
-
-היה קיים גם ריפו בשם:
-
-```text
-yanivmizrachiy/moodle-teacher-hub
-```
-
-הריפו הזה סומן כ־legacy / לא מקור אמת. החומר החשוב ממנו נשמר ותועד בתוך `www`, והמשך העבודה חייב להתבצע רק כאן.
-
-## עקרונות
-
-- לא דמו.
-- לא נתונים מומצאים.
-- לא לשבור מה שכבר עובד.
-- Launch דרך Moodle הוא נקודת הכניסה.
-- נתונים אמיתיים מגיעים מ־Moodle Web Services / APIs רק אם יש token אמיתי ומאומת.
-- אם אין token — עובדים במצב Manual Real Data Import בלבד.
-- UI נפרד מלוגיקה עסקית.
-- אין כפתורים שלא עושים פעולה אמיתית.
-- אין לטעון production-ready בלי בדיקות.
-
-## קיים כרגע לפי README המקורי
-
-- Node.js + Express.
-- `/lti/launch-1p1`.
-- `/health`.
-- Dashboard בעברית.
-- `data/store.json`.
-- API בסיסי:
-  - `/api/bootstrap`
-  - `/api/launches`
-  - `/api/students`
-  - `/api/tasks`
-  - `/api/grades`
-  - `/api/activity`
-  - `/api/settings`
-  - `/api/moodle-summary`
-  - `/api/moodle-captures`
-  - `/api/export/grades.csv`
-
-## דרישות מוצר מחייבות
-
-- עמוד ראשי עם שם המורה ושם המרחב כאשר הנתונים זמינים.
-- ניווט עברי לתלמידים, משימות, פרקים, דוחות, פעילות/זמנים, הגדרות וייצוא.
-- סינון תלמיד, קבוצה, כיתה וטווח תאריכים כאשר הנתונים זמינים.
-- הצגת ציונים, ניסיונות, פעילות, ממוצעים וזמן תרגול רק מנתוני אמת.
-- משימות עם שיוך לפרק/נושא, כמות שאלות אם קיימת, וקישור ישיר רק אם מאומת.
-- דוחות ציונים, משימות, זמנים ופעילות.
-- ייצוא CSV/Excel/PDF/הדפסה — רק מה שבאמת קיים ונבדק יסומן כעובד.
-- עריכה דו־כיוונית מול Moodle רק אחרי token אמיתי והרשאות כתיבה מאומתות.
-
-## מסמכי מקור אמת
-
-- `PROJECT_RULES.md` — דף הכללים העליון.
-- `docs/system-rules.md` — כללי עבודה מעשיים.
-- `docs/requirements.md` — דרישות המוצר המרוכזות.
-- `docs/legacy-moodle-teacher-hub-snapshot.md` — חומר שנשמר מהריפו הישן.
-- `STATE/project-status.md` — סטטוס אמת עדכני.
-- `STATE/repo-consolidation.md` — תיעוד איחוד הריפואים.
+- אתר Moodle עם הרשאות LTI מופעלות
+- רישום האתר ופרטי LTI בדף `/settings` (Tool URL: `https://your-domain.com/api/lti/launch`)
+- קובץ `.env` עם משתני Supabase (ראה `.env.example`)
 
 ## הפעלה מקומית
 
 ```bash
 npm install
-npm run check
 npm run dev
 ```
 
-לאחר הפעלה מקומית:
+פתח `http://localhost:3000`. הגישה לנתוני תלמידים דורשת LTI launch מתוך Moodle.
 
-```text
-http://127.0.0.1:3000/health
-http://127.0.0.1:3000/dev/login
+## סקריפטים
+
+| סקריפט | תיאור |
+|--------|-------|
+| `npm run dev` | הפעלת שרת פיתוח (Vite) |
+| `npm run build` | בנייה לייצור |
+| `npm run preview` | תצוגה מקדימה של ה-build |
+| `npm run typecheck` | בדיקת טיפוסים TypeScript |
+
+## מבנה הפרויקט
+
+```
+src/
+  pages/          — כל העמודים (Dashboard, Students, Grades, Settings...)
+  components/     — קומפוננטות משותפות
+  hooks/          — hooks לנתונים (useLtiSession, useImports...)
+  lib/            — פונקציות עזר (exportGrades, utils...)
+  integrations/   — חיבורים חיצוניים (Supabase client + types)
+
+supabase/
+  functions/
+    lti-launch/   — Edge Function לאימות LTI 1.1 OAuth1
 ```
 
-או דרך LTI 1.1 כאשר מוגדרים ערכי הסביבה המתאימים.
+## מסד נתונים (Supabase)
 
-## מבנה ידוע
+טבלאות `imported_*` מאחסנות נתונים שיובאו מדוחות Moodle:
 
-- `src/server.js` — שרת ראשי.
-- `src/ui/dashboard/dashboard.html` — דשבורד.
-- `docs/` — החלטות, פריסה, API ומוצר.
-- `STATE/` — סטטוס, איחוד, הוכחות בדיקה.
-- `data/store.json` — אחסון מקומי זמני.
+- `imported_students` — רשימת תלמידים
+- `imported_grades` / `imported_grade_items` — ציונים
+- `imported_tasks` / `imported_task_completion` — משימות
+- `imported_chapters` — פרקים
+- `imported_log_events` — לוגים ופעילות
 
-## סטטוס אמת
+טבלאות ניהול:
+- `moodle_sites` — אתרי Moodle + פרטי LTI
+- `teacher_sessions` — סשנים פעילים
+- `launch_attempts` — לוגים של ניסיונות LTI
 
-הריפו מאוחד תיעודית תחת `www`. עדיין נדרש אימות קוד מלא לפני סימון production-ready.
+## שני מוצרים באותו ריפו
+
+1. **Moodle Teacher Hub** — כלי נתונים שמורה מפעיל מתוך מרחב Moodle שלו
+2. **Guide Presentation** — מדריך/מצגת אינטרנטית למורים על מרחבי למידה Moodle
+
+מופרדים באופן מוחלט ברמת ה-URL וההקשר.

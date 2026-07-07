@@ -17,7 +17,10 @@ import TaskReport from './pages/reports/TaskReport';
 import DayReport from './pages/reports/DayReport';
 import SystemStatus from './pages/SystemStatus';
 import MoodleInstall from './pages/MoodleInstall';
+import Settings from './pages/Settings';
+import Setup from './pages/Setup';
 import TeacherHelp from './pages/TeacherHelp';
+import AppLayout from './components/AppLayout';
 
 import { TooltipProvider } from './components/ui/tooltip';
 
@@ -27,23 +30,27 @@ function App() {
       <TooltipProvider>
         <div className="min-h-screen bg-neutral-50" dir="rtl">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/tasks" element={<Tasks />} />
-            <Route path="/grades" element={<Grades />} />
-            <Route path="/activity" element={<ActivityPage />} />
-            <Route path="/student/:id" element={<StudentProfile />} />
-            <Route path="/students" element={<StudentsList />} />
-            <Route path="/import" element={<Import />} />
-            <Route path="/reports" element={<ReportsCenter />} />
-            <Route path="/reports/gap" element={<GapReport />} />
-            <Route path="/reports/students" element={<StudentReport />} />
-            <Route path="/reports/tasks" element={<TaskReport />} />
-            <Route path="/reports/days" element={<DayReport />} />
-            <Route path="/export" element={<ExportCenter />} />
-            <Route path="/status" element={<SystemStatus />} />
-            <Route path="/install" element={<MoodleInstall />} />
-            <Route path="/help" element={<TeacherHelp />} />
             <Route path="/lti/launch" element={<LtiBootstrap />} />
+            <Route element={<AppLayout />}>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/tasks" element={<Tasks />} />
+              <Route path="/grades" element={<Grades />} />
+              <Route path="/activity" element={<ActivityPage />} />
+              <Route path="/student/:id" element={<StudentProfile />} />
+              <Route path="/students" element={<StudentsList />} />
+              <Route path="/import" element={<Import />} />
+              <Route path="/reports" element={<ReportsCenter />} />
+              <Route path="/reports/gap" element={<GapReport />} />
+              <Route path="/reports/students" element={<StudentReport />} />
+              <Route path="/reports/tasks" element={<TaskReport />} />
+              <Route path="/reports/days" element={<DayReport />} />
+              <Route path="/export" element={<ExportCenter />} />
+              <Route path="/status" element={<SystemStatus />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/setup" element={<Setup />} />
+              <Route path="/install" element={<MoodleInstall />} />
+              <Route path="/help" element={<TeacherHelp />} />
+            </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <Toaster position="top-center" richColors />
