@@ -18,7 +18,7 @@ async function invokeMoodleSync(batchId: string, siteId: string, courseId: numbe
     body: { batch_id: batchId, site_id: siteId, course_id: courseId },
   });
   if (error) {
-    console.error('moodle-sync invoke error:', error);
+    throw new Error(`Edge Function error: ${error.message ?? error}`);
   }
 }
 
@@ -235,8 +235,28 @@ export async function triggerSync(sessionId: string, siteId: string, courseId: n
       message: 'סנכרון ידני הופעל — מפעיל Edge Function',
     });
 
-    // Trigger the Edge Function asynchronously — it will update the batch when done
-    invokeMoodleSync(batch.id, siteId, courseId);
+    try {
+      await invokeMoodleSync(batch.id, siteId, courseId);
+    } catch (invokeErr: any) {
+      await supabase
+        .from('sync_batches')
+        .update({
+          status: 'failed',
+          finished_at: new Date().toISOString(),
+          error_summary: 'לא ניתן להפעיל את פונקציית הסנכרון',
+        })
+        .eq('id', batch.id);
+
+      await supabase.from('sync_logs').insert({
+        batch_id: batch.id,
+        site_id: siteId,
+        domain: 'students',
+        severity: 'error',
+        message: `שגיאת הפעלה: ${invokeErr.message}`,
+      });
+
+      return { ok: false, status: 'ERROR', error: invokeErr.message };
+    }
 
     return { ok: true, batchId: batch.id };
   } catch (err: any) {

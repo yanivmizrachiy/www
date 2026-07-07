@@ -63,15 +63,11 @@ serve(async (req) => {
     const is_valid = (receivedSignature === expectedSignature);
 
     if (!is_valid) {
-       console.error("Invalid signature detected.");
-       console.error("Expected:", expectedSignature);
-       console.error("Received:", receivedSignature);
-       
        await supabase.from("launch_attempts").insert({
          consumer_key,
          outcome: "failure",
          reason: "Invalid signature",
-         debug_received_signature: receivedSignature
+         signature_valid: false
        });
        return new Response("Invalid signature (LTI OAuth Verification Failed)", { status: 403 });
     }
@@ -104,7 +100,7 @@ serve(async (req) => {
     });
 
     // 5. Redirect to SPA with token
-    const redirectUrl = `${APP_ORIGIN}/lti-bootstrap?t=${session_token}`;
+    const redirectUrl = `${APP_ORIGIN}/lti/launch?t=${encodeURIComponent(session_token)}`;
     return new Response(null, {
       status: 303,
       headers: { "Location": redirectUrl }
@@ -112,6 +108,6 @@ serve(async (req) => {
 
   } catch (err) {
     console.error(err);
-    return new Response(String(err), { status: 500 });
+    return new Response("Internal server error", { status: 500 });
   }
 })
