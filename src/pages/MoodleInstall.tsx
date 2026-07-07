@@ -123,7 +123,16 @@ export default function MoodleInstall() {
                 כל מורה מתקין את הכלי במרחב ה-Moodle האישי שלו, נכנס מתוך הקורס, ורואה במקום אחד את נתוני התלמידים, המשימות, הציונים והפעילות של <strong>אותו מרחב בלבד</strong>. אין ערבוב נתונים בין מורים, קורסים או אתרי Moodle.
               </p>
               <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                הכלי נבנה ומנוהל על ידי יניב רז.
+                הכלי נבנה ומנוהל על ידי יניב רז —{' '}
+                <a
+                  href="https://www.instagram.com/yani__raz"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  @yani__raz באינסטגרם
+                </a>
+                .
               </p>
            </div>
         </div>
