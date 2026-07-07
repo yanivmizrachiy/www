@@ -390,7 +390,9 @@ serve(async (req) => {
           "לא נמצאו פריטי ציונים ב-Moodle — ייתכן שאין הרשאות צפייה בציונים");
         gradesFailed = true;
       } else {
-        // 5c. Upsert imported_grade_items
+        // 5c. Upsert imported_grade_items with fallback if onConflict constraint is missing
+        let upsertSucceeded = false;
+
         const gradeItemsToUpsert = Array.from(gradeItemMap.values()).map(gi => ({
           site_id,
           course_id,
@@ -403,7 +405,6 @@ serve(async (req) => {
           updated_at: now,
         }));
 
-        // Try upsert on (site_id, course_id, item_name) — the natural unique key
         const { error: giUpsertErr } = await supabase
           .from("imported_grade_items")
           .upsert(gradeItemsToUpsert, {
@@ -412,113 +413,169 @@ serve(async (req) => {
           });
 
         if (giUpsertErr) {
+          // Fallback: constraint may not exist — do manual insert-or-update
           await logEvent(supabase, batch_id, site_id, "grades", "warn",
-            `שגיאת הכנסת grade items: ${giUpsertErr.message}`);
-          gradesPartiallyFailed = true;
+            `upsert grade items נכשל (${giUpsertErr.message}), משתמש ב-fallback`);
+
+          try {
+            const { data: existingItems } = await supabase
+              .from("imported_grade_items")
+              .select("id, item_name, item_type, max_grade")
+              .eq("site_id", site_id)
+              .eq("course_id", course_id);
+
+            const existingMap: Record<string, { id: string; item_type: string | null; max_grade: number | null }> = {};
+            if (existingItems) {
+              for (const e of existingItems) {
+                existingMap[e.item_name] = { id: e.id, item_type: e.item_type, max_grade: e.max_grade };
+              }
+            }
+
+            const toInsert: Array<{
+              site_id: string; course_id: number; item_name: string;
+              item_type: string | null; max_grade: number | null;
+              first_seen_batch: string | null; last_seen_batch: string | null;
+              created_at: string; updated_at: string;
+            }> = [];
+            const toUpdate: Array<{
+              id: string; item_type: string | null; max_grade: number | null; updated_at: string;
+            }> = [];
+
+            for (const gi of gradeItemsToUpsert) {
+              const existing = existingMap[gi.item_name];
+              if (!existing) {
+                toInsert.push(gi as any);
+              } else {
+                const needsUpdate = gi.item_type !== existing.item_type || gi.max_grade !== existing.max_grade;
+                if (needsUpdate) {
+                  toUpdate.push({ id: existing.id, item_type: gi.item_type, max_grade: gi.max_grade, updated_at: now });
+                }
+              }
+            }
+
+            if (toInsert.length > 0) {
+              const { error: insertErr } = await supabase.from("imported_grade_items").insert(toInsert);
+              if (insertErr) throw insertErr;
+            }
+            for (const u of toUpdate) {
+              const { error: updateErr } = await supabase
+                .from("imported_grade_items")
+                .update({ item_type: u.item_type, max_grade: u.max_grade, updated_at: u.updated_at })
+                .eq("id", u.id);
+              if (updateErr) throw updateErr;
+            }
+            upsertSucceeded = true;
+          } catch (fallbackErr: any) {
+            await logEvent(supabase, batch_id, site_id, "grades", "error",
+              `fallback grade items נכשל: ${fallbackErr.message}`);
+            gradesFailed = true;
+          }
         } else {
+          upsertSucceeded = true;
           await logEvent(supabase, batch_id, site_id, "grades", "info",
             `סונכרנו ${gradeItemMap.size} פריטי ציונים`);
         }
 
-        // 5d. Fetch inserted grade item IDs for mapping
-        const { data: savedGradeItems } = await supabase
-          .from("imported_grade_items")
-          .select("id, item_name")
-          .eq("site_id", site_id)
-          .eq("course_id", course_id)
-          .in("item_name", Array.from(gradeItemMap.keys()));
-
-        if (!savedGradeItems || savedGradeItems.length === 0) {
-          await logEvent(supabase, batch_id, site_id, "grades", "error",
-            "לא ניתן לשלוף grade item IDs אחרי הכנסה");
-          gradesFailed = true;
-        } else {
-          const itemNameToId: Record<string, string> = {};
-          for (const gi of savedGradeItems) {
-            itemNameToId[gi.item_name] = gi.id;
-          }
-
-          // 5e. Delete existing grades for this batch scope (site + course), then insert fresh
-          // This prevents duplicates without needing a unique constraint on imported_grades
-          const { error: deleteErr } = await supabase
-            .from("imported_grades")
-            .delete()
+        if (upsertSucceeded) {
+          // 5d. Fetch inserted grade item IDs for mapping
+          const { data: savedGradeItems } = await supabase
+            .from("imported_grade_items")
+            .select("id, item_name")
             .eq("site_id", site_id)
-            .eq("course_id", course_id);
+            .eq("course_id", course_id)
+            .in("item_name", Array.from(gradeItemMap.keys()));
 
-          if (deleteErr) {
-            await logEvent(supabase, batch_id, site_id, "grades", "warn",
-              `לא ניתן למחוק ציונים קיימים: ${deleteErr.message} — מנסה להוסיף`);
-          }
-
-          const gradesToInsert: Array<{
-            site_id: string;
-            course_id: number;
-            student_id: string;
-            grade_item_id: string;
-            numeric_value: number | null;
-            raw_value: string | null;
-            is_missing: boolean;
-            batch_id: string | null;
-            created_at: string;
-            updated_at: string;
-          }> = [];
-
-          for (const [studentInternalId, grades] of Object.entries(studentGrades)) {
-            for (const g of grades) {
-              const gradeItemId = itemNameToId[g.item_name];
-              if (!gradeItemId) continue;
-
-              // Missing = "-" or null or empty string
-              const rawFormatted = g.gradeformatted ?? "";
-              const isMissing = !rawFormatted || rawFormatted === "-" || rawFormatted.trim() === "";
-
-              let numericValue: number | null = null;
-              if (!isMissing) {
-                // Remove locale-specific separators and try to parse number
-                const normalized = rawFormatted
-                  .replace(/[^\d.,\-–]/g, "")
-                  .replace(",", ".");
-                const parsed = parseFloat(normalized);
-                if (Number.isFinite(parsed)) numericValue = parsed;
-              }
-
-              gradesToInsert.push({
-                site_id,
-                course_id,
-                student_id: studentInternalId,
-                grade_item_id: gradeItemId,
-                numeric_value: numericValue,
-                raw_value: isMissing ? null : rawFormatted,
-                is_missing: isMissing,
-                batch_id: null,
-                created_at: now,
-                updated_at: now,
-              });
-            }
-          }
-
-          if (gradesToInsert.length > 0) {
-            const { error: gradesErr } = await supabase
-              .from("imported_grades")
-              .insert(gradesToInsert);
-
-            if (gradesErr) {
-              await logEvent(supabase, batch_id, site_id, "grades", "error",
-                `שגיאת הכנסת ציונים: ${gradesErr.message}`);
-              gradesFailed = true;
-            } else {
-              gradesSynced = gradesToInsert.length;
-              await logEvent(supabase, batch_id, site_id, "grades", "info",
-                `סונכרנו ${gradesSynced} ציונים ל-${Object.keys(studentGrades).length} תלמידים`);
-            }
+          if (!savedGradeItems || savedGradeItems.length === 0) {
+            await logEvent(supabase, batch_id, site_id, "grades", "error",
+              "לא ניתן לשלוף grade item IDs אחרי הכנסה");
+            gradesFailed = true;
           } else {
-            await logEvent(supabase, batch_id, site_id, "grades", "warn",
-              "לא נמצאו ציונים לייבא");
-            gradesPartiallyFailed = true;
+            const itemNameToId: Record<string, string> = {};
+            for (const gi of savedGradeItems) {
+              itemNameToId[gi.item_name] = gi.id;
+            }
+
+            // 5e. Delete existing grades for this batch scope (site + course), then insert fresh
+            // This prevents duplicates without needing a unique constraint on imported_grades
+            const { error: deleteErr } = await supabase
+              .from("imported_grades")
+              .delete()
+              .eq("site_id", site_id)
+              .eq("course_id", course_id);
+
+            if (deleteErr) {
+              await logEvent(supabase, batch_id, site_id, "grades", "warn",
+                `לא ניתן למחוק ציונים קיימים: ${deleteErr.message} — מנסה להוסיף`);
+            }
+
+            const gradesToInsert: Array<{
+              site_id: string;
+              course_id: number;
+              student_id: string;
+              grade_item_id: string;
+              numeric_value: number | null;
+              raw_value: string | null;
+              is_missing: boolean;
+              batch_id: string | null;
+              created_at: string;
+              updated_at: string;
+            }> = [];
+
+            for (const [studentInternalId, grades] of Object.entries(studentGrades)) {
+              for (const g of grades) {
+                const gradeItemId = itemNameToId[g.item_name];
+                if (!gradeItemId) continue;
+
+                // Missing = "-" or null or empty string
+                const rawFormatted = g.gradeformatted ?? "";
+                const isMissing = !rawFormatted || rawFormatted === "-" || rawFormatted.trim() === "";
+
+                let numericValue: number | null = null;
+                if (!isMissing) {
+                  // Remove locale-specific separators and try to parse number
+                  const normalized = rawFormatted
+                    .replace(/[^\d.,\-–]/g, "")
+                    .replace(",", ".");
+                  const parsed = parseFloat(normalized);
+                  if (Number.isFinite(parsed)) numericValue = parsed;
+                }
+
+                gradesToInsert.push({
+                  site_id,
+                  course_id,
+                  student_id: studentInternalId,
+                  grade_item_id: gradeItemId,
+                  numeric_value: numericValue,
+                  raw_value: isMissing ? null : rawFormatted,
+                  is_missing: isMissing,
+                  batch_id: null,
+                  created_at: now,
+                  updated_at: now,
+                });
+              }
+            }
+
+            if (gradesToInsert.length > 0) {
+              const { error: gradesErr } = await supabase
+                .from("imported_grades")
+                .insert(gradesToInsert);
+
+              if (gradesErr) {
+                await logEvent(supabase, batch_id, site_id, "grades", "error",
+                  `שגיאת הכנסת ציונים: ${gradesErr.message}`);
+                gradesFailed = true;
+              } else {
+                gradesSynced = gradesToInsert.length;
+                await logEvent(supabase, batch_id, site_id, "grades", "info",
+                  `סונכרנו ${gradesSynced} ציונים ל-${Object.keys(studentGrades).length} תלמידים`);
+              }
+            } else {
+              await logEvent(supabase, batch_id, site_id, "grades", "warn",
+                "לא נמצאו ציונים לייבא");
+              gradesPartiallyFailed = true;
+            }
           }
         }
-      }
     }
 
     // --- Tasks (mod_assign_get_assignments) ---
@@ -648,9 +705,9 @@ serve(async (req) => {
     } else if (gradesFailed) {
       finalStatus = "partial";
       errorSummary = "ציונים לא נמשכו: Moodle החזיר שגיאה או חסרות הרשאות צפייה בציונים";
-    } else if (gradesPartiallyFailed && gradesSynced === 0) {
+    } else if (gradesPartiallyFailed) {
       finalStatus = "partial";
-      errorSummary = "חלק מהציונים לא נמשכו: שגיאות חלקיות בשליפת ציונים לתלמידים מסוימים";
+      errorSummary = "חלק מהציונים נמשכו, אך היו שגיאות בשליפת ציונים לחלק מהתלמידים";
     }
 
     await finishBatch(supabase, batch_id, {
