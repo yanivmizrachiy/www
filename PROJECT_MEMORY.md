@@ -25,7 +25,7 @@ Teacher Release: **NO**
 ### ג. Yaniv Admin / Control Center — אזור ניהול פרטי ליניב
 דף ניהול פרטי שרק יניב רז רואה, לשליטה על תוכן המצגת, סטטוס Teacher Hub, סנכרון וייבוא. **לא זמין למורים.**  
 **נתיב קנוני:** `/admin-hub`.  
-כרגע קיים כ**עמוד גבול נעול בלבד** (locked boundary): לא טוען נתונים פרטיים, אין כפתורי ניהול אמיתיים, מציג רק את הקישור הציבורי למצגת ורשימת דרישות אבטחה. שליטה אמיתית BLOCKED עד auth + admin role + RLS.
+קיימת תשתית auth אמיתית: Supabase Auth (email magic link) + טבלת `admin_users` + פונקציית `is_admin()` (SECURITY DEFINER, search_path נעול) + RLS + `ProtectedAdminRoute`. לא-מנהל אינו רואה את המרכז. **פעולה ידנית שנותרה:** ליצור משתמש Supabase Auth ליניב ולהריץ את ה-migration, ואז להכניס את `auth.users.id` שלו ל-`admin_users` (SQL editor). עד אז `is_admin()` מחזיר false לכולם — אין admin פתוח.
 
 **כלל מחייב:** שלושת האזורים יכולים לחיות באותו ריפו ובאותו domain, אבל אסור לבלבל ביניהם. כל פיצ'ר חייב להיות משויך במפורש לאזור אחד.
 
@@ -85,7 +85,8 @@ Teacher Release: **NO**
 - מוגן ב-auth אמיתי + admin role + RLS. **אין להסתמך על הסתרת קישור בלבד.**
 - כל עוד אין תשתית auth+role+RLS מלאה — נשאר BLOCKED. לא בונים UI ניהול פתוח לכולם.
 - לא מציגים secrets, לא raw Moodle payload, לא מידע אישי של תלמידים.
-- **מצב נוכחי:** `/guide` חי ומוכן לשליחה למורים (commit `9aa826b`, guide polish). `/admin-hub` קיים כעמוד גבול נעול בלבד (public-safe) עד הרשאות מנהל. שלושת האזורים — Guide / Teacher Hub / Admin — מופרדים.
+- **מצב נוכחי:** `/guide` חי ומוכן לשליחה למורים (commit `9aa826b`, guide polish). `/admin-hub` מוגן בתשתית auth אמיתית (Supabase Auth + `admin_users` + `is_admin()` + RLS + `ProtectedAdminRoute`); נותר רק לזרוע admin ראשוני ידנית. שלושת האזורים — Guide / Teacher Hub / Admin — מופרדים.
+- **הפעלה ידנית ל-admin:** (1) להריץ `supabase/migrations/20260708_admin_users.sql` על ה-DB; (2) ליצור משתמש Supabase Auth ליניב; (3) `insert into public.admin_users (user_id, email, role) values ('<auth.users.id>', 'yanivmiz77@gmail.com', 'owner');`.
 - ראה פרק מפורט למטה: "Yaniv Admin / Control Center — אזור ניהול פרטי".
 
 ---
