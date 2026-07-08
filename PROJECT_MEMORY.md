@@ -86,7 +86,8 @@ Teacher Release: **NO**
 - כל עוד אין תשתית auth+role+RLS מלאה — נשאר BLOCKED. לא בונים UI ניהול פתוח לכולם.
 - לא מציגים secrets, לא raw Moodle payload, לא מידע אישי של תלמידים.
 - **מצב נוכחי:** `/guide` חי ומוכן לשליחה למורים (commit `9aa826b`, guide polish). `/admin-hub` מוגן בתשתית auth אמיתית (Supabase Auth + `admin_users` + `is_admin()` + RLS + `ProtectedAdminRoute`); נותר רק לזרוע admin ראשוני ידנית. שלושת האזורים — Guide / Teacher Hub / Admin — מופרדים.
-- **הפעלה ידנית ל-admin:** (1) להריץ `supabase/migrations/20260708_admin_users.sql` על ה-DB; (2) ליצור משתמש Supabase Auth ליניב; (3) `insert into public.admin_users (user_id, email, role) values ('<auth.users.id>', 'yanivmiz77@gmail.com', 'owner');`.
+- **הפעלה ידנית ל-admin:** (1) להריץ `supabase/migrations/20260708_admin_users.sql` על ה-DB; (2) ליצור משתמש Supabase Auth ליניב; (3) `insert into public.admin_users (user_id, email, role) values ('<auth.users.id>', 'yanivmiz77@gmail.com', 'owner');`. מדריך מלא: `docs/ADMIN_SETUP.md`.
+- **Teacher release למורים:** `/guide` מוכן ✅. שחרור מלא של Admin נשאר **NO** עד שכל שערי האימות עוברים (env ב-Render + migration + Supabase Auth + admin ראשוני).
 - ראה פרק מפורט למטה: "Yaniv Admin / Control Center — אזור ניהול פרטי".
 
 ---

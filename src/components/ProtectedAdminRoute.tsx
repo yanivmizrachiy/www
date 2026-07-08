@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from 'react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { supabaseConfigured } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Lock, ShieldAlert, Mail, LogOut, Loader2, CheckCircle2 } from 'lucide-react';
+import { Lock, ShieldAlert, Mail, LogOut, Loader2, CheckCircle2, ServerCog } from 'lucide-react';
 
 function Shell({ children }: { children: ReactNode }) {
   return (
@@ -17,6 +18,29 @@ export function ProtectedAdminRoute({ children }: { children: ReactNode }) {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  // 0. Supabase not configured on the host (Render env missing) — show a clear
+  // operator message instead of a raw auth error. No env values are exposed.
+  if (!supabaseConfigured) {
+    return (
+      <Shell>
+        <Card className="border-none shadow-luxury overflow-hidden">
+          <div className="h-2 w-full bg-amber-500" />
+          <CardContent className="p-8 space-y-4 text-center">
+            <div className="inline-flex p-4 rounded-2xl bg-amber-100 text-amber-700">
+              <ServerCog className="h-7 w-7" />
+            </div>
+            <h1 className="text-xl font-black text-slate-900">תצורת Supabase חסרה ב-Render</h1>
+            <p className="text-sm font-medium text-slate-500 leading-relaxed">
+              יש להגדיר את משתני הסביבה <span dir="ltr">VITE_SUPABASE_URL</span> ו-
+              <span dir="ltr">VITE_SUPABASE_PUBLISHABLE_KEY</span> בשירות ב-Render ולבצע
+              deploy מחדש. עד אז מרכז השליטה אינו זמין.
+            </p>
+          </CardContent>
+        </Card>
+      </Shell>
+    );
+  }
 
   // 1. Checking permissions — never reveal the hub before this resolves.
   if (loading) {
