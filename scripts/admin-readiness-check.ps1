@@ -1,7 +1,7 @@
 <#
   admin-readiness-check.ps1
 
-  בדיקת מוכרות בלבד (read-only). לא עושה deploy, לא דורש secrets,
+  בדיקת מוכנות בלבד (read-only). לא עושה deploy, לא דורש secrets,
   לא מדפיס ערכי env. בודק:
     - git status נקי
     - /guide external asset מכיל את טקסטי המצגת

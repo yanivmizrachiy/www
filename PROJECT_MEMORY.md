@@ -88,6 +88,7 @@ Teacher Release: **NO**
 - **מצב נוכחי:** `/guide` חי ומוכן לשליחה למורים (commit `9aa826b`, guide polish). `/admin-hub` מוגן בתשתית auth אמיתית (Supabase Auth + `admin_users` + `is_admin()` + RLS + `ProtectedAdminRoute`); נותר רק לזרוע admin ראשוני ידנית. שלושת האזורים — Guide / Teacher Hub / Admin — מופרדים.
 - **הפעלה ידנית ל-admin:** (1) להריץ `supabase/migrations/20260708_admin_users.sql` על ה-DB; (2) ליצור משתמש Supabase Auth ליניב; (3) `insert into public.admin_users (user_id, email, role) values ('<auth.users.id>', 'yanivmiz77@gmail.com', 'owner');`. מדריך מלא: `docs/ADMIN_SETUP.md`.
 - **Teacher release למורים:** `/guide` מוכן ✅. שחרור מלא של Admin נשאר **NO** עד שכל שערי האימות עוברים (env ב-Render + migration + Supabase Auth + admin ראשוני).
+- **Server API (`src/server.js`) hardening:** env לפי `process.env` קודם ← `.env` ← fallback; cookie `secure` ב-production; endpoints של מורה דורשים session (401); raw Moodle captures/summary חסומים (403 `ADMIN_ONLY`) עד אימות admin **בצד שרת** (client Supabase admin אינו אבטחת שרת). ה-React client לא צורך את `/api/*` הללו — משתמש ב-Supabase ישירות, כך ש-Teacher Hub לא נשבר.
 - ראה פרק מפורט למטה: "Yaniv Admin / Control Center — אזור ניהול פרטי".
 
 ---

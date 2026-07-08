@@ -27,7 +27,15 @@ function loadEnvFile() {
 }
 
 const ENV = loadEnvFile();
-const APP_BASE_URL = ENV.APP_BASE_URL || `http://127.0.0.1:${PORT}`;
+
+// Env resolution order: real process env (Render) first, local .env second,
+// fallback last. Never logs values.
+function getEnv(name, fallback = "") {
+  return process.env[name] || ENV[name] || fallback;
+}
+
+const APP_BASE_URL = getEnv("APP_BASE_URL", `http://127.0.0.1:${PORT}`);
+const IS_PROD = process.env.NODE_ENV === "production";
 
 function defaultStore() {
   return {
@@ -74,12 +82,34 @@ const sessions = new Map();
 function setSession(res, data) {
   const sid = uuidv4();
   sessions.set(sid, data);
-  res.cookie("sid", sid, { httpOnly: true, sameSite: "lax", secure: false });
+  // secure only in production (Render is HTTPS); lax keeps the LTI redirect flow.
+  res.cookie("sid", sid, { httpOnly: true, sameSite: "lax", secure: IS_PROD });
 }
 
 function getSession(req) {
   const sid = req.cookies?.sid;
   return sid ? (sessions.get(sid) || null) : null;
+}
+
+// Teacher-scoped guard: returns the session or sends 401 and returns null.
+function requireSession(req, res) {
+  const s = getSession(req);
+  if (!s) {
+    res.status(401).json({ ok: false, error: "NO_SESSION" });
+    return null;
+  }
+  return s;
+}
+
+// Admin-only surface: there is no server-side admin verification yet
+// (client Supabase admin auth must NOT be trusted as server auth), so
+// sensitive raw endpoints stay blocked rather than exposed.
+function denyAdminOnly(res) {
+  return res.status(403).json({
+    ok: false,
+    error: "ADMIN_ONLY",
+    message: "אזור זה דורש אימות מנהל בצד שרת שעדיין לא הופעל."
+  });
 }
 
 function upsertTeacher(name, externalId = "teacher-demo") {
@@ -197,8 +227,8 @@ app.get("/health", (_req, res) => {
     service: "moodle-teacher-hub",
     appBaseUrl: APP_BASE_URL,
     lti11Ready: {
-      key: !!ENV.LTI11_KEY,
-      secret: !!ENV.LTI11_SECRET,
+      key: !!getEnv("LTI11_KEY"),
+      secret: !!getEnv("LTI11_SECRET"),
       launch_url: `${APP_BASE_URL}/lti/launch-1p1`
     },
     counts: {
@@ -302,27 +332,40 @@ app.get("/api/bootstrap", (req, res) => {
   });
 });
 
-app.get("/api/launches", (_req, res) => res.json([...store.launches].reverse()));
-app.get("/api/students", (_req, res) => res.json(store.students));
-app.get("/api/tasks", (_req, res) => res.json(store.tasks));
-app.get("/api/grades", (_req, res) => res.json(store.grades));
-app.get("/api/activity", (_req, res) => res.json({ sessions: store.activitySessions, dailySummaries: [] }));
-app.get("/api/settings", (_req, res) => res.json(store.settings));
-
-app.get("/api/moodle-summary", (_req, res) => {
-  const last = store.moodleCaptures.length ? store.moodleCaptures[store.moodleCaptures.length - 1] : null;
-  res.json({
-    capturesCount: store.moodleCaptures.length,
-    lastCaptureAt: last?.createdAt ?? null,
-    lastSource: last?.source ?? null,
-    availableKeys: last?.keys ?? [],
-    important: last?.important ?? {}
-  });
+// Teacher-scoped data — require a valid session.
+app.get("/api/launches", (req, res) => {
+  if (!requireSession(req, res)) return;
+  res.json([...store.launches].reverse());
+});
+app.get("/api/students", (req, res) => {
+  if (!requireSession(req, res)) return;
+  res.json(store.students);
+});
+app.get("/api/tasks", (req, res) => {
+  if (!requireSession(req, res)) return;
+  res.json(store.tasks);
+});
+app.get("/api/grades", (req, res) => {
+  if (!requireSession(req, res)) return;
+  res.json(store.grades);
+});
+app.get("/api/activity", (req, res) => {
+  if (!requireSession(req, res)) return;
+  res.json({ sessions: store.activitySessions, dailySummaries: [] });
+});
+app.get("/api/settings", (req, res) => {
+  if (!requireSession(req, res)) return;
+  res.json(store.settings);
 });
 
-app.get("/api/moodle-captures", (_req, res) => res.json([...store.moodleCaptures].reverse()));
+// Raw Moodle capture data (payload keys, contact email, ids) is admin-only and
+// stays blocked until a real server-side admin check exists.
+app.get("/api/moodle-summary", (_req, res) => denyAdminOnly(res));
+app.get("/api/moodle-captures", (_req, res) => denyAdminOnly(res));
 
-app.get("/api/export/grades.csv", (_req, res) => {
+// Grades export — teacher-scoped, require a session.
+app.get("/api/export/grades.csv", (req, res) => {
+  if (!requireSession(req, res)) return;
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", "attachment; filename=grades-export.csv");
   res.send(buildGradesCsv());
