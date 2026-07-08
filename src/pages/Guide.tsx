@@ -22,9 +22,14 @@ import {
   Check,
   Instagram,
   ShieldAlert,
+  MousePointerClick,
+  Map as MapIcon,
+  HelpCircle,
+  ChevronLeft as ChevronLeftIcon,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { BUTTON_AREAS } from '@/data/guideButtons';
 
 type Question = {
   id: string;
@@ -884,11 +889,13 @@ const TOPICS: Topic[] = [
   },
 ];
 
-type View = 'cover' | 'topics' | 'questions' | 'answer';
+type View = 'cover' | 'home' | 'topics' | 'questions' | 'answer' | 'areas' | 'area' | 'downloads';
 
-const HEADER_LINE = 'הדרכה במחוז ירושלים והעיר ירושלים, מנח״י, בהובלת איילת קריספין';
-const YANIV_LINE = 'האתר מנוהל ע״י יניב רז';
+const HEADER_LINE = 'הדרכה במחוז ירושלים והעיר ירושלים - מנח״י';
+const YANIV_LINE = 'המדריך מנוהל ע״י יניב רז';
+const CREDIT_LINE = 'בהובלת איילת קריספין';
 const BIG_TITLE = 'המדריך המלא למורים — מרחב הלמידה במערכת המודל של משרד החינוך';
+const TAGLINE = 'כל כפתור — לאן מגיעים בלחיצה עליו ומה יש שם';
 const INSTAGRAM_URL = 'https://www.instagram.com/yani__raz';
 
 function guideUrl() {
@@ -898,13 +905,14 @@ function guideUrl() {
 // Footer appears on every view — managed-by line + Instagram (per site rules).
 function GuideFooter() {
   return (
-    <footer className="mt-16 pt-8 border-t border-slate-200 flex flex-col items-center gap-2 text-center">
+    <footer className="mt-16 pt-8 border-t border-slate-200 flex flex-col items-center gap-1.5 text-center">
       <p className="text-sm font-bold text-slate-600">{YANIV_LINE}</p>
+      <p className="text-xs font-medium text-slate-400">{CREDIT_LINE}</p>
       <a
         href={INSTAGRAM_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-primary transition-colors"
+        className="mt-1 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-primary transition-colors"
       >
         <Instagram className="h-4 w-4" />
         yani__raz@
@@ -949,10 +957,29 @@ export default function Guide() {
   const [view, setView] = useState<View>('cover');
   const [topicId, setTopicId] = useState<string | null>(null);
   const [questionId, setQuestionId] = useState<string | null>(null);
+  const [areaId, setAreaId] = useState<string | null>(null);
 
   const topic = topicId ? TOPICS.find(t => t.id === topicId) ?? null : null;
   const question =
     topic && questionId ? topic.questions.find(q => q.id === questionId) ?? null : null;
+  const area = areaId ? BUTTON_AREAS.find(a => a.id === areaId) ?? null : null;
+
+  function openHome() {
+    setTopicId(null);
+    setQuestionId(null);
+    setAreaId(null);
+    setView('home');
+  }
+
+  function openAreas() {
+    setAreaId(null);
+    setView('areas');
+  }
+
+  function openArea(id: string) {
+    setAreaId(id);
+    setView('area');
+  }
 
   function openTopics() {
     setTopicId(null);
@@ -985,6 +1012,7 @@ export default function Guide() {
   function backToCover() {
     setTopicId(null);
     setQuestionId(null);
+    setAreaId(null);
     setView('cover');
   }
 
@@ -992,24 +1020,34 @@ export default function Guide() {
   if (view === 'cover') {
     return (
       <GuideShell>
-        <div className="min-h-[70vh] flex flex-col items-center justify-center text-center gap-10 py-12">
+        <div className="min-h-[70vh] flex flex-col items-center justify-center text-center gap-8 py-12">
+          {/* Logo asset missing — add Jerusalem district logo here.
+              Use only the official supplied logo (alt="לוגו מחוז ירושלים"),
+              keep aspect ratio, do not fabricate a logo. */}
+          <div
+            className="h-20 w-20 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-300 leading-tight px-1"
+            aria-label="מקום ללוגו מחוז ירושלים"
+          >
+            לוגו מחוז ירושלים
+          </div>
+
           <div className="space-y-2 max-w-3xl">
             <p className="text-sm md:text-base font-bold text-slate-700 leading-relaxed">
               {HEADER_LINE}
             </p>
-            <p className="text-xs md:text-sm text-slate-500 font-medium">
-              {YANIV_LINE}
-            </p>
+            <p className="text-xs md:text-sm text-slate-500 font-medium">{YANIV_LINE}</p>
           </div>
 
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-tight max-w-4xl">
             {BIG_TITLE}
           </h1>
 
+          <p className="text-base md:text-lg font-bold text-primary max-w-2xl">{TAGLINE}</p>
+
           <div className="flex flex-col items-center gap-4">
             <Button
               size="lg"
-              onClick={openTopics}
+              onClick={openHome}
               className="h-16 px-16 text-2xl font-black gap-3 shadow-luxury"
             >
               כניסה
@@ -1018,9 +1056,226 @@ export default function Guide() {
             <CopyLinkButton />
           </div>
 
-          <p className="text-xs text-slate-400 font-medium mt-6">
-            {TOPICS.length} נושאים · עברית · RTL · תמונות אמיתיות ממודל (בהכנה)
+          <p className="text-xs text-slate-400 font-medium mt-4">
+            עברית · RTL · הסבר פשוט לכל כפתור · תמונות אמיתיות ממודל (בהכנה)
           </p>
+        </div>
+      </GuideShell>
+    );
+  }
+
+  // Home — path chooser
+  if (view === 'home') {
+    const paths: { id: string; title: string; desc: string; icon: LucideIcon; color: string; go: () => void }[] = [
+      { id: 'q', title: 'שאלות למורה', desc: 'איך עושים פעולה נפוצה, צעד־צעד', icon: HelpCircle, color: 'bg-blue-500', go: openTopics },
+      { id: 'map', title: 'מפת כפתורים', desc: 'לכל כפתור: מה נפתח בלחיצה', icon: MapIcon, color: 'bg-teal-500', go: openAreas },
+      { id: 'edit', title: 'מצב עריכה', desc: 'כל הכפתורים של עריכת המרחב', icon: MousePointerClick, color: 'bg-purple-500', go: () => openArea('edit-mode') },
+      { id: 'dl', title: 'הורדת דוחות וקבצים', desc: 'ציונים, לוגים, השלמות, משתתפים', icon: Download, color: 'bg-indigo-500', go: () => setView('downloads') },
+      { id: 'fix', title: 'פתרון תקלות', desc: 'מה עושים כשמשהו לא עובד', icon: AlertTriangle, color: 'bg-orange-500', go: () => openTopic('troubleshoot') },
+    ];
+    return (
+      <GuideShell>
+        <div className="space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-black text-slate-900">איך תרצו להתחיל?</h2>
+              <p className="text-sm text-muted-foreground font-medium mt-1">
+                בוחרים מסלול. אפשר לחזור לכאן בכל שלב.
+              </p>
+            </div>
+            <Button variant="outline" onClick={backToCover} className="gap-2">
+              <Home className="h-4 w-4" />
+              חזרה להתחלה
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {paths.map(p => {
+              const Icon = p.icon;
+              return (
+                <button
+                  key={p.id}
+                  onClick={p.go}
+                  className="group text-right rounded-2xl border-2 border-slate-100 bg-white hover:border-primary/60 hover:shadow-luxury transition-all p-6 flex items-center gap-5"
+                >
+                  <div className={cn('p-4 rounded-2xl text-white shadow-md shrink-0 group-hover:scale-110 transition-transform', p.color)}>
+                    <Icon className="h-7 w-7" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-lg font-black text-slate-900 leading-tight">{p.title}</div>
+                    <div className="text-xs font-medium text-slate-500 mt-1">{p.desc}</div>
+                  </div>
+                  <ChevronLeftIcon className="h-5 w-5 text-slate-300 group-hover:text-primary transition-colors" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </GuideShell>
+    );
+  }
+
+  // Areas — button map (list of screen areas)
+  if (view === 'areas') {
+    return (
+      <GuideShell>
+        <div className="space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-black text-slate-900">מפת כפתורים</h2>
+              <p className="text-sm text-muted-foreground font-medium mt-1">
+                בוחרים אזור במסך, ורואים מה כל כפתור עושה. אם לוחצים על אזור — נפתחת רשימת הכפתורים שלו.
+              </p>
+            </div>
+            <Button variant="outline" onClick={openHome} className="gap-2">
+              <Home className="h-4 w-4" />
+              חזרה למסלולים
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {BUTTON_AREAS.map(a => {
+              const Icon = a.icon;
+              const count = (a.buttons?.length ?? 0) + (a.groups?.length ?? 0);
+              return (
+                <button
+                  key={a.id}
+                  onClick={() => openArea(a.id)}
+                  className="group text-right rounded-2xl border-2 border-slate-100 bg-white hover:border-primary/60 hover:shadow-luxury transition-all p-6 flex items-center gap-5"
+                >
+                  <div className={cn('p-4 rounded-2xl text-white shadow-md shrink-0 group-hover:scale-110 transition-transform', a.color)}>
+                    <Icon className="h-7 w-7" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-lg font-black text-slate-900 leading-tight">{a.title}</div>
+                    <div className="text-xs font-medium text-slate-500 mt-1">{a.where}</div>
+                    <div className="text-[11px] font-bold text-slate-400 mt-1">{count} כפתורים</div>
+                  </div>
+                  <ChevronLeftIcon className="h-5 w-5 text-slate-300 group-hover:text-primary transition-colors" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </GuideShell>
+    );
+  }
+
+  // Area — one screen area's buttons
+  if (view === 'area' && area) {
+    const Icon = area.icon;
+    return (
+      <GuideShell>
+        <div className="space-y-6">
+          <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground">
+            <button onClick={openHome} className="hover:text-primary transition-colors">מסלולים</button>
+            <ChevronRight className="h-3 w-3" />
+            <button onClick={openAreas} className="hover:text-primary transition-colors">מפת כפתורים</button>
+            <ChevronRight className="h-3 w-3" />
+            <span className="text-slate-700 font-bold">{area.title}</span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className={cn('p-3 rounded-2xl text-white shadow-md shrink-0', area.color)}>
+              <Icon className="h-6 w-6" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black text-slate-900">{area.title}</h2>
+              <p className="text-sm text-muted-foreground font-medium mt-1">
+                איפה רואים: {area.where}. לוחצים על הכפתור וקוראים מה נפתח.
+              </p>
+            </div>
+          </div>
+
+          {area.buttons && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {area.buttons.map(b => (
+                <div key={b.label} className="rounded-xl border-2 border-slate-100 bg-white p-4 space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className={cn('h-2 w-2 rounded-full shrink-0', area.color)} />
+                    <span className="text-base font-black text-slate-900 leading-tight">{b.label}</span>
+                  </div>
+                  <p className="text-sm font-medium text-slate-600 leading-relaxed">
+                    אם לוחצים — {b.opens}.
+                  </p>
+                  {b.next && <p className="text-xs font-medium text-slate-500">משם: {b.next}.</p>}
+                  {b.also && <p className="text-xs font-medium text-primary/80">{b.also}.</p>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {area.groups && (
+            <div className="space-y-4">
+              <p className="text-sm font-medium text-slate-600">
+                אחרי שנפתח בורר ההוספה, בוחרים פריט מאחת הקבוצות:
+              </p>
+              {area.groups.map(g => (
+                <div key={g.title} className="rounded-2xl border-2 border-slate-100 bg-white p-5 space-y-2">
+                  <div className="text-base font-black text-slate-900">{g.title}</div>
+                  <div className="text-xs font-medium text-slate-500">{g.note}</div>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {g.items.map(it => (
+                      <span key={it} className="rounded-full bg-slate-100 text-slate-700 text-xs font-bold px-3 py-1">
+                        {it}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={openAreas} className="gap-2">
+              <Layers className="h-4 w-4" />
+              חזרה למפת הכפתורים
+            </Button>
+          </div>
+        </div>
+      </GuideShell>
+    );
+  }
+
+  // Downloads — curated route into the button map (no duplicated explanations)
+  if (view === 'downloads') {
+    const items = [
+      { title: 'ציונים לאקסל', where: 'ציונים → יצוא → Excel', go: () => openArea('grades') },
+      { title: 'יומני מעקב (Logs)', where: 'דוחות → יומני מעקב → הורדה', go: () => openArea('reports') },
+      { title: 'השלמות פעילות', where: 'דוחות → דוח השלמות פעילות', go: () => openArea('reports') },
+      { title: 'רשימת משתתפים', where: 'משתתפים → הורדת טבלת משתתפים', go: () => openArea('participants') },
+    ];
+    return (
+      <GuideShell>
+        <div className="space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-black text-slate-900">הורדת דוחות וקבצים</h2>
+              <p className="text-sm text-muted-foreground font-medium mt-1">
+                מכל אזור אפשר להוריד קובץ. לוחצים כדי לראות את הכפתורים המדויקים.
+              </p>
+            </div>
+            <Button variant="outline" onClick={openHome} className="gap-2">
+              <Home className="h-4 w-4" />
+              חזרה למסלולים
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {items.map(it => (
+              <button
+                key={it.title}
+                onClick={it.go}
+                className="group text-right rounded-xl border-2 border-slate-100 bg-white hover:border-primary/60 hover:shadow-md transition-all p-5 flex items-center gap-4"
+              >
+                <div className="p-3 rounded-xl bg-indigo-500 text-white shrink-0">
+                  <Download className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-base font-black text-slate-900">{it.title}</div>
+                  <div className="text-xs font-medium text-slate-500 mt-0.5">{it.where}</div>
+                </div>
+                <ChevronLeftIcon className="h-4 w-4 text-slate-300 group-hover:text-primary transition-colors shrink-0" />
+              </button>
+            ))}
+          </div>
         </div>
       </GuideShell>
     );

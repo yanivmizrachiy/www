@@ -11,7 +11,7 @@
 ## סטטוס נוכחי
 | רכיב | סטטוס |
 | --- | --- |
-| `/guide` (מצגת למורים) | ✅ חי, מאומת חיצונית (asset מכיל את כל הטקסטים) |
+| `/guide` (מדריך למורים) | ✅ חי; עודכן למדריך כפתורים פשוט לפי מסמך המקור. מפת כפתורים לפי אזורי מסך, שפה פשוטה, כפילויות אוחדו. Coverage=PASS, Dedup=PASS. צילומים אמיתיים בלבד (חסרים → placeholder); לוגו מחוז ירושלים חסר |
 | `/admin-hub` (מרכז שליטה) | ✅ פרוס ומוגן ב-`ProtectedAdminRoute`; אין admin פתוח |
 | Server API (Express) | ✅ מוקשח: teacher endpoints דורשים session (401), raw captures חסומים (403 ADMIN_ONLY), `/health` + LTI פתוחים |
 | Supabase env ב-Render | ✅ מוגדר (bundle לא מכיל placeholder) |
