@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { SafePage } from '@/components/SafePage';
+import { useState, type ReactNode } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +18,10 @@ import {
   Home,
   Image as ImageIcon,
   Layers,
+  Copy,
+  Check,
+  Instagram,
+  ShieldAlert,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -886,6 +889,61 @@ type View = 'cover' | 'topics' | 'questions' | 'answer';
 const HEADER_LINE = 'הדרכה במחוז ירושלים והעיר ירושלים, מנח״י, בהובלת איילת קריספין';
 const YANIV_LINE = 'האתר מנוהל ע״י יניב רז';
 const BIG_TITLE = 'המדריך המלא למורים — מרחב הלמידה במערכת המודל של משרד החינוך';
+const INSTAGRAM_URL = 'https://www.instagram.com/yani__raz';
+
+function guideUrl() {
+  return typeof window !== 'undefined' ? `${window.location.origin}/guide` : '/guide';
+}
+
+// Footer appears on every view — managed-by line + Instagram (per site rules).
+function GuideFooter() {
+  return (
+    <footer className="mt-16 pt-8 border-t border-slate-200 flex flex-col items-center gap-2 text-center">
+      <p className="text-sm font-bold text-slate-600">{YANIV_LINE}</p>
+      <a
+        href={INSTAGRAM_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-primary transition-colors"
+      >
+        <Instagram className="h-4 w-4" />
+        yani__raz@
+      </a>
+    </footer>
+  );
+}
+
+// Self-contained presentation shell — light, RTL, no Teacher Hub chrome.
+function GuideShell({ children }: { children: ReactNode }) {
+  return (
+    <div dir="rtl" className="min-h-screen bg-slate-50 text-slate-900">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 md:py-12">
+        {children}
+        <GuideFooter />
+      </div>
+    </div>
+  );
+}
+
+// Real, working "copy the /guide link" button — no fake action.
+function CopyLinkButton({ className }: { className?: string }) {
+  const [copied, setCopied] = useState(false);
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(guideUrl());
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  }
+  return (
+    <Button variant="outline" onClick={copy} className={cn('gap-2', className)}>
+      {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+      {copied ? 'הקישור הועתק' : 'העתקת קישור למצגת'}
+    </Button>
+  );
+}
 
 export default function Guide() {
   const [view, setView] = useState<View>('cover');
@@ -933,7 +991,7 @@ export default function Guide() {
   // Cover
   if (view === 'cover') {
     return (
-      <SafePage title="מדריך למורה" description="מדריך הדרכה חיה למרחב הלמידה במודל של משרד החינוך.">
+      <GuideShell>
         <div className="min-h-[70vh] flex flex-col items-center justify-center text-center gap-10 py-12">
           <div className="space-y-2 max-w-3xl">
             <p className="text-sm md:text-base font-bold text-slate-700 leading-relaxed">
@@ -948,27 +1006,30 @@ export default function Guide() {
             {BIG_TITLE}
           </h1>
 
-          <Button
-            size="lg"
-            onClick={openTopics}
-            className="h-16 px-16 text-2xl font-black gap-3 shadow-luxury"
-          >
-            כניסה
-            <ChevronLeft className="h-6 w-6" />
-          </Button>
+          <div className="flex flex-col items-center gap-4">
+            <Button
+              size="lg"
+              onClick={openTopics}
+              className="h-16 px-16 text-2xl font-black gap-3 shadow-luxury"
+            >
+              כניסה
+              <ChevronLeft className="h-6 w-6" />
+            </Button>
+            <CopyLinkButton />
+          </div>
 
           <p className="text-xs text-slate-400 font-medium mt-6">
             {TOPICS.length} נושאים · עברית · RTL · תמונות אמיתיות ממודל (בהכנה)
           </p>
         </div>
-      </SafePage>
+      </GuideShell>
     );
   }
 
   // Topics
   if (view === 'topics') {
     return (
-      <SafePage title="בחירת נושא" description="בחרו נושא מהמדריך כדי לראות את השאלות והתשובות.">
+      <GuideShell>
         <div className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -1014,7 +1075,7 @@ export default function Guide() {
             })}
           </div>
         </div>
-      </SafePage>
+      </GuideShell>
     );
   }
 
@@ -1022,7 +1083,7 @@ export default function Guide() {
   if (view === 'questions' && topic) {
     const Icon = topic.icon;
     return (
-      <SafePage title={topic.title} description={`שאלות נפוצות בנושא ${topic.title}.`}>
+      <GuideShell>
         <div className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-4">
@@ -1065,7 +1126,7 @@ export default function Guide() {
             ))}
           </div>
         </div>
-      </SafePage>
+      </GuideShell>
     );
   }
 
@@ -1077,7 +1138,7 @@ export default function Guide() {
     const nextQ = idx < topic.questions.length - 1 ? topic.questions[idx + 1] : null;
 
     return (
-      <SafePage title={question.title} description={`תשובה בנושא ${topic.title}.`}>
+      <GuideShell>
         <div className="space-y-6 max-w-4xl mx-auto">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground">
@@ -1163,6 +1224,12 @@ export default function Guide() {
                     צילום אמיתי יתווסף לאחר טשטוש פרטים אישיים ואישור יניב.
                   </p>
                 </div>
+                <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 p-4">
+                  <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-xs font-medium text-amber-800 leading-relaxed">
+                    הערת פרטיות: אין להציג פרטי תלמידים או ציונים אמיתיים בצילום לפני טשטוש או אישור.
+                  </p>
+                </div>
               </section>
 
               {question.tip && (
@@ -1204,16 +1271,16 @@ export default function Guide() {
             </Button>
           </div>
         </div>
-      </SafePage>
+      </GuideShell>
     );
   }
 
   // Fallback — shouldn't reach here
   return (
-    <SafePage title="מדריך למורה" description="">
+    <GuideShell>
       <div className="text-center py-20">
         <Button onClick={backToCover}>חזרה לעמוד הראשי</Button>
       </div>
-    </SafePage>
+    </GuideShell>
   );
 }

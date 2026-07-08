@@ -33,6 +33,8 @@ function App() {
         <div className="min-h-screen bg-neutral-50" dir="rtl">
           <Routes>
             <Route path="/lti/launch" element={<LtiBootstrap />} />
+            {/* Guide is a standalone teacher presentation — no Teacher Hub chrome. */}
+            <Route path="/guide" element={<Guide />} />
             <Route element={<AppLayout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/tasks" element={<Tasks />} />
@@ -53,7 +55,6 @@ function App() {
               <Route path="/setup" element={<Setup />} />
               <Route path="/install" element={<MoodleInstall />} />
               <Route path="/help" element={<TeacherHelp />} />
-              <Route path="/guide" element={<Guide />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
