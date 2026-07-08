@@ -225,6 +225,9 @@ app.get("/lti11/config", (_req, res) => {
 });
 
 app.get("/dev/login", (_req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(404).send("Not found");
+  }
   const teacher = upsertTeacher("מורה לדוגמה");
   const space = upsertSpace("מרחב לדוגמה");
   logLaunch("dev-login", true, teacher.name, space.title, "");

@@ -215,7 +215,7 @@ export default function Settings() {
                       <Globe className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Input
                         dir="ltr"
-                        placeholder="https://moodle.yourcollege.edu.il"
+                        placeholder="https://moodlemoe.lms.education.gov.il"
                         value={siteUrl}
                         onChange={(e) => setSiteUrl(e.target.value)}
                         className="pr-10 font-mono text-sm text-left"

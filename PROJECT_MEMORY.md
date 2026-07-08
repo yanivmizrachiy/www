@@ -1,6 +1,6 @@
 # PROJECT MEMORY — Moodle Admin / Teacher Hub / Guide Center
 
-עודכן: 2026-07-07  
+עודכן: 2026-07-08  
 ריפו מקור: `yanivmizrachiy/www`  
 Runtime קנוני נוכחי: `https://www-tijc.onrender.com`  
 Teacher Release: **NO**
@@ -335,6 +335,22 @@ BLOCKED (עד שיש token או הרשאה):
 - אם ומתי משהח יחשוף את "ניהול למידה" ב-API — יש לקשר אליו את דוחות ה-KPI ב-Teacher Hub.
 - אם משהח יאפשר סמל שאלון ב-API — יש להוסיף דוח בגרות מסונכרן.
 - כל שינוי בפלטפורמה של משהח יכול לשבור סנכרונים; לשמור לוג שינויים במסמך `STATE/` המתאים.
+
+### 10. Audit יישור ריפו מול הדוח (2026-07-08)
+
+לאחר קבלת הדוח המלא מ-Google Docs, בוצע audit רוחבי של הריפו מול העובדות בדוח. תוצאות:
+
+**תואם ✅:**
+- כל פונקציות ה-WS ב-`supabase/functions/moodle-sync/index.ts` הן שמות אמיתיים של Moodle Web Services (`core_enrol_get_enrolled_users`, `gradereport_user_get_grade_items`, `mod_assign_get_assignments`, `core_report_get_log_data`, `core_completion_get_activities_completion_status`).
+- Footer של יניב + אינסטגרם קיים ב-`AppLayout.tsx` ומכסה את כל הראוטים למעט `/lti/launch` (bootstrap בלבד — מכוון).
+- ראוט `/reports` משתמש ב-`ReportsCenter.tsx` (המימוש האמיתי).
+
+**תוקן בסבב זה:**
+- הוסרו 5 קבצי pages מיותמים (`Reports.tsx`, `Export.tsx`, `SettingsPage.tsx`, `ChapterDetail.tsx`, `Sites.tsx`) — אושר שאין אליהם import ב-src.
+- Placeholder אנגלי בדוי ב-`Settings.tsx` (`moodle.yourcollege.edu.il`) הוחלף ב-`moodlemoe.lms.education.gov.il` האמיתי.
+- Route `/dev/login` ב-`server.js` נחסם בפרודקשן (`NODE_ENV === "production"` מחזיר 404) — מונע דלת אחורית עם "מורה/מרחב לדוגמה".
+
+**כלל מחייב:** לפני מחיקת קובץ — grep על ייבואים ב-src. הפעם הודגם דרך STATE/gemini-sync/git-diff-no-lock.patch שהקבצים כבר נוקו מ-App.tsx מזמן ורק הקבצים עצמם נשארו.
 
 ---
 
