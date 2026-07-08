@@ -182,6 +182,15 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use("/public", express.static(path.join(ROOT, "public")));
 
+// Serve the built React SPA (Vite dist). API/LTI routes below still take
+// precedence because they are registered before the SPA fallback.
+const DIST_DIR = path.join(ROOT, "dist");
+const DIST_INDEX = path.join(DIST_DIR, "index.html");
+const HAS_DIST = fs.existsSync(DIST_INDEX);
+if (HAS_DIST) {
+  app.use(express.static(DIST_DIR));
+}
+
 app.get("/health", (_req, res) => {
   res.json({
     ok: true,
@@ -319,7 +328,16 @@ app.get("/api/export/grades.csv", (_req, res) => {
   res.send(buildGradesCsv());
 });
 
-app.get("/", (_req, res) => {
+// SPA fallback: any non-API GET route returns the React app so client-side
+// routing (e.g. /guide) works on a full-page load. Falls back to the legacy
+// dashboard.html only if the Vite build is missing.
+app.get("*", (req, res) => {
+  if (req.path.startsWith("/api/")) {
+    return res.status(404).json({ ok: false, error: "NOT_FOUND" });
+  }
+  if (HAS_DIST) {
+    return res.sendFile(DIST_INDEX);
+  }
   res.sendFile(path.join(ROOT, "src", "ui", "dashboard", "dashboard.html"));
 });
 
