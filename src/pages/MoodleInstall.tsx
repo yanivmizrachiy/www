@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { SafePage } from '@/components/SafePage';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ExternalLink, Copy, HelpCircle, Settings, ShieldCheck, Terminal } from 'lucide-react';
+import { ExternalLink, Copy, HelpCircle, Settings, ShieldCheck, Terminal, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -111,6 +111,26 @@ export default function MoodleInstall() {
               </div>
               <p className="text-xs text-slate-500 font-medium leading-relaxed opacity-80">
                 אם נתקלת בבעיה בתהליך ההגדרה, פנה למנהל המודל של המוסד וודא שהרשאות LTI מאופשרות עבור האתר.
+              </p>
+           </div>
+
+           <div className="p-8 bg-accent/5 rounded-[2.5rem] border border-accent/10 space-y-4">
+              <div className="flex items-center gap-2 text-accent">
+                <Download className="h-5 w-5" />
+                <span className="font-black text-sm uppercase tracking-wider">אם אין חיבור API מלא</span>
+              </div>
+              <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                גם ללא token או Web Services מלא — יש מסלול נתונים אמיתי דרך הורדת דוחות ממודל והעלאתם ל-Teacher Hub. פשוט הורד את הדוח הרלוונטי במודל והעלה אותו בעמוד <Link to="/import" className="text-primary font-black hover:underline">ייבוא נתונים</Link>.
+              </p>
+              <ul className="text-xs text-slate-500 font-medium leading-relaxed space-y-1.5">
+                <li>• <strong>ציונים:</strong> ציונים → יצוא → Excel/CSV</li>
+                <li>• <strong>לוגים:</strong> דוחות → יומני מעקב → הורדה CSV/JSON/Excel</li>
+                <li>• <strong>השלמות:</strong> דוחות → דוח השלמות פעילות → CSV UTF-8</li>
+                <li>• <strong>משתתפים:</strong> משתתפים → הורדת הטבלה</li>
+                <li>• <strong>ניהול למידה:</strong> הורדת CSV מכל גרף בלוח</li>
+              </ul>
+              <p className="text-[11px] text-slate-400 font-medium leading-relaxed italic">
+                המערכת מזהה את סוג הדוח לפי הכותרות ומעלה רק אחרי אימות עמודות. אין ייבוא דמו.
               </p>
            </div>
 
