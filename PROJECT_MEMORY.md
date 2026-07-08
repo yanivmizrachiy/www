@@ -24,8 +24,8 @@ Teacher Release: **NO**
 
 ### ג. Yaniv Admin / Control Center — אזור ניהול פרטי ליניב
 דף ניהול פרטי שרק יניב רז רואה, לשליטה על תוכן המצגת, סטטוס Teacher Hub, סנכרון וייבוא. **לא זמין למורים.**  
-**נתיב קנוני עתידי:** `/admin-hub`.  
-כרגע Roadmap/BLOCKED עד שיש auth+admin role+RLS מלא.
+**נתיב קנוני:** `/admin-hub`.  
+כרגע קיים כ**עמוד גבול נעול בלבד** (locked boundary): לא טוען נתונים פרטיים, אין כפתורי ניהול אמיתיים, מציג רק את הקישור הציבורי למצגת ורשימת דרישות אבטחה. שליטה אמיתית BLOCKED עד auth + admin role + RLS.
 
 **כלל מחייב:** שלושת האזורים יכולים לחיות באותו ריפו ובאותו domain, אבל אסור לבלבל ביניהם. כל פיצ'ר חייב להיות משויך במפורש לאזור אחד.
 
@@ -83,8 +83,9 @@ Teacher Release: **NO**
 
 - אזור אחד קנוני: `/admin-hub` (ולא `/yaniv-admin`, לא `/guide/admin` — אלה לכל היותר alias עתידי).
 - מוגן ב-auth אמיתי + admin role + RLS. **אין להסתמך על הסתרת קישור בלבד.**
-- כל עוד אין תשתית auth+role+RLS מלאה — נשאר Roadmap/BLOCKED. לא בונים UI פתוח לכולם.
+- כל עוד אין תשתית auth+role+RLS מלאה — נשאר BLOCKED. לא בונים UI ניהול פתוח לכולם.
 - לא מציגים secrets, לא raw Moodle payload, לא מידע אישי של תלמידים.
+- **מצב נוכחי:** `/guide` חי ומוכן לשליחה למורים (commit `9aa826b`, guide polish). `/admin-hub` קיים כעמוד גבול נעול בלבד (public-safe) עד הרשאות מנהל. שלושת האזורים — Guide / Teacher Hub / Admin — מופרדים.
 - ראה פרק מפורט למטה: "Yaniv Admin / Control Center — אזור ניהול פרטי".
 
 ---

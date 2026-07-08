@@ -21,6 +21,7 @@ import Settings from './pages/Settings';
 import Setup from './pages/Setup';
 import Sync from './pages/Sync';
 import Guide from './pages/Guide';
+import AdminHub from './pages/AdminHub';
 import TeacherHelp from './pages/TeacherHelp';
 import AppLayout from './components/AppLayout';
 
@@ -35,6 +36,9 @@ function App() {
             <Route path="/lti/launch" element={<LtiBootstrap />} />
             {/* Guide is a standalone teacher presentation — no Teacher Hub chrome. */}
             <Route path="/guide" element={<Guide />} />
+            {/* Admin Hub is a locked, public-safe boundary page — no real controls,
+                no private data, until auth + admin role + RLS exist. */}
+            <Route path="/admin-hub" element={<AdminHub />} />
             <Route element={<AppLayout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/tasks" element={<Tasks />} />

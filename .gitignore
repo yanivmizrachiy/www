@@ -15,6 +15,15 @@ STATE/backup_*/
 dist/
 coverage/
 Thumbs.db
-.DS_Store*.tsbuildinfo
+.DS_Store
 *.tsbuildinfo
 STATE/CLAUDE_TESTS_*/99_summary.txt
+
+# Local debug / deploy-check artifacts — never commit
+.tmp-guide-check.py
+.tmp-guide-shots/
+STATE/DEPLOY_CHECK_*.txt
+render-service-debug.json
+render-deploy-debug.json
+render-deploys-last5.json
+render-*-debug.json
