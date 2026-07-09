@@ -11,7 +11,6 @@ import {
   CheckCircle2,
   Download,
   ExternalLink,
-  Wrench,
   AlertTriangle,
   ChevronRight,
   ChevronLeft,
@@ -589,31 +588,6 @@ const TOPICS: Topic[] = [
           'בוחרים פורמט',
         ],
       },
-      {
-        id: 'which-for-hub',
-        title: 'איזה קובץ מתאים לייבוא ל־Teacher Hub?',
-        short: 'Teacher Hub מזהה 4 סוגי דוחות: משתתפים, ציונים, יומני מעקב (Logs), השלמות פעילות. מומלץ Excel או CSV. הקובץ צריך לכלול את שורת הכותרות.',
-        steps: [
-          'מורידים ממודל את הדוח הרצוי ב-Excel/CSV',
-          'נכנסים ל-Teacher Hub → "ייבוא נתונים"',
-          'מעלים את הקובץ',
-          'המערכת מזהה את סוג הדוח לפי הכותרות',
-          'לוחצים "אשר וייבא"',
-        ],
-        tip: 'ניהול למידה של משהח לא נתמך עדיין בייבוא ישיר — Roadmap.',
-      },
-      {
-        id: 'no-api',
-        title: 'מה עושים אם אין token או סנכרון אוטומטי?',
-        short: 'משתמשים במסלול הקבצים: מורידים ידנית את הדוחות ממודל ומעלים ל-Teacher Hub דרך "ייבוא נתונים". אין ממציאים נתונים.',
-        steps: [
-          'מורידים את הדוחות הרצויים ממודל (Excel/CSV)',
-          'נכנסים ל-Teacher Hub → "ייבוא נתונים"',
-          'מעלים את הקבצים',
-          'הסטטוס יסומן "יובא מקובץ Moodle"',
-        ],
-        tip: 'אם אין API ואין קובץ תקין — Teacher Hub יסמן "חסום / נדרש מקור אמת" ולא יציג מספרים.',
-      },
     ],
   },
   {
@@ -671,16 +645,6 @@ const TOPICS: Topic[] = [
           'בוחרים SVG או PNG',
         ],
         tip: 'להצגה בישיבות צוות — PNG פשוט יותר. להטמעה במסמך רשמי — SVG.',
-      },
-      {
-        id: 'why-not-hub',
-        title: 'למה Teacher Hub עדיין לא שולף את זה אוטומטית?',
-        short: '"ניהול למידה" הוא תוסף פנימי של משהח, שאין לו endpoint רשמי ב-Moodle Web Services הסטנדרטי. לכן Teacher Hub לא יכול לשלוף אותו אוטומטית עדיין. זו יכולת Roadmap — אם משהח יחשוף API עתידי, Teacher Hub ישקף אותה.',
-        steps: [
-          'כרגע — משתמשים ב"ניהול למידה" ישירות במודל',
-          'אפשר להוריד CSV מגרפים ולנתח במקום אחר',
-          'ב-Teacher Hub — נסמן "Roadmap" באזור הזה',
-        ],
       },
     ],
   },
@@ -758,92 +722,8 @@ const TOPICS: Topic[] = [
         steps: [
           'לוחצים על הכלי במרחב ומנסים לפתוח פעילות שמשתמשת בו',
           'מוודאים שהכלי נטען עם הזהות שלך (שם, קורס)',
-          'ב-Teacher Hub — בודקים את "סטטוס חיבור" בכניסה',
         ],
         tip: 'אם הכלי נפתח למסך שגיאה או ל-login חיצוני — הוא לא באמת מחובר.',
-      },
-    ],
-  },
-  {
-    id: 'hub',
-    title: 'שימוש ב־Moodle Teacher Hub',
-    icon: Wrench,
-    color: 'bg-primary',
-    questions: [
-      {
-        id: 'what',
-        title: 'מה הכלי עושה?',
-        short: 'Teacher Hub הוא כלי נתונים חיצוני שמורה פותח מתוך Moodle. הוא מזהה את המורה, הקורס והמרחב, ומרכז למקום אחד: תלמידים, ציונים, לוגים, השלמות פעילות, זמני תרגול ודוחות — אך ורק של המרחב הספציפי שלך.',
-        steps: [
-          'זוהה דרך LTI launch',
-          'מציג רק נתונים של הקורס שממנו נפתח',
-          'לא מחליף את Moodle — מוסיף שכבת ניתוח',
-        ],
-      },
-      {
-        id: 'how-open',
-        title: 'איך נכנסים לכלי מתוך Moodle?',
-        short: 'צריך שהכלי יותקן במרחב כ-External Tool (LTI). המורה לוחץ עליו מתוך יחידה בקורס, ו-Moodle שולח אליו בקשה חתומה עם הזהות שלך.',
-        steps: [
-          'מנהל הבית ספרי מוסיף את הכלי דרך "כלי או שירות LTI חיצוני"',
-          'בקורס — מוסיפים פעילות "כלי חיצוני"',
-          'לוחצים על הפעילות מתוך היחידה',
-          'Teacher Hub נפתח עם הזהות שלך',
-        ],
-      },
-      {
-        id: 'auto-data',
-        title: 'אילו נתונים הכלי שולף אוטומטית?',
-        short: 'אם יש token של Web Services והרשאות: משתתפים (core_enrol_get_enrolled_users), ציונים (gradereport_user_get_grade_items), משימות (mod_assign_get_assignments), לוגים (core_report_get_log_data), והשלמות פעילות (core_completion_get_activities_completion_status).',
-        steps: [
-          'הסנכרון האוטומטי דורש token אמיתי',
-          'הנתונים נשמרים ב-Supabase לפי site+course',
-          'אם token לא מוגדר — משתמשים במסלול הקבצים',
-        ],
-      },
-      {
-        id: 'no-token',
-        title: 'מה עושים כשאין API/token?',
-        short: 'עוברים למסלול הקבצים: מורידים דוחות ידנית ממודל (ציונים, לוגים, השלמות, משתתפים) ומעלים ל-Teacher Hub דרך "ייבוא נתונים". הסטטוס יסומן "יובא מקובץ Moodle".',
-        steps: [
-          'ממודל — מורידים את הדוח הרלוונטי',
-          'ב-Teacher Hub — נכנסים ל"ייבוא נתונים"',
-          'מעלים את הקובץ',
-          'המערכת מזהה סוג ואומתת עמודות',
-        ],
-      },
-      {
-        id: 'import',
-        title: 'איך מייבאים קובץ Moodle אמיתי?',
-        short: 'ב-Teacher Hub נכנסים לעמוד "ייבוא נתונים", בוחרים קובץ Excel/CSV שהורדת ממודל, המערכת מזהה את סוג הדוח לפי הכותרות ומציגה preview. אחרי אישור — הקובץ נשמר במסד.',
-        steps: [
-          'ב-Teacher Hub → "ייבוא נתונים"',
-          'לוחצים "בחר קובץ Moodle"',
-          'המערכת מזהה סוג דוח (משתתפים/ציונים/לוגים/השלמות)',
-          'רואים preview של 10 שורות ראשונות',
-          'לוחצים "אשר וייבא נתונים"',
-        ],
-        tip: 'אפשר גם להדביק טבלה (Copy-Paste) במקום להעלות קובץ.',
-      },
-      {
-        id: 'see-reports',
-        title: 'איך רואים דוחות?',
-        short: 'ב-Teacher Hub נכנסים ל"דוחות". יש שם 6 כרטיסי דוח: תלמידים, ציונים, משימות, פעילות, זמני תרגול, פערים. הם מבוססים על הנתונים האמיתיים שנשלפו/יובאו.',
-        steps: [
-          'לוחצים "דוחות" בסרגל הצדדי',
-          'בוחרים דוח לפי מה שרוצים לדעת',
-          'הדוח מציג רק נתונים אמיתיים של הקורס שלך',
-        ],
-      },
-      {
-        id: 'blocked',
-        title: 'איך מבינים אם משהו חסום?',
-        short: 'Teacher Hub מציג שלושה סטטוסים ברורים: "מסונכרן אוטומטית" = API עובד. "יובא מקובץ Moodle" = הועלה קובץ. "חסום / נדרש מקור אמת" = אין API ואין קובץ תקין — לא יוצגו מספרים.',
-        steps: [
-          'בכל מסך נתונים בודקים את פס הסטטוס למעלה',
-          'ירוק = מסונכרן; כחול = יובא מקובץ; אדום/כתום = חסום',
-          'אם חסום — עוברים ל"ייבוא נתונים" עם קובץ אמיתי',
-        ],
       },
     ],
   },
@@ -853,57 +733,6 @@ const TOPICS: Topic[] = [
     icon: AlertTriangle,
     color: 'bg-orange-500',
     questions: [
-      {
-        id: 'no-open',
-        title: 'מה עושים אם הכלי לא נפתח?',
-        short: 'ראשית, מוודאים שאתה נכנס דרך פעילות במרחב Moodle (לא ישירות דרך URL). אם הכלי נפתח כדף שגיאה — פונים למנהל הבית ספרי כדי לוודא שההתקנה הושלמה ואושרה.',
-        steps: [
-          'סוגרים את החלון וחוזרים למרחב Moodle',
-          'לוחצים שוב על הפעילות שמפעילה את הכלי',
-          'אם עדיין לא נפתח — פונים למנהל הבית ספרי',
-        ],
-      },
-      {
-        id: 'in-list-not-connected',
-        title: 'מה עושים אם הכלי מופיע ב־LTI אבל לא מחובר?',
-        short: 'הכלי עשוי להיות במצב "בהמתנה" עד אישור. גם אם מאושר, ייתכן שהגדרות ה-Tool URL שגויות. פונים למנהל הבית ספרי כדי לבדוק את מצב הכלי ואת פרטי ההתקנה.',
-        steps: [
-          'בודקים את מצב הכלי במסך ניהול LTI',
-          'אם "בהמתנה" — פונים למנהל לאישור',
-          'אם מאושר אך לא עובד — בודקים Tool URL בהגדרות',
-        ],
-      },
-      {
-        id: 'no-perms',
-        title: 'מה עושים אם אין הרשאות?',
-        short: 'הרשאות LTI ו-Web Services נקבעות ברמת מנהל האתר של משהח. אם חסרות הרשאות, פונים למנהל המערכת עם פירוט מה חסום.',
-        steps: [
-          'מזהים בדיוק איזו פעולה חסומה',
-          'צילום מסך של הודעת השגיאה',
-          'פונים למנהל האתר של משהח',
-        ],
-      },
-      {
-        id: 'no-token',
-        title: 'מה עושים אם אין token?',
-        short: 'ללא token של Web Services, אין סנכרון אוטומטי. עוברים למסלול הקבצים: מורידים דוחות ידנית ממודל ומעלים ל-Teacher Hub. כל הפונקציונליות זמינה, רק ידנית.',
-        steps: [
-          'מורידים את הדוחות ממודל (Excel/CSV)',
-          'מעלים ל-Teacher Hub → "ייבוא נתונים"',
-          'עובדים עם הנתונים כרגיל',
-        ],
-      },
-      {
-        id: 'file-not-recognized',
-        title: 'מה עושים אם הקובץ לא מזוהה?',
-        short: 'Teacher Hub מזהה קבצים לפי כותרות העמודות. אם הקובץ לא מזוהה, ייתכן שחסרות כותרות או שהפורמט אינו CSV/Excel/ODS. יש להוריד שוב ממודל בפורמט Excel או CSV.',
-        steps: [
-          'מוודאים שהקובץ הוא CSV/Excel/ODS',
-          'מוודאים שהשורה הראשונה היא כותרות',
-          'מורידים שוב ממודל בפורמט Excel',
-          'מעלים שוב ל-Teacher Hub',
-        ],
-      },
       {
         id: 'no-image',
         title: 'מה עושים אם אין תמונה במדריך?',
@@ -1156,15 +985,13 @@ export default function Guide() {
     return (
       <GuideShell>
         <div className="min-h-[70vh] flex flex-col items-center justify-center text-center gap-8 py-12">
-          {/* Logo asset missing — add Jerusalem district logo here.
-              Use only the official supplied logo (alt="לוגו מחוז ירושלים"),
-              keep aspect ratio, do not fabricate a logo. */}
-          <div
-            className="h-20 w-20 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-300 leading-tight px-1"
-            aria-label="מקום ללוגו מחוז ירושלים"
-          >
-            לוגו מחוז ירושלים
-          </div>
+          {/* Official Jerusalem-district math logo supplied by Yaniv (2026-07-09).
+              Blue background removed, circle content untouched, aspect ratio kept. */}
+          <img
+            src="/guide/jerusalem-math-logo.png"
+            alt="לוגו מחוז ירושלים"
+            className="h-32 w-32 md:h-44 md:w-44 object-contain drop-shadow-xl"
+          />
 
           <div className="space-y-2 max-w-3xl">
             <p className="text-sm md:text-base font-bold text-slate-700 leading-relaxed">
