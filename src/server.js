@@ -218,7 +218,9 @@ const DIST_DIR = path.join(ROOT, "dist");
 const DIST_INDEX = path.join(DIST_DIR, "index.html");
 const HAS_DIST = fs.existsSync(DIST_INDEX);
 if (HAS_DIST) {
-  app.use(express.static(DIST_DIR));
+  // redirect:false — בלי 301 מ-/guide ל-/guide/ כשקיימת תיקיית dist/guide
+  // (תיקיית הצילומים); ה-SPA fallback מגיש את index.html ישירות.
+  app.use(express.static(DIST_DIR, { redirect: false }));
 }
 
 app.get("/health", (_req, res) => {

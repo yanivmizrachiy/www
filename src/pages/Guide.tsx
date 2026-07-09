@@ -29,7 +29,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { BUTTON_AREAS } from '@/data/guideButtons';
+import { BUTTON_AREAS, CUSTOM_SPACE_NOTE, type Shot } from '@/data/guideButtons';
 
 type Question = {
   id: string;
@@ -94,6 +94,18 @@ const TOPICS: Topic[] = [
           'מגלגלים בעמוד הבית של הקורס',
           'לוחצים על יחידה כדי להיכנס אליה',
         ],
+      },
+      {
+        id: 'rename-space',
+        title: 'איך אני משנה את השם של המרחב?',
+        short: 'נכנסים למרחב ולוחצים על "הגדרות" בתפריט הקורס. בשדה "שם הקורס המלא" כותבים את השם החדש, ולוחצים שמירה בתחתית העמוד.',
+        steps: [
+          'נכנסים למרחב שלכם',
+          'לוחצים "הגדרות" בתפריט הקורס',
+          'כותבים שם חדש בשדה "שם הקורס המלא"',
+          'גוללים לתחתית ולוחצים "שמירת שינויים"',
+        ],
+        tip: 'כך למשל יניב שינה את שם המרחב שלו ל"המרחב של יוסף ויניב" — השם החדש יופיע בכל מקום: בכותרת, ברשימת המרחבים ובפירורי הלחם.',
       },
     ],
   },
@@ -889,6 +901,65 @@ const TOPICS: Topic[] = [
   },
 ];
 
+// צילומים אמיתיים לשאלות ספציפיות (topicId/questionId → צילומים).
+// שאר הצילומים מוצגים ברמת אזור במפת הכפתורים. מקור: docs/GUIDE_SCREENSHOTS_MANIFEST.md
+const QUESTION_SHOTS: Record<string, Shot[]> = {
+  'space/login': [
+    { src: '01-login.jpg', caption: 'עמוד הכניסה — מזינים קוד משתמש וסיסמה ולוחצים "כניסה"' },
+    {
+      src: '02-my-courses-home.jpg',
+      caption: 'אחרי הכניסה — עמוד "מרחבי־הלימוד שלי" עם הכפתור "פתיחת מרחב כיתתי"',
+      custom: 'הברכה "שלום יניב" תופיע אצלכם עם השם שלכם',
+    },
+  ],
+  'space/rename-space': [
+    {
+      src: '10-course-page.jpg',
+      caption: 'לוחצים "הגדרות" בתפריט הקורס כדי לשנות את שם המרחב',
+      custom: 'כאן רואים את התוצאה: יניב כבר שינה את השם ל"המרחב של יוסף ויניב"',
+    },
+  ],
+};
+
+// Real screenshot in premium frame — צילום אמיתי במסגרת מכובדת.
+function ScreenshotFrame({ shot }: { shot: Shot }) {
+  return (
+    <figure className="rounded-2xl bg-white border border-slate-200 shadow-lg overflow-hidden">
+      <figcaption className="px-4 py-2.5 text-xs font-bold text-slate-600 bg-slate-50 border-b border-slate-100">
+        {shot.caption}
+      </figcaption>
+      <img
+        src={`/guide/screenshots/${shot.src}`}
+        alt={shot.caption}
+        loading="lazy"
+        className="w-full h-auto block"
+      />
+      {shot.custom && (
+        <div className="px-4 py-2 text-[11px] font-medium text-indigo-700 bg-indigo-50 border-t border-indigo-100">
+          מותאם אישית: {shot.custom}
+        </div>
+      )}
+    </figure>
+  );
+}
+
+// גלריית צילומים + ההערה הקבועה על העיצוב האישי של יניב.
+function ScreenshotGallery({ shots }: { shots: Shot[] }) {
+  return (
+    <section className="space-y-3">
+      <h3 className="text-xs font-black uppercase tracking-wider text-slate-500">
+        צילומים אמיתיים מתוך Moodle
+      </h3>
+      <div className="grid grid-cols-1 gap-4">
+        {shots.map(s => (
+          <ScreenshotFrame key={s.src} shot={s} />
+        ))}
+      </div>
+      <p className="text-[11px] font-medium text-slate-400 leading-relaxed">{CUSTOM_SPACE_NOTE}</p>
+    </section>
+  );
+}
+
 type View = 'cover' | 'home' | 'topics' | 'questions' | 'answer' | 'areas' | 'area' | 'downloads';
 
 const HEADER_LINE = 'הדרכה במחוז ירושלים והעיר ירושלים - מנח״י';
@@ -1185,6 +1256,10 @@ export default function Guide() {
             </div>
           </div>
 
+          {area.screenshots && area.screenshots.length > 0 && (
+            <ScreenshotGallery shots={area.screenshots} />
+          )}
+
           {area.buttons && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {area.buttons.map(b => (
@@ -1466,26 +1541,34 @@ export default function Guide() {
                 </ol>
               </section>
 
-              <section className="space-y-3">
-                <h3 className="text-xs font-black uppercase tracking-wider text-slate-500">
-                  צילום
-                </h3>
-                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-10 text-center bg-slate-50 flex flex-col items-center gap-3">
-                  <ImageIcon className="h-10 w-10 text-slate-300" />
-                  <p className="text-sm font-black text-slate-500">
-                    כאן ייכנס צילום אמיתי מתוך Moodle
-                  </p>
-                  <p className="text-xs text-slate-400 font-medium max-w-md leading-relaxed">
-                    צילום אמיתי יתווסף לאחר טשטוש פרטים אישיים ואישור יניב.
-                  </p>
-                </div>
-                <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 p-4">
-                  <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-                  <p className="text-xs font-medium text-amber-800 leading-relaxed">
-                    הערת פרטיות: אין להציג פרטי תלמידים או ציונים אמיתיים בצילום לפני טשטוש או אישור.
-                  </p>
-                </div>
-              </section>
+              {(() => {
+                const shots = QUESTION_SHOTS[`${topic.id}/${question.id}`];
+                if (shots && shots.length > 0) {
+                  return <ScreenshotGallery shots={shots} />;
+                }
+                return (
+                  <section className="space-y-3">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-500">
+                      צילום
+                    </h3>
+                    <div className="border-2 border-dashed border-slate-200 rounded-2xl p-10 text-center bg-slate-50 flex flex-col items-center gap-3">
+                      <ImageIcon className="h-10 w-10 text-slate-300" />
+                      <p className="text-sm font-black text-slate-500">
+                        כאן ייכנס צילום אמיתי מתוך Moodle
+                      </p>
+                      <p className="text-xs text-slate-400 font-medium max-w-md leading-relaxed">
+                        צילום אמיתי יתווסף לאחר טשטוש פרטים אישיים ואישור יניב.
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 p-4">
+                      <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                      <p className="text-xs font-medium text-amber-800 leading-relaxed">
+                        הערת פרטיות: אין להציג פרטי תלמידים או ציונים אמיתיים בצילום לפני טשטוש או אישור.
+                      </p>
+                    </div>
+                  </section>
+                );
+              })()}
 
               {question.tip && (
                 <section className="space-y-2 bg-primary/5 rounded-2xl p-5 border border-primary/10">

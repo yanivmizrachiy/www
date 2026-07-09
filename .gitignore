@@ -27,3 +27,6 @@ render-service-debug.json
 render-deploy-debug.json
 render-deploys-last5.json
 render-*-debug.json
+
+# Local screenshot extraction workdir (raw, pre-curation) — never commit
+.shots-extract/

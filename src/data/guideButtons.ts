@@ -25,6 +25,15 @@ export type Btn = {
   also?: string; // דדופ: איפה עוד מופיע / ראו גם
 };
 
+// צילום אמיתי מתוך Moodle של משרד החינוך (session חי, מרחב של יניב).
+// custom = מה בצילום הוא עיצוב אישי של יניב; אצל כל מורה יופיעו השם והתכנים שלו.
+// המקור והפירוט המלא: docs/GUIDE_SCREENSHOTS_MANIFEST.md
+export type Shot = {
+  src: string; // נתיב תחת /guide/screenshots/
+  caption: string; // כותרת קצרה בשפה פשוטה
+  custom?: string; // הערת "מותאם אישית" אם רלוונטי
+};
+
 export type ActivityGroup = {
   title: string;
   note: string;
@@ -39,7 +48,12 @@ export type ButtonArea = {
   color: string;
   buttons?: Btn[];
   groups?: ActivityGroup[]; // רק לאזור הוספת משאב או פעילות
+  screenshots?: Shot[]; // צילומים אמיתיים של האזור
 };
+
+// הערה קבועה שמוצגת ליד צילומים של המרחב של יניב.
+export const CUSTOM_SPACE_NOTE =
+  'בצילומים רואים את המרחב של יניב אחרי שהוא שינה את השם ועיצב אותו — אצלכם יופיעו השם והתכנים שלכם. הכפתורים והתפריטים זהים אצל כל מורה.';
 
 export const BUTTON_AREAS: ButtonArea[] = [
   {
@@ -48,6 +62,16 @@ export const BUTTON_AREAS: ButtonArea[] = [
     where: 'בשורה העליונה של המסך, בכל עמוד',
     icon: Layout,
     color: 'bg-blue-500',
+    screenshots: [
+      { src: '03-topbar-edit-off.png', caption: 'הסרגל העליון כשמצב עריכה כבוי — המתג אפור' },
+      { src: '04-topbar-edit-on.png', caption: 'אותו סרגל כשמצב עריכה דלוק — המתג כחול' },
+      {
+        src: '02-my-courses-home.jpg',
+        caption: 'עמוד "מרחבי־הלימוד שלי" עם הכפתורים הגדולים, כולל "פתיחת מרחב כיתתי"',
+        custom: 'הברכה "שלום יניב" תופיע אצלכם עם השם שלכם',
+      },
+      { src: '01-login.jpg', caption: 'עמוד הכניסה של משרד החינוך — מזינים קוד משתמש וסיסמה ולוחצים "כניסה"' },
+    ],
     buttons: [
       { label: 'סמל משרד החינוך', opens: 'חוזרים לעמוד הבית של המערכת' },
       { label: 'בתי ספר על יסודיים', opens: 'נפתח העמוד הראשי של שכבת בתי הספר העל־יסודיים' },
@@ -66,6 +90,13 @@ export const BUTTON_AREAS: ButtonArea[] = [
     where: 'אחרי לחיצה על השם בסרגל העליון',
     icon: UserCircle,
     color: 'bg-rose-500',
+    screenshots: [
+      {
+        src: '09-user-menu.jpg',
+        caption: 'התפריט שנפתח בלחיצה על השם — פרופיל, ציונים, לוח־שנה, קבצים, דוחות, העדפות והתנתקות',
+        custom: 'בסרגל כתוב "יניב" — אצלכם יופיע השם שלכם',
+      },
+    ],
     buttons: [
       { label: 'פרופיל', opens: 'נפתח עמוד הפרופיל שלך' },
       { label: 'ציונים', opens: 'נפתח ריכוז הציונים שלך', also: 'אותו כפתור מופיע גם בסרגל העליון' },
@@ -84,6 +115,18 @@ export const BUTTON_AREAS: ButtonArea[] = [
     where: 'בפעמון ובבועת המסרים בסרגל העליון',
     icon: Bell,
     color: 'bg-amber-500',
+    screenshots: [
+      {
+        src: '11-notifications.jpg',
+        caption: 'פאנל ההתראות — למעלה: ✓ סימון הכל כנקרא ו־⚙️ הגדרות התראות',
+        custom: 'תוכן ההתראות בצילום הוא של יניב — אצלכם יופיעו ההתראות שלכם',
+      },
+      {
+        src: '12-messages.jpg',
+        caption: 'פאנל המסרים — חיפוש אנשים, מועדפים, קבוצה ופרטי',
+        custom: 'אנשי הקשר בצילום הם של יניב',
+      },
+    ],
     buttons: [
       { label: 'התראות', opens: 'נפתחת רשימת ההתראות האחרונות' },
       { label: 'סימון הכל כנקרא', opens: 'כל ההתראות מסומנות כנקראו' },
@@ -101,6 +144,13 @@ export const BUTTON_AREAS: ButtonArea[] = [
     where: 'בתפריט שמופיע בתוך קורס',
     icon: BookOpen,
     color: 'bg-teal-500',
+    screenshots: [
+      {
+        src: '10-course-page.jpg',
+        caption: 'עמוד קורס עם תפריט הקורס למעלה: מרחב־לימוד, הגדרות, משתתפים, ציונים, דוחות ואפשרויות נוספות. בצד — הסרגל הצדדי עם רשימת היחידות',
+        custom: 'שם המרחב "המרחב של יוסף ויניב" ושמות היחידות הם עיצוב אישי — אצלכם יופיעו שלכם',
+      },
+    ],
     buttons: [
       { label: 'מרחב־לימוד', opens: 'חוזרים לעמוד הבית של הקורס' },
       { label: 'הגדרות', opens: 'נפתחות הגדרות הקורס' },
@@ -116,6 +166,12 @@ export const BUTTON_AREAS: ButtonArea[] = [
     where: 'בתפריט "אפשרויות נוספות" של הקורס',
     icon: Settings2,
     color: 'bg-indigo-500',
+    screenshots: [
+      {
+        src: '08-more-options.jpg',
+        caption: 'התפריט שנפתח בלחיצה על "אפשרויות נוספות" — כל 12 הפריטים, ממאגר שאלות ועד תזכורות',
+      },
+    ],
     buttons: [
       { label: 'מאגר שאלות', opens: 'נפתח מאגר השאלות לבחנים' },
       { label: 'מאגר תכנים / H5P', opens: 'נפתח מאגר תכני ה־H5P' },
@@ -136,6 +192,24 @@ export const BUTTON_AREAS: ButtonArea[] = [
     where: 'אחרי הפעלת מתג "מצב עריכה"',
     icon: Pencil,
     color: 'bg-purple-500',
+    screenshots: [
+      {
+        src: '06-course-edit-on.jpg',
+        caption: 'קורס במצב עריכה — רואים "עריכה מרובה", כפתורי + ו־⋮ ליד כל יחידה',
+        custom: 'שמות היחידות (יסודות, אלגברה...) הם של המרחב של יניב',
+      },
+      { src: '07-unit-menu.jpg', caption: 'לחיצה על ⋮ של יחידה פותחת: עריכת יחידת הוראה וקישור קבוע' },
+      {
+        src: '13-section-menu-full.jpg',
+        caption: 'תפריט ⋮ מלא של יחידה — כולל הסתרה, הזזה ומחיקת יחידת הוראה (באדום)',
+      },
+      {
+        src: '14-hidden-items.jpg',
+        caption: 'פריטים מוסתרים — התג "מוסתר בפני תלמידים" והתג "זמין אך אינו מוצג בעמוד הראשי"',
+        custom: 'שמות הפריטים הם חומרים של יניב',
+      },
+      { src: '05-home-edit-on.jpg', caption: 'גם עמוד הבית במצב עריכה — מופיעים "הוספת משבצת" וכפתורי ⋮' },
+    ],
     buttons: [
       { label: 'מתג מצב עריכה', opens: 'מפעיל או מכבה עריכה של המרחב' },
       { label: 'עריכה מרובה', opens: 'עורכים כמה פריטים יחד' },
@@ -164,6 +238,17 @@ export const BUTTON_AREAS: ButtonArea[] = [
     where: 'אחרי לחיצה על + במצב עריכה',
     icon: PlusSquare,
     color: 'bg-fuchsia-500',
+    screenshots: [
+      { src: '15-add-activity-button.jpg', caption: 'הכפתור "+ הוספת משאב או פעילות" בתחתית כל יחידה במצב עריכה' },
+      {
+        src: '16-activity-chooser.jpg',
+        caption: 'בורר ההוספה — חיפוש, לשוניות הכל/פעילויות/משאבים, ולכל פריט ⓘ מידע ו־☆ מועדפים',
+      },
+      {
+        src: '17-activity-chooser-more.jpg',
+        caption: 'המשך הבורר — משחקים, H5P‏, Google Meet‏, SCORM ועוד, עם קישור ל־Moodle Marketplace',
+      },
+    ],
     buttons: [
       { label: 'לשונית הכל', opens: 'רואים את כל הפעילויות והמשאבים יחד' },
       { label: 'לשונית פעילויות', opens: 'רואים רק פעילויות' },
@@ -239,6 +324,12 @@ export const BUTTON_AREAS: ButtonArea[] = [
     where: 'בעמוד "דוחות" של הקורס',
     icon: BarChart3,
     color: 'bg-emerald-500',
+    screenshots: [
+      {
+        src: '18-reports.jpg',
+        caption: 'עמוד הדוחות של קורס — כל עשרת הדוחות, מניהול תאריכי פעילויות ועד דוח השלמות פעילות',
+      },
+    ],
     buttons: [
       { label: 'ניהול תאריכי פעילויות', opens: 'משנים תאריכים של כמה פעילויות יחד' },
       { label: 'ניהול קבוצות בפעילויות', opens: 'מנהלים קבוצות בתוך הפעילויות' },
