@@ -19,6 +19,7 @@ STATE/gemini-sync/backup-before-sync-*/
 build/
 dist/
 coverage/
+.shots-extract/
 Thumbs.db
 .DS_Store
 
