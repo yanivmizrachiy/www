@@ -87,7 +87,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 const IMPORT_LABELS: Record<string, string> = {
   participants: "משתתפים",
-  gradebook: "Gradebook",
+  gradebook: "ציונים",
   logs: "יומנים",
   courseStructure: "מבנה קורס / השלמת פעילות",
 };
@@ -173,10 +173,10 @@ export default function Automation() {
     return Object.entries(capabilities.automationLevels).map(([key, status]) => ({
       key,
       label: {
-        ltiContext: "LTI context",
+        ltiContext: "זיהוי מהחיבור למודל",
         manualReports: "דוחות ידניים אמיתיים",
         exportLinks: "קישורי יעד לדוחות",
-        moodleWebServices: "Moodle Web Services",
+        moodleWebServices: "שירותי Moodle מורחבים",
         autoSync: "סנכרון אוטומטי",
       }[key] ?? key,
       status,
@@ -301,19 +301,19 @@ export default function Automation() {
                 {capabilities.courseId && exportLinks && (
                   <div className="grid gap-3 sm:grid-cols-2">
                     <a href={exportLinks.links.activityCompletion} target="_blank" rel="noreferrer" className="rounded-2xl border border-slate-200 bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
-                      Activity Completion
+                      השלמת פעילות
                     </a>
                     <a href={exportLinks.links.gradebook} target="_blank" rel="noreferrer" className="rounded-2xl border border-slate-200 bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
-                      Gradebook (Grader)
+                      גיליון ציונים
                     </a>
                     <a href={exportLinks.links.gradebookExport} target="_blank" rel="noreferrer" className="rounded-2xl border border-slate-200 bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
-                      Gradebook Export
+                      ייצוא ציונים
                     </a>
                     <a href={exportLinks.links.logs} target="_blank" rel="noreferrer" className="rounded-2xl border border-slate-200 bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
-                      Logs
+                      יומני פעילות
                     </a>
                     <a href={exportLinks.links.participants} target="_blank" rel="noreferrer" className="rounded-2xl border border-slate-200 bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
-                      Participants
+                      רשימת משתתפים
                     </a>
                   </div>
                 )}
@@ -330,7 +330,7 @@ export default function Automation() {
               <CardHeader>
                 <CardTitle className="text-lg font-extrabold flex items-center gap-2">
                   <Server className="h-5 w-5 text-slate-600" />
-                  Moodle Web Services — סטטוס חיבור
+                  שירותי Moodle מורחבים — סטטוס חיבור
                 </CardTitle>
               </CardHeader>
               <CardContent>

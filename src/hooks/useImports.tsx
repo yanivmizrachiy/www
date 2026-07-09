@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { getLtiToken, nrpsPreviewUrl } from "@/hooks/useLtiSession";
 
 export interface ImportBatch {
@@ -33,9 +32,6 @@ export interface ImportsOverview {
   log_events_count: number;
   batches: ImportBatch[];
 }
-
-type Rpc = (fn: string, args: Record<string, unknown>) =>
-  Promise<{ data: unknown; error: { message: string } | null }>;
 
 export function useImportsOverview() {
   const [data, setData] = useState<ImportsOverview | null>(null);
@@ -246,12 +242,14 @@ export function useCourseStructure() {
     const token = getLtiToken();
     if (!token) { setLoading(false); return; }
     setLoading(true);
-    const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_course_structure", { _token: token });
-    setLoading(false);
-    if (e) { setError(null); setData(null); return; }
-    const p = d as { error?: string } & CourseStructure;
-    if (p?.error) { setError(null); setData(null); return; }
-    setError(null); setData(p);
+    try {
+      const res = await fetch(`/api/imports/course-structure?t=${encodeURIComponent(token)}`, { credentials: "include" });
+      if (res.ok) {
+        const p = await res.json();
+        if (p && !p.error) { setError(null); setData(p as CourseStructure); setLoading(false); return; }
+      }
+    } catch { /* fall through to empty */ }
+    setError(null); setData({ chapters: [], tasks: [], completion_summary: {} }); setLoading(false);
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
@@ -271,12 +269,14 @@ export function useActivityOverview() {
     const token = getLtiToken();
     if (!token) { setLoading(false); return; }
     setLoading(true);
-    const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_activity_overview", { _token: token });
-    setLoading(false);
-    if (e) { setError(null); setData(null); return; }
-    const p = d as { error?: string } & ActivityOverview;
-    if (p?.error) { setError(null); setData(null); return; }
-    setError(null); setData(p);
+    try {
+      const res = await fetch(`/api/imports/activity-overview?t=${encodeURIComponent(token)}`, { credentials: "include" });
+      if (res.ok) {
+        const p = await res.json();
+        if (p && !p.error) { setError(null); setData(p as ActivityOverview); setLoading(false); return; }
+      }
+    } catch { /* fall through */ }
+    setError(null); setData({ events_count: 0, first_event: null, last_event: null, per_student: [], recent: [] }); setLoading(false);
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
@@ -293,12 +293,14 @@ export function useStudentReports() {
     const token = getLtiToken();
     if (!token) { setLoading(false); return; }
     setLoading(true);
-    const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_student_reports", { _token: token });
-    setLoading(false);
-    if (e || !d) return;
-    const p = d as { students?: StudentReportRow[]; error?: string };
-    if (p.error) return;
-    setData(p.students ?? []);
+    try {
+      const res = await fetch(`/api/imports/student-reports?t=${encodeURIComponent(token)}`, { credentials: "include" });
+      if (res.ok) {
+        const p = await res.json();
+        if (p && !p.error) { setData(p.students ?? []); setLoading(false); return; }
+      }
+    } catch { /* fall through */ }
+    setData([]); setLoading(false);
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
@@ -317,12 +319,14 @@ export function useTaskCompletionDetail() {
     const token = getLtiToken();
     if (!token) { setLoading(false); return; }
     setLoading(true);
-    const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_task_completion_detail", { _token: token });
-    setLoading(false);
-    if (e || !d) return;
-    const p = d as { error?: string } & TaskCompletionDetail;
-    if (p.error) return;
-    setData(p);
+    try {
+      const res = await fetch(`/api/imports/task-completion?t=${encodeURIComponent(token)}`, { credentials: "include" });
+      if (res.ok) {
+        const p = await res.json();
+        if (p && !p.error) { setData({ tasks: p.tasks ?? [], rows: p.rows ?? [] }); setLoading(false); return; }
+      }
+    } catch { /* fall through */ }
+    setData({ tasks: [], rows: [] }); setLoading(false);
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
@@ -339,26 +343,27 @@ export function useDailyActivity() {
     const token = getLtiToken();
     if (!token) { setLoading(false); return; }
     setLoading(true);
-    const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_daily_activity", { _token: token });
-    setLoading(false);
-    if (e || !d) return;
-    const p = d as { days?: DailyActivityRow[]; error?: string };
-    if (p.error) return;
-    setData(p.days ?? []);
+    try {
+      const res = await fetch(`/api/imports/daily-activity?t=${encodeURIComponent(token)}`, { credentials: "include" });
+      if (res.ok) {
+        const p = await res.json();
+        if (p && !p.error) { setData(p.days ?? []); setLoading(false); return; }
+      }
+    } catch { /* fall through */ }
+    setData([]); setLoading(false);
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
   return { data, loading, refresh };
 }
 
-export async function deleteImportBatch(batchId: string): Promise<{ ok: boolean; error?: string }> {
-  const token = getLtiToken();
-  if (!token) return { ok: false, error: "missing_session" };
-  const { data, error } = await (supabase.rpc as unknown as Rpc)("lti_delete_batch", { _token: token, _batch_id: batchId });
-  if (error) return { ok: false, error: error.message };
-  const p = data as { ok?: boolean; error?: string };
-  if (p?.error) return { ok: false, error: p.error };
-  return { ok: !!p?.ok };
+// Deleting an import batch is intentionally not implemented server-side (no
+// teacher-facing UI calls this). It previously called a Supabase RPC
+// (lti_delete_batch) that does not exist in production. Kept as an honest,
+// non-throwing stub so any future caller gets a clear result instead of a
+// silent 404 — wire a real DELETE /api/imports/batch endpoint before using it.
+export async function deleteImportBatch(_batchId: string): Promise<{ ok: boolean; error?: string }> {
+  return { ok: false, error: "not_implemented" };
 }
 
 export interface PracticeWindow { started_at: string; ended_at: string; duration_seconds: number; event_count: number; }
@@ -390,13 +395,8 @@ export function usePracticeTime(opts?: { from?: string | null; to?: string | nul
         const p = await nodeRes.json();
         if (p && !p.error) { setError(null); setData(p as PracticeOverview); setLoading(false); return; }
       }
-    } catch { /* fall through to RPC */ }
-    const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_practice_time", { _token: getLtiToken(), _from: from, _to: to, _student_id: studentId });
-    setLoading(false);
-    if (e) { setError(null); setData(null); return; }
-    const p = d as { error?: string } & PracticeOverview;
-    if (p?.error) { setError(null); setData(null); return; }
-    setError(null); setData(p);
+    } catch { /* fall through to empty */ }
+    setError(null); setData(null); setLoading(false);
   }, [from, to, studentId]);
 
   useEffect(() => { refresh(); }, [refresh]);
@@ -428,13 +428,8 @@ export function useStudentProfile(studentId: string | null | undefined) {
           setLoading(false); return;
         }
       }
-    } catch { /* fall through */ }
-    const { data: d, error: e } = await (supabase.rpc as unknown as Rpc)("lti_get_student_profile", { _token: getLtiToken(), _student_id: studentId });
-    setLoading(false);
-    if (e) { setError(null); setData(null); return; }
-    const p = d as { error?: string } & StudentProfile;
-    if (p?.error) { setError(null); setData(null); return; }
-    setError(null); setData(p);
+    } catch { /* fall through to empty */ }
+    setError(null); setData(null); setLoading(false);
   }, [studentId]);
 
   useEffect(() => { refresh(); }, [refresh]);

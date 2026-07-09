@@ -4482,6 +4482,304 @@ app.get("/api/imports/time-range", async (req, res) => {
 // <<< MTH_SCOPED_TIME_RANGE_V1_SUPABASE >>>
 
 
+// >>> MTH_MISSING_READ_ENDPOINTS_V1 >>>
+// Four read endpoints that back client hooks (useCourseStructure,
+// useActivityOverview, useStudentReports, useDailyActivity) which previously
+// had NO server route at all — they called Supabase RPCs (lti_get_*) that do
+// not exist in production, so Chapters / ChapterDetail / Tasks / ActivityPage /
+// Export / StudentReport / TaskReport / DayReport were permanently empty for
+// every teacher regardless of imported data. Same Supabase-first + in-memory
+// fallback pattern as the other /api/imports/* routes; every query is scoped by
+// the caller's course_id (log/grade/task data) or space_id (students), derived
+// server-side from the verified session — never trusted from the client.
+
+// GET /api/imports/course-structure -> { chapters, tasks, completion_summary }
+app.get("/api/imports/course-structure", async (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
+  const spaceId = session.spaceId || "unknown-space";
+  const courseId = gradebookCourseId(session);
+  const inScope = (row) => !row || (!row.course_id && !row.space_id) || row.course_id === courseId || row.space_id === spaceId;
+
+  // Build { chapters, tasks, completion_summary } from raw section/task/completion
+  // rows. completion_summary is keyed by BOTH chapter id (Tasks.tsx) and task id
+  // (ChapterDetail.tsx), each as { complete, incomplete, unknown, total }.
+  function assemble(sections, tasks, completions) {
+    const chapters = (sections || [])
+      .map(s => ({ id: s.id, chapter_name: s.chapter_name || s.name || "—", position: s.position ?? null }))
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    const taskRows = (tasks || []).map(t => ({
+      id: t.id,
+      chapter_id: t.chapter_id || t.section_id || null,
+      task_name: t.task_name || t.name || "—",
+      task_type: t.task_type || null,
+      position: t.position ?? null,
+      due_date: t.due_date || null,
+      moodle_url: t.moodle_url || null,
+      status: t.status || null,
+    }));
+
+    const summary = {};
+    const bump = (key, state) => {
+      if (!key) return;
+      if (!summary[key]) summary[key] = { complete: 0, incomplete: 0, unknown: 0, total: 0 };
+      summary[key].total += 1;
+      if (state === true) summary[key].complete += 1;
+      else if (state === false) summary[key].incomplete += 1;
+      else summary[key].unknown += 1;
+    };
+    const chapterOfTask = Object.fromEntries(taskRows.map(t => [t.id, t.chapter_id]));
+    for (const c of (completions || [])) {
+      const state = typeof c.is_complete === "boolean" ? c.is_complete : (c.completed_at ? true : null);
+      bump(c.task_id, state);                          // per-task summary
+      bump(c.chapter_id || chapterOfTask[c.task_id], state); // per-chapter summary
+    }
+
+    return res.json({ chapters, tasks: taskRows, completion_summary: summary });
+  }
+
+  const fromStore = () => assemble(
+    (Array.isArray(store.chapters) ? store.chapters : []).filter(inScope),
+    (Array.isArray(store.tasks) ? store.tasks : []).filter(inScope),
+    (Array.isArray(store.completionRows) ? store.completionRows : []).filter(inScope)
+  );
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return fromStore();
+  try {
+    const [{ data: sections, error: e1 }, { data: tasks, error: e2 }, { data: completions, error: e3 }] = await Promise.all([
+      supabase.from("course_sections").select("id, chapter_name, position").eq("course_id", courseId).order("position", { ascending: true }),
+      supabase.from("course_tasks").select("id, chapter_id, task_name, task_type, position, due_date").eq("course_id", courseId).order("position", { ascending: true }),
+      supabase.from("task_completions").select("task_id, chapter_id, is_complete, status, completed_at").eq("course_id", courseId),
+    ]);
+    if (e1 || e2 || e3) return fromStore();
+    return assemble(sections, tasks, completions);
+  } catch {
+    return fromStore();
+  }
+});
+
+// GET /api/imports/activity-overview -> ActivityOverview
+app.get("/api/imports/activity-overview", async (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
+  const spaceId = session.spaceId || "unknown-space";
+  const courseId = gradebookCourseId(session);
+  const inScope = (row) => !row || (!row.course_id && !row.space_id) || row.course_id === courseId || row.space_id === spaceId;
+
+  // Aggregate raw log_events into totals + a per-student rollup + a recent feed.
+  // Grouping key is moodle_user_id when present, else actor_full_name (the same
+  // best-effort identity every log_events consumer here uses — no student_id FK).
+  function assemble(rows) {
+    const events = Array.isArray(rows) ? rows : [];
+    const times = events.map(e => e.event_time || e.created_at).filter(Boolean).sort();
+    const byStudent = new Map();
+    for (const e of events) {
+      const at = e.event_time || e.created_at;
+      if (!at) continue;
+      const key = String(e.moodle_user_id || e.actor_full_name || "unknown");
+      let b = byStudent.get(key);
+      if (!b) { b = { key, full_name: e.actor_full_name || "משתמש לא ידוע", student_id: e.moodle_user_id || null, times: [] }; byStudent.set(key, b); }
+      if (!b.full_name && e.actor_full_name) b.full_name = e.actor_full_name;
+      b.times.push(at);
+    }
+    const per_student = Array.from(byStudent.values()).map(b => {
+      const sorted = b.times.filter(Boolean).sort();
+      const days = new Set(sorted.map(t => String(t).slice(0, 10)));
+      return { key: b.key, full_name: b.full_name, student_id: b.student_id, event_count: sorted.length, first_event: sorted[0] || null, last_event: sorted[sorted.length - 1] || null, active_days: days.size };
+    }).sort((a, b) => b.event_count - a.event_count);
+
+    const recent = [...events]
+      .sort((a, b) => String(b.event_time || b.created_at || "").localeCompare(String(a.event_time || a.created_at || "")))
+      .slice(0, 20)
+      .map(e => ({ id: e.id, occurred_at: e.event_time || e.created_at, event_name: e.event_name || null, event_context: e.context || null, component: e.component || null, student_name: e.actor_full_name || "משתמש לא ידוע" }));
+
+    return res.json({ events_count: events.length, first_event: times[0] || null, last_event: times[times.length - 1] || null, per_student, recent });
+  }
+
+  const fromStore = () => assemble((Array.isArray(store.logEvents) ? store.logEvents : []).filter(inScope));
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return fromStore();
+  try {
+    const { data, error } = await supabase
+      .from("log_events")
+      .select("id, event_time, actor_full_name, moodle_user_id, event_name, component, context")
+      .eq("course_id", courseId)
+      .order("event_time", { ascending: false });
+    if (error) return fromStore();
+    return assemble(data);
+  } catch {
+    return fromStore();
+  }
+});
+
+// GET /api/imports/daily-activity -> { days: [{ day, events, active_students }] }
+app.get("/api/imports/daily-activity", async (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
+  const spaceId = session.spaceId || "unknown-space";
+  const courseId = gradebookCourseId(session);
+  const inScope = (row) => !row || (!row.course_id && !row.space_id) || row.course_id === courseId || row.space_id === spaceId;
+
+  function assemble(rows) {
+    const byDay = new Map();
+    for (const e of (Array.isArray(rows) ? rows : [])) {
+      const at = e.event_time || e.created_at;
+      if (!at) continue;
+      const day = String(at).slice(0, 10);
+      let d = byDay.get(day);
+      if (!d) { d = { day, events: 0, students: new Set() }; byDay.set(day, d); }
+      d.events += 1;
+      d.students.add(String(e.moodle_user_id || e.actor_full_name || "unknown"));
+    }
+    const days = Array.from(byDay.values())
+      .map(d => ({ day: d.day, events: d.events, active_students: d.students.size }))
+      .sort((a, b) => a.day.localeCompare(b.day));
+    return res.json({ days });
+  }
+
+  const fromStore = () => assemble((Array.isArray(store.logEvents) ? store.logEvents : []).filter(inScope));
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return fromStore();
+  try {
+    const { data, error } = await supabase
+      .from("log_events")
+      .select("event_time, actor_full_name, moodle_user_id")
+      .eq("course_id", courseId);
+    if (error) return fromStore();
+    return assemble(data);
+  } catch {
+    return fromStore();
+  }
+});
+
+// GET /api/imports/student-reports -> { students: StudentReportRow[] }
+app.get("/api/imports/student-reports", async (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
+  const spaceId = session.spaceId || "unknown-space";
+  const courseId = gradebookCourseId(session);
+
+  // Combine the per-student roster with grade averages, task-completion tallies
+  // and activity counts into one row per student. log activity is matched by
+  // full-name / moodle_user_id (no student_id FK on log_events), grades and
+  // completions by student_id (which they do carry).
+  function assemble(students, grades, completions, logs) {
+    const rows = (students || []).map(s => {
+      const sid = s.id;
+      const myGrades = (grades || []).filter(g => (g.student_id) === sid && typeof g.grade === "number");
+      const avg = myGrades.length ? myGrades.reduce((a, g) => a + g.grade, 0) / myGrades.length : null;
+      const myCompletions = (completions || []).filter(c => c.student_id === sid);
+      let complete = 0, incomplete = 0, unknown = 0;
+      for (const c of myCompletions) {
+        const state = typeof c.is_complete === "boolean" ? c.is_complete : (c.completed_at ? true : null);
+        if (state === true) complete += 1; else if (state === false) incomplete += 1; else unknown += 1;
+      }
+      const myLogs = (logs || []).filter(l =>
+        (l.actor_full_name && l.actor_full_name === s.full_name) ||
+        (s.moodle_user_id && l.moodle_user_id === s.moodle_user_id)
+      );
+      const times = myLogs.map(l => l.event_time).filter(Boolean).sort();
+      const days = new Set(times.map(t => String(t).slice(0, 10)));
+      return {
+        student_id: sid,
+        full_name: s.full_name,
+        external_username: s.external_username || null,
+        graded_items: myGrades.length,
+        avg_grade: avg === null ? null : Math.round(avg * 10) / 10,
+        tasks_complete: complete,
+        tasks_incomplete: incomplete,
+        tasks_unknown: unknown,
+        event_count: times.length,
+        active_days: days.size,
+        last_event: times[times.length - 1] || null,
+      };
+    }).sort((a, b) => a.full_name.localeCompare(b.full_name, "he"));
+    return res.json({ students: rows });
+  }
+
+  const fromStore = () => {
+    const students = store.students.filter(s => !s.space_id || s.space_id === spaceId).map(importedStudentDto).filter(s => s.full_name);
+    const inScope = (row) => !row || (!row.course_id && !row.space_id) || row.course_id === courseId || row.space_id === spaceId;
+    return assemble(
+      students,
+      (Array.isArray(store.grades) ? store.grades : []).filter(inScope).map(g => ({ student_id: g.student_id || g.studentId, grade: typeof g.grade === "number" ? g.grade : (typeof g.numeric_value === "number" ? g.numeric_value : null) })),
+      (Array.isArray(store.completionRows) ? store.completionRows : []).filter(inScope),
+      (Array.isArray(store.logEvents) ? store.logEvents : []).filter(inScope)
+    );
+  };
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return fromStore();
+  try {
+    const [{ data: students, error: e1 }, { data: grades, error: e2 }, { data: completions, error: e3 }, { data: logs, error: e4 }] = await Promise.all([
+      supabase.from("students").select("id, full_name, external_username, moodle_user_id").eq("space_id", spaceId),
+      supabase.from("grade_results").select("student_id, grade").eq("course_id", courseId),
+      supabase.from("task_completions").select("student_id, is_complete, status, completed_at").eq("course_id", courseId),
+      supabase.from("log_events").select("event_time, actor_full_name, moodle_user_id").eq("course_id", courseId),
+    ]);
+    if (e1 || e2 || e3 || e4) return fromStore();
+    return assemble(students, grades, completions, logs);
+  } catch {
+    return fromStore();
+  }
+});
+
+// GET /api/imports/task-completion -> { tasks, rows } (per student × per task)
+app.get("/api/imports/task-completion", async (req, res) => {
+  noStore(res);
+  const session = importSessionFromRequest(req);
+  if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
+  const spaceId = session.spaceId || "unknown-space";
+  const courseId = gradebookCourseId(session);
+  const inScope = (row) => !row || (!row.course_id && !row.space_id) || row.course_id === courseId || row.space_id === spaceId;
+
+  function assemble(tasks, completions, students) {
+    const nameById = Object.fromEntries((students || []).map(s => [s.id, s.full_name]));
+    const taskRows = (tasks || []).map(t => ({
+      id: t.id, task_name: t.task_name || t.name || "—", task_type: t.task_type || null,
+      chapter_id: t.chapter_id || t.section_id || null, position: t.position ?? null,
+    })).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    const rows = (completions || []).map(c => ({
+      task_id: c.task_id,
+      student_id: c.student_id || null,
+      student_name: c.student_full_name || nameById[c.student_id] || null,
+      is_complete: typeof c.is_complete === "boolean" ? c.is_complete : (c.completed_at ? true : null),
+      status: c.status || null,
+      completed_at: c.completed_at || null,
+    }));
+    return res.json({ tasks: taskRows, rows });
+  }
+
+  const fromStore = () => assemble(
+    (Array.isArray(store.tasks) ? store.tasks : []).filter(inScope),
+    (Array.isArray(store.completionRows) ? store.completionRows : []).filter(inScope),
+    store.students.filter(s => !s.space_id || s.space_id === spaceId).map(importedStudentDto)
+  );
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return fromStore();
+  try {
+    const [{ data: tasks, error: e1 }, { data: completions, error: e2 }, { data: students, error: e3 }] = await Promise.all([
+      supabase.from("course_tasks").select("id, task_name, task_type, chapter_id, position").eq("course_id", courseId).order("position", { ascending: true }),
+      supabase.from("task_completions").select("task_id, student_id, student_full_name, is_complete, status, completed_at").eq("course_id", courseId),
+      supabase.from("students").select("id, full_name").eq("space_id", spaceId),
+    ]);
+    if (e1 || e2 || e3) return fromStore();
+    return assemble(tasks, completions, students);
+  } catch {
+    return fromStore();
+  }
+});
+// <<< MTH_MISSING_READ_ENDPOINTS_V1 >>>
+
+
 const YANIV_MOODLE_WS_AUTOMATIC_ROUTES_V1 = true;
 
 app.get("/api/moodle-ws/status", (_req, res) => {
