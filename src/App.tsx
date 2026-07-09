@@ -26,11 +26,7 @@ import DayReport from "./pages/reports/DayReport";
 import GapReport from "./pages/reports/GapReport";
 import Export from "./pages/Export";
 import SettingsPage from "./pages/SettingsPage";
-import Import from "./pages/Import";
 import SmartImport from "./pages/SmartImport";
-import GradebookImport from "./pages/GradebookImport";
-import LogsImport from "./pages/LogsImport";
-import CourseStructureImport from "./pages/CourseStructureImport";
 
 import TimeRangeReport from "./pages/TimeRangeReport";
 import Automation from "./pages/Automation";

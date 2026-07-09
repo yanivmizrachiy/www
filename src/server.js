@@ -647,14 +647,29 @@ function gradebookCourseId(session) {
   return String(session?.courseId || session?.course_id || session?.contextId || "0");
 }
 
+// MTH_GRADEBOOK_IDENTITY_ALIGNMENT_V1
+// Known issue: this used a DIFFERENT identity-priority chain than
+// normalizeImportedStudent() (the participants importer) — that one prefers
+// moodle_user_id / lis_person_sourcedid before falling to ID number, this one
+// skipped straight to ID number. Since both funnel into the same
+// stableId("student", spaceId + "|" + identity) formula to produce the row id
+// grade_results.student_id must match, a teacher who imports participants
+// first (picking moodle_user_id as identity) and then a gradebook (picking a
+// different field as identity for the SAME student) would get two DIFFERENT
+// ids — that student's real, correctly-imported grades would silently fail to
+// join to their profile. Aligned to the exact same field order + candidate
+// column names as normalizeImportedStudent() so both importers derive
+// identical identities for the same student regardless of import order.
 function gradebookStudentFromRow(row, session) {
   const firstName = pickImportValue(row, ["שם פרטי", "First name", "Firstname", "first_name"]);
   const lastName = pickImportValue(row, ["שם משפחה", "Surname", "Last name", "lastname", "last_name"]);
   const fullName = pickImportValue(row, ["שם מלא", "Full name", "Name", "שם"]) || [firstName, lastName].filter(Boolean).join(" ").trim();
   const email = pickImportValue(row, ["דוא\"ל", "דוא״ל", "דואל", "כתובת דואל", "כתובת דוא״ל", "Email address", "Email"]);
-  const idNumber = pickImportValue(row, ["מספר זיהוי", "מספר זהות", "מספר מזהה", "ID number", "idnumber"]);
+  const moodleUserId = pickImportValue(row, ["user_id", "User ID", "מזהה משתמש", "ID", "id", "מזהה"]);
+  const lisPersonSourcedId = pickImportValue(row, ["lis_person_sourcedid", "lis_person_sourcedId", "sourcedid", "Source ID", "Sourced ID"]);
+  const idNumber = pickImportValue(row, ["ID number", "idnumber", "מספר זהות", "תז", "ת.ז.", "מספר מזהה", "מספר זיהוי"]);
   const username = pickImportValue(row, ["שם משתמש", "Username", "User name"]);
-  const identity = idNumber || email || username || fullName;
+  const identity = moodleUserId || lisPersonSourcedId || idNumber || username || email || fullName;
   const spaceId = session?.spaceId || "unknown-space";
 
   if (!fullName || !identity) return null;
@@ -3917,6 +3932,24 @@ app.post("/api/imports/nrps-sync", async (req, res) => {
 });
 /* MTH_NRPS_SERVER_OWNED_SYNC_V1_END */
 
+// MTH_STUDENT_PROFILE_SUPABASE_V1
+// Known issue: grades/completion/activity previously came ONLY from the volatile
+// in-memory store (store.grades/store.completionRows/store.logEvents), which
+// resets on every Render cold-start/redeploy. store.completionRows in particular
+// was never populated by ANY code path (course-structure import writes
+// task_completions straight to Supabase, never to this in-memory array), so
+// completion data was permanently empty regardless of a successful import. This
+// now reads grade_results/task_completions/log_events from Supabase, scoped by
+// course_id, falling back to the in-memory store only when Supabase is
+// unconfigured or a query errors.
+//
+// Honest limitation, not a bug: log_events rows carry no student_id foreign key
+// (only the raw actor_full_name text Moodle exported), so per-student activity
+// is matched by exact full-name equality — the same limitation every other part
+// of this codebase that touches log_events already has. A student whose name
+// differs slightly between the participants export and the logs export (e.g. a
+// middle name once and not the other time) will show fewer/zero matched events;
+// this is a real data limitation to know about, not something to paper over.
 app.get("/api/imports/student-profile", async (req, res) => {
   noStore(res);
   const session = importSessionFromRequest(req);
@@ -3926,51 +3959,127 @@ app.get("/api/imports/student-profile", async (req, res) => {
   if (!studentId) return res.status(400).json({ ok: false, error: "MISSING_STUDENT_ID" });
 
   const spaceId = session.spaceId || "unknown-space";
+  const courseId = gradebookCourseId(session);
   const inSpace = (row) => !row || !row.space_id && !row.course_id || row.space_id === spaceId || row.course_id === spaceId;
+
+  function fromStore(student) {
+    const itemNameById = Object.fromEntries(
+      (Array.isArray(store.gradeItems) ? store.gradeItems : [])
+        .filter(inSpace)
+        .map(it => [it.id, { name: it.name || it.item_name || it.raw_header || "", type: it.item_type || null, max: typeof it.max_grade === "number" ? it.max_grade : null }])
+    );
+
+    const grades = (Array.isArray(store.grades) ? store.grades : [])
+      .filter(inSpace)
+      .filter(g => (g.student_id || g.studentId) === studentId)
+      .map(g => {
+        const itemId = g.grade_item_id || g.gradeItemId || g.task_id || g.taskId || "";
+        const meta = itemNameById[itemId] || { name: g.student_full_name ? "" : "", type: null, max: null };
+        const numeric = typeof g.grade === "number" ? g.grade : typeof g.numeric_value === "number" ? g.numeric_value : null;
+        return {
+          grade_item_id: itemId,
+          item_name: meta.name || itemId,
+          item_type: meta.type,
+          max_grade: meta.max,
+          raw_value: g.raw_value != null ? String(g.raw_value) : (g.grade != null ? String(g.grade) : null),
+          numeric_value: numeric,
+          is_missing: numeric === null
+        };
+      });
+
+    const completion = (Array.isArray(store.completionRows) ? store.completionRows : [])
+      .filter(inSpace)
+      .filter(c => (c.student_id || c.studentId) === studentId)
+      .map(c => ({
+        task_id: c.task_id || c.taskId || "",
+        task_name: c.task_name || c.taskName || c.task_id || "",
+        task_type: c.task_type || null,
+        chapter_id: c.chapter_id || c.section_id || null,
+        is_complete: typeof c.is_complete === "boolean" ? c.is_complete : (c.completed_at ? true : null),
+        status: c.status || null,
+        completed_at: c.completed_at || c.completedAt || null
+      }));
+
+    const events = (Array.isArray(store.logEvents) ? store.logEvents : [])
+      .filter(inSpace)
+      .filter(e => (e.student_id || e.studentId) === studentId || (student?.full_name && e.actor_full_name === student.full_name));
+    const eventTimes = events.map(e => e.timestamp || e.created_at || e.time || e.event_time).filter(Boolean).sort();
+    const days = new Set(eventTimes.map(t => String(t).slice(0, 10)));
+
+    return res.json({
+      ok: true,
+      student: {
+        id: student.id,
+        full_name: student.full_name,
+        email: student.email,
+        external_username: student.external_username,
+        external_id: student.external_id,
+        updated_at: student.updated_at || new Date().toISOString()
+      },
+      grades,
+      completion,
+      activity: {
+        event_count: events.length,
+        first_event: eventTimes[0] || null,
+        last_event: eventTimes[eventTimes.length - 1] || null,
+        active_days: days.size,
+        top_components: []
+      }
+    });
+  }
 
   // Resolve the student record. The listing endpoint prefers Supabase, so a
   // student id shown there may not exist in the local store. To guarantee every
   // listed student opens a valid profile, fall back to a space-isolated Supabase
-  // lookup before treating the id as unknown. Grades/completion/logs still come
-  // only from the local store (their datasets live there); when none exist the
-  // profile renders the calm empty-data state, not an error.
+  // lookup before treating the id as unknown.
   let rawStudent = store.students.find(s => s.id === studentId && (!s.space_id || s.space_id === spaceId));
-  if (!rawStudent) {
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from("students")
-          .select("id, full_name, email, external_username, external_id, updated_at")
-          .eq("space_id", spaceId)
-          .eq("id", studentId)
-          .limit(1)
-          .maybeSingle();
-        if (!error && data && data.id) rawStudent = data;
-      } catch {
-        // Fall through to STUDENT_NOT_FOUND below.
-      }
+  const supabase = getSupabaseClient();
+  if (!rawStudent && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("students")
+        .select("id, full_name, email, external_username, external_id, moodle_user_id, updated_at")
+        .eq("space_id", spaceId)
+        .eq("id", studentId)
+        .limit(1)
+        .maybeSingle();
+      if (!error && data && data.id) rawStudent = data;
+    } catch {
+      // Fall through to STUDENT_NOT_FOUND below.
     }
   }
   if (!rawStudent) return res.json({ ok: false, error: "STUDENT_NOT_FOUND" });
   const student = importedStudentDto(rawStudent);
 
-  const itemNameById = Object.fromEntries(
-    (Array.isArray(store.gradeItems) ? store.gradeItems : [])
-      .filter(inSpace)
-      .map(it => [it.id, { name: it.name || it.item_name || it.raw_header || "", type: it.item_type || null, max: typeof it.max_grade === "number" ? it.max_grade : null }])
-  );
+  if (!supabase) return fromStore(student);
 
-  const grades = (Array.isArray(store.grades) ? store.grades : [])
-    .filter(inSpace)
-    .filter(g => (g.student_id || g.studentId) === studentId)
-    .map(g => {
-      const itemId = g.grade_item_id || g.gradeItemId || g.task_id || g.taskId || "";
-      const meta = itemNameById[itemId] || { name: g.student_full_name ? "" : "", type: null, max: null };
-      const numeric = typeof g.grade === "number" ? g.grade : typeof g.numeric_value === "number" ? g.numeric_value : null;
+  try {
+    const [{ data: resultRows, error: rErr }, { data: itemRows, error: iErr }, { data: complRows, error: cErr }, { data: taskRows, error: tErr }, { data: logRows, error: lErr }] = await Promise.all([
+      supabase.from("grade_results").select("grade_item_id, grade, raw_value").eq("course_id", courseId).eq("student_id", studentId),
+      supabase.from("grade_items").select("id, name, raw_header, item_type, max_grade").eq("course_id", courseId),
+      supabase.from("task_completions").select("task_id, chapter_id, is_complete, status, completed_at").eq("course_id", courseId).eq("student_id", studentId),
+      supabase.from("course_tasks").select("id, task_name, task_type").eq("course_id", courseId),
+      // Matched in-memory below, not via a query filter: log_events has no
+      // student_id foreign key, only raw actor_full_name / best-effort
+      // moodle_user_id text, and a course's log volume is already bounded.
+      supabase.from("log_events").select("event_time, actor_full_name, moodle_user_id").eq("course_id", courseId),
+    ]);
+    if (rErr || iErr || cErr || tErr || lErr) return fromStore(student);
+
+    const studentMoodleId = rawStudent.moodle_user_id || null;
+    const matchedLogRows = (logRows || []).filter(e =>
+      e.actor_full_name === student.full_name || (studentMoodleId && e.moodle_user_id === studentMoodleId)
+    );
+
+    const itemNameById = Object.fromEntries(
+      (itemRows || []).map(it => [it.id, { name: it.name || it.raw_header || "", type: it.item_type || null, max: typeof it.max_grade === "number" ? it.max_grade : null }])
+    );
+    const grades = (resultRows || []).map(g => {
+      const meta = itemNameById[g.grade_item_id] || { name: g.grade_item_id, type: null, max: null };
+      const numeric = typeof g.grade === "number" ? g.grade : null;
       return {
-        grade_item_id: itemId,
-        item_name: meta.name || itemId,
+        grade_item_id: g.grade_item_id,
+        item_name: meta.name,
         item_type: meta.type,
         max_grade: meta.max,
         raw_value: g.raw_value != null ? String(g.raw_value) : (g.grade != null ? String(g.grade) : null),
@@ -3979,87 +4088,141 @@ app.get("/api/imports/student-profile", async (req, res) => {
       };
     });
 
-  const completion = (Array.isArray(store.completionRows) ? store.completionRows : [])
-    .filter(inSpace)
-    .filter(c => (c.student_id || c.studentId) === studentId)
-    .map(c => ({
-      task_id: c.task_id || c.taskId || "",
-      task_name: c.task_name || c.taskName || c.task_id || "",
-      task_type: c.task_type || null,
-      chapter_id: c.chapter_id || c.section_id || null,
-      is_complete: typeof c.is_complete === "boolean" ? c.is_complete : (c.completed_at ? true : null),
-      status: c.status || null,
-      completed_at: c.completed_at || c.completedAt || null
-    }));
+    const taskNameById = Object.fromEntries((taskRows || []).map(t => [t.id, { name: t.task_name || t.id, type: t.task_type || null }]));
+    const completion = (complRows || []).map(c => {
+      const meta = taskNameById[c.task_id] || { name: c.task_id, type: null };
+      return {
+        task_id: c.task_id,
+        task_name: meta.name,
+        task_type: meta.type,
+        chapter_id: c.chapter_id || null,
+        is_complete: typeof c.is_complete === "boolean" ? c.is_complete : (c.completed_at ? true : null),
+        status: c.status || null,
+        completed_at: c.completed_at || null
+      };
+    });
 
-  const events = (Array.isArray(store.logEvents) ? store.logEvents : [])
-    .filter(inSpace)
-    .filter(e => (e.student_id || e.studentId) === studentId);
-  const eventTimes = events.map(e => e.timestamp || e.created_at || e.time).filter(Boolean).sort();
-  const days = new Set(eventTimes.map(t => String(t).slice(0, 10)));
+    const eventTimes = matchedLogRows.map(e => e.event_time).filter(Boolean).sort();
+    const days = new Set(eventTimes.map(t => String(t).slice(0, 10)));
 
-  res.json({
-    ok: true,
-    student: {
-      id: student.id,
-      full_name: student.full_name,
-      email: student.email,
-      external_username: student.external_username,
-      external_id: student.external_id,
-      updated_at: student.updated_at || new Date().toISOString()
-    },
-    grades,
-    completion,
-    activity: {
-      event_count: events.length,
-      first_event: eventTimes[0] || null,
-      last_event: eventTimes[eventTimes.length - 1] || null,
-      active_days: days.size,
-      top_components: []
-    }
-  });
+    return res.json({
+      ok: true,
+      student: {
+        id: student.id,
+        full_name: student.full_name,
+        email: student.email,
+        external_username: student.external_username,
+        external_id: student.external_id,
+        updated_at: student.updated_at || new Date().toISOString()
+      },
+      grades,
+      completion,
+      activity: {
+        event_count: eventTimes.length,
+        first_event: eventTimes[0] || null,
+        last_event: eventTimes[eventTimes.length - 1] || null,
+        active_days: days.size,
+        top_components: []
+      }
+    });
+  } catch {
+    return fromStore(student);
+  }
 });
 
-app.get("/api/imports/grades-matrix", (req, res) => {
+// MTH_GRADES_MATRIX_SUPABASE_V1
+// Known issue: this endpoint previously read only the volatile in-memory store
+// (store.students/store.gradeItems/store.grades), which resets to [] on Render
+// cold-start/redeploy — a teacher could import real grades, see them once, then
+// have the entire matrix silently go empty after the server restarts. It now
+// reads the persisted rows from Supabase (students scoped by space_id, grade
+// items/results scoped by course_id, matching how they were written), falling
+// back to the in-memory store only when Supabase is unconfigured or a query errors.
+app.get("/api/imports/grades-matrix", async (req, res) => {
   noStore(res);
   const session = importSessionFromRequest(req);
   if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
 
   const spaceId = session.spaceId || "unknown-space";
+  const courseId = gradebookCourseId(session);
   const inSpace = (row) => !row || !row.space_id && !row.course_id || row.space_id === spaceId || row.course_id === spaceId;
 
-  const students = store.students
-    .filter(s => !s.space_id || s.space_id === spaceId)
-    .map(importedStudentDto)
-    .filter(s => s.full_name)
-    .map(s => ({ id: s.id, full_name: s.full_name }));
+  const fromStore = () => {
+    const students = store.students
+      .filter(s => !s.space_id || s.space_id === spaceId)
+      .map(importedStudentDto)
+      .filter(s => s.full_name)
+      .map(s => ({ id: s.id, full_name: s.full_name }));
 
-  const items = (Array.isArray(store.gradeItems) ? store.gradeItems : [])
-    .filter(inSpace)
-    .map(it => ({
-      id: it.id,
-      item_name: it.name || it.item_name || it.raw_header || "",
-      item_type: it.item_type || null,
-      max_grade: typeof it.max_grade === "number" ? it.max_grade : null
-    }))
-    .filter(it => it.item_name);
+    const items = (Array.isArray(store.gradeItems) ? store.gradeItems : [])
+      .filter(inSpace)
+      .map(it => ({
+        id: it.id,
+        item_name: it.name || it.item_name || it.raw_header || "",
+        item_type: it.item_type || null,
+        max_grade: typeof it.max_grade === "number" ? it.max_grade : null
+      }))
+      .filter(it => it.item_name);
 
-  const grades = (Array.isArray(store.grades) ? store.grades : [])
-    .filter(inSpace)
-    .map(g => {
-      const numeric = typeof g.grade === "number" ? g.grade
-        : typeof g.numeric_value === "number" ? g.numeric_value : null;
-      return {
-        student_id: g.student_id || g.studentId || null,
-        grade_item_id: g.grade_item_id || g.gradeItemId || g.task_id || g.taskId || null,
-        raw_value: g.raw_value != null ? String(g.raw_value) : (g.grade != null ? String(g.grade) : null),
-        numeric_value: numeric,
-        is_missing: numeric === null
-      };
-    })
-    .filter(g => g.student_id && g.grade_item_id);
+    const grades = (Array.isArray(store.grades) ? store.grades : [])
+      .filter(inSpace)
+      .map(g => {
+        const numeric = typeof g.grade === "number" ? g.grade
+          : typeof g.numeric_value === "number" ? g.numeric_value : null;
+        return {
+          student_id: g.student_id || g.studentId || null,
+          grade_item_id: g.grade_item_id || g.gradeItemId || g.task_id || g.taskId || null,
+          raw_value: g.raw_value != null ? String(g.raw_value) : (g.grade != null ? String(g.grade) : null),
+          numeric_value: numeric,
+          is_missing: numeric === null
+        };
+      })
+      .filter(g => g.student_id && g.grade_item_id);
 
-  res.json({ ok: true, students, items, grades });
+    return res.json({ ok: true, students, items, grades });
+  };
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return fromStore();
+
+  try {
+    const [{ data: studentRows, error: sErr }, { data: itemRows, error: iErr }, { data: resultRows, error: rErr }] = await Promise.all([
+      supabase.from("students").select("id, full_name").eq("space_id", spaceId),
+      supabase.from("grade_items").select("id, name, raw_header, item_type, max_grade").eq("course_id", courseId),
+      supabase.from("grade_results").select("student_id, grade_item_id, grade, raw_value").eq("course_id", courseId),
+    ]);
+    if (sErr || iErr || rErr) return fromStore();
+
+    const students = (studentRows || [])
+      .filter(s => s.full_name)
+      .map(s => ({ id: s.id, full_name: s.full_name }));
+
+    const items = (itemRows || [])
+      .map(it => ({
+        id: it.id,
+        item_name: it.name || it.raw_header || "",
+        item_type: it.item_type || null,
+        max_grade: typeof it.max_grade === "number" ? it.max_grade : null
+      }))
+      .filter(it => it.item_name);
+
+    const grades = (resultRows || [])
+      .map(g => {
+        const numeric = typeof g.grade === "number" ? g.grade : null;
+        return {
+          student_id: g.student_id || null,
+          grade_item_id: g.grade_item_id || null,
+          raw_value: g.raw_value != null ? String(g.raw_value) : (g.grade != null ? String(g.grade) : null),
+          numeric_value: numeric,
+          is_missing: numeric === null
+        };
+      })
+      .filter(g => g.student_id && g.grade_item_id);
+
+    return res.json({ ok: true, students, items, grades });
+  } catch {
+    return fromStore();
+  }
 });
 
 // >>> MTH_SCOPED_IMPORTS_OVERVIEW_V2_SUPABASE >>>
@@ -4069,6 +4232,19 @@ app.get("/api/imports/overview", async (req, res) => {
   if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
   const spaceId = session.spaceId || "unknown-space";
   const courseId = session.courseId || session.course_id || spaceId;
+  const inSpace = (row) => !row||(!row.space_id&&!row.course_id)||row.space_id===spaceId||row.course_id===spaceId;
+  const fromStore = () => res.json({ students_count: store.students.filter(s=>!s.space_id||s.space_id===spaceId).length, grade_items_count: (Array.isArray(store.gradeItems)?store.gradeItems:[]).filter(inSpace).length, grades_count: (Array.isArray(store.grades)?store.grades:[]).filter(inSpace).length, log_events_count: (Array.isArray(store.logEvents)?store.logEvents:[]).filter(inSpace).length, chapters_count: 0, tasks_count: 0, batches: [] });
+
+  // MTH_IMPORTS_OVERVIEW_SUPABASE_CLIENT_FIX_V1
+  // Known issue: this endpoint previously referenced a bare `supabase` identifier
+  // that was never declared in this function's scope (no getSupabaseClient() call,
+  // not a parameter) — every request threw ReferenceError, was silently caught, and
+  // always fell back to the volatile in-memory store. The main dashboard's counts
+  // were therefore never real after any server restart/cold-start. Fixed by
+  // resolving a real client first, matching the pattern used by /api/students etc.
+  const supabase = getSupabaseClient();
+  if (!supabase) return fromStore();
+
   try {
     const [stud, gi, gr, le] = await Promise.all([
       supabase.from("students").select("id", { count: "exact", head: true }).eq("space_id", spaceId),
@@ -4076,10 +4252,10 @@ app.get("/api/imports/overview", async (req, res) => {
       supabase.from("grade_results").select("id", { count: "exact", head: true }).eq("course_id", courseId),
       supabase.from("log_events").select("id", { count: "exact", head: true }).eq("course_id", courseId),
     ]);
+    if (stud.error || gi.error || gr.error || le.error) return fromStore();
     return res.json({ students_count: stud.count??0, grade_items_count: gi.count??0, grades_count: gr.count??0, log_events_count: le.count??0, chapters_count: 0, tasks_count: 0, batches: [] });
   } catch(e) {
-    const inSpace = (row) => !row||(!row.space_id&&!row.course_id)||row.space_id===spaceId||row.course_id===spaceId;
-    return res.json({ students_count: store.students.filter(s=>!s.space_id||s.space_id===spaceId).length, grade_items_count: (Array.isArray(store.gradeItems)?store.gradeItems:[]).filter(inSpace).length, grades_count: (Array.isArray(store.grades)?store.grades:[]).filter(inSpace).length, log_events_count: (Array.isArray(store.logEvents)?store.logEvents:[]).filter(inSpace).length, chapters_count: 0, tasks_count: 0, batches: [] });
+    return fromStore();
   }
 });
 // <<< MTH_SCOPED_IMPORTS_OVERVIEW_V2_SUPABASE >>>

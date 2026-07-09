@@ -33,17 +33,6 @@ function StatusLine({
   );
 }
 
-function JsonBlock({ title, data }: { title: string; data: unknown }) {
-  return (
-    <details className="rounded-2xl border bg-slate-950 p-4 text-left text-xs text-slate-50" dir="ltr">
-      <summary className="cursor-pointer font-bold">{title}</summary>
-      <pre className="mt-3 max-h-[420px] overflow-auto whitespace-pre-wrap">
-        {JSON.stringify(data, null, 2)}
-      </pre>
-    </details>
-  );
-}
-
 async function fetchJsonSafe(url: string) {
   const res = await fetch(url, { headers: { Accept: "application/json" } });
   const text = await res.text();
@@ -177,107 +166,100 @@ export default function SettingsPage() {
         )}
 
         <section className="rounded-3xl border bg-white p-5 shadow-sm">
-          <h3 className="mb-3 text-lg font-extrabold">נתיב LTI / NRPS</h3>
+          <h3 className="mb-3 text-lg font-extrabold">חיבור אוטומטי מול Moodle</h3>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <StatusLine
-              label="LTI 1.3 session"
+              label="חיבור מאובטח למודל"
               value={services?.has_latest_lti13_session ? "קיים" : "חסר"}
               tone={services?.has_latest_lti13_session ? "green" : "red"}
             />
             <StatusLine
-              label="NRPS"
+              label="סנכרון רשימת משתתפים"
               value={services?.has_nrps ? "זמין" : "לא זמין"}
               tone={services?.has_nrps ? "green" : "red"}
             />
             <StatusLine
-              label="AGS"
+              label="עדכון ציונים אוטומטי"
               value={services?.has_ags ? "זמין" : "לא זמין"}
               tone={services?.has_ags ? "green" : "orange"}
             />
             <StatusLine
-              label="NRPS preview"
+              label="בדיקת סנכרון משתתפים"
               value={nrps?.ok ? "עובד" : nrps?.error || "לא אומת"}
               tone={nrps?.ok ? "green" : "orange"}
             />
           </div>
 
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <StatusLine label="משתתפים מ-NRPS" value={membersCount || "לא התקבל"} tone={membersCount > 0 ? "green" : "orange"} />
-            <StatusLine label="Learners / תלמידים" value={learnersCount || "לא התקבל"} tone={learnersCount > 0 ? "green" : "orange"} />
-            <StatusLine label="Instructors / מורים" value={instructorsCount || "לא התקבל"} tone={instructorsCount > 0 ? "green" : "neutral"} />
+            <StatusLine label="משתתפים שהתקבלו" value={membersCount || "לא התקבל"} tone={membersCount > 0 ? "green" : "orange"} />
+            <StatusLine label="תלמידים שזוהו" value={learnersCount || "לא התקבל"} tone={learnersCount > 0 ? "green" : "neutral"} />
+            <StatusLine label="מורים שזוהו" value={instructorsCount || "לא התקבל"} tone={instructorsCount > 0 ? "green" : "neutral"} />
             <StatusLine
-              label="שמירה למסד"
+              label="שמירה למסד הנתונים"
               value={(importsOverview.data?.students_count ?? 0) > 0 ? `${importsOverview.data?.students_count} נשמרו` : "טרם נשמרו"}
               tone={(importsOverview.data?.students_count ?? 0) > 0 ? "green" : "orange"}
             />
           </div>
 
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <StatusLine label="שמות ב-NRPS" value={fieldPresence?.has_name_count ?? "לא התקבל"} tone={hasNames ? "green" : "orange"} />
-            <StatusLine label="מיילים ב-NRPS" value={fieldPresence?.has_email_count ?? "לא התקבל"} tone={hasEmails ? "green" : "orange"} />
-            <StatusLine label="user_id ב-NRPS" value={fieldPresence?.has_user_id_count ?? "לא התקבל"} tone={hasUserIds ? "green" : "orange"} />
-            <StatusLine label="lis_person_sourcedid ב-NRPS" value={fieldPresence?.has_lis_person_sourcedid_count ?? "לא התקבל"} tone={hasLisIds ? "green" : "orange"} />
+            <StatusLine label="שמות תלמידים התקבלו" value={fieldPresence?.has_name_count ?? "לא התקבל"} tone={hasNames ? "green" : "orange"} />
+            <StatusLine label="כתובות דוא״ל התקבלו" value={fieldPresence?.has_email_count ?? "לא התקבל"} tone={hasEmails ? "green" : "orange"} />
+            <StatusLine label="מזהי משתמש התקבלו" value={fieldPresence?.has_user_id_count ?? "לא התקבל"} tone={hasUserIds ? "green" : "orange"} />
+            <StatusLine label="מזהים מוסדיים התקבלו" value={fieldPresence?.has_lis_person_sourcedid_count ?? "לא התקבל"} tone={hasLisIds ? "green" : "orange"} />
           </div>
         </section>
 
         <section className="rounded-3xl border bg-white p-5 shadow-sm">
-          <h3 className="mb-3 text-lg font-extrabold">נתיב אוטומטי — Moodle Web Services</h3>
+          <h3 className="mb-3 text-lg font-extrabold">חיבור מורחב — שירותי Moodle</h3>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <StatusLine
-              label="MOODLE_WS_TOKEN"
-              value={wsConfigured ? "מוגדר ב-Render" : "חסר ב-Render"}
+              label="הרשאת חיבור מורחבת"
+              value={wsConfigured ? "מוגדרת" : "לא מוגדרת"}
               tone={wsConfigured ? "green" : "red"}
             />
             <StatusLine
-              label="Web Services status"
+              label="סטטוס חיבור"
               value={wsStatus?.mode === "moodle-web-services-automatic-readiness" ? "בדיקת תקינות מוכנה" : (wsStatus?.mode || wsStatus?.error || "לא התקבל")}
               tone={wsStatus?.ok ? (wsConfigured ? "green" : "orange") : "red"}
             />
             <StatusLine
-              label="core_enrol_get_enrolled_users"
-              value={wsHasEnrollmentFunction ? "זמין" : wsTokenMissing ? "לא ניתן לבדוק בלי token" : "לא זמין / לא אומת"}
+              label="שליפת רשימת נרשמים"
+              value={wsHasEnrollmentFunction ? "זמין" : wsTokenMissing ? "לא ניתן לבדוק ללא הרשאה" : "לא זמין / לא אומת"}
               tone={wsHasEnrollmentFunction ? "green" : "orange"}
             />
             <StatusLine
               label="שמירה אוטומטית"
-              value="מוכן (Web Services פעיל)"
+              value="מוכן"
               tone="orange"
             />
           </div>
 
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <StatusLine
-              label="משתמשים מ-Web Services"
-              value={wsUsersCount || (wsTokenMissing ? "חסר token" : "לא התקבל")}
+              label="משתמשים שהתקבלו"
+              value={wsUsersCount || (wsTokenMissing ? "חסרה הרשאה" : "לא התקבל")}
               tone={wsUsersCount > 0 ? "green" : "orange"}
             />
             <StatusLine
-              label="שמות מ-Web Services"
-              value={wsFullNameCount || (wsTokenMissing ? "חסר token" : "לא התקבל")}
+              label="שמות שהתקבלו"
+              value={wsFullNameCount || (wsTokenMissing ? "חסרה הרשאה" : "לא התקבל")}
               tone={wsFullNameCount > 0 ? "green" : "orange"}
             />
             <StatusLine
-              label="מיילים מ-Web Services"
-              value={wsEmailCount || (wsTokenMissing ? "חסר token" : "לא התקבל")}
+              label="כתובות דוא״ל שהתקבלו"
+              value={wsEmailCount || (wsTokenMissing ? "חסרה הרשאה" : "לא התקבל")}
               tone={wsEmailCount > 0 ? "green" : "orange"}
             />
             <StatusLine
-              label="מצב חסם"
-              value={wsTokenMissing ? "חסר MOODLE_WS_TOKEN" : wsUsersPreview?.error || "לא חסום כרגע"}
+              label="מצב חסימה"
+              value={wsTokenMissing ? "חסרה הרשאת חיבור מורחבת" : wsUsersPreview?.error || "לא חסום כרגע"}
               tone={wsTokenMissing ? "red" : "orange"}
             />
           </div>
         </section>
 
         <div className="rounded-3xl border border-orange-200 bg-orange-50 p-5 text-sm leading-7 text-orange-950">
-          <p>שמות תלמידים אוטומטיים דורשים NRPS עם שמות מ-Moodle, או MOODLE_WS_TOKEN מוגדר ב-Render.</p>
-        </div>
-
-        <div className="grid gap-4 xl:grid-cols-2">
-          <JsonBlock title="services-status raw JSON" data={services} />
-          <JsonBlock title="nrps-preview raw JSON" data={nrps} />
-          <JsonBlock title="moodle-ws/status raw JSON" data={wsStatus} />
-          <JsonBlock title="moodle-ws/enrolled-users-preview raw JSON" data={wsUsersPreview} />
+          <p>קבלת שמות תלמידים אוטומטית דורשת סנכרון פעיל מול Moodle, או הרשאת חיבור מורחבת שמוגדרת על ידי מנהל המערכת.</p>
         </div>
       </div>
     </SafePage>

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { setLtiToken } from "@/hooks/useLtiSession";
 import { SafePage } from "@/components/SafePage";
-import { LaunchDiagnostics } from "@/components/LaunchDiagnostics";
 import { Loader2, ShieldCheck, AlertCircle } from "lucide-react";
 
 export default function LtiBootstrap() {
@@ -51,17 +50,15 @@ export default function LtiBootstrap() {
           {status === "missing" && (
             <>
               <AlertCircle className="mb-4 h-10 w-10 text-status-blocked" />
-              <h2 className="text-xl font-bold text-status-blocked">לא נמצא Token</h2>
-              <p className="text-sm text-muted-foreground">פנל זה נועד לשימוש מתוך Moodle בלבד כ-External Tool.</p>
+              <h2 className="text-xl font-bold text-status-blocked">לא נמצא אישור כניסה</h2>
+              <p className="text-sm text-muted-foreground">
+                מסך זה נועד להיפתח רק מתוך Moodle, דרך הכלי המותקן בקורס. יש לחזור
+                למרחב הלמידה שלך ב-Moodle וללחוץ שוב על הכלי משם. אם הבעיה חוזרת,
+                יש לפנות למנהל המערכת של בית הספר.
+              </p>
             </>
           )}
         </div>
-
-        {status === "missing" && (
-          <div className="border-t pt-8">
-            <LaunchDiagnostics />
-          </div>
-        )}
       </div>
     </SafePage>
   );
