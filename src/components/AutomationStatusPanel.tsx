@@ -5,7 +5,7 @@
 
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, FileUp, Info } from "lucide-react";
+import { BookOpen, FileUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -158,10 +158,6 @@ export default function AutomationStatusPanel() {
             סטטוס יכולות אוטומציה
           </h2>
         </div>
-        <span className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-700">
-          <Info className="h-3.5 w-3.5" />
-          Teacher Release: לא
-        </span>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

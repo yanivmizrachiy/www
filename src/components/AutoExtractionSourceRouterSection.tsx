@@ -164,7 +164,7 @@ export default function AutoExtractionSourceRouterSection() {
         </div>
 
         <div className="text-xs text-slate-400">
-          גרסה: {data.version} · Teacher Release: {data.teacher_release} · נתונים אגרגטיביים בלבד, ללא מידע אישי.
+          גרסה: {data.version} · מוכן לשחרור למורים: {data.teacher_release} · נתונים מצטברים בלבד, ללא מידע אישי.
         </div>
       </CardContent>
     </Card>

@@ -40,8 +40,8 @@ const PROVEN_INVARIANTS: { he: string; signal: string }[] = [
 // Items that require a live test before broad release (cannot be proven by code alone).
 const LIVE_PENDING: string[] = [
   "בדיקה חיה עם שני מורים שונים — לוודא שמורה ב' אינו רואה נתוני מורה א'.",
-  "אכיפת Row Level Security ב-Supabase (טיוטה קיימת, טרם הופעלה).",
-  "שער Teacher Release נשאר סגור עד אימות מלא.",
+  "אכיפת הרשאות גישה ברמת השורה במסד הנתונים (הוכנה, טרם הופעלה).",
+  "השחרור למורים נשאר סגור עד אימות מלא.",
 ];
 
 const ISOLATION_BLOCKER_KEYS = new Set([
@@ -102,7 +102,7 @@ export default function Page() {
             <ShieldCheck className="h-6 w-6 text-green-700" />
             <h2 className="text-xl font-extrabold text-green-900">מה כבר מובטח ברמת הקוד</h2>
             <span className="rounded-full border border-green-300 bg-white px-2.5 py-0.5 text-xs font-bold text-green-800">
-              נבדק בכל PR
+              נבדק בכל עדכון קוד
             </span>
           </div>
           <ul className="space-y-2">
@@ -151,8 +151,8 @@ export default function Page() {
         <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-700">
           <div className="mb-1 font-extrabold">סטטוס שחרור</div>
           <p>
-            שער ה-Teacher Release נשאר <span className="font-bold">סגור</span> עד שכל הבדיקות החיות יושלמו.
-            מוכנות נוכחית להפצת מורים: {data?.teacher_release_readiness_percent ?? "—"}%. עד אז, המערכת עובדת
+            השחרור הרחב למורים נשאר <span className="font-bold">סגור</span> עד שכל הבדיקות החיות יושלמו.
+            מוכנות נוכחית להפצה למורים: {data?.teacher_release_readiness_percent ?? "—"}%. עד אז, המערכת עובדת
             בבטחה עם נתוני אמת של המורה הנוכחי בלבד.
           </p>
           <div className="mt-3">

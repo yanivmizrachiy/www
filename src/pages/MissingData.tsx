@@ -10,23 +10,23 @@ import { MOODLE_REPORTS, buildMoodleReportUrl } from "@/lib/moodleReportLinks";
 const gateInfo: Record<keyof SyncStatus["capabilities"], { title: string; report: string; why: string }> = {
   participants: {
     title: "משתתפים",
-    report: "Participants / משתתפים",
+    report: "רשימת משתתפים",
     why: "בלי דוח משתתפים אי אפשר להציג רשימת תלמידים אמיתית.",
   },
   tasks: {
     title: "פרקים ומשימות",
-    report: "Activity Completion או מבנה קורס",
+    report: "השלמת פעילות או מבנה קורס",
     why: "בלי דוח משימות אי אפשר לבנות תפריטי פרקים ומשימות אמיתיים.",
   },
   grades: {
     title: "ציונים",
-    report: "Gradebook / גיליון ציונים",
-    why: "בלי Gradebook אי אפשר להציג ציונים, ממוצעים ודוחות ציונים.",
+    report: "גיליון ציונים",
+    why: "בלי גיליון ציונים אי אפשר להציג ציונים, ממוצעים ודוחות ציונים.",
   },
   logs: {
-    title: "זמנים ולוגים",
-    report: "Logs / לוגים",
-    why: "בלי לוגים אין ראיות פעילות. זמן תרגול רשמי דורש שדה משך מאומת ממודל.",
+    title: "זמנים ופעילות",
+    report: "יומני פעילות",
+    why: "בלי יומני פעילות אין ראיות פעילות. זמן תרגול רשמי דורש שדה משך מאומת ממודל.",
   },
 };
 

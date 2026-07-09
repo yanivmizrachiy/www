@@ -98,8 +98,8 @@ export default function Setup() {
               <Step n={3} icon={<Copy className="h-4 w-4 text-blue-600" />} title="הגדר את פרטי הכלי">
                 <div className="mt-3 space-y-2">
                   <FieldRow label="כתובת הכלי (Tool URL)" value={LTI_URL} />
-                  <FieldRow label="Consumer Key" value={LTI_KEY} />
-                  <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-xs text-red-700"><strong>Shared Secret</strong> — קבל מהמנהל בלבד. אל תשתף בצ'אט, מייל או צילום מסך.</div>
+                  <FieldRow label="מפתח צרכן (Consumer Key)" value={LTI_KEY} />
+                  <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-xs text-red-700"><strong>סוד משותף (Shared Secret)</strong> — קבל מהמנהל בלבד. אל תשתף בצ'אט, מייל או צילום מסך.</div>
                 </div>
               </Step>
               <Step n={4} icon={<CheckCircle2 className="h-4 w-4 text-blue-600" />} title="שמור והצג">לחץ "שמור וחזור למרחב" — הכלי יופיע כפעילות חדשה.</Step>
