@@ -30,3 +30,6 @@ render-*-debug.json
 
 # Local screenshot extraction workdir (raw, pre-curation) — never commit
 .shots-extract/
+
+# Runtime data store — never commit
+data/store.json
