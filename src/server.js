@@ -5177,7 +5177,10 @@ function lti13PublicBase(req) {
 }
 
 function lti13PlatformAuthUrl(iss) {
-  if (process.env.LTI13_PLATFORM_AUTH_URL) return process.env.LTI13_PLATFORM_AUTH_URL;
+  // Render configures this as LTI13_AUTH_LOGIN_URL; keep LTI13_PLATFORM_AUTH_URL
+  // as an accepted alias so either name works. Falls back to deriving from iss.
+  const configured = process.env.LTI13_PLATFORM_AUTH_URL || process.env.LTI13_AUTH_LOGIN_URL;
+  if (configured) return configured;
   try {
     return new URL("/mod/lti/auth.php", String(iss)).toString();
   } catch {
@@ -6332,7 +6335,11 @@ function lti13Claim(payload, key) {
 }
 
 function lti13VerifyCoreClaims(req, payload) {
-  const expectedIssuer = process.env.LTI13_PLATFORM_ISSUER || "https://moodlemoe.lms.education.gov.il";
+  // Render configures the issuer as LTI13_ISSUER (the rest of this file already
+  // reads that name); accept LTI13_PLATFORM_ISSUER as an alias so a mismatched
+  // env name can't silently fall through to the hardcoded default during the
+  // security-critical issuer check.
+  const expectedIssuer = process.env.LTI13_PLATFORM_ISSUER || process.env.LTI13_ISSUER || "https://moodlemoe.lms.education.gov.il";
   const expectedClientId = process.env.LTI13_CLIENT_ID || "WgIZjAqxrP2zFbz";
   const expectedDeploymentId = process.env.LTI13_DEPLOYMENT_ID || "3";
   const expectedNonce = lti13CookieValue(req, "lti13_nonce");
