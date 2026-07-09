@@ -98,9 +98,6 @@ export default function MoodleInstall() {
                  <p className="text-white/70 text-sm font-medium leading-relaxed">
                     הצפנת LTI מבטיחה שהמידע עובר ממודל למערכת הניתוח בצורה מאובטחת ופרטית לחלוטין.
                  </p>
-                 <Button asChild variant="secondary" className="w-full font-black text-primary">
-                    <Link to="/guide">למידע נוסף</Link>
-                 </Button>
               </CardContent>
            </Card>
 

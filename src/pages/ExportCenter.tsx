@@ -21,10 +21,6 @@ export default function ExportCenter() {
       } else if (reportId === 'students') {
         await exportStudentsCsv(session.site_id, session.course_id);
         toast.success("הקובץ הורד בהצלחה");
-      } else if (reportId === 'activity') {
-        toast.info("ייצוא פעילות — בקרוב");
-      } else if (reportId === 'logs') {
-        toast.info("ייצוא לוגים — בקרוב");
       }
     } catch (err: any) {
       toast.error(err.message || "שגיאה בייצוא");
@@ -34,8 +30,8 @@ export default function ExportCenter() {
   const reports = [
     { id: 'grades', name: 'דוח ציונים מלא', type: 'Excel', ready: true },
     { id: 'students', name: 'רשימת תלמידים', type: 'Excel', ready: true },
-    { id: 'activity', name: 'דוח פעילות יומי', type: 'CSV', ready: true },
-    { id: 'logs', name: 'דוגמת לוגים גולמית', type: 'CSV', ready: true },
+    { id: 'activity', name: 'דוח פעילות יומי', type: 'CSV', ready: false },
+    { id: 'logs', name: 'לוגים גולמיים', type: 'CSV', ready: false },
     { id: 'gaps', name: 'דוח פערים ונתונים חסרים', type: 'PDF', ready: false },
   ];
 
