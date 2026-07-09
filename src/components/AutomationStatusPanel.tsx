@@ -45,12 +45,14 @@ const EVIDENCE_DISPLAY: Record<string, { label: string; cls: string }> = {
   missing:  { label: "חסר אימות",   cls: "bg-orange-100 text-orange-800" },
 };
 
-// Maps allowedTeacherAction value → import page route
+// Maps allowedTeacherAction value → import route. All import types are handled
+// by the single /smart-import page, which auto-detects the report kind, so every
+// action points there (the old per-type import pages were removed).
 const ACTION_ROUTES: Record<string, string> = {
-  import_participants_report:     "/import",
-  import_gradebook_report:        "/gradebook-import",
-  import_logs_report:             "/logs-import",
-  import_course_structure_report: "/course-structure-import",
+  import_participants_report:     "/smart-import",
+  import_gradebook_report:        "/smart-import",
+  import_logs_report:             "/smart-import",
+  import_course_structure_report: "/smart-import",
 };
 
 // ─── Display mode ─────────────────────────────────────────────────────────────
@@ -121,16 +123,16 @@ function CapabilityCard({ cap }: { cap: GovernedCapability }) {
         {mode === "adminAction" && (
           <div className="mt-2 space-y-2">
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              יכולת זו דורשת הפעלת Web Services ב-Moodle על ידי מנהל המערכת.
+              יכולת זו דורשת הפעלת חיבור מורחב ב-Moodle על ידי מנהל המערכת.
             </div>
             {cap.id === "ags_grades" && (
               <Button asChild variant="outline" size="sm" className="w-full rounded-xl font-black border-blue-200 text-blue-700 hover:bg-blue-50">
-                <Link to="/gradebook-import"><FileUp className="ml-2 h-3.5 w-3.5" />ייבא Gradebook ידנית במקום</Link>
+                <Link to="/smart-import"><FileUp className="ml-2 h-3.5 w-3.5" />ייבא גיליון ציונים ידנית במקום</Link>
               </Button>
             )}
             {cap.id === "nrps_participants" && (
               <Button asChild variant="outline" size="sm" className="w-full rounded-xl font-black border-blue-200 text-blue-700 hover:bg-blue-50">
-                <Link to="/import"><FileUp className="ml-2 h-3.5 w-3.5" />ייבא משתתפים ידנית במקום</Link>
+                <Link to="/smart-import"><FileUp className="ml-2 h-3.5 w-3.5" />ייבא משתתפים ידנית במקום</Link>
               </Button>
             )}
           </div>

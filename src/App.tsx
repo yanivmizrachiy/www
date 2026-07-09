@@ -90,11 +90,10 @@ const App = () => {
             <Route path="/export" element={<Export />} />
             <Route path="/automation" element={<Automation />} />
             <Route path="/settings" element={<SettingsPage />} />
+            {/* All imports go through one auto-detecting page. Keep /import as a
+                redirect alias for any old bookmarks/printed docs. */}
             <Route path="/import" element={<Navigate to="/smart-import" replace />} />
             <Route path="/smart-import" element={<SmartImport />} />
-            <Route path="/gradebook-import" element={<Navigate to="/smart-import" replace />} />
-            <Route path="/logs-import" element={<Navigate to="/smart-import" replace />} />
-            <Route path="/course-structure-import" element={<Navigate to="/smart-import" replace />} />
             <Route path="/missing-data" element={<MissingData />} />
             <Route path="/capabilities" element={<CapabilityProbe />} />
             <Route path="/isolation" element={<IsolationStatus />} />

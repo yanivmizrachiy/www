@@ -75,7 +75,7 @@ export default function Page() {
         ) : !data?.chapters.length && !uncategorizedTasks.length ? (
           <Card className="border-dashed py-12 text-center text-muted-foreground">
              <Layout className="mx-auto mb-2 h-10 w-10 opacity-20" />
-             <p>אין נתוני מבנה קורס. ייבא דוח "השלמת פעילות" (Activity Completion).</p>
+             <p>אין נתוני מבנה קורס. ייבא דוח "השלמת פעילות" מהמרחב במודל.</p>
           </Card>
         ) : (
           <Accordion type="multiple" className="space-y-4" dir="rtl">

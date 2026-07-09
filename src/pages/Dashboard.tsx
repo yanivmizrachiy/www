@@ -40,11 +40,11 @@ function useAutoSyncStatus(onSuccess?: () => void) {
           const reason = previewJson?.error ? ` (${previewJson.error})` : "";
           if (previewRes.status === 401 || previewRes.status === 403) setStatus("auth-failed");
           else setStatus("network-failed");
-          setLastError(`NRPS לא זמין במרחב הזה${reason}. אם הכלי הוגדר כ-LTI 1.0/1.1 בלבד, Moodle לא שולח רשימת תלמידים אוטומטית. יש להשתמש בייבוא Participants או להתקין כלי LTI 1.3 עם NRPS.`);
+          setLastError(`רשימת המשתתפים האוטומטית לא זמינה במרחב הזה${reason}. ייתכן שהכלי הותקן בחיבור בסיסי בלבד, ואז Moodle לא שולח רשימת תלמידים אוטומטית. אפשר לייבא רשימת משתתפים ידנית, או להתקין את הכלי בחיבור מתקדם.`);
           return;
         }
         const named = Array.isArray(previewJson?.members_named) ? previewJson.members_named : [];
-        if (!named.length) { setStatus("empty"); setLastError("NRPS זמין אך לא התקבלו שמות משתתפים ממודל."); return; }
+        if (!named.length) { setStatus("empty"); setLastError("החיבור האוטומטי זמין אך לא התקבלו שמות משתתפים ממודל."); return; }
         // Server-owned sync (MTH_NRPS_SERVER_OWNED_SYNC_V1): POST token only. The
         // server re-fetches the NRPS roster itself and persists only learners, so
         // the client roster is no longer authoritative. The preview above is used
@@ -332,7 +332,7 @@ function computeNextAction(
     return {
       tone: "action",
       title: "ייבא את גליון הציונים מ-Moodle",
-      description: "כדי לראות ציונים, הורד את ה-Gradebook מהמרחב במודל ופתח כאן.",
+      description: "כדי לראות ציונים, הורד את גיליון הציונים מהמרחב במודל ופתח כאן.",
       cta: { label: "פתח ייבוא חכם", to: "/smart-import" },
     };
   }
@@ -424,7 +424,7 @@ export default function Dashboard() {
   const realActivitiesCount = hasSession && data && !loading
     ? Math.max(data.tasks_count || 0, data.grade_items_count || 0)
     : loading ? "..." : "—";
-  const realActivitiesUnit = hasSession && data && (data.tasks_count || 0) === 0 && (data.grade_items_count || 0) > 0 ? "פעילויות מ-Gradebook" : "משימות";
+  const realActivitiesUnit = hasSession && data && (data.tasks_count || 0) === 0 && (data.grade_items_count || 0) > 0 ? "פעילויות מגיליון הציונים" : "משימות";
 
   const [now, setNow] = useState(() => new Date());
   useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 1000); return () => window.clearInterval(timer); }, []);
@@ -452,7 +452,7 @@ export default function Dashboard() {
     const parts = [teachers.participants + " משתתפים במרחב"];
     if (teachers.learners != null) parts.push(teachers.learners + " תלמידים");
     if (teacherCount > 0) parts.push(teacherCount === 1 ? "מורה אחד" : teacherCount + " מורים");
-    let line = parts.join(" · ") + " · מקור: Moodle NRPS";
+    let line = parts.join(" · ") + " · מקור: רשימת משתתפים ממודל";
     if (teachers.updatedAt) line += " · עודכן " + formatTeacherDateTime(teachers.updatedAt);
     return line;
   })();
@@ -562,8 +562,6 @@ export default function Dashboard() {
         <h2 className="mb-5 text-2xl font-black text-primary">פעולות נוספות</h2>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/smart-import">ייבוא חכם</Link></Button>
-          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/gradebook-import">Gradebook ייבוא</Link></Button>
-          <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/logs-import">ייבוא יומני מעקב</Link></Button>
           <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/reports">דוחות</Link></Button>
           <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/activity">פעילות / זמנים</Link></Button>
           <Button asChild variant="ghost" className="h-auto justify-start rounded-2xl bg-white/75 p-4 text-right font-black"><Link to="/export">ייצוא</Link></Button>
@@ -606,11 +604,11 @@ export default function Dashboard() {
           <h2 className="mb-1 text-lg font-bold">מאיפה מגיעים הנתונים</h2>
           <p className="mb-4 text-sm text-muted-foreground">מה נטען אוטומטית מ-Moodle, ומה דורש ייבוא דוח.</p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <SourceRow label="תלמידים ומורים" hint="רשימת המשתתפים (NRPS)" status={sourceStatus.nrps} />
-            <SourceRow label="ציונים" hint="AGS אוטומטי או ייבוא Gradebook" status={sourceStatus.ags === "available" ? "available" : sourceStatus.gradebook} />
+            <SourceRow label="תלמידים ומורים" hint="רשימת משתתפים אוטומטית ממודל" status={sourceStatus.nrps} />
+            <SourceRow label="ציונים" hint="עדכון אוטומטי או ייבוא גיליון ציונים" status={sourceStatus.ags === "available" ? "available" : sourceStatus.gradebook} />
             <SourceRow label="פרקים ומשימות" hint="ייבוא מבנה קורס" status={sourceStatus.gradebook === "available" ? "available" : "missing"} />
-            <SourceRow label="פעילות ולוגים" hint="ייבוא דוח Logs" status={sourceStatus.logs} />
-            <SourceRow label="חיבור אוטומטי מלא" hint="Web Services (דורש הרשאת מנהל)" status={sourceStatus.moodle_ws} />
+            <SourceRow label="פעילות ויומנים" hint="ייבוא יומני פעילות" status={sourceStatus.logs} />
+            <SourceRow label="חיבור אוטומטי מלא" hint="חיבור מורחב (דורש הרשאת מנהל)" status={sourceStatus.moodle_ws} />
           </div>
         </section>
       )}

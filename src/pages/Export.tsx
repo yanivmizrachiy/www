@@ -233,7 +233,7 @@ export default function Export() {
     if (!d) return [];
     return [
       { label: "תלמידים / משתתפים", present: !!d.students_count, count: d.students_count },
-      { label: "גיליון ציונים (Gradebook)", present: !!d.grades_count, count: d.grades_count },
+      { label: "גיליון ציונים", present: !!d.grades_count, count: d.grades_count },
       { label: "השלמת פעילות (Activity Completion)", present: !!d.tasks_count, count: d.tasks_count },
       { label: "יומני מעקב (Logs)", present: !!d.log_events_count, count: d.log_events_count },
     ];
@@ -385,15 +385,15 @@ export default function Export() {
 
           <ExportCard
             title="דוח מורים"
-            description="צוות ההוראה מתוך NRPS — שם ותפקיד בלבד."
-            disabledReason={noRoster ? "NRPS לא פעיל. פתח את הכלי מתוך Moodle. לא אומת." : !roster.data?.instructors.length ? "לא התקבלו שמות מורים מ-NRPS." : undefined}
+            description="צוות ההוראה מרשימת המשתתפים האוטומטית — שם ותפקיד בלבד."
+            disabledReason={noRoster ? "רשימת המשתתפים האוטומטית לא פעילה. פתח את הכלי מתוך Moodle. לא אומת." : !roster.data?.instructors.length ? "לא התקבלו שמות מורים מרשימת המשתתפים." : undefined}
             onExport={exportTeachers}
           />
 
           <ExportCard
             title="דוח משתתפים"
-            description="כלל המשתתפים מתוך NRPS — שם ותפקיד בלבד."
-            disabledReason={noRoster ? "NRPS לא פעיל. פתח את הכלי מתוך Moodle. לא אומת." : !roster.data?.members.length ? "לא התקבלו שמות משתתפים מ-NRPS." : undefined}
+            description="כלל המשתתפים מרשימת המשתתפים האוטומטית — שם ותפקיד בלבד."
+            disabledReason={noRoster ? "רשימת המשתתפים האוטומטית לא פעילה. פתח את הכלי מתוך Moodle. לא אומת." : !roster.data?.members.length ? "לא התקבלו שמות משתתפים." : undefined}
             onExport={exportParticipants}
           />
 

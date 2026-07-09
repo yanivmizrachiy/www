@@ -167,7 +167,7 @@ export default function Page() {
                     <ExternalLink className="h-3.5 w-3.5" />
                     מה חסר + קישורים ישירים
                   </Link>
-                  <Link to="/import" className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 px-4 py-2 text-xs font-bold text-primary hover:bg-primary/5">
+                  <Link to="/smart-import" className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 px-4 py-2 text-xs font-bold text-primary hover:bg-primary/5">
                     ייבוא דוח
                   </Link>
                 </div>

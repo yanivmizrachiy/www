@@ -12,9 +12,9 @@ interface Props {
 export function OnboardingBanner({ hasSession, studentsCount, gradesCount, logsCount }: Props) {
   if (!hasSession) return null;
   const steps = [
-    { done: studentsCount > 0, icon: <Users className="h-5 w-5" />, title: "ייבא משתתפים", desc: "רשימת תלמידים מ-Moodle", to: "/import", color: "from-blue-600 to-blue-800" },
-    { done: gradesCount > 0, icon: <GraduationCap className="h-5 w-5" />, title: "ייבא ציונים", desc: "Gradebook מ-Moodle", to: "/smart-import", color: "from-emerald-600 to-emerald-800" },
-    { done: logsCount > 0, icon: <Activity className="h-5 w-5" />, title: "ייבא לוגים", desc: "פעילות תלמידים מ-Moodle", to: "/smart-import", color: "from-purple-600 to-purple-800" },
+    { done: studentsCount > 0, icon: <Users className="h-5 w-5" />, title: "ייבא משתתפים", desc: "רשימת תלמידים מ-Moodle", to: "/smart-import", color: "from-blue-600 to-blue-800" },
+    { done: gradesCount > 0, icon: <GraduationCap className="h-5 w-5" />, title: "ייבא ציונים", desc: "גיליון ציונים מ-Moodle", to: "/smart-import", color: "from-emerald-600 to-emerald-800" },
+    { done: logsCount > 0, icon: <Activity className="h-5 w-5" />, title: "ייבא יומני פעילות", desc: "פעילות תלמידים מ-Moodle", to: "/smart-import", color: "from-purple-600 to-purple-800" },
   ];
   const allDone = steps.every(s => s.done);
   if (allDone) return null;
