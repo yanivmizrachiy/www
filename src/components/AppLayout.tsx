@@ -4,11 +4,15 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { useLtiSession, SESSION_EXPIRED_OR_SERVER_RESTARTED } from "@/hooks/useLtiSession";
 import { StatusBadge } from "@/components/StatusBadge";
 import { hebrewRoleLabel } from "@/lib/roleLabel";
+import { safeTeacherDisplayName } from "@/lib/teacherName";
 import { BookOpen, UserCircle, AlertTriangle } from "lucide-react";
 
 export default function AppLayout() {
   const { site, session, loading, error } = useLtiSession();
   const overall = session ? "proven" : "missing";
+  // A real human name if the platform shared one; otherwise "" so we show the
+  // neutral role only — never a raw numeric id (national ID) as a "name".
+  const teacherDisplay = safeTeacherDisplayName(session as { teacher_display_name?: string | null; moodle_username?: string | null } | null);
 
   if (loading) {
     return (
@@ -48,8 +52,8 @@ export default function AppLayout() {
                 </span>
                 <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                   <UserCircle className="h-4 w-4 shrink-0 text-primary/70" />
-                  {session?.moodle_username
-                    ? `${session.moodle_username} · ${hebrewRoleLabel(session.role)}`
+                  {teacherDisplay
+                    ? `${teacherDisplay} · ${hebrewRoleLabel(session?.role)}`
                     : hebrewRoleLabel(session?.role)}
                 </span>
               </div>

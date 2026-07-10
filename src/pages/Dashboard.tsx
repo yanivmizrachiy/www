@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useImportsOverview } from "@/hooks/useImports";
 import { useSyncStatus } from "@/hooks/useSyncStatus";
 import { useLtiSession, getLtiToken, nrpsPreviewUrl } from "@/hooks/useLtiSession";
+import { safeTeacherDisplayName } from "@/lib/teacherName";
 import { OnboardingBanner } from "@/components/OnboardingBanner";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -230,41 +231,9 @@ function useDashboardTeachers() {
 }
 
 
-// MTH_SAFE_TEACHER_DISPLAY_V1
-// Never show numeric Moodle identifiers / Teudat Zehut as the teacher visible name.
-function normalizeTeacherCandidate(value: unknown) {
-  return String(value || "").replace(/\s+/g, " ").trim();
-}
+// MTH_SAFE_TEACHER_DISPLAY_V1 — never show numeric Moodle ids / Teudat Zehut as
+// the teacher's visible name. Shared with the header via src/lib/teacherName.ts.
 
-function isSafeHumanDisplayName(value: unknown) {
-  const text = normalizeTeacherCandidate(value);
-  if (!text) return false;
-  if (/שם מורה לא התקבל/i.test(text)) return false;
-  if (!/[A-Za-z\u0590-\u05FF]/.test(text)) return false;
-  const letters = (text.match(/[A-Za-z\u0590-\u05FF]/g) || []).length;
-  const digits = (text.match(/\d/g) || []).length;
-  if (digits >= Math.max(1, letters)) return false;
-  if (/^\d{5,}$/.test(text.replace(/\D/g, ""))) return false;
-  return true;
-}
-
-function safeTeacherDisplayName(
-  session: { teacher_display_name?: string | null; moodle_username?: string | null } | null,
-  nrpsNames: string[]
-) {
-  const candidates = [
-    session?.teacher_display_name,
-    ...(Array.isArray(nrpsNames) ? nrpsNames : []),
-    session?.moodle_username,
-  ];
-
-  for (const candidate of candidates) {
-    const text = normalizeTeacherCandidate(candidate);
-    if (isSafeHumanDisplayName(text)) return text;
-  }
-
-  return "";
-}
 
 function SourceRow({ label, hint, status }: { label: string; hint: string; status: SourceStatus }) {
   const isAuto = status === "available" || status === "configured";
