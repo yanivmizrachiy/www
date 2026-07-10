@@ -18,6 +18,12 @@ import {
 
 // Public teacher presentation — safe to link anywhere.
 const GUIDE_URL = 'https://www-tijc.onrender.com/guide';
+// Public install-instructions page to send teachers (renders without a session).
+const INSTALL_URL = 'https://www-tijc.onrender.com/setup';
+// LTI values a teacher pastes into Moodle when self-installing (public — the
+// Shared Secret is NOT here and is delivered separately).
+const TOOL_URL = 'https://www-tijc.onrender.com/api/lti/launch';
+const CONSUMER_KEY = 'yaniv-lti-tool';
 const INSTAGRAM_URL = 'https://www.instagram.com/yani__raz';
 
 // Plain-Hebrew labels for the real DB tables the tool depends on. Anything the
@@ -72,11 +78,13 @@ function StatusPill({ ok, label }: { ok: boolean; label: string }) {
   );
 }
 
-function CopyGuideLink() {
+// Generic copy-to-clipboard button (shared by every "copy this link/value"
+// action here, so there's one implementation, not several).
+function CopyLink({ text, idleLabel, doneLabel = 'הועתק', variant = 'outline' }: { text: string; idleLabel: string; doneLabel?: string; variant?: 'outline' | 'ghost' }) {
   const [copied, setCopied] = useState(false);
   async function copy() {
     try {
-      await navigator.clipboard.writeText(GUIDE_URL);
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -84,10 +92,23 @@ function CopyGuideLink() {
     }
   }
   return (
-    <Button variant="outline" onClick={copy} className="gap-2">
+    <Button variant={variant} onClick={copy} className="gap-2">
       {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
-      {copied ? 'הקישור הועתק' : 'העתקת קישור למצגת'}
+      {copied ? doneLabel : idleLabel}
     </Button>
+  );
+}
+
+// One labelled field the admin copies (Tool URL / Consumer Key).
+function CopyField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+      <div className="min-w-0">
+        <div className="text-[11px] font-bold text-slate-500">{label}</div>
+        <div dir="ltr" className="truncate text-left font-mono text-xs font-bold text-slate-800">{value}</div>
+      </div>
+      <CopyLink text={value} idleLabel="העתק" variant="ghost" />
+    </div>
   );
 }
 
@@ -269,8 +290,43 @@ export default function AdminHub() {
                   <ExternalLink className="h-4 w-4" />
                 </a>
               </Button>
-              <CopyGuideLink />
+              <CopyLink text={GUIDE_URL} idleLabel="העתקת קישור למצגת" doneLabel="הקישור הועתק" />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Install link for teachers */}
+        <Card className="border-2 border-slate-100 shadow-sm">
+          <CardContent className="p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="p-3 rounded-xl bg-emerald-500 text-white shrink-0">
+                <Wrench className="h-6 w-6" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-black">קישור התקנה למורים</h3>
+                <p className="text-sm font-medium text-slate-500">
+                  הקישור להוראות התקנת הכלי במרחב Moodle — מוכן לשליחה למורים.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button asChild className="gap-2">
+                  <a href={INSTALL_URL} target="_blank" rel="noopener noreferrer">
+                    פתיחת ההוראות
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+                <CopyLink text={INSTALL_URL} idleLabel="העתקת קישור התקנה" doneLabel="הקישור הועתק" />
+              </div>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <CopyField label="כתובת הכלי (Tool URL)" value={TOOL_URL} />
+              <CopyField label="מפתח צרכן (Consumer Key)" value={CONSUMER_KEY} />
+            </div>
+            <p className="text-xs font-medium text-amber-800 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 leading-relaxed">
+              ה-Shared Secret נמסר בנפרד ובאופן מאובטח — לעולם לא בצ'אט, מייל או צילום מסך.
+              הדרך המהירה ביותר: אם מנהל ה-Moodle של משרד החינוך רשם את הכלי ברמת האתר,
+              המורה מוסיף אותו בלחיצה אחת מרשימת הכלים — בלי להזין כלום.
+            </p>
           </CardContent>
         </Card>
 
