@@ -11,6 +11,7 @@
     "build": "node scripts/maintenance/fix-lti-routing-redirect-cache.cjs && node scripts/maintenance/add-lti13-readiness.cjs && node --check src/server.js && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc -b --pretty false",
+    "test:lti:e2e": "node scripts/checks/lti-launch-e2e.mjs",
     "doctor": "node scripts/checks/repo-doctor.cjs",
     "audit:moodle-automation": "node scripts/checks/moodle-automation-readiness-audit.cjs",
     "validate:lti:live": "node scripts/checks/validate-lti-live.cjs",

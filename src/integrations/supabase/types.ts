@@ -1,3 +1,17 @@
+// ⚠️ STALE GENERATED ARTIFACT — do not trust the table shapes below.
+// This file still describes an OLD schema (imported_students / imported_grades /
+// imported_* / lti_get_* RPCs) that no longer exists in the live database. The
+// current DB uses plain tables (students / courses / teachers / grade_items /
+// grade_results / log_events / import_batches / course_sections / course_tasks /
+// task_completions / teacher_sessions / moodle_sites — see supabase/migrations
+// and supabase/manual_sql). It is safe to leave as-is because NOTHING queries a
+// table through the typed client: the whole frontend reads data via the server
+// `/api/*` routes, and the Supabase client is used ONLY for `supabase.auth.*`
+// (admin magic-link sign-in). The `Database` generic below is therefore never
+// exercised against a real `.from(<table>)` call. If typed table access is ever
+// reintroduced, regenerate this file from the live DB (`supabase gen types
+// typescript --project-id ncoqanascubqkxfvucfz`) instead of hand-editing it.
+
 export type Json =
   | string
   | number
