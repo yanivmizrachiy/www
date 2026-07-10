@@ -1,6 +1,6 @@
 import { CheckCircle2, AlertCircle, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { DomainStatus } from "@/hooks/useMoodleConnection";
+import type { DomainStatus } from "@/hooks/useLtiSession";
 
 const statusLabel: Record<DomainStatus, string> = {
   proven: "מחובר",
