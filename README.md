@@ -1,18 +1,31 @@
-<!-- MTH_CURRENT_STATE_20260512_START -->
-## Current state — 2026-05-12
+<!-- MTH_CURRENT_STATE_20260710_START -->
+## Current state — 2026-07-10
 
-Canonical branch: `main`
-Live runtime: `https://www-tijc.onrender.com`
-Teacher release: **NO**
+Working branch: `rebuild/lti13-secure-teacher-hub` (verified, clean).
+Live runtime: `https://www-tijc.onrender.com` (still serving the older
+`gemini/recovery-sync-20260503-073319` branch until a deliberate cutover).
+Teacher release: **NO** (blocked on one real Moodle launch test — by design).
 
-Verified live:
-- `/health`
-- `/api/release/readiness`
-- `/api/persistence/validate`
+What the rebuild delivers (all verified: typecheck + build + a self-contained
+end-to-end LTI launch test, `npm run test:lti:e2e`, 14/14):
+- Secure server-mediated data: the browser talks only to `/api/*`; the
+  Supabase service-role key stays server-side. Real LTI 1.1 (OAuth1 HMAC-SHA1)
+  and LTI 1.3 (RS256 JWT vs platform JWKS, nonce) launch verification.
+- Every data endpoint matches the REAL live DB schema 1:1 (plain tables:
+  students / courses / teachers / grade_items / grade_results / log_events /
+  import_batches / course_sections / course_tasks / task_completions /
+  teacher_sessions / moodle_sites — NOT the old imported_*/lti_get_* model).
+- Two live-DB fixes applied: dropped the world-readable `teacher_sessions`
+  SELECT policy; created the 3 missing course-structure tables (see
+  `supabase/manual_sql/`).
+- Full Hebrew/RTL teacher UI, three fully-separated products (teacher tool /
+  `/guide` presentation / `/admin-hub` control center), repo cleaned, and the
+  branch list reduced from 141 to 3.
 
-Supabase production persistence is verified.
-Real Moodle E2E and multi-teacher isolation are still not verified.
-<!-- MTH_CURRENT_STATE_20260512_END -->
+Cutover to go live: Render -> service `www` -> Settings -> Branch ->
+`rebuild/lti13-secure-teacher-hub`. Env (service-role key, all LTI13_*) is
+already set. Real Moodle E2E and multi-teacher isolation are still not verified.
+<!-- MTH_CURRENT_STATE_20260710_END -->
 
 # Moodle Teacher Hub — www
 
