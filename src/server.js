@@ -4439,14 +4439,47 @@ app.get("/api/imports/time-range", async (req, res) => {
   if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
 
   const courseId = gradebookCourseId(session);
+  const spaceId = session.spaceId || "unknown-space";
   const from = typeof req.query.from === "string" && req.query.from ? req.query.from : null;
   const to = typeof req.query.to === "string" && req.query.to ? req.query.to : null;
   const studentId = typeof req.query.student_id === "string" && req.query.student_id ? req.query.student_id : null;
+
+  // Known issue: per-student practice time was always empty. The client passes
+  // the DB student id (`student_<hash>`), but log_events have no student_id FK —
+  // only actor_full_name and a best-effort moodle_user_id — so grouping by those
+  // never matched the hash and every event was dropped. Resolve the student's
+  // real name + moodle_user_id first and match on those; a requested-but-
+  // unresolvable student yields empty (never all students).
+  let studentMatch = null;
+  if (studentId) {
+    const local = (Array.isArray(store.students) ? store.students : []).find(s => s.id === studentId);
+    if (local) {
+      studentMatch = { full_name: local.full_name || local.fullName || null, moodle_user_id: local.moodle_user_id != null ? String(local.moodle_user_id) : null };
+    } else {
+      const sb = getSupabaseClient();
+      if (sb) {
+        try {
+          const { data } = await sb.from("students").select("full_name, moodle_user_id").eq("space_id", spaceId).eq("id", studentId).limit(1).maybeSingle();
+          if (data) studentMatch = { full_name: data.full_name || null, moodle_user_id: data.moodle_user_id != null ? String(data.moodle_user_id) : null };
+        } catch { /* leave unresolved -> empty */ }
+      }
+    }
+  }
+  const matchesStudent = (row) => {
+    if (!studentId) return true;          // no per-student filter requested
+    if (!studentMatch) return false;      // requested a student we couldn't resolve -> empty, never leak all
+    return Boolean(
+      (studentMatch.full_name && row.actor_full_name === studentMatch.full_name) ||
+      (studentMatch.moodle_user_id && row.moodle_user_id != null && String(row.moodle_user_id) === studentMatch.moodle_user_id)
+    );
+  };
 
   // Inclusive day range: [from 00:00:00, to 23:59:59.999].
   const fromIso = from ? new Date(`${from}T00:00:00.000Z`).toISOString() : null;
   const toIso = to ? new Date(`${to}T23:59:59.999Z`).toISOString() : null;
 
+  // studentId is passed as null to the builder because we pre-filter rows here
+  // (the builder's own key-equality filter can't match a DB hash id).
   const fromStore = () => {
     const rows = (Array.isArray(store.logEvents) ? store.logEvents : [])
       .filter(e => !e.course_id || String(e.course_id) === courseId)
@@ -4459,6 +4492,7 @@ app.get("/api/imports/time-range", async (req, res) => {
         // one. Never invented — normally absent in Moodle event logs.
         duration_seconds: e.duration_seconds ?? e.duration ?? e.timeDiff ?? null
       }))
+      .filter(matchesStudent)
       .filter(e => {
         if (!e.event_time) return false;
         const ms = Date.parse(e.event_time);
@@ -4466,7 +4500,7 @@ app.get("/api/imports/time-range", async (req, res) => {
         if (toIso && ms > Date.parse(toIso)) return false;
         return true;
       });
-    return res.json(buildPracticeTimeFromLogEvents(rows, { from, to, studentId }));
+    return res.json(buildPracticeTimeFromLogEvents(rows, { from, to, studentId: null }));
   };
 
   const supabase = getSupabaseClient();
@@ -4483,7 +4517,8 @@ app.get("/api/imports/time-range", async (req, res) => {
 
     const { data, error } = await query;
     if (error) return fromStore();
-    return res.json(buildPracticeTimeFromLogEvents(Array.isArray(data) ? data : [], { from, to, studentId }));
+    const rows = (Array.isArray(data) ? data : []).filter(matchesStudent);
+    return res.json(buildPracticeTimeFromLogEvents(rows, { from, to, studentId: null }));
   } catch {
     return fromStore();
   }
