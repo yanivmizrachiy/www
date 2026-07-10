@@ -95,18 +95,23 @@ export default function Setup() {
         <Card className="shadow-sm border-blue-100">
           <CardContent className="pt-6">
             <div className="mb-4 flex items-center gap-2"><Info className="h-5 w-5 text-blue-600" /><h2 className="text-lg font-black text-blue-900">התקנה במרחב חדש — 5 שלבים</h2></div>
+            {/* This is the REAL path on the MOE Moodle (verified live 10/7/26):
+                the activity chooser does NOT offer "External tool" there, so
+                teachers must add the tool via More > LTI External tools. */}
             <ol className="space-y-5">
-              <Step n={1} icon={<BookOpen className="h-4 w-4 text-blue-600" />} title="היכנס למרחב החדש ב-Moodle והפעל מצב עריכה">לחץ על "הפעל עריכה" בפינה הימנית העליונה של המרחב.</Step>
-              <Step n={2} icon={<MousePointerClick className="h-4 w-4 text-blue-600" />} title='לחץ "הוסף פעילות" ← לשונית "פעילויות"'>בחר <strong>כלי או שירות LTI חיצוני</strong>.</Step>
-              <Step n={3} icon={<Copy className="h-4 w-4 text-blue-600" />} title="הגדר את פרטי הכלי">
+              <Step n={1} icon={<BookOpen className="h-4 w-4 text-blue-600" />} title="היכנסו למרחב שלכם ב-Moodle">בתפריט העליון של המרחב לחצו על <strong>"אפשרויות נוספות"</strong>.</Step>
+              <Step n={2} icon={<MousePointerClick className="h-4 w-4 text-blue-600" />} title='בחרו "כלי או שירות LTI חיצוני"'>בעמוד שנפתח לחצו על הכפתור <strong>Add tool</strong> (הוספת כלי).</Step>
+              <Step n={3} icon={<Copy className="h-4 w-4 text-blue-600" />} title="מלאו את פרטי הכלי בטופס">
                 <div className="mt-3 space-y-2">
-                  <FieldRow label="כתובת הכלי (Tool URL)" value={LTI_URL} />
-                  <FieldRow label="מפתח צרכן (Consumer Key)" value={LTI_KEY} />
-                  <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-xs text-red-700"><strong>סוד משותף (Shared Secret)</strong> — קבל מהמנהל בלבד. אל תשתף בצ'אט, מייל או צילום מסך.</div>
+                  <FieldRow label="שם הכלי" value="המודל החכם" />
+                  <FieldRow label="כתובת האינטרנט של הכלי" value={LTI_URL} />
+                  <FieldRow label="LTI version" value="LTI 1.0/1.1" />
+                  <FieldRow label="מפתח (key)" value={LTI_KEY} />
+                  <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-xs text-red-700"><strong>סיסמה (secret)</strong> — קבלו מיניב בלבד. אין לשתף בצ'אט, במייל או בצילום מסך.</div>
                 </div>
               </Step>
-              <Step n={4} icon={<CheckCircle2 className="h-4 w-4 text-blue-600" />} title="שמור והצג">לחץ "שמור וחזור למרחב" — הכלי יופיע כפעילות חדשה.</Step>
-              <Step n={5} icon={<Zap className="h-4 w-4 text-emerald-600" />} title="לחץ על הכלי — הוא נפתח אוטומטית">הנתונים של המרחב החדש ייטענו אוטומטית. אין התחברות נוספת.</Step>
+              <Step n={4} icon={<CheckCircle2 className="h-4 w-4 text-blue-600" />} title="שמרו את הכלי">הכלי החדש יתווסף לרשימת הכלים של המרחב ויופיע בבורר הפעילויות שלו.</Step>
+              <Step n={5} icon={<Zap className="h-4 w-4 text-emerald-600" />} title="הוסיפו אותו כפעילות ולחצו עליו">הפעילו מצב עריכה ← "הוספת משאב או פעילות" ← בחרו את "המודל החכם". בלחיצה הכלי נפתח והנתונים נטענים אוטומטית — אין התחברות נוספת.</Step>
             </ol>
             <div className="mt-5">
               <Button asChild variant="outline" size="sm">
