@@ -5039,7 +5039,16 @@ app.get("/api/moodle-ws/enrolled-users-preview", async (req, res) => {
   }
 });
 
-app.get("/api/launches", (_req, res) => res.json([...store.launches].reverse()));
+// SECURITY: launches / raw Moodle captures / capture summary are GLOBAL,
+// cross-teacher diagnostic data (launch records carry teacher names + course
+// titles; captures carry raw launch payloads). There is no server-side admin
+// auth yet, and the frontend never calls these, so they are denied rather than
+// exposed. A per-teacher session guard is NOT enough here — the data isn't
+// teacher-scoped.
+function denyAdminOnly(res) {
+  return res.status(403).json({ ok: false, error: "ADMIN_ONLY", message: "אזור זה דורש אימות מנהל בצד שרת שעדיין לא הופעל." });
+}
+app.get("/api/launches", (_req, res) => denyAdminOnly(res));
 // MTH_API_STUDENTS_FROM_SUPABASE_V1
 // Known issue #1: this endpoint previously returned the volatile in-memory
 // `store.students`, which resets to [] on Render cold-start. It now reads the
@@ -5197,10 +5206,17 @@ app.get("/api/activity", async (req, res) => {
     return fromStore();
   }
 });
-app.get("/api/settings", (_req, res) => res.json(store.settings));
-app.get("/api/moodle-captures", (_req, res) => res.json([...store.moodleCaptures].reverse()));
-app.get("/api/moodle-summary", (_req, res) => res.json({ capturesCount: store.moodleCaptures.length, lastCaptureAt: store.moodleCaptures.at(-1)?.createdAt ?? null, lastSource: store.moodleCaptures.at(-1)?.source ?? null, availableKeys: store.moodleCaptures.at(-1)?.keys ?? [] }));
-app.get("/api/export/grades.csv", (_req, res) => { res.setHeader("Content-Type", "text/csv; charset=utf-8"); res.setHeader("Content-Disposition", "attachment; filename=grades-export.csv"); res.send(buildGradesCsv()); });
+app.get("/api/settings", (req, res) => {
+  if (!importSessionFromRequest(req)) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
+  res.json(store.settings);
+});
+app.get("/api/moodle-captures", (_req, res) => denyAdminOnly(res));
+app.get("/api/moodle-summary", (_req, res) => denyAdminOnly(res));
+// SECURITY: buildGradesCsv() reads the GLOBAL store.grades (cross-teacher grades
+// + student names), unscoped. Unauthenticated and unused by the frontend (the
+// Export page builds its file client-side from session-scoped data). Denied
+// rather than exposing cross-teacher PII.
+app.get("/api/export/grades.csv", (_req, res) => denyAdminOnly(res));
 
 app.get("/legacy-dashboard", (_req, res) => {
   const dashboardPath = path.join(ROOT, "src", "ui", "dashboard", "dashboard.html");
