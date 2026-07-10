@@ -6460,6 +6460,10 @@ function lti13VerifyCoreClaims(req, payload) {
     deployment_id: !!matchedRegistration,
     message_type: messageType === "LtiResourceLinkRequest",
     version: version === "1.3.0",
+    // A signed id_token must not be replayable forever: require exp and allow
+    // 5 minutes of clock skew (Moodle signs short-lived tokens; skew-tolerance
+    // avoids false rejects on slightly-off server clocks).
+    token_not_expired: typeof payload.exp === "number" && payload.exp * 1000 > Date.now() - 300000,
     nonce_cookie_present: !!expectedNonce,
     nonce_matches: !!expectedNonce && payload.nonce === expectedNonce
   };
@@ -6691,6 +6695,23 @@ app.all("/api/lti13/launch", async (req, res) => {
     });
   }
 
+  // OIDC anti-CSRF: the state minted at /api/lti13/login must round-trip via
+  // the platform and match the browser's state cookie. The nonce (checked later
+  // inside the JWT) binds the token; state binds the redirect itself. Same
+  // cookie-availability constraints as the nonce check, so this adds no new
+  // failure mode for embedded launches.
+  const expectedState = lti13CookieValue(req, "lti13_state");
+  if (!expectedState || String(params.state || "") !== expectedState) {
+    return res.status(401).json({
+      ok: false,
+      error: "LTI13_STATE_MISMATCH",
+      detail: "OIDC state did not match the value issued at login initiation (missing cookie or altered state).",
+      state_cookie_present: !!expectedState,
+      state_param_present: !!params.state,
+      now: new Date().toISOString()
+    });
+  }
+
   let header = null;
   let payload = null;
 
@@ -6766,6 +6787,21 @@ app.all("/api/lti13/launch", async (req, res) => {
         existing_lti11_endpoint_kept: CANONICAL_LTI_ENDPOINT,
         no_fake_success: true
       },
+      now: new Date().toISOString()
+    });
+  }
+
+  // SECURITY: same teacher-only gate as the 1.1 launch (line ~3242). Without
+  // this, ANY verified platform user — including a student — was minted a full
+  // "teacher" session with the whole class's data. 1.3 roles are IMS URIs
+  // (e.g. .../membership#Instructor), so the same word-match applies.
+  const launchRoles = lti13Claim(payload, "roles") || [];
+  const launchRolesText = Array.isArray(launchRoles) ? launchRoles.join(",") : String(launchRoles);
+  if (!/Instructor|Teacher|Mentor|Administrator/i.test(launchRolesText)) {
+    return res.status(403).json({
+      ok: false,
+      error: "LTI13_TEACHER_ROLE_REQUIRED",
+      message: "Moodle Teacher Hub is available to teacher roles only.",
       now: new Date().toISOString()
     });
   }

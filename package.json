@@ -12,6 +12,7 @@
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc -b --pretty false",
     "test:lti:e2e": "node scripts/checks/lti-launch-e2e.mjs",
+    "test:lti13:e2e": "node scripts/checks/lti13-launch-e2e.mjs",
     "doctor": "node scripts/checks/repo-doctor.cjs",
     "audit:moodle-automation": "node scripts/checks/moodle-automation-readiness-audit.cjs",
     "validate:lti:live": "node scripts/checks/validate-lti-live.cjs",
