@@ -10,6 +10,7 @@ import {
   GraduationCap,
   Wrench,
   Database,
+  Zap,
   RefreshCw,
   Loader2,
   CheckCircle2,
@@ -62,6 +63,22 @@ type Readiness = {
   teacher_release_readiness_percent?: number;
   automation_core_percent?: number;
   blockers?: Blocker[];
+} | null;
+
+// Live self-report from /api/lti13/status. `mode` is "diagnostic-only" until the
+// 1.3 launch path is certified against the real Moodle; capabilities flip to true
+// only once verified. Nothing here is faked — it mirrors the server verbatim.
+type Lti13Status = {
+  configured?: boolean;
+  mode?: string;
+  missing?: string[];
+  capabilities?: {
+    oidc_login?: boolean;
+    jwt_launch_validation?: boolean;
+    nrps_roster_sync?: boolean;
+    ags_grade_sync?: boolean;
+    jwks_available?: boolean;
+  };
 } | null;
 
 function StatusPill({ ok, label }: { ok: boolean; label: string }) {
@@ -258,6 +275,94 @@ function LiveSystemStatus() {
   );
 }
 
+// Automation-readiness panel. "Maximum automation" for teachers = one-click add
+// from Moodle's activity chooser, which needs the LTI 1.3 path certified. This
+// shows the real, live 1.3 capabilities so the rollout state is honest, never
+// assumed. It is read-only (a non-PII diagnostic) and changes no Moodle setting.
+function AutomationStatus() {
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<Lti13Status>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function load() {
+    setLoading(true);
+    setError(null);
+    try {
+      const r = await fetch('/api/lti13/status', { cache: 'no-store' });
+      setStatus(await r.json().catch(() => null));
+    } catch {
+      setError('לא ניתן לטעון את מצב האוטומציה כרגע.');
+    } finally {
+      setLoading(false);
+    }
+  }
+  useEffect(() => {
+    load();
+  }, []);
+
+  const caps = status?.capabilities ?? {};
+  const certified = !!caps.oidc_login && !!caps.jwt_launch_validation;
+  const infra = !!status?.configured && !!caps.jwks_available;
+
+  return (
+    <Card className="border-2 border-slate-100 shadow-sm">
+      <CardContent className="p-6 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-slate-500" />
+            <h3 className="text-lg font-black">מצב אוטומציה — התקנה בלחיצה אחת (LTI 1.3)</h3>
+          </div>
+          <Button variant="ghost" size="sm" onClick={load} disabled={loading} className="gap-2 text-slate-500">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            רענון
+          </Button>
+        </div>
+
+        {loading && (
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <Loader2 className="h-4 w-4 animate-spin" /> טוען מצב חי מהשרת...
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-900">{error}</div>
+        )}
+
+        {!loading && !error && (
+          <>
+            <div className="flex flex-wrap gap-2">
+              <StatusPill ok={infra} label={infra ? 'תשתית מוכנה (מפתחות + JWKS חי)' : 'תשתית חסרה'} />
+              <StatusPill ok={certified} label={certified ? 'נתיב 1.3 מאושר — לחיצה אחת פעילה' : 'נתיב 1.3 ממתין לאישור חי'} />
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              {[
+                ['כניסת OIDC', caps.oidc_login],
+                ['אימות launch (JWT)', caps.jwt_launch_validation],
+                ['מפתח ציבורי (JWKS)', caps.jwks_available],
+                ['סנכרון משתתפים (NRPS)', caps.nrps_roster_sync],
+              ].map(([label, ok]) => (
+                <div key={label as string} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+                  <span className="text-sm font-medium text-slate-700">{label as string}</span>
+                  {ok ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <XCircle className="h-4 w-4 text-slate-300" />}
+                </div>
+              ))}
+            </div>
+
+            {!certified && (
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-xs font-medium text-blue-900 leading-relaxed">
+                כדי לפתוח התקנה בלחיצה אחת למורים צריך <b>אישור חי אחד</b>: הרצת launch אמיתי של הכלי כ-LTI 1.3
+                בתוך קורס Moodle של משרד החינוך. זו לחיצת-יד בין השרת שלנו לשרת של משרד החינוך — לכן צריך את
+                המרחב האמיתי. עד לאישור, המורים מתקינים בדרך הבדוקה (1.1) המופיעה בדף ההתקנה.
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function AdminHub() {
   return (
     <div dir="rtl" className="text-slate-900">
@@ -272,6 +377,9 @@ export default function AdminHub() {
 
         {/* Live system status — real DB + server data */}
         <LiveSystemStatus />
+
+        {/* Automation readiness — live LTI 1.3 one-click-install status */}
+        <AutomationStatus />
 
         {/* Guide */}
         <Card className="border-2 border-slate-100 shadow-sm">
