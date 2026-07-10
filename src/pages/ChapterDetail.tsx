@@ -168,7 +168,7 @@ export default function ChapterDetail() {
         ) : !chapterTasks.length ? (
           <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 text-sm leading-7 text-slate-700">
             <h3 className="mb-1 font-extrabold">אין משימות בפרק זה</h3>
-            <p>אם חסרות משימות, ייבא דוח Activity Completion עדכני.</p>
+            <p>אם חסרות משימות, ייבא דוח "השלמת פעילות" עדכני.</p>
           </div>
         ) : (
           <ul className="space-y-2">

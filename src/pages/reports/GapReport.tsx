@@ -10,9 +10,9 @@ export default function GapReport() {
 
   const missingRepos = [
     { type: "students", label: "תלמידים / משתתפים", present: !!data?.students_count },
-    { type: "grades", label: "גיליון ציונים (Gradebook)", present: !!data?.grades_count },
-    { type: "completion", label: "השלמת פעילות (Activity Completion)", present: !!data?.tasks_count },
-    { type: "logs", label: "יומני מעקב (Logs)", present: !!data?.log_events_count },
+    { type: "grades", label: "גיליון ציונים", present: !!data?.grades_count },
+    { type: "completion", label: "השלמת פעילות", present: !!data?.tasks_count },
+    { type: "logs", label: "יומני פעילות", present: !!data?.log_events_count },
   ];
 
   return (

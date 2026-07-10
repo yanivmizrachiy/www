@@ -50,7 +50,7 @@ export default function Setup() {
   const courseName = (session as any)?.course_name ?? (session as any)?.context_title ?? null;
   const teacherName = (session as any)?.teacher_name ?? (session as any)?.name ?? null;
   return (
-    <SafePage title="חיבור Moodle" description="הגדרת Moodle Teacher Hub במרחב לימוד." backTo="/" backLabel="חזרה">
+    <SafePage title="חיבור Moodle" description="הגדרת הכלי 'המודל החכם' במרחב הלימוד." backTo="/" backLabel="חזרה">
       <div className="space-y-6 max-w-2xl">
         {isConnected ? (
           <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
@@ -74,7 +74,7 @@ export default function Setup() {
             <ClipboardCheck className="h-5 w-5 shrink-0 text-blue-600" />
             <div>
               <div className="font-bold text-slate-900">בדיקת התקנה במרחב</div>
-              <div className="text-xs text-muted-foreground">ודא LTI 1.3 + NRPS וספירות לפני סנכרון — בטוח, ללא נתונים אישיים.</div>
+              <div className="text-xs text-muted-foreground">ודא חיבור תקין וספירות משתתפים לפני סנכרון — בטוח, ללא נתונים אישיים.</div>
             </div>
           </div>
           <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />

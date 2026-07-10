@@ -87,7 +87,7 @@ export default function Page() {
             <EmptyTruth>{error}</EmptyTruth>
           ) : !data || (data.events_count ?? 0) === 0 ? (
             <EmptyTruth>
-              עדיין לא יובאו לוגים. ייבא דוח Logs כדי לראות ראיות פעילות.
+              עדיין לא יובאו יומנים. ייבא דוח יומני פעילות כדי לראות ראיות פעילות.
             </EmptyTruth>
           ) : (
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -117,7 +117,7 @@ export default function Page() {
           </div>
 
           {/* Existing sessionization view kept, but framed honestly as an estimate */}
-          <PracticeTimeSection title="הערכת זמן תרגול יומי (sessionization)" />
+          <PracticeTimeSection title="הערכת זמן תרגול יומי" />
         </section>
 
         {/* ── Section 3: Recent events (real) ──────────────────────────── */}
@@ -128,7 +128,7 @@ export default function Page() {
           ) : error ? (
             <EmptyTruth>{error}</EmptyTruth>
           ) : !data?.recent?.length ? (
-            <EmptyTruth>אין אירועים להצגה. ייבא דוח Logs.</EmptyTruth>
+            <EmptyTruth>אין אירועים להצגה. ייבא דוח יומני פעילות.</EmptyTruth>
           ) : (
             <ul className="space-y-2">
               {data.recent.map((e) => (

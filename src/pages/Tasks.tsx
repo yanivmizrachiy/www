@@ -54,7 +54,7 @@ export default function Page() {
         <EmptyDomain
           domain="completion"
           title="אין נתוני משימות"
-          description="ייבא דוח 'השלמת פעילות' (Activity Completion) ממודל."
+          description="ייבא דוח 'השלמת פעילות' ממודל."
         />
       </SafePage>
     );

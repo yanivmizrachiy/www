@@ -95,7 +95,7 @@ export default function Page() {
               )}
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-emerald-700">
-              <span>מקור: Moodle NRPS</span>
+              <span>מקור: רשימת משתתפים ממודל</span>
               {updatedAt && (
                 <>
                   <span className="text-emerald-400">·</span>
@@ -157,7 +157,7 @@ export default function Page() {
             </ul>
           ) : instructorsCount > 0 ? (
             <EmptyTruth>
-              {`NRPS מאשר ${teamSizeLabel} במרחב, אך השמות לא התקבלו. ודא שהפרטיות בכלי ב-Moodle מאפשרת שיתוף שמות, ואז רענן.`}
+              {`המערכת מזהה ${teamSizeLabel} במרחב, אך השמות לא התקבלו. ודא שהפרטיות בכלי ב-Moodle מאפשרת שיתוף שמות, ואז רענן.`}
             </EmptyTruth>
           ) : (
             <EmptyTruth>אין כרגע מורים להצגה. פתח את הכלי מתוך Moodle.</EmptyTruth>

@@ -127,7 +127,7 @@ export default function TaskReport() {
                 ) : !students.length ? (
                   <TableRow>
                     <TableCell colSpan={colCount} className="text-center py-10 text-muted-foreground">
-                      אין נתוני השלמת משימות. יש לייבא דוח Activity Completion מ-Moodle.
+                      אין נתוני השלמת משימות. יש לייבא דוח "השלמת פעילות" מ-Moodle.
                     </TableCell>
                   </TableRow>
                 ) : (

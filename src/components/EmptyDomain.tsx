@@ -11,7 +11,7 @@ interface EmptyDomainProps {
 export function EmptyDomain({ domain, title }: EmptyDomainProps) {
   const instructions = {
     students: "ייצא רשימת משתתפים ממודל (XLSX/CSV) והעלה אותה כאן.",
-    grades: "עבור ל-Gradebook ב-Moodle, בחר 'ייצוא' כגיליון Excel והעלה.",
+    grades: "עבור לגיליון הציונים ב-Moodle, בחר 'ייצוא' כגיליון Excel והעלה.",
     completion: "עבור ל'ניהול קורס' -> 'דוחות' -> 'השלמת פעילות', והורד כקובץ.",
     logs: "עבור ל'ניהול קורס' -> 'דוחות' -> 'יומני מעקב', בחר את כל הימים והורד.",
   };

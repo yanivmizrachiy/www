@@ -93,7 +93,7 @@ export default function Page() {
         <EmptyDomain
           domain="grades"
           title="אין נתוני ציונים"
-          description="ייצא Gradebook ממודל והעלה לכאן."
+          description="ייצא את גיליון הציונים ממודל והעלה לכאן."
         />
       </SafePage>
     );

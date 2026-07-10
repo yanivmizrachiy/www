@@ -122,7 +122,7 @@ export default function Page() {
                 </>
               )}
             </div>
-            <div className="mt-1 text-xs font-medium text-emerald-700">מקור: Moodle NRPS</div>
+            <div className="mt-1 text-xs font-medium text-emerald-700">מקור: רשימת משתתפים ממודל</div>
           </section>
         )}
 
@@ -203,7 +203,7 @@ export default function Page() {
             </ul>
           ) : learnersCount > 0 ? (
             <EmptyTruth>
-              {`NRPS מאשר ${learnersCount} תלמידים במרחב. ודא שהפרטיות בכלי ב-Moodle מאפשרת שיתוף שמות, ואז רענן.`}
+              {`המערכת מזהה ${learnersCount} תלמידים במרחב. ודא שהפרטיות בכלי ב-Moodle מאפשרת שיתוף שמות, ואז רענן.`}
             </EmptyTruth>
           ) : (
             <EmptyTruth>אין כרגע תלמידים להצגה. פתח את הכלי מתוך Moodle.</EmptyTruth>

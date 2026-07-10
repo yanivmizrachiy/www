@@ -83,7 +83,7 @@ export default function TimeRangeReport() {
           <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
-              <strong>אין שדה משך זמן רשמי — לא ניתן לחשב זמן אמיתי.</strong> לוגי Moodle מתעדים אירועים ולא משך זמן. הערך המוצג בעמודת "זמן" הוא <strong>הערכה</strong> בלבד לפי חלונות פעילות (sessionization), לא מדידה רשמית.
+              <strong>אין שדה משך זמן רשמי — לא ניתן לחשב זמן אמיתי.</strong> יומני Moodle מתעדים אירועים ולא משך זמן. הערך המוצג בעמודת "זמן" הוא <strong>הערכה</strong> בלבד לפי חלונות פעילות, לא מדידה רשמית.
             </span>
           </div>
         )}
@@ -168,13 +168,13 @@ export default function TimeRangeReport() {
               <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
                 <Clock className="h-10 w-10 text-muted-foreground/40" />
                 <p className="font-semibold">אין נתוני זמן לטווח זה</p>
-                <p className="text-sm text-muted-foreground">יש לייבא דוח לוגים (Logs) ממודל כדי להציג הערכת חלונות פעילות. זמן רשמי דורש שדה משך מאומת.</p>
+                <p className="text-sm text-muted-foreground">יש לייבא דוח יומני פעילות ממודל כדי להציג הערכת חלונות פעילות. זמן רשמי דורש שדה משך מאומת.</p>
               </div>
             ) : !enoughLogs ? (
               <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
                 <Clock className="h-10 w-10 text-muted-foreground/40" />
                 <p className="font-semibold">אין מספיק לוגים לחישוב זמן</p>
-                <p className="text-sm text-muted-foreground">נדרשים לפחות {data?.meta?.min_log_events ?? 2} אירועי לוג בטווח כדי להציג הערכת חלונות פעילות. ייבא דוח Logs מלא יותר או בחר טווח רחב יותר.</p>
+                <p className="text-sm text-muted-foreground">נדרשים לפחות {data?.meta?.min_log_events ?? 2} אירועי פעילות בטווח כדי להציג הערכת חלונות פעילות. ייבא דוח יומני פעילות מלא יותר או בחר טווח רחב יותר.</p>
               </div>
             ) : (
               <Table dir="rtl">

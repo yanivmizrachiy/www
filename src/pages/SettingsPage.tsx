@@ -113,32 +113,32 @@ export default function SettingsPage() {
     if (state === "error") return "לא ניתן לטעון אבחון כרגע.";
 
     if (nrps?.ok && membersCount > 0 && hasNames) {
-      return "NRPS מחזיר משתתפים עם שמות. אפשר להתקדם למיפוי ושמירה מבוקרת.";
+      return "רשימת המשתתפים האוטומטית מחזירה שמות. אפשר להתקדם למיפוי ושמירה מבוקרת.";
     }
 
     if (wsConfigured && wsUsersCount > 0 && wsFullNameCount > 0) {
-      return "Moodle Web Services מחזיר משתמשים עם שמות. אפשר להתקדם לשמירה אוטומטית מבוקרת אחרי בדיקת הפרדת קורסים.";
+      return "החיבור המורחב מחזיר משתמשים עם שמות. אפשר להתקדם לשמירה אוטומטית מבוקרת אחרי בדיקת הפרדת קורסים.";
     }
 
     if (nrps?.ok && membersCount > 0 && !hasNames && !hasEmails && wsTokenMissing) {
-      return "NRPS עובד ומחזיר משתתפים אמיתיים, אך בלי שמות ומיילים. נתיב Web Services מוכן בקוד אך חסר MOODLE_WS_TOKEN אמיתי ב-Render.";
+      return "החיבור האוטומטי עובד ומחזיר משתתפים אמיתיים, אך בלי שמות ומיילים. החיבור המורחב מוכן, אך חסרה הרשאת חיבור מורחבת שמוגדרת על ידי מנהל המערכת.";
     }
 
     if (!services?.has_latest_lti13_session) {
-      return "אין session חי. פתח את הכלי מתוך Moodle ואז רענן את המסך.";
+      return "אין חיבור פעיל. פתח את הכלי מתוך Moodle ואז רענן את המסך.";
     }
 
     if (!services?.has_nrps && wsTokenMissing) {
-      return "אין כרגע מקור אוטומטי לשמות תלמידים. צריך NRPS עם שמות או MOODLE_WS_TOKEN אמיתי.";
+      return "אין כרגע מקור אוטומטי לשמות תלמידים. צריך רשימת משתתפים אוטומטית עם שמות, או הרשאת חיבור מורחבת.";
     }
 
-    return "האבחון נטען. בדוק את כרטיסי NRPS ו-Web Services כדי לראות מה חסר.";
+    return "האבחון נטען. בדוק את כרטיסי החיבור האוטומטי והחיבור המורחב כדי לראות מה חסר.";
   }, [state, services, nrps, membersCount, hasNames, hasEmails, wsConfigured, wsUsersCount, wsFullNameCount, wsTokenMissing]);
 
   return (
     <SafePage
       title="הגדרות ואבחון חיבור"
-      description="סטטוס חיבור — LTI, NRPS ו-Moodle Web Services."
+      description="סטטוס החיבור למודל, רשימת המשתתפים האוטומטית והחיבור המורחב."
       backTo="-1"
     >
       <div className="space-y-6" dir="rtl">

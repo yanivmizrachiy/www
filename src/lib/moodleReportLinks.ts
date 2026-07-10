@@ -40,7 +40,7 @@ export const MOODLE_REPORTS: MoodleReportLink[] = [
   {
     key: "grades_csv",
     title: "ייצוא ציונים (CSV)",
-    desc: "ייצוא גיליון הציונים המלא כקובץ CSV, ישירות מ-Gradebook של הקורס.",
+    desc: "ייצוא גיליון הציונים המלא כקובץ CSV, ישירות מגיליון הציונים של הקורס.",
     path: (id) => `/grade/export/txt/index.php?id=${id}`,
     importPath: "/smart-import",
   },
@@ -60,7 +60,7 @@ export const MOODLE_REPORTS: MoodleReportLink[] = [
   },
   {
     key: "logs",
-    title: "יומני מעקב (Logs)",
+    title: "יומני פעילות",
     desc: "כל פעולה של כל משתמש עם חותמת זמן — הבסיס לראיות הפעילות. בחר את כל הימים והורד.",
     path: (id) => `/report/log/index.php?id=${id}`,
     importPath: "/smart-import",
