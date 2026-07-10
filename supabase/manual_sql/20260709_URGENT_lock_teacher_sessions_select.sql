@@ -1,3 +1,7 @@
+-- ✅ APPLIED to the live DB on 2026-07-09 (verified via cowork: the
+--    "Allow select by session_token" policy no longer appears in pg_policies
+--    for teacher_sessions; only "Allow service role insert" +
+--    "teacher_own_course_sessions" remain).
 -- URGENT SECURITY FIX — run in Supabase SQL Editor (project ncoqanascubqkxfvucfz)
 -- Confirmed 2026-07-09: the live `teacher_sessions` table has a policy
 --   "Allow select by session_token" ... SELECT USING (true)

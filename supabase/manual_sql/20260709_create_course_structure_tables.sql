@@ -1,3 +1,5 @@
+-- ✅ APPLIED to the live DB on 2026-07-09 (verified via cowork: all three
+--    tables now appear in information_schema.tables).
 -- Create the three course-structure tables the app depends on but the live DB
 -- is missing. Confirmed absent 2026-07-09 via a full information_schema.columns
 -- snapshot of project ncoqanascubqkxfvucfz (the tables course_sections /
