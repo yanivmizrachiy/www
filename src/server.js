@@ -2182,6 +2182,15 @@ app.get("/api/teacher/dashboard-context", (req, res) => {
   const session = importSessionFromRequest(req) || sessionFromRequest(req);
   const hasSession = Boolean(session);
 
+  // Known issue: this handler referenced gradeItemsCount / gradeResultsCount /
+  // logEventsCount which are local variables in OTHER functions, never defined
+  // here — so every call threw ReferenceError and returned 500 (caught by the
+  // e2e launch test). Define them from the in-memory store like the sibling
+  // handlers do.
+  const gradeItemsCount = Array.isArray(store.gradeItems) ? store.gradeItems.length : 0;
+  const gradeResultsCount = Array.isArray(store.grades) ? store.grades.length : 0;
+  const logEventsCount = Array.isArray(store.logEvents) ? store.logEvents.length : 0;
+
   const hasStudents = Array.isArray(store.students) && store.students.length > 0;
   const hasTasks = (Array.isArray(store.tasks) && store.tasks.length > 0) || (Array.isArray(store.chapters) && store.chapters.length > 0);
   const hasGrades = gradeItemsCount > 0 || gradeResultsCount > 0;
