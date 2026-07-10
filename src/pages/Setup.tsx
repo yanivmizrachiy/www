@@ -1,5 +1,6 @@
 import { SafePage } from "@/components/SafePage";
 import { useLtiSession } from "@/hooks/useLtiSession";
+import { safeTeacherDisplayName } from "@/lib/teacherName";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Copy, ExternalLink, BookOpen, MousePointerClick, Zap, AlertTriangle, Info, ClipboardCheck } from "lucide-react";
@@ -46,9 +47,11 @@ function FieldRow({ label, value }: { label: string; value: string }) {
 
 export default function Setup() {
   const { session, site } = useLtiSession();
-  const isConnected = !!(session as any)?.course_id;
-  const courseName = (session as any)?.course_name ?? (session as any)?.context_title ?? null;
-  const teacherName = (session as any)?.teacher_name ?? (session as any)?.name ?? null;
+  const s = session as { course_id?: number | string | null; course_title?: string | null; teacher_display_name?: string | null; moodle_username?: string | null } | null;
+  const isConnected = !!s?.course_id;
+  const courseName = s?.course_title ?? null;
+  // Safe display name only — never the raw numeric national id (see teacherName lib).
+  const teacherName = safeTeacherDisplayName(s) || null;
   return (
     <SafePage title="חיבור Moodle" description="הגדרת הכלי 'המודל החכם' במרחב הלימוד." backTo="/" backLabel="חזרה">
       <div className="space-y-6 max-w-2xl">
