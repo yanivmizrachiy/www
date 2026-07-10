@@ -6776,6 +6776,13 @@ app.get("/api/lti13/services-status", (req, res) => {
 const distPath = path.join(ROOT, "dist");
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath, {
+    // redirect:false — the build copies public/guide/ into dist/guide/ (the real
+    // Moodle screenshots the /guide presentation renders). Without this, a plain
+    // GET /guide 301-redirects to /guide/ because a matching directory exists,
+    // which fights the client-side React route. Individual asset files under
+    // /guide/screenshots/... are still served normally; only the directory
+    // auto-redirect is disabled, so /guide falls through to the SPA index.html.
+    redirect: false,
     setHeaders: (res, filePath) => {
       if (filePath.endsWith("index.html")) noStore(res);
     }
