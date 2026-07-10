@@ -116,8 +116,12 @@ async function run() {
   const boot = await request("GET", `/api/bootstrap?t=${encodeURIComponent(t)}`);
   check("bootstrap resolves the launched course", boot.status === 200 && (boot.body.includes("420042") || boot.body.includes("מתמטיקה")), `status=${boot.status}`);
 
-  const noTok = await request("GET", "/api/imports/overview");
-  check("data endpoint without token -> 401", noTok.status === 401, `status=${noTok.status}`);
+  // Every PII/data endpoint must reject an unauthenticated request (regression
+  // guard for the /api/students + siblings auth-hole fix).
+  for (const ep of ["/api/imports/overview", "/api/students", "/api/tasks", "/api/grades", "/api/activity"]) {
+    const noTok = await request("GET", ep);
+    check(`${ep} without token -> 401`, noTok.status === 401, `status=${noTok.status}`);
+  }
 }
 
 (async () => {

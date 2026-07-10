@@ -5013,6 +5013,10 @@ app.get("/api/launches", (_req, res) => res.json([...store.launches].reverse()))
 app.get("/api/students", async (req, res) => {
   noStore(res);
   const session = importSessionFromRequest(req);
+  // SECURITY: require a verified session — this returns student PII (names,
+  // emails, ids). Without this guard an anonymous request fell through to the
+  // "unknown-space" bucket and could read student rows.
+  if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
   const spaceId = session?.spaceId || "unknown-space";
 
   const fromStore = () =>
@@ -5042,6 +5046,7 @@ app.get("/api/students", async (req, res) => {
 app.get("/api/tasks", async (req, res) => {
   noStore(res);
   const session = importSessionFromRequest(req);
+  if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
   const courseId = gradebookCourseId(session);
 
   const inScope = row =>
@@ -5072,6 +5077,7 @@ app.get("/api/tasks", async (req, res) => {
 app.get("/api/grades", async (req, res) => {
   noStore(res);
   const session = importSessionFromRequest(req);
+  if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
   const courseId = gradebookCourseId(session);
 
   const inScope = row =>
@@ -5117,6 +5123,7 @@ app.get("/api/grades", async (req, res) => {
 app.get("/api/activity", async (req, res) => {
   noStore(res);
   const session = importSessionFromRequest(req);
+  if (!session) return res.status(401).json({ ok: false, error: "NO_VERIFIED_MOODLE_SESSION" });
   const courseId = gradebookCourseId(session);
 
   const fromStore = () =>
@@ -6544,6 +6551,17 @@ function lti13BuildVerifiedSession(payload) {
 
   const courseId = String(context.id || "");
   const courseTitle = String(context.title || context.label || "Moodle course");
+  const issuer = String(payload.iss || "");
+  const clientId = Array.isArray(payload.aud) ? String(payload.aud[0] || "") : String(payload.aud || "");
+  const deploymentKey = String(deploymentId);
+  // SECURITY (isolation): every student-scoped read/write uses
+  // `session.spaceId || "unknown-space"`. LTI 1.3 sessions previously set no
+  // spaceId, so ALL 1.3 courses collapsed into one shared "unknown-space" bucket
+  // — a cross-course student/PII leak (a 1.3 teacher would see every 1.3 course's
+  // students). Derive a stable per-context space key (platform + client +
+  // deployment + course), matching the launch-driven isolation rule, so each 1.3
+  // course is its own isolated space.
+  const spaceId = stableId("space", [issuer, clientId, deploymentKey, courseId].filter(Boolean).join("|") || "lti13-no-context");
   // Real name/email only. Do NOT fall back to `sub`: on the MOE platform `sub`
   // is a raw numeric user id (often the teacher's national ID), and showing it
   // as a display name is both confusing and a privacy leak. When the platform
@@ -6567,6 +6585,8 @@ function lti13BuildVerifiedSession(payload) {
     moodleUserName: teacherName,
     teacherName,
     email: String(payload.email || ""),
+    spaceId,
+    space_id: spaceId,
     courseId,
     course_id: courseId,
     contextId: courseId,
@@ -6577,10 +6597,10 @@ function lti13BuildVerifiedSession(payload) {
     context_title: courseTitle,
     resourceLinkId: String(resourceLink.id || ""),
     resourceLinkTitle: String(resourceLink.title || ""),
-    deploymentId: String(deploymentId),
-    deployment_id: String(deploymentId),
-    issuer: String(payload.iss || ""),
-    clientId: Array.isArray(payload.aud) ? String(payload.aud[0] || "") : String(payload.aud || ""),
+    deploymentId: deploymentKey,
+    deployment_id: deploymentKey,
+    issuer,
+    clientId,
     createdAt: new Date().toISOString()
   };
 
