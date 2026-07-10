@@ -34,7 +34,6 @@ import LtiBootstrap from "./pages/LtiBootstrap";
 import NotFound from "./pages/NotFound";
 import Guide from "./pages/Guide";
 import AdminHub from "./pages/AdminHub";
-import { ProtectedAdminRoute } from "./components/ProtectedAdminRoute";
 
 const queryClient = new QueryClient();
 
@@ -52,16 +51,11 @@ const App = () => {
           {/* Guide is a standalone teacher presentation — no Teacher Hub chrome,
               no teacher data, fully separate product sharing only this repo. */}
           <Route path="/guide" element={<Guide />} />
-          {/* Admin Hub is Yaniv's private control center — gated by Supabase
-              Auth + admin role. Never linked from Teacher Hub navigation. */}
-          <Route
-            path="/admin-hub"
-            element={
-              <ProtectedAdminRoute>
-                <AdminHub />
-              </ProtectedAdminRoute>
-            }
-          />
+          {/* Admin Hub is Yaniv's control center. Open access by explicit owner
+              decision (2026-07-10): it shows only public links and non-PII
+              aggregate diagnostics — no student data, no secrets. Anything
+              touching teacher/student data stays behind the LTI session. */}
+          <Route path="/admin-hub" element={<AdminHub />} />
           {/* Rescue route: if a Moodle iframe/browser lands on the backend launch URL as a page, keep the teacher inside the app instead of showing NotFound. */}
           <Route path="/api/lti/launch" element={<Navigate to="/" replace />} />
           {/* No teacher login exists — any old /auth /login /signup link goes to setup. */}

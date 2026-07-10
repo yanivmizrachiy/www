@@ -385,7 +385,7 @@ export default function AdminHub() {
             <ShieldCheck className="h-8 w-8" />
           </div>
           <h1 className="text-3xl md:text-4xl font-black">מרכז השליטה של יניב</h1>
-          <p className="text-sm font-medium text-slate-500">אזור ניהול פרטי — מנהל מחובר בלבד.</p>
+          <p className="text-sm font-medium text-slate-500">ניהול הפרויקט, הקישורים והמצב החי — במקום אחד.</p>
         </div>
 
         {/* Live system status — real DB + server data */}
@@ -469,6 +469,35 @@ export default function AdminHub() {
           </CardContent>
         </Card>
 
+        {/* Quick management — every real admin/diagnostic page, one place */}
+        <Card className="border-2 border-slate-100 shadow-sm">
+          <CardContent className="p-6 space-y-3">
+            <div className="flex items-center gap-2">
+              <Wrench className="h-5 w-5 text-slate-500" />
+              <h3 className="text-lg font-black">ניהול מהיר</h3>
+            </div>
+            <p className="text-sm font-medium text-slate-500">כל דפי הניהול והבדיקות החיות של הפרויקט:</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {[
+                ['/automation', 'מרכז האוטומציה', 'מצב היכולות המלא — מה אוטומטי, מה ידני'],
+                ['/install-check', 'בדיקת התקנה', 'אימות חי שהכלי מותקן ועובד בקורס'],
+                ['/isolation-check', 'בדיקת בידוד חי', 'אימות שאין זליגת נתונים בין מורים'],
+                ['/capabilities', 'בדיקת יכולות', 'אילו נתונים זמינים מהחיבור הנוכחי'],
+                ['/smart-import', 'ייבוא חכם', 'העלאת דוחות Moodle — משתתפים, ציונים, יומנים'],
+                ['/settings', 'הגדרות הכלי', 'מצב חיבור ונתונים של הסשן הנוכחי'],
+              ].map(([href, title, desc]) => (
+                <a key={href} href={href} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 transition hover:border-primary/40 hover:bg-white">
+                  <div className="text-sm font-black text-slate-800">{title}</div>
+                  <div className="text-xs font-medium text-slate-500">{desc}</div>
+                </a>
+              ))}
+            </div>
+            <p className="text-xs font-medium text-slate-400 leading-relaxed">
+              דפי נתוני התלמידים נפתחים רק מתוך Moodle עם סשן מורה מאומת — גם עבורך.
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Security boundary */}
         <Card className="border-2 border-slate-100 shadow-sm">
           <CardContent className="p-6 flex items-start gap-3">
@@ -478,8 +507,9 @@ export default function AdminHub() {
             <div>
               <h3 className="text-lg font-black">גבולות אבטחה</h3>
               <p className="text-sm font-medium text-slate-500 leading-relaxed">
-                אזור זה נגיש רק למנהל מחובר. הגישה מאומתת בשרת, לא בהסתרת קישור. כלי המורה
-                מציג נתונים רק בהקשר Moodle תקין, ומורה רואה אך ורק את הקורס שלו.
+                דף זה פתוח לצפייה ומציג רק קישורים ציבוריים ומספרים מצטברים — בלי שמות תלמידים,
+                בלי ציונים ובלי סודות. נתוני מורים ותלמידים נפתחים אך ורק דרך כניסת Moodle מאומתת,
+                וכל מורה רואה את הקורס שלו בלבד.
               </p>
             </div>
           </CardContent>
