@@ -234,8 +234,8 @@ export default function Export() {
     return [
       { label: "תלמידים / משתתפים", present: !!d.students_count, count: d.students_count },
       { label: "גיליון ציונים", present: !!d.grades_count, count: d.grades_count },
-      { label: "השלמת פעילות (Activity Completion)", present: !!d.tasks_count, count: d.tasks_count },
-      { label: "יומני מעקב (Logs)", present: !!d.log_events_count, count: d.log_events_count },
+      { label: "השלמת פעילות", present: !!d.tasks_count, count: d.tasks_count },
+      { label: "יומני פעילות", present: !!d.log_events_count, count: d.log_events_count },
     ];
   }, [overview.data]);
 

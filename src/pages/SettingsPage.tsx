@@ -229,8 +229,8 @@ export default function SettingsPage() {
             />
             <StatusLine
               label="שמירה אוטומטית"
-              value="מוכן"
-              tone="orange"
+              value={wsConfigured ? "מוכן" : "דורש הרשאת חיבור מורחבת"}
+              tone={wsConfigured ? "green" : "orange"}
             />
           </div>
 

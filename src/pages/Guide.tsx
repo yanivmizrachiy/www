@@ -15,12 +15,10 @@ import {
   ChevronRight,
   ChevronLeft,
   Home,
-  Image as ImageIcon,
   Layers,
   Copy,
   Check,
   Instagram,
-  ShieldAlert,
   MousePointerClick,
   Map as MapIcon,
   HelpCircle,
@@ -1520,31 +1518,13 @@ export default function Guide() {
 
               {(() => {
                 const shots = QUESTION_SHOTS[`${topic.id}/${question.id}`];
+                // Only render a screenshot section when a real, approved shot
+                // exists. Questions without one show their written instructions
+                // alone — never an empty "screenshot goes here" placeholder box.
                 if (shots && shots.length > 0) {
                   return <ScreenshotGallery shots={shots} />;
                 }
-                return (
-                  <section className="space-y-3">
-                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-500">
-                      צילום
-                    </h3>
-                    <div className="border-2 border-dashed border-slate-200 rounded-2xl p-10 text-center bg-slate-50 flex flex-col items-center gap-3">
-                      <ImageIcon className="h-10 w-10 text-slate-300" />
-                      <p className="text-sm font-black text-slate-500">
-                        כאן ייכנס צילום אמיתי מתוך Moodle
-                      </p>
-                      <p className="text-xs text-slate-400 font-medium max-w-md leading-relaxed">
-                        צילום אמיתי יתווסף לאחר טשטוש פרטים אישיים ואישור יניב.
-                      </p>
-                    </div>
-                    <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 p-4">
-                      <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-                      <p className="text-xs font-medium text-amber-800 leading-relaxed">
-                        הערת פרטיות: אין להציג פרטי תלמידים או ציונים אמיתיים בצילום לפני טשטוש או אישור.
-                      </p>
-                    </div>
-                  </section>
-                );
+                return null;
               })()}
 
               {question.tip && (
