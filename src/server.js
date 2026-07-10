@@ -6194,7 +6194,10 @@ app.get("/api/lti13/status", (req, res) => {
   const jwks = lti13PublicJwks();
   res.json({
     ok: true,
-    mode: "diagnostic-only",
+    // The 1.3 code paths below are implemented (see /api/lti13/login + /launch),
+    // but the end-to-end handshake has never been run against the real Moodle, so
+    // this tool is not yet certified for teacher one-click install.
+    mode: "implemented-pending-live-certification",
     lti13DiagnosticVersion: LTI13_DIAGNOSTIC_VERSION,
     existingLti11EndpointKept: CANONICAL_LTI_ENDPOINT,
     configured: envStatus.configured,
@@ -6206,13 +6209,21 @@ app.get("/api/lti13/status", (req, res) => {
       jwks_url: base + "/api/lti13/jwks",
       config_url: base + "/api/lti13/config"
     },
+    // audit evidence (implemented in code) — NOT the same as live-verified. The
+    // launch handler decodes the id_token, verifies its signature against JWKS,
+    // checks issuer/audience/deployment/nonce, and mints a real teacher session.
     capabilities: {
-      oidc_login: false,
-      jwt_launch_validation: false,
+      oidc_login: true,
+      jwt_launch_validation: true,
       nrps_roster_sync: false,
       ags_grade_sync: false,
       jwks_available: jwks.ok
     },
+    // The single remaining gate for one-click teacher install: run one real LTI
+    // 1.3 launch from a Moodle course and confirm it mints a session. This is a
+    // server-to-server handshake, so it can only be proven against the real
+    // platform — never from inside this repo.
+    live_certified: false,
     safety: {
       do_not_replace_existing_lti11_tool_yet: true,
       create_separate_test_tool_first: true,

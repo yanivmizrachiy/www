@@ -72,6 +72,7 @@ type Lti13Status = {
   configured?: boolean;
   mode?: string;
   missing?: string[];
+  live_certified?: boolean;
   capabilities?: {
     oidc_login?: boolean;
     jwt_launch_validation?: boolean;
@@ -301,8 +302,13 @@ function AutomationStatus() {
   }, []);
 
   const caps = status?.capabilities ?? {};
-  const certified = !!caps.oidc_login && !!caps.jwt_launch_validation;
+  // Implemented in server code (audit evidence — the login + launch handlers
+  // exist and verify JWT + mint a session). NOT the same as proven live.
+  const codeReady = !!caps.oidc_login && !!caps.jwt_launch_validation;
+  // Infrastructure live: env configured + public keyset (JWKS) actually served.
   const infra = !!status?.configured && !!caps.jwks_available;
+  // The real gate for teacher one-click install: proven against the real Moodle.
+  const liveCertified = !!status?.live_certified;
 
   return (
     <Card className="border-2 border-slate-100 shadow-sm">
@@ -331,29 +337,36 @@ function AutomationStatus() {
         {!loading && !error && (
           <>
             <div className="flex flex-wrap gap-2">
-              <StatusPill ok={infra} label={infra ? 'תשתית מוכנה (מפתחות + JWKS חי)' : 'תשתית חסרה'} />
-              <StatusPill ok={certified} label={certified ? 'נתיב 1.3 מאושר — לחיצה אחת פעילה' : 'נתיב 1.3 ממתין לאישור חי'} />
+              <StatusPill ok={infra} label={infra ? 'תשתית + מפתחות חיים' : 'תשתית חסרה'} />
+              <StatusPill ok={codeReady} label={codeReady ? 'קוד נתיב 1.3 מיושם' : 'קוד חסר'} />
+              <StatusPill ok={liveCertified} label={liveCertified ? 'מאושר חי — לחיצה אחת פעילה' : 'אישור חי ממתין'} />
             </div>
 
+            {/* Each row shows the real signal. The 1.3 code paths carry "audit"
+                evidence (implemented, not yet live-proven); JWKS is a live check. */}
             <div className="grid gap-2 sm:grid-cols-2">
               {[
-                ['כניסת OIDC', caps.oidc_login],
-                ['אימות launch (JWT)', caps.jwt_launch_validation],
-                ['מפתח ציבורי (JWKS)', caps.jwks_available],
-                ['סנכרון משתתפים (NRPS)', caps.nrps_roster_sync],
-              ].map(([label, ok]) => (
+                ['כניסת OIDC', caps.oidc_login, 'מיושם בקוד'],
+                ['אימות launch (JWT)', caps.jwt_launch_validation, 'מיושם בקוד'],
+                ['מפתח ציבורי (JWKS)', caps.jwks_available, 'מאומת חי'],
+                ['אישור launch חי מול Moodle', liveCertified, 'ממתין'],
+              ].map(([label, ok, evidence]) => (
                 <div key={label as string} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
                   <span className="text-sm font-medium text-slate-700">{label as string}</span>
-                  {ok ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <XCircle className="h-4 w-4 text-slate-300" />}
+                  <span className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-slate-400">{evidence as string}</span>
+                    {ok ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <XCircle className="h-4 w-4 text-slate-300" />}
+                  </span>
                 </div>
               ))}
             </div>
 
-            {!certified && (
+            {!liveCertified && (
               <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-xs font-medium text-blue-900 leading-relaxed">
-                כדי לפתוח התקנה בלחיצה אחת למורים צריך <b>אישור חי אחד</b>: הרצת launch אמיתי של הכלי כ-LTI 1.3
-                בתוך קורס Moodle של משרד החינוך. זו לחיצת-יד בין השרת שלנו לשרת של משרד החינוך — לכן צריך את
-                המרחב האמיתי. עד לאישור, המורים מתקינים בדרך הבדוקה (1.1) המופיעה בדף ההתקנה.
+                נתיב ה-1.3 (התקנה בלחיצה אחת) <b>בנוי במלואו</b> — התשתית והקוד מוכנים. נשאר <b>אישור חי אחד</b>:
+                הרצת launch אמיתי של הכלי כ-LTI 1.3 בתוך קורס Moodle של משרד החינוך. זו לחיצת-יד בין השרת שלנו
+                לשרת של משרד החינוך, ולכן אפשר להוכיח אותה רק מול המרחב האמיתי. עד לאישור — המורים מתקינים
+                בדרך הבדוקה (1.1) שבדף ההתקנה.
               </div>
             )}
           </>
