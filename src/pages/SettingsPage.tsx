@@ -125,7 +125,11 @@ export default function SettingsPage() {
     }
 
     if (!services?.has_latest_lti13_session) {
-      return "אין חיבור פעיל. פתח את הכלי מתוך Moodle ואז רענן את המסך.";
+      // The teacher IS connected (they're viewing this through a live session) —
+      // this flag only means no live LTI-1.3-Advantage session with the
+      // automatic-roster (NRPS) service was captured, so don't claim "no
+      // connection" and contradict the green badge in the header.
+      return "החיבור למודל פעיל. עם זאת, בהפעלה זו לא זוהה סנכרון רשימת משתתפים אוטומטי (NRPS) — אפשר לייבא רשימת משתתפים ידנית מ-Moodle, או לבקש ממנהל המערכת להפעיל את שירות המשתתפים.";
     }
 
     if (!services?.has_nrps && wsTokenMissing) {

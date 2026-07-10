@@ -48,7 +48,9 @@ export default function AppLayout() {
                 </span>
                 <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                   <UserCircle className="h-4 w-4 shrink-0 text-primary/70" />
-                  {session?.moodle_username ?? "—"} · {hebrewRoleLabel(session?.role)}
+                  {session?.moodle_username
+                    ? `${session.moodle_username} · ${hebrewRoleLabel(session.role)}`
+                    : hebrewRoleLabel(session?.role)}
                 </span>
               </div>
             </div>

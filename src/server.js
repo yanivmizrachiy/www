@@ -6544,8 +6544,13 @@ function lti13BuildVerifiedSession(payload) {
 
   const courseId = String(context.id || "");
   const courseTitle = String(context.title || context.label || "Moodle course");
+  // Real name/email only. Do NOT fall back to `sub`: on the MOE platform `sub`
+  // is a raw numeric user id (often the teacher's national ID), and showing it
+  // as a display name is both confusing and a privacy leak. When the platform
+  // doesn't share a name (a tool-registration privacy setting), leave this empty
+  // and let the UI show the neutral "מורה" — the id still lives in `userId`.
   const teacherName =
-    String(payload.name || [payload.given_name, payload.family_name].filter(Boolean).join(" ") || payload.email || payload.sub || "Moodle teacher");
+    String(payload.name || [payload.given_name, payload.family_name].filter(Boolean).join(" ") || payload.email || "");
 
   const sessionToken = crypto.randomBytes(32).toString("hex");
 
