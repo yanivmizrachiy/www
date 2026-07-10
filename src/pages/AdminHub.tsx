@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,22 +9,56 @@ import {
   Instagram,
   GraduationCap,
   Wrench,
-  Activity,
-  ListChecks,
+  Database,
+  RefreshCw,
   Loader2,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 // Public teacher presentation — safe to link anywhere.
 const GUIDE_URL = 'https://www-tijc.onrender.com/guide';
 const INSTAGRAM_URL = 'https://www.instagram.com/yani__raz';
 
-// Roadmap items — mirrors PROJECT_MEMORY. These are NOT active features.
-const NEXT_STEPS = [
-  'ניהול תוכן מצגת ותמונות (טשטוש/אישור) — עתידי',
-  'אנליטיקה אמיתית של שימוש במצגת — עתידי',
-  'סטטוס Render/deploy דרך סקריפט מאובטח — עתידי',
-];
+// Plain-Hebrew labels for the real DB tables the tool depends on. Anything the
+// live /api/persistence/validate reports that isn't listed here is shown by its
+// raw name as a safe fallback (never hidden, never faked).
+const TABLE_LABELS_HE: Record<string, string> = {
+  teachers: 'מורים',
+  courses: 'קורסים',
+  students: 'תלמידים',
+  import_batches: 'ייבואים',
+  grade_items: 'פריטי ציון',
+  grade_results: 'ציונים',
+  log_events: 'יומני פעילות',
+  course_sections: 'פרקים',
+  course_tasks: 'משימות',
+  task_completions: 'השלמות משימות',
+};
+
+type PersistenceTable = { table: string; count: number | null; exists?: boolean; ok?: boolean };
+type Persistence = {
+  ok?: boolean;
+  production_persistence_ready?: boolean;
+  tables?: PersistenceTable[];
+  missing_tables?: string[];
+} | null;
+
+type Health = { ok?: boolean; supabaseConfigured?: boolean; oauthVerification?: string } | null;
+
+function StatusPill({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <span
+      className={
+        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ' +
+        (ok ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')
+      }
+    >
+      {ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
+      {label}
+    </span>
+  );
+}
 
 function CopyGuideLink() {
   const [copied, setCopied] = useState(false);
@@ -45,28 +79,112 @@ function CopyGuideLink() {
   );
 }
 
-// Real, on-demand availability check — same-origin fetch to /guide.
-// No fake "connected" claim: status is only shown after an actual request.
-function GuideStatus() {
-  const [state, setState] = useState<'idle' | 'checking' | 'up' | 'down'>('idle');
-  async function check() {
-    setState('checking');
+// Real, live system status — reads the same-origin diagnostic endpoints the
+// server already exposes. Every number here is a real aggregate count from the
+// live database (no student rows, no secrets, no invented data). Empty = 0.
+function LiveSystemStatus() {
+  const [loading, setLoading] = useState(true);
+  const [persistence, setPersistence] = useState<Persistence>(null);
+  const [health, setHealth] = useState<Health>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function load() {
+    setLoading(true);
+    setError(null);
     try {
-      const res = await fetch('/guide', { method: 'GET', cache: 'no-store' });
-      setState(res.ok ? 'up' : 'down');
-    } catch {
-      setState('down');
+      const [pRes, hRes] = await Promise.all([
+        fetch('/api/persistence/validate', { cache: 'no-store' }),
+        fetch('/health', { cache: 'no-store' }),
+      ]);
+      setPersistence(await pRes.json().catch(() => null));
+      setHealth(await hRes.json().catch(() => null));
+    } catch (e) {
+      setError('לא ניתן לטעון את מצב המערכת כרגע.');
+    } finally {
+      setLoading(false);
     }
   }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const tables = persistence?.tables ?? [];
+
   return (
-    <div className="flex items-center gap-3">
-      <Button variant="outline" size="sm" onClick={check} className="gap-2" disabled={state === 'checking'}>
-        {state === 'checking' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
-        בדיקת זמינות מצגת
-      </Button>
-      {state === 'up' && <span className="text-xs font-bold text-emerald-600">המצגת פעילה (‎/guide‎)</span>}
-      {state === 'down' && <span className="text-xs font-bold text-rose-600">לא זמין כרגע</span>}
-    </div>
+    <Card className="border-2 border-slate-100 shadow-sm">
+      <CardContent className="p-6 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Database className="h-5 w-5 text-slate-500" />
+            <h3 className="text-lg font-black">מצב המערכת — נתונים חיים</h3>
+          </div>
+          <Button variant="ghost" size="sm" onClick={load} disabled={loading} className="gap-2 text-slate-500">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            רענון
+          </Button>
+        </div>
+
+        {loading && (
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <Loader2 className="h-4 w-4 animate-spin" /> טוען מצב חי מהשרת...
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-900">
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && (
+          <>
+            <div className="flex flex-wrap gap-2">
+              <StatusPill ok={Boolean(health?.ok)} label={health?.ok ? 'השרת פעיל' : 'השרת לא מגיב'} />
+              <StatusPill
+                ok={Boolean(health?.supabaseConfigured)}
+                label={health?.supabaseConfigured ? 'מסד הנתונים מחובר' : 'מסד הנתונים לא מוגדר'}
+              />
+              <StatusPill
+                ok={Boolean(persistence?.production_persistence_ready)}
+                label={persistence?.production_persistence_ready ? 'שמירה קבועה מוכנה' : 'שמירה קבועה לא מלאה'}
+              />
+            </div>
+
+            {tables.length > 0 ? (
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {tables.map((t) => {
+                  const exists = t.exists !== false && t.count !== null;
+                  return (
+                    <div
+                      key={t.table}
+                      className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
+                    >
+                      <span className="text-sm font-bold text-slate-700">
+                        {TABLE_LABELS_HE[t.table] ?? t.table}
+                      </span>
+                      {exists ? (
+                        <span className="text-sm font-black text-slate-900">{t.count ?? 0}</span>
+                      ) : (
+                        <span className="text-xs font-bold text-rose-600">חסר</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm font-medium text-slate-500">
+                אין עדיין נתונים במערכת. מספרים יופיעו כאן ברגע שמורים יתחילו להשתמש בכלי מתוך Moodle.
+              </p>
+            )}
+
+            <p className="text-xs font-medium text-slate-400 leading-relaxed border-t border-slate-100 pt-3">
+              המספרים כאן הם סכומים אמיתיים מהמסד החי בלבד — ללא שמות תלמידים, ללא סודות, ללא נתונים מומצאים.
+            </p>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -81,6 +199,9 @@ export default function AdminHub() {
           <h1 className="text-3xl md:text-4xl font-black">מרכז השליטה של יניב</h1>
           <p className="text-sm font-medium text-slate-500">אזור ניהול פרטי — מנהל מחובר בלבד.</p>
         </div>
+
+        {/* Live system status — real DB + server data */}
+        <LiveSystemStatus />
 
         {/* Guide */}
         <Card className="border-2 border-slate-100 shadow-sm">
@@ -111,27 +232,14 @@ export default function AdminHub() {
               <Wrench className="h-6 w-6" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-black">Moodle Teacher Hub</h3>
+              <h3 className="text-lg font-black">כלי הנתונים למורה</h3>
               <p className="text-sm font-medium text-slate-500">
-                כלי הנתונים למורה. נפתח בהקשר Moodle דרך LTI.
+                נפתח על ידי מורה מתוך מרחב Moodle. מעבר לתצוגת הכלי:
               </p>
             </div>
             <Button asChild variant="outline" className="gap-2">
               <a href="/">מעבר לכלי</a>
             </Button>
-          </CardContent>
-        </Card>
-
-        {/* System status — real only */}
-        <Card className="border-2 border-slate-100 shadow-sm">
-          <CardContent className="p-6 space-y-3">
-            <h3 className="text-lg font-black">סטטוס מערכת</h3>
-            <GuideStatus />
-            <ul className="text-xs font-medium text-slate-500 space-y-1 leading-relaxed pt-2 border-t border-slate-100">
-              <li>· Teacher Hub דורש LTI launch תקין — אין נתונים ללא הקשר Moodle.</li>
-              <li>· אין סנכרון אוטומטי ללא token של Web Services.</li>
-              <li>· אין כאן אנליטיקה או סטטוס deploy — לא מוצגים נתונים שאינם אמיתיים.</li>
-            </ul>
           </CardContent>
         </Card>
 
@@ -144,28 +252,10 @@ export default function AdminHub() {
             <div>
               <h3 className="text-lg font-black">גבולות אבטחה</h3>
               <p className="text-sm font-medium text-slate-500 leading-relaxed">
-                אזור זה נגיש רק למנהל מחובר (Supabase Auth + תפקיד admin ב-DB + RLS). הגישה
-                מאומתת בשרת, לא בהסתרת קישור.
+                אזור זה נגיש רק למנהל מחובר. הגישה מאומתת בשרת, לא בהסתרת קישור. כלי המורה
+                מציג נתונים רק בהקשר Moodle תקין, ומורה רואה אך ורק את הקורס שלו.
               </p>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Next steps */}
-        <Card className="border-2 border-slate-100 shadow-sm">
-          <CardContent className="p-6 space-y-3">
-            <div className="flex items-center gap-2">
-              <ListChecks className="h-5 w-5 text-slate-400" />
-              <h3 className="text-lg font-black">שלבים הבאים</h3>
-            </div>
-            <ul className="space-y-2">
-              {NEXT_STEPS.map((s) => (
-                <li key={s} className="flex items-start gap-2 text-sm font-medium text-slate-600">
-                  <span className={cn('mt-1.5 h-1.5 w-1.5 rounded-full bg-slate-300 shrink-0')} />
-                  {s}
-                </li>
-              ))}
-            </ul>
           </CardContent>
         </Card>
 
