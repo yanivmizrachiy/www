@@ -11,10 +11,10 @@ function ok(message) {
   console.log(`OK: ${message}`);
 }
 
+// Date rule now lives only in the unified PROJECT_RULES.md (RULES.md and
+// docs/rules/TEACHER_DATE_DISPLAY_DMY_SHORT_V1.md were merged into it).
 const requiredFiles = [
-  "RULES.md",
   "PROJECT_RULES.md",
-  "docs/rules/TEACHER_DATE_DISPLAY_DMY_SHORT_V1.md",
   "src/lib/teacherDateFormat.ts",
   "src/pages/Dashboard.tsx",
 ];
@@ -29,12 +29,9 @@ if (!helper.includes("formatTeacherDateDmyShort")) fail("missing helper function
 if (!helper.includes("${day}/${month}/${year}")) fail("helper does not return D/M/YY shape");
 ok("helper uses D/M/YY shape");
 
-const rules = fs.readFileSync("RULES.md", "utf8");
 const projectRules = fs.readFileSync("PROJECT_RULES.md", "utf8");
-for (const text of [rules, projectRules]) {
-  if (!text.includes("D/M/YY")) fail("rules missing D/M/YY");
-  if (!text.includes("5/3/26")) fail("rules missing required example 5/3/26");
-}
+if (!projectRules.includes("D/M/YY")) fail("rules missing D/M/YY");
+if (!projectRules.includes("5/3/26")) fail("rules missing required example 5/3/26");
 ok("rules record permanent date format");
 
 const dashboard = fs.readFileSync("src/pages/Dashboard.tsx", "utf8");

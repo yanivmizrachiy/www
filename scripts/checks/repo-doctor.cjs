@@ -64,9 +64,12 @@ if (!current.includes("Canonical branch: `main`")) fail("current_not_main");
 if (!current.includes("Teacher release: **NO**")) fail("current_release_not_no");
 ok("CURRENT_SOURCE_OF_TRUTH_OK");
 
+// PROJECT_RULES.md is now the single unified rulebook (dated status blocks moved
+// to STATE/). Check for its stable identity marker + the Teacher Release rule,
+// not the old dated MTH_CURRENT_VERIFIED_STATE_* marker.
 const rules = read("PROJECT_RULES.md");
-if (!rules.includes("MTH_CURRENT_VERIFIED_STATE_20260512_START")) fail("rules_current_marker_missing");
-if (!rules.includes("Teacher release")) fail("rules_release_state_missing");
+if (!rules.includes("מקור האמת העליון")) fail("rules_canonical_marker_missing");
+if (!rules.toLowerCase().includes("teacher release")) fail("rules_release_state_missing");
 ok("PROJECT_RULES_OK");
 
 

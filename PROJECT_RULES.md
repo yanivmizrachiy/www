@@ -1,1072 +1,198 @@
-﻿<!-- MTH_DEEP_TRUTH_SYNC_20260612_START -->
-# אמת מוצר נוכחית — Moodle Teacher Hub / Deep Truth Sync
+# PROJECT_RULES.md — Moodle Teacher Hub / www
 
-עודכן: 2026-06-12
-Runtime קנוני: `https://www-tijc.onrender.com`
-Teacher Release: **NO**
+**מקור האמת העליון והיחיד של הפרויקט.** עודכן: 2026-07-10.
 
-בלוק זה הוא שכבת האמת העדכנית מעל ההיסטוריה השמורה בהמשך הקובץ. אין למחוק היסטוריה בלי הוראה מפורשת, אבל בכל סתירה בין בלוק זה לבין בלוקים ישנים יותר — בלוק זה קובע.
+מסמך זה מרכז את **כל** הכללים והדרישות של הפרויקט במקום אחד. אם קיימת סתירה בינו
+לבין README, docs, קוד, STATE, PR ישן או שיחה — **מסמך זה קובע**, עד שיעודכן במפורש
+ובכוונה. כל שאר דפי הכללים אוחדו לכאן.
 
-## היחס בין RULES.md לבין PROJECT_RULES.md
-
-- `RULES.md` הוא גבול הריפו: מה שייך ל־`yanivmizrachiy/www`, מה אסור לערבב, ומה לא מוחקים.
-- `PROJECT_RULES.md` הוא אמת המוצר של Moodle Teacher Hub: מה מאומת, מה קיים בקוד, מה חסום, ומה מותר להציג למורה.
-- `luz-teddy/` הוא חריג זמני קיים, לא חלק מ־Moodle Teacher Hub, ואסור למחוק אותו בלי העברה מאומתת ואישור מפורש.
-
-## מה מאומת בפועל
-
-ראיות aggregate קיימות בלבד:
-
-```text
-students = 62
-grade_items = 243
-grade_results = 1693
-log_events = 89995
-Teacher Release = NO
-```
-
-גבולות הראיה:
-
-- הנתונים אמיתיים ומקורם בייבוא/אימות Moodle קיים, אך אין להכניס לריפו שורות תלמידים, ציונים גולמיים, לוגים גולמיים או קבצי export.
-- Gradebook מאומת כייבוא אמיתי; ציון חסר נשאר חסר ואסור להפוך אותו ל־0.
-- Logs מאומתים כאירועי פעילות, לא כמשך זמן רשמי.
-- Practice Time רשמי חסום כל עוד אין שדה `duration`/`duration_seconds`/`timeDiff` רשמי ממודל.
-- `STATE/evidence-log.md` כולל הערת RLS מ־2026-05-31 על policies שנצפו ב־Supabase Dashboard, אך אין לטעון ש־RLS enforcement עובד עד שתהיה בדיקה חיה מתועדת של קריאה חוצת־מורה שנחסמת.
-
-## מה קיים בקוד אבל לא מאומת live
-
-- LTI 1.1 launch קנוני: `/api/lti/launch`.
-- LTI 1.3 diagnostic/login/launch endpoints קיימים, כולל JWKS ושירותי NRPS/AGS אם claims קיימים, אבל אין להסיק מהם readiness לכל מורה.
-- `/api/automation/capabilities`, `/api/automation/export-links`, `/api/automation/auto-extraction/sources` מחזירים metadata בטוח בלבד.
-- `/api/import/course-structure` וקוד Course Structure / Activity Completion קיימים, אך Course Structure אינו `proven` עד ייבוא completion/course-structure אמיתי ומתועד.
-- `/api/students`, `/api/tasks`, `/api/grades`, `/api/activity` הם API חדש יותר שמעדיף Supabase ונופל ל־runtime store רק כשצריך; יש להמשיך למפות אותם מול הסכמה לפני הרחבה.
-- RPC hooks כמו `lti_get_course_structure`, `lti_get_activity_overview`, `lti_get_student_reports`, `lti_get_task_completion_detail`, `lti_get_daily_activity`, `lti_get_practice_time`, `lti_get_student_profile`, `lti_delete_batch` קיימים בצד frontend כנתיב legacy/fallback. כל RPC חייב SQL/source/evidence או סימון legacy ברור לפני שנסמכים עליו כמקור אמת.
-
-## מה חסום
-
-- Teacher Release נשאר **NO**.
-- Moodle Web Services auto-sync חסום עד `MOODLE_WS_TOKEN` אמיתי בסביבת Render ובדיקת API חיה מתועדת.
-- NRPS/AGS full sync חסום עד claims, הרשאות וקריאות חיות מתועדות בלי raw PII.
-- Multi-teacher / multi-course isolation לא מאומת live.
-- DB-layer RLS enforcement לא מאומת live.
-- Practice Time רשמי חסום ללא duration רשמי.
-- Course Structure proven חסום ללא completion/course-structure evidence.
-
-## מה אסור לקלקל
-
-- אין direct commit ל־`main`; עובדים בענף PR בלבד.
-- אין Teacher Release YES.
-- אין fake data, demo data, fake sync או כפתורי דמה.
-- אין מחיקת `luz-teddy/`.
-- אין מחיקת קבצים בלי אישור.
-- אין שינוי LTI launch flow, Participants/Gradebook/Logs import, Supabase migrations, Teacher Release gate, deploy או `render.yaml` בלי הוראה מפורשת ובעיה מוכחת.
-- אין secrets בקוד, docs, STATE, logs או outputs.
-- אין חשיפת raw student rows, raw logs, raw Moodle responses, מיילים ברשימות פשוטות, תעודות זהות או מזהים פנימיים מיותרים.
-
-## מפת מסכים
-
-- בית: `/`
-- LTI bootstrap: `/lti`
-- תלמידים: `/students`, `/students/:id`
-- מורים: `/teachers`
-- פרקים/פעילויות: `/chapters`, `/chapters/:sectionId`
-- משימות legacy/view: `/tasks`
-- ציונים: `/grades`
-- פעילות וזמנים: `/activity`, דוח טווח: `/times`
-- דוחות: `/reports`, `/reports/students`, `/reports/tasks`, `/reports/days`, `/reports/gaps`
-- ייצוא: `/export`
-- ייבוא: `/smart-import`; נתיבי `/import`, `/gradebook-import`, `/logs-import`, `/course-structure-import` מפנים אליו או נשמרים כתאימות.
-- אוטומציה/אבחון: `/automation`, `/missing-data`, `/capabilities`, `/isolation`, `/isolation-check`, `/install-check`, `/setup`
-
-## מפת API קנונית
-
-- Health/runtime: `/health`, `/ping`
-- LTI: `/api/lti/launch`, `/api/bootstrap`, `/api/session/status`, `/api/lti/diagnostics`
-- LTI 1.3: `/api/lti13/status`, `/api/lti13/config`, `/api/lti13/jwks`, `/api/lti13/login`, `/api/lti13/launch`, `/api/lti13/nrps-preview`, `/api/lti13/participants-breakdown`, `/api/lti13/services-status`, `/api/lti13/token-matrix`
-- Imports: `POST /api/import`, `POST /api/import/course-structure`, `/api/imports/students`, `/api/imports/overview`, `/api/imports/grades-matrix`, `/api/imports/student-profile`, `/api/imports/time-range`, `/api/imports/nrps-sync`
-- Product data API: `/api/students`, `/api/tasks`, `/api/grades`, `/api/activity`
-- Automation/capabilities: `/api/sync/status`, `/api/sync/run`, `/api/capabilities/status`, `/api/automation/capabilities`, `/api/automation/export-links`, `/api/automation/lti-capability-probes`, `/api/automation/auto-extraction/sources`, `/api/automation/moodle-webservices/readiness`
-- Persistence/release: `/api/persistence/status`, `/api/persistence/validate`, `/api/import/schema-diagnostics`, `/api/practice-time/status`, `/api/release/readiness`
-
-## מפת schema ואמת נתונים
-
-- `src/server.js` משתמש כיום בעיקר בטבלאות החדשות: `students`, `import_batches`, `grade_items`, `grade_results`, `log_events`, `teachers`, `courses`, `teacher_sessions`, `lti_launches`, ובחלק מהמקומות `course_tasks`.
-- `src/integrations/supabase/types.ts` עדיין כולל מודל ישן/מקביל: `imported_students`, `imported_grade_items`, `imported_grades`, `imported_log_events`, `imported_chapters`, `imported_tasks`, `imported_task_completion`.
-- חובה להפריד מונחים:
-  - `moodle_course_id` = מזהה הקורס כפי שמודל נותן.
-  - `course_db_id` / `course_uuid` = UUID פנימי יציב בטבלת `courses`.
-  - `course_id` בקוד קיים אינו אחיד; לפני הרחבה צריך לציין אם הוא Moodle ID, UUID, או context/space id.
-- זהות תלמיד אינה אחידה עדיין:
-  - Participants עשוי להביא שם, מייל, username, idnumber/source id.
-  - Gradebook/Completions עשויים לזהות תלמיד לפי שם/מזהה אחר.
-  - NRPS עשוי להביא identifiers/roles בלי שמות/מיילים.
-  - אין להציג התאמה כ־proven בלי evidence שמראה את source וה־matching rule.
-
-## מפת CI ובדיקות
-
-- `npm run check` בודק scripts maintenance ו־`node --check src/server.js`.
-- `npm run typecheck` בודק TypeScript.
-- `npm run build` בונה Vite אחרי בדיקת server.
-- `npm run doctor` סורק קבצים מסוכנים/secrets ומוודא מקורות אמת בסיסיים.
-- audits סטטיים קיימים ל־automation, launch context, Moodle WS readiness, date format, auto extraction, multi-teacher isolation evidence, Supabase RLS readiness.
-- live scripts קיימים, אך אין להריץ אותם בלי סביבת live מוכנה: `validate:lti:live`, `validate:teacher-release:live`, `validate:imports:live`, `validate:finish:live`, gradebook/logs/capability live checks.
-- workflows של `luz-teddy` נפרדים לפי paths ואינם שער release של Moodle Teacher Hub.
-
-## Design System
-
-- צבעים חדשים חייבים להיות HSL דרך tokens ב־`src/index.css` ו־`tailwind.config.cjs`.
-- אין להוסיף raw HEX חדש.
-- `status-proven` = רק כשיש evidence אמיתי.
-- `status-missing` = מקור חסר.
-- `status-pending` = ערך קיים אך לא הושלם/לא הוכח, למשל grade missing.
-- `status-blocked` = חסם אמת או פעולה שאסור לבצע.
-- אין redesign גדול בלי הוראה מפורשת.
-
-## מסמכי truth משלימים
-
-- `docs/API_CANONICAL_MAP.md`
-- `docs/DATA_MODEL_TRUTH.md`
-- `docs/CI_TRUTH_MAP.md`
-- `docs/REPO_BOUNDARY_AND_LUZ_TEDDY.md`
-- `docs/PR_RISK_MAP.md`
-
-<!-- MTH_DEEP_TRUTH_SYNC_20260612_END -->
-
-<!-- MTH_SOURCE_OF_TRUTH_AUTOMATION_PLAN_20260519_START -->
-# מקור אמת נוכחי — Moodle Teacher Hub / www
-
-עודכן: 2026-05-19
-
-## כלל עליון
-
-PROJECT_RULES.md הוא מקור האמת המחייב של הריפו `yanivmizrachiy/www`.
-
-בכל שינוי עתידי חייב להיות ברור:
-1. מה כבר בוצע.
-2. מה הדרישות של יניב.
-3. מה עובד בפועל.
-4. מה עדיין חסום.
-5. מה נשאר לעשות.
-6. מה תוכנית העבודה הבאה.
-7. מה אסור לקלקל.
-
-אם יש סתירה בין README, docs, STATE, PR ישן או שיחה — PROJECT_RULES.md קובע עד שיעודכן במפורש.
-
-
-## כלל תצוגת תאריכים למורה
-
-כל תאריך שמורה רואה בתצוגות Moodle Teacher Hub חייב להופיע בפורמט קצר `D/M/YY`, למשל `5/3/26`.
-
-הכלל חל על UI בלבד: דשבורדים, כרטיסים, טבלאות, דוחות, מסכי סטטוס וייצוא חזותי.
-
-אין לשנות בגלל זה שמירה פנימית, API, מסד נתונים, STATE, לוגים טכניים או timestamps מכונתיים.
-
-יש להשתמש ב-helper מרכזי לתאריכים ולא לפזר פורמטים שונים בקומפוננטות.
-
-## חזון המוצר
-
-היעד הסופי הוא כלי מורה עברי RTL פרימיום שנפתח מתוך Moodle.
-
-כל מורה אמור להיות מסוגל להתקין/להוסיף את הכלי בכל מרחב Moodle שלו, לפתוח אותו מתוך המרחב, ולקבל אתר שמציג רק את נתוני המרחב שלו.
-
-אסור שיהיה ערבוב נתונים בין מורים, מרחבים או מכשירים.
-
-## דרישת אוטומציה
-
-הדרישה הסופית היא שאיבה אוטומטית מקסימלית של נתוני Moodle לתוך הכלי.
-
-המערכת חייבת תמיד לשאוף למינימום פעולות ידניות מצד המורה.
-
-יש להמשיך באופן קבוע לחקור ולשפר את כל מסלולי השאיבה האפשריים מתוך Moodle:
-- LTI launch/context.
-- LTI 1.3 services.
-- NRPS.
-- AGS.
-- Moodle Web Services אם ורק אם יש token אמיתי והרשאות מתאימות.
-- דוחות Moodle אמיתיים שהמורה מעלה או מדביק.
-- זיהוי דוח אוטומטי, מיפוי עמודות אוטומטי, ושמירה קבועה.
-
-אסור לכתוב או להציג שהכול אוטומטי אם זה לא אומת בפועל.
-
-## מצב הנתונים הנוכחי
-
-נכון לעכשיו, הנתיב הפעיל בפועל הוא:
-
-Moodle Launch / LTI
-→ זיהוי מורה/מרחב/סשן
-→ ייבוא דוחות Moodle אמיתיים שהמורה מעלה או מדביק באתר
-→ זיהוי ומיפוי אוטומטיים ככל האפשר
-→ שמירה ב-Supabase
-→ תצוגה ודוחות באתר
-
-כלומר:
-- הנתונים אמיתיים.
-- אין דמו.
-- Participants עובד.
-- Gradebook עובד.
-- Logs עובד.
-- Supabase persistence קיים.
-- עמוד הבית הוא Action Hub ולא דף הסברים.
-- אבל עדיין אין שאיבה אוטומטית מלאה של כל הנתונים ממודל ללא פעולה מצד המורה.
-
-Manual Real Data Import הוא פתרון אמיתי ובטוח כרגע, אבל הוא לא החזון הסופי.
-
-## כלל עמוד הבית — Action Hub בלבד
-
-עמוד הבית חייב להיות מסך פעולה נקי למורה, לא דף הסברים.
-
-חובה בעמוד הבית:
-- כפתורי פעולה גדולים, בעברית, נוחים וברורים.
-- כפתורים עובדים בלבד, שמובילים למסכים/פעולות קיימות.
-- שם המורה אם התקבל מ־LTI/session/API.
-- שם המרחב/הקורס אם התקבל מ־LTI/session/API.
-- סטטוס חיבור קצר.
-- מספרים קצרים בלבד: תלמידים, פריטי ציון, ציונים, פרקים, משימות, לוגים.
-- הודעות שגיאה רק אם יש תקלה אמיתית.
-
-אסור בעמוד הבית:
-- טקסטי דמו.
-- כיתובים כגון “אין דמו” כטקסט שיווקי קבוע.
-- הסברים ארוכים על יכולות.
-- פאנלים ארוכים שמסבירים מה חסר.
-- טקסט שמבלבל את המורה במקום לתת פעולה.
-- כפתורים שלא עובדים באמת.
-
-סטטוסי עומק, חסמים, בדיקות יכולות, Teacher Release ו־diagnostics צריכים להיות במסכי הגדרות/מה חסר/בדיקות — לא להעמיס את הבית.
-
-## דרישות כפתורי פעולה
-
-כפתורי הבית הראשיים:
-- משתתפים.
-- פרקים ופעילויות.
-- ציונים.
-- כל השאר / פעולות נוספות.
-
-פעולות נוספות צריכות לכלול רק יעדים קיימים:
-- ייבוא נתונים.
-- ייבוא Gradebook.
-- ייבוא יומני מעקב.
-- פעילות / זמנים.
-- דוחות.
-- ייצוא.
-- הגדרות.
-- חיבור Moodle.
-- מה חסר.
-
-## דרישות פרקים ומשימות
-
-בלחיצה על פרקים ופעילויות, היעד הסופי הוא להציג את כל הפרקים והמשימות שנמצאים במרחב Moodle המסוים של המורה.
-
-המערכת צריכה לשאוף לשאוב זאת אוטומטית ככל האפשר מתוך Moodle. אם אין API שמחזיר זאת, יש להשתמש בדוח/טבלה/ייצוא Moodle אמיתי, עם זיהוי ומיפוי אוטומטי ככל האפשר.
-
-אין להציג משימות מומצאות ואין להציג כפתור קישור למשימה אם אין קישור אמיתי.
-
-## דרישות תלמיד וציונים
-
-לכל תלמיד צריך להיות מסך נוח למורה עם:
-- טבלת ציונים אמיתית.
-- ממוצע ציונים מחושב רק מתוך ציונים קיימים.
-- צבעי פרימיום ברורים.
-- כפתורי פעולה בעברית.
-- משימות/פעילות אם הנתונים קיימים.
-- חוסרים מוצגים כחסר, לא כ־0 ולא כהשערה.
-
-## מה כבר בוצע
-
-- LTI / פתיחה מתוך Moodle קיימת.
-- Supabase persistence קיים.
-- Participants אמיתי יובא ונשמר.
-- Gradebook אמיתי יובא ונשמר.
-- Logs אמיתיים יובאו ונשמרו.
-- Practice time לא מומצא ונשאר חסום כשאין שדה משך רשמי.
-- Teacher Release עדיין NO.
-- עמוד הבית הראשי הושלם כעמוד הבית החכם.
-- נוספה שורת מעודכן לתאריך עם זמן אמיתי.
-- נוספו כפתורים ראשיים: משתתפים, פרקים ופעילויות, ציונים, כל השאר.
-- נוסף תפריט משני.
-- בוצע עיצוב כחול כהה / פרימיום.
-- מסך Import / Participants עבר ניקוי UI פרימיום.
-- PR #99: מרכז יכולות Moodle דינמי מוזג ל־main.
-- PR #100: בדיקת live קבועה למרכז היכולות נוספה ל־main.
-- PR נוכחי: עמוד הבית עובר לניקוי Action Hub בלי טקסטי הסבר/דמו.
-
-## מה נשאר לעשות
-
-1. לשמור את PROJECT_RULES.md מעודכן בכל שינוי.
-2. לבדוק לעומק אפשרויות שאיבה אוטומטית דרך LTI / NRPS / AGS / Moodle Web Services.
-3. אם אין API מאומת — לשפר את הייבוא הידני כך שיהיה קצר, ברור וכמעט אוטומטי.
-4. להשלים פרקים ומשימות אמיתיים לפי מרחב Moodle.
-5. לשדרג מסכי תלמיד/ציונים לעיצוב פרימיום מלא עם ממוצעים, צבעים וכפתורי פעולה.
-6. לנקות מסך־מסך לעיצוב פרימיום אחיד:
-   - GradebookImport.tsx
-   - LogsImport.tsx
-   - Students.tsx
-   - Tasks.tsx
-   - Grades.tsx
-   - Reports.tsx
-   - SettingsPage.tsx
-   - Export.tsx
-   - MissingData.tsx
-   - StudentProfile.tsx
-7. לבדוק מורה שני או מרחב שני.
-8. לוודא שאין ערבוב נתונים.
-9. רק אחרי כל שערי האמת — לשקול Teacher Release = YES.
-
-## מה אסור לקלקל
-
-אסור לשבור או לשנות בלי צורך:
-- Participants import.
-- Gradebook import.
-- Logs import.
-- Supabase persistence.
-- LTI launch.
-- check/build.
-- Teacher Release gate.
-- כלל אין דמו.
-- כלל אין נתונים מזויפים.
-- כלל אין זמן תרגול מומצא.
-
-## אחוזי מצב נוכחיים
-
-ריפו / קוד / אוטומציה / תיעוד: 99%
-צינור נתוני אמת: 98%
-Participants: 100%
-Gradebook: 100%
-Logs: 100%
-עמוד הבית כ־Action Hub: בתהליך PR נוכחי
-שאיבה אוטומטית מלאה ממודל ללא פעולה מצד המורה: עדיין לא מלאה
-מוכנות לכל מורה בכל מרחב: תלויה בבדיקת בידוד מורה/מרחב
-Teacher Release: NO
-<!-- MTH_SOURCE_OF_TRUTH_AUTOMATION_PLAN_20260519_END -->
+> מסמך זה מכיל **כללים בלבד** (timeless). סטטוס/אחוזים/היסטוריית PR חיים ב-`STATE/`
+> ו-`docs/REBUILD_STATUS.md` — לא כאן, כדי שהמסמך לא יתיישן.
 
 ---
 
-<!-- MTH_CURRENT_VERIFIED_STATE_20260512_START -->
-## מצב אמת מאומת — 2026-05-12
+## 0. זהות והיקף
 
-- ריפו: `yanivmizrachiy/www`.
-- ענף קנוני: `main`.
-- Runtime קבוע: `https://www-tijc.onrender.com`.
-- Teacher release: **NO**.
-
-עובד ומאומת:
-- Automation Core V1 מוזג ל־`main`.
-- `/api/release/readiness` עובד ב־Live.
-- `/api/persistence/validate` עובד ב־Live.
-- Supabase production persistence אומת.
-- אין החזרת סודות.
-- אין החזרת שורות תלמידים.
-
-עדיין לא מאומת:
-- Launch אמיתי מתוך Moodle אחרי השינויים האחרונים.
-- Import מלא אמיתי.
-- בדיקת שני מורים/שני מרחבים.
-- אי־ערבוב נתונים.
-
-כלי חכמים:
-בכל שלב יש לבדוק כלים שיכולים לעזור באמת: GitHub, Render, Supabase, Moodle, CI, UX, RTL, דוחות וייצוא. אין להתקין כלי שלא מקדם עבודה אמיתית.
-<!-- MTH_CURRENT_VERIFIED_STATE_20260512_END -->
-
-# PROJECT_RULES — www / Moodle Teacher Hub
-
-<!-- MTH_CURRENT_VERIFIED_STATE_20260510_START -->
-## מצב אמת מאומת — 2026-05-10
-
-הפרויקט אינו מתחיל מאפס. זהו ריפו קיים וחי, ויש להמשיך ממנו בלבד.
-
-### מה כבר עובד ומאומת
-
-- ריפו פעיל: `yanivmizrachiy/www`.
-- ענף עבודה פעיל: `gemini/ai-studio-sync-20260428-193953`.
-- Runtime קבוע: `https://www-tijc.onrender.com`.
-- LTI 1.3 עובד מתוך Moodle.
-- NRPS עובד ומחזיר משתתפים אמיתיים מהקורס.
-- NRPS החזיר 62 משתתפים: 59 Learners ו־3 Instructors.
-- NRPS מחזיר מזהים ותפקידים, אך לא שמות ולא מיילים.
-- ייבוא Participants אמיתי ממודל הצליח.
-- הייבוא קלט 62 שורות, הוסיף 62, עדכן 0 ודחה 0.
-- עמוד תלמידים מציג תלמידים אמיתיים עם שמות ומיילים שיובאו מ־Participants.
-- נתיב Moodle Web Services קיים כאבחון עתידי, אך תלוי ב־`MOODLE_WS_TOKEN` אמיתי ב־Render.
-
-### גבולות בטיחות
-
-- אין להעלות לגיט קבצי תלמידים, CSV/XLSX/ODS, גיבויי JSON, או `data/store.json`.
-- אין להריץ Deploy/Restart לפני גיבוי מקומי או persistence אמיתי.
-- אין להמשיך לציונים/לוגים/דוחות לפני סידור persistence ומיפוי תלמידים.
-
-### סדר המשך מחייב
-
-1. גיבוי מקומי בטוח של הנתונים שיובאו.
-2. סידור ריפו ומקור אמת.
-3. persistence קבוע, כנראה Supabase.
-4. מיפוי NRPS ↔ Participants.
-5. Gradebook / ציונים.
-6. Logs / זמן תרגול.
-7. דוחות וייצוא.
-
-Updated: 2026-05-10T05:10:58Z
-<!-- MTH_CURRENT_VERIFIED_STATE_20260510_END -->
-
-מסמך זה הוא מקור האמת העליון של הריפו `yanivmizrachiy/www`.
-
-הריפו הזה הוא הריפו המחייב לפרויקט Moodle Teacher Hub המשודרג. כל תיעוד, קוד, בדיקה, החלטה או שינוי עתידי חייבים להתיישר מול המסמך הזה.
-
-אם קיימת סתירה בין README, docs, קוד, STATE או הודעות קודמות — המסמך הזה קובע עד שיעודכן במפורש ובצורה מנומקת.
+- **הריפו המחייב היחיד:** `yanivmizrachiy/www`. אין ריפו אחר שהוא מקור אמת אלא אם יניב מעביר במפורש.
+- **המוצר:** *Moodle Teacher Hub* — כלי מורה **עברי מלא, RTL מלא** שנפתח **מתוך Moodle דרך LTI**, ומציג בנוחות וגרפית את נתוני מרחב הלימוד של המורה. זו שכבת נוחות/ארגון/דוחות/ייצוא מעל נתוני Moodle **אמיתיים** — הוא **לא מחליף** את Moodle.
+- **שם מוצר למורה:** `המודל החכם`. השם הפנימי/ריפו נשאר "Moodle Teacher Hub". אין להציג למורה ז'רגון פנימי ("LTI Test", "Teacher Release" וכו').
+- זהו **Action Hub** — לא אתר כללי, לא דף שיווקי, לא פורטל.
+- זהו ריפו **קיים וחי** — ממשיכים אותו; **לא בונים מאפס, לא בונים אפליקציה מקבילה**.
+- **Runtime קנוני:** `https://www-tijc.onrender.com`.
+- **סדר קדימות:** מסמך זה עליון. `RULES.md` לשעבר (גבולות ריפו) אוחד לתוך סעיף 12 כאן — אין עוד קובץ כללים מתחרה.
 
 ---
 
-## 1. שם הריפו המחייב
+## 1. שפה ו-UI
 
-שם הריפו הרשמי:
-
-```text
-yanivmizrachiy/www
-```
-
-אין להתייחס לריפו אחר כמקור אמת של הפרויקט הזה, אלא אם המשתמש נותן הוראה מפורשת להעברת מקור האמת.
+- ה-UI **עברית מלאה, RTL מלא**; בהירות, מהירות ונוחות מרביות; עובד ב**דסקטופ וגם בנייד**; בכל מסך **מצב-ריק אמיתי**; גרפיקה נקייה ומהירה.
+- **קוד / comments / commit messages → אנגלית. תשובות / README / תיעוד → עברית.**
+- **תאריך שמורה רואה = `D/M/YY`** (למשל `5/3/26`): בלי אפס מוביל חובה, שנה בשתי ספרות. חל על תצוגת מורה בלבד (דשבורדים, כרטיסים, טבלאות, דוחות, מסכי סטטוס, ייצוא חזותי). **שכבת תצוגה בלבד** — אין לשנות שמירה פנימית / API / DB / STATE / לוגים / timestamps. **helper מרכזי אחד** לתאריכים (`formatTeacherDateDmyShort`), לא פורמטים מפוזרים.
+- **כל הכפתורים** בעברית, אמיתיים ומובילים למסך/פעולה קיימים — **אין כפתורים מתים** ואין כפתור שמרמז על פעולה שלא קיימת.
+- ניווט עברי ברור בכל מסך. הסיידבר הנוכחי (העדכני): **מרכז המורה · תלמידים · ציונים · פעילויות · זמנים · דוחות** (+ כלים/הגדרות/חיבור Moodle). פריטים טכניים הוסרו מהתצוגה למורה, המסלולים נשמרו.
 
 ---
 
-## 2. מטרת המערכת
+## 2. אמת — אסור דמו ואסור נתונים מזויפים
 
-Moodle Teacher Hub הוא אתר/כלי מורה בעברית מלאה וב־RTL, שנפתח מתוך Moodle ומטרתו להציג למורה את נתוני מרחב הלמידה שלו בצורה נוחה, מהירה, גרפית ומסודרת.
-
-המערכת אינה מחליפה את Moodle. היא שכבת נוחות, ארגון, סינון, דוחות וייצוא מעל נתוני Moodle אמיתיים.
-
-המערכת נבנית תחילה ונבדקת קודם במרחב Moodle האישי/הלימודי של יניב, אבל היעד הסופי הוא קישור התקנה/פתיחה שכל מורה יוכל להוסיף לכל מרחב לימודי שלו ב־Moodle, כך שכל מורה יראה רק את הנתונים האמיתיים של המרחב שלו.
-
----
-
-## 3. כלל אמת עליון
-
-אסור ליצור או להציג:
-
-- נתוני דמו.
-- תלמידים מזויפים.
-- ציונים מזויפים.
-- משימות מזויפות.
-- פעילות מזויפת.
-- זמן תרגול מומצא.
-- כפתורים שאינם עובדים באמת.
-- טקסט שמרמז על חיבור Moodle חי אם אין חיבור מאומת.
-
-כל נתון במערכת חייב להגיע ממקור אמיתי:
-
-1. Moodle Web Services / API מאומת, אם וכאשר קיים token אמיתי.
-2. LTI launch אמיתי לצורך כניסה והקשר.
-3. ייבוא ידני של דוחות Moodle אמיתיים, אם אין API זמין.
-4. שאיבה אוטומטית מקסימלית מהממשק/המרחב רק באמצעים חוקיים, יציבים ומאומתים, ללא scraping של סיסמאות וללא התחזות לחיבור API שלא קיים.
+- **לעולם לא ליצור/להציג:** נתוני דמו, תלמידים מזויפים, ציונים מזויפים, משימות מזויפות, פעילות מזויפת, זמן תרגול מומצא, כפתורים לא-עובדים, או טקסט/מצב שמרמז על חיבור/סנכרון/טעינה שלא אומתו.
+- **כל נתון ממקור אמיתי**, לפי סדר עדיפות: (1) Moodle Web Services/API אם קיים token אמיתי; (2) הפעלת LTI אמיתית לזהות והקשר; (3) ייבוא ידני של דוחות Moodle **אמיתיים**; (4) שאיבה אוטומטית מקסימלית רק באמצעים חוקיים, יציבים ומאומתים — **אין scraping של סיסמאות, אין להעמיד פנים של API שלא קיים**.
+- **חסר נשאר חסר** — ציון חסר לעולם לא הופך ל-0; מוצג כחסר / `—`.
+- **זמן תרגול לא ממציאים** — זמן מצטבר רק עם שדה משך אמיתי ומאומת מ-Moodle. עם לוגים בלבד — מותר "חלון פעילות מחושב" **מסומן במפורש כחישוב**, לא כמשך רשמי. בלי מספיק נתונים — לא מחשבים.
+- **`audit evidence ≠ live evidence`** — לא מסמנים יכולת "עובד/live" בלי רישום ראיה אמיתי ב-`STATE/evidence-log.md`. מה שלא נבדק אינו "עובד"; מה שחסר מוצג כחסר; מה שלא קיים = "מתוכנן" בלבד; סתירות מתקנים מיד.
+- **מסך קיים ≠ יכולת מושלמת** — מסלול שקיים (ציונים/פעילות/משימות/דוחות) מושלם רק אחרי מקור אמיתי + אימות.
+- **הודעות חוסר בעברית ברורה**, למשל: `חסר מהנתונים שיובאו`, `לא זמין בקובץ הזה`, `נדרש דוח נוסף ממודל`, `לא ניתן לחשב ללא לוגים`, `עדיין לא יובאו נתונים אמיתיים מדוח Moodle`.
+- **Definition of Done** ליכולת: קוד אמיתי · בלי fallback דמו · בדיקת build (או הסבר) · מצב-ריק אמיתי · טיפול בחוסר · בלי secrets · תיעוד ב-STATE · הכפתורים באמת עובדים · מתועד מהו מקור הנתון האמיתי ואיזו פעולת מורה מביאה אותו. אחרת הסטטוס = חלקי/מתוכנן/חסום.
 
 ---
 
-## 4. מצב API / SSO / שאיבת מידע מקסימלית
+## 3. כלי קריאה-בלבד — אילוצי מוצר
 
-הדרישה המוצרית הסופית היא חיבור חכם דרך Moodle / משרד החינוך כך שהמורה ייכנס מתוך מרחב Moodle שלו ללא סיסמה נוספת ויראה רק את נתוני המרחב שלו.
-
-עם זאת, אין לטעון ש־Moodle API חי עובד עד שקיימים בפועל:
-
-- token / Security Key / API key אמיתי ומאומת.
-- בדיקת קריאה אמיתית ל־Moodle.
-- בדיקת הרשאות לפי מורה/מרחב.
-- תיעוד ב־STATE/evidence-log.md.
-
-אם אין token מאומת, מצב העבודה האמיתי הוא Manual Real Data Import בלבד, בשילוב אוטומציות מקסימליות אפשריות סביב דוחות Moodle, טבלאות Moodle מועתקות, קבצי CSV/XLSX/ODS/TXT, או נתונים אמיתיים שהמורה מקבל מתוך המרחב.
-
-אין Key/Secret/Web-Service token זמין כרגע לקריאת Moodle Web Services חיה, ולכן אין לבנות את המוצר כאילו קיימת קריאת API חיה. יש לשמור Adapter עתידי לכך, אך לסמן אותו חסום/לא מאומת.
-
-חובה לקיים כל הזמן חשיבה, חקירה ושיפור של הדרך שבה המורה מוציא את המידע מתוך Moodle ומקבל אותו באפליקציה באופן האוטומטי המקסימלי האפשרי. בכל פיתוח חדש יש לשאול:
-
-- מאיזה מסך/דוח/טבלה ב־Moodle המורה יכול לקבל את הנתון בפועל?
-- האם אפשר לזהות את סוג הדוח אוטומטית?
-- האם אפשר למפות עמודות אוטומטית?
-- האם אפשר להפחית פעולה ידנית מהמורה בלי לשקר על חיבור API?
-- איזה נתון חסר, ואיזה דוח Moodle צריך כדי להשלים אותו?
-- האם נוצרה כפילות בין מקורות מידע או מודלים?
-
-כל תשובה לשאלות האלה חייבת להתגלגל לתכנון, לקוד, ולתיעוד הרלוונטי בריפו.
+- LTI 1.0/1.1 **אינו** מספק אוטומטית תלמידים/ציונים/לוגים/זמן. עד ל-token WS מאומת, המצב העובד הוא **ייבוא ידני של נתוני אמת** (דוחות Moodle אמיתיים: CSV/XLSX/ODS/TSV/TXT או טבלאות מועתקות). ייבוא ידני הוא **fallback בטוח, לא החזון הסופי**.
+- **עריכה דו-כיוונית חזרה ל-Moodle** (שינוי שם מרחב, הגדרות משימה, מספר ניסיונות...) היא יעד עתידי אך **חסומה** עד token API עם הרשאות כתיבה + בדיקת כתיבה אמיתית מוצלחת + רישום ראיה. **אין כפתורי עריכה מזויפים.**
+- לשמור **adapter עתידי** ל-WS חי בקוד, מסומן **blocked/unverified**; לא לבנות כאילו קריאת API חיה קיימת.
+- לשפר כל הזמן איך המורה מחלץ נתונים ב**מינימום עבודה ידנית** ("אוטומציה בטוחה מקסימלית"), ולתעד לכל שינוי איך המורה משיג כל נתון ומה עדיין דורש שלב ידני.
 
 ---
 
-## 5. ריבוי מכשירים
+## 4. שלושת המוצרים — הפרדה מלאה
 
-המערכת צריכה לעבוד בצורה מסודרת ממכשירים שונים:
+הריפו מספק **שלושה מוצרים נפרדים לחלוטין**, וההפרדה חייבת להישמר:
+1. **כלי המורה** — ה-hub שנפתח דרך LTI (`/`, `/students`, `/grades`, `/chapters`, `/activity`, `/reports`, `/export`, `/smart-import`, ...).
+2. **`/guide`** — מצגת הדרכה/onboarding **ציבורית** (צילומי Moodle אמיתיים ומאושרים). ראה סעיף 11.
+3. **`/admin-hub`** — מרכז שליטה **מוגן ב-Supabase Auth** (מנהל בלבד): נתוני מערכת חיים, קישור למצגת, קישור לכלי.
 
-- מחשבי חדר מחשב.
-- מחשב אישי.
-- טלפון נייד.
-
-אין לערבב state בין מכשירים בלי session/context אמיתי. מעבר מכשיר דורש session תקין או launch חדש. אין להציג נתוני מורה/מרחב ממכשיר אחר ללא הקשר מאומת.
-
----
-
-## 6. עמוד ראשי
-
-עמוד הבית חייב לכלול:
-
-- שם המורה, אם זמין מה־LTI/API/session.
-- שם המרחב/הקורס, אם זמין מה־LTI/API/session.
-- גישה מהירה בעברית אל:
-  - תלמידים
-  - משימות
-  - פרקים
-  - דוחות
-  - פעילות/זמנים
-  - הגדרות
-  - ייצוא
-  - ייבוא נתונים
-
-אם שם המורה או שם המרחב אינם זמינים, יש להציג הודעת חוסר אמיתית ולא ערך מומצא.
-
-כל הכפתורים באפליקציה חייבים להיות בעברית, תקינים באמת, ולהוביל למסך/פעולה קיימים. אין כפתור סרק ואין כפתור שמרמז על פעולה שלא קיימת.
+אין למזג את המצגת או ה-admin לתוך כלי המורה — לא בניווט, לא בקוד, לא ב-copy.
 
 ---
 
-## 7. תלמידים ומעקב
+## 5. נתונים ובידוד
 
-המערכת צריכה לתמוך, כאשר הנתונים קיימים, ב:
-
-- סינון תלמיד בודד.
-- סינון קבוצה.
-- סינון כיתה.
-- סינון טווח תאריכים.
-- משימות שנפתרו/לא נפתרו.
-- ציונים.
-- מספר ניסיונות.
-- ממוצע.
-- פעילות.
-- זמן תרגול מצטבר בכל יממה.
-
-זמן תרגול:
-
-- אם Moodle מספק משך רשמי — מציגים אותו.
-- אם קיימים רק לוגים — מותר להציג חלון פעילות מחושב, עם הסבר ברור שזה חישוב ולא משך רשמי.
-- אם אין מידע מספיק — לא מחשבים ולא ממציאים.
+- **בידוד מוחלט** בין מורים, מרחבים/קורסים, מוסדות ומכשירים — **אין ערבוב נתונים**. כל נתון שייך רק להקשר ה-LTI הנוכחי.
+- **ריבוי מכשירים** (מחשב מעבדה / מחשב אישי / טלפון): אין לשתף state בין מכשירים בלי session/הקשר אמיתי; מעבר מכשיר דורש session תקף או launch טרי.
+- **ספירות דשבורד ממופות ל-session הנוכחי** — לעולם לא מ-store גלובלי.
+- **ארכיטקטורה מונחית-launch**: לעולם לא לקבע התנהגות לפי שם קורס/שם מורה/קורס קודם; להשתמש במפתחות דינמיים יציבים מה-launch החי (`platform_key`, `deployment_key`, `context_key`, `resource_link_key`, `user_key`) + `import_batch_id` + `source_provenance` על כל ייבוא/סנכרון.
+- **אינווריאנטות בידוד:** אין שאילתה בלי platform/context שנפתר; אין שמירת ייבוא בלי batch + provenance; אין fallback גלובלי ל"קורס אחרון"; אין שורות ברמת תלמיד ב-diagnostics ציבורי.
+- **קורס `259`** = ראיית פיילוט/אימות בלבד — **אף פעם לא תלות מוצר קשיחה**.
+- **פרטיות — לעולם לא לחשוף (בשום רשימה/endpoint/response):** סיסמאות, tokens, cookies, raw headers, שורות תלמיד גולמיות, מיילים ברשימות פשוטות, **תעודות זהות**, מזהים פנימיים מיותרים, תגובות Moodle גולמיות עם PII.
+- **רשימת תלמידים פשוטה מציגה רק:** שם פרטי + משפחה / שם תצוגה. **אסור ברשימה הפשוטה:** ת"ז, מייל, username, external id, מזהים פנימיים — פרטים נוספים רק במסך פרופיל תלמיד יחיד ורק ממקור אמת.
+- **בטיחות נתוני ריצה:** לעולם לא ל-commit: `data/store.json`, גיבויי תלמידים, קבצי Participants/Gradebook/Logs, שמות, מיילים, ציונים, לוגים, CSV/XLSX/ODS, backup JSON, tokens, secrets. `data/store.json` הוא runtime/מקומי בלבד (untracked). הדגימה הסינתטית היחידה: `docs/examples/store.example.json`.
+- מותר לרשום **ראיות מצטברות** (למשל `students=62, grade_results=1693`); לעולם לא שורות גולמיות/קבצי ייצוא.
 
 ---
 
-## 8. משימות ופרקים
+## 6. LTI ו-Moodle
 
-לכל משימה יש להציג רק נתונים שקיימים באמת:
-
-- שם משימה.
-- שיוך לפרק/נושא.
-- כמות שאלות, אם קיימת במקור.
-- קישור ישיר למשימה, אם קיים id/link מאומת.
-- כפתור העתקת קישור רק אם הקישור אמיתי.
-
-פרקים צריכים להופיע היררכית וברורה, עם כותרות בולטות וניווט נוח בין משימות.
-
----
-
-## 9. דוחות וייצוא
-
-סוגי דוחות יעד:
-
-- ציונים.
-- משימות.
-- זמנים.
-- פעילות.
-- שילובים בהתאמה אישית.
-
-אפשרויות ייצוא יעד:
-
-- צפייה במערכת.
-- Excel/XLSX.
-- PDF.
-- הדפסה מסודרת.
-- CSV כפתרון בסיסי קיים/מותר.
-
-אין להציג Excel/PDF כעובד אם קיימת רק CSV/הדפסת דפדפן.
+- **Endpoint קנוני = `/api/lti/launch`**. `/lti/launch-1p1` הישן, `/dev/login`, tunnels זמניים, ו-Supabase-Gateway forwarding — **אינם** נתיב ה-LTI הפעיל ואין להשתמש בהם ככתובת הכלי.
+- **הפעלת LTI חייבת לעבור אימות** — LTI 1.1: OAuth1 HMAC-SHA1 (חסום אם חסר `LTI_SHARED_SECRET`/חתימה/consumer key, או חתימה שגויה). LTI 1.3: RS256 JWT מול JWKS + nonce.
+- **LTI 1.3 ו-1.0/1.1 נשארים מופרדים בבירור** — הצלחה באחד אינה הוכחה לשני. הבנייה הנוכחית תומכת בשניהם.
+- **הגדרת External Tool למורה:** שם הכלי (מומלץ "המודל החכם"), Tool/Launch URL = `…/api/lti/launch`, Consumer Key (למשל `yaniv-lti-tool`), Shared Secret נשמר בבטחה (**לעולם לא ב-GitHub/frontend/צילום מסך**). מסך ההתקנה למורה = `/setup`.
+- **שימוש Moodle אמיתי מותר רק אחרי ראיית launch אמיתית ב-`STATE/evidence-log.md`.**
+- **סדר onboarding נתונים:** משתתפים → ציונים → לוגים (זמן מחושב) → השלמת פעילות.
+- **סולם אוטומציה / מצבי יכולת:** `automatic_verified` · `manual_real_import_working` · `planned_adapter_not_verified` · `blocked_missing_permission_or_token` · `blocked_missing_source_field`. NRPS/AGS אוטומטי רק עם claim מאומת + קריאה חיה. WS חסום עד token אמיתי ב-Render + probe קריאה-בלבד; רצף פתיחה: `core_webservice_get_site_info` תחילה, ואז enrolled-users/grade-items/course-contents/completion/logs.
+- `/api/automation/moodle-webservices/readiness` = probe בטוח קריאה-בלבד; לא מחזיר token/PII/ציונים/response גולמי.
 
 ---
 
-## 10. עריכה דו־כיוונית מול Moodle
+## 7. Git ובראנצ'ים
 
-הדרישה הסופית כוללת יכולות עריכה אמיתיות מתוך האתר, בתנאי שלמורה יש הרשאה לכך ב־Moodle.
-
-דוגמאות:
-
-- שינוי שם מרחב.
-- שינוי הגדרות משימה.
-- שינוי מספר ניסיונות.
-- פעולות ניהול נוספות לפי הרשאות Moodle.
-
-אבל: פעולות אלה חסומות עד שיש Moodle API token אמיתי עם הרשאות כתיבה, ובדיקת כתיבה מאומתת. אין כפתורי עריכה דמה.
+- **אין commit ישיר ל-`main`** — עבודה בענף PR בלבד; **חובה PR לפני merge**.
+- שמות ענפים: `feat/<name>` · `fix/<name>` · `chore/<name>`.
+- **PR אחד קטן בכל פעם** = Work Order אחד; קטן, נקי, עם בדיקות מלאות.
+- **אין מחיקת קבצים בלי אישור.**
+- **GitHub הוא מקור האמת היחיד** — כל שינוי חייב להיכנס ל-commit ולנחות ב-PR ממוזג; שום דבר אינו "גמור" עד שהוא ב-main/בענף הפרודקשן וה-CI ירוק.
+- **אין SQL / deploy / merge בלי אישור מפורש** מיניב.
+- הפעלת Claude: `@claude` בכל Issue/PR comment.
 
 ---
 
-## 11. סטנדרט ריפו ועבודה עם AI
+## 8. אבטחה וסודות
 
-הריפו חייב להיות:
-
-- נקי.
-- מסודר.
-- ללא כפילויות מיותרות.
-- ללא קוד שאינו מועיל.
-- ללא secrets.
-- ללא קבצי תלמידים אמיתיים.
-- ללא דוחות Moodle פרטיים.
-- עם docs ו־STATE מעודכנים.
-
-כל שינוי משמעותי חייב לעדכן:
-
-- `PROJECT_RULES.md` אם כלל/התנהגות השתנו.
-- `README.md` אם ההתנהגות הציבורית השתנתה.
-- `STATE/project-status.md` אם סטטוס היכולת השתנה.
-- `STATE/evidence-log.md` אם בוצעה בדיקה.
-
-כל AI שעובד על הפרויקט חייב קודם ללמוד את הריפו הקיים, לקרוא את דפי הכללים וה־STATE, ורק אחר כך לשפר. אסור לו ליצור הכול מחדש, אסור לפתוח אפליקציה מקבילה, ואסור להתעלם ממה שכבר נבנה על ידי Lovable ומה שכבר סונכרן לריפו.
-
-כל שינוי ש־AI עושה — קוד, תיעוד, בדיקה, תיקון build, UI, import, LTI, או backend — חייב להתועד בריפו ולהישמר ב־GitHub.
-
-כל AI שעובד על הפרויקט חייב לשמור על חקירה רציפה של מסלולי שאיבת מידע מ־Moodle, לשפר את האוטומציה למורה, ולתעד בכל שינוי איך המורה מקבל את הנתון בפועל ומה עדיין דורש פעולה ידנית.
+- **לעולם לא secrets/tokens בקוד/docs/STATE/לוגים/פלט/GitHub.** סודות רק ב-**GitHub Secrets / Render Environment** (או Supabase secrets).
+- **`SUPABASE_SERVICE_ROLE_KEY` נשאר בצד-שרת בלבד**, לעולם לא בדפדפן. (זו כל המהות של הבנייה: הדפדפן מדבר רק עם `/api/*`.)
+- **לעולם לא ל-commit `.env`**; לא לאסוף/להדפיס/לשמור credentials.
+- **SQL נשאר draft עד שנבדק ואושר.**
+- **בעבודה עם AI: לעולם לא לבקש מהמשתמש token/סיסמה/cookie/פרטי מנהל.** אם מנהל Moodle צריך להפעיל משהו — לכתוב checklist ברור ב-docs.
+- **⚠️ פעולת אבטחה פתוחה:** סוד ה-LTI (Shared Secret) נחשף בעבר בהיסטוריית git ותוקן. **חייב לעבור rotation** (החלפה ב-Moodle + ב-Render) לפני שימוש רחב, ולהיחשב חשוף עד אז.
+- תיקון RLS שהוחל: `supabase/manual_sql/20260709_URGENT_lock_teacher_sessions_select.sql` נעל policy קריאה גורפת של `teacher_sessions`. אין לטעון ש-RLS אוכף בידוד עד בדיקה חיה מתועדת של חסימת קריאה חוצת-מורים.
 
 ---
 
-## 12. הגדרת Done
+## 9. Release gate — Teacher Release
 
-יכולת נחשבת Done רק אם:
-
-1. יש קוד אמיתי.
-2. אין demo fallback.
-3. יש בדיקת build או הסבר למה לא בוצעה.
-4. יש empty state אמיתי.
-5. יש טיפול בנתונים חסרים.
-6. אין secrets.
-7. יש תיעוד ב־STATE.
-8. נבדק שהכפתורים הרלוונטיים באמת עובדים.
-9. תועד מקור הנתונים האמיתי ואופן הפעולה שהמורה צריך לבצע כדי להביא את הנתון.
-
-אם אחד התנאים חסר — הסטטוס הוא partial / planned / blocked, לא Done.
+- **Teacher Release נשאר `NO`** עד שכל השערים עוברים — חסימה קשה ומכוונת.
+- **Teacher Release = YES** נפתח רק אחרי: בידוד רב-מורים/רב-קורסים **מאומת חי**; אין ערבוב נתונים; ראיית launch חיה רשומה; כל יכולת נראית מסווגת באמת; המסכים המרכזיים שמישים ולא מטעים; `npm run check` + `npm run build` עוברים; סקירת release-hardening; **ויניב מאשר**. יניב הוא הסמכות הסופית.
+- **PR #127 נשאר draft ולא נגוע** אלא אם יאושר במפורש.
+- מדידת התקדמות = פלט audit + אימות חי, לא אחוזים ספקולטיביים.
 
 ---
 
-## 13. כלל אחרון
+## 10. Deploy / Render
 
-מה שלא נבדק — לא מסמנים כעובד.
-מה שחסר — מציגים כחסר.
-מה שלא קיים — מתוכנן בלבד.
-מה שסותר את האמת — מתקנים מיד.
-
-<!-- MTH_PRODUCTION_HARDENING_START -->
-
-## Moodle Teacher Hub — Production Hardening Rules
-
-- GitHub remains the source of truth.
-- Canonical LTI endpoint: /api/lti/launch.
-- Legacy /lti/launch-1p1 must not be used as the Moodle Tool URL.
-- No demo teacher, demo space, fake grades, fake activity, or fake practice time are allowed in production paths.
-- LTI launch must require OAuth1 HMAC-SHA1 verification.
-- Missing LTI_SHARED_SECRET must block launch.
-- Missing or wrong LTI_CONSUMER_KEY must block launch when configured.
-- Supabase SERVICE_ROLE_KEY must remain server-only.
-- SQL must remain unrun until reviewed and approved.
-- Moodle use is allowed only after real launch evidence is recorded in STATE/evidence-log.md.
-
-<!-- MTH_PRODUCTION_HARDENING_END -->
-
-<!-- MTH_RUNTIME_DATA_SAFETY_20260510_START -->
-## Runtime Data Safety — 2026-05-10
-
-נתוני Moodle אמיתיים אינם חלק מקוד המקור.
-
-אסור להכניס ל־GitHub: data/store.json, גיבויי תלמידים, קבצי Participants/Gradebook/Logs, שמות, מיילים, ציונים, לוגים, tokens או secrets.
-
-הקובץ data/store.json הוא runtime/local בלבד. הדוגמה הסינתטית היחידה היא docs/examples/store.example.json.
-
-השלב הבא: persistence קבוע ואז מיפוי NRPS ↔ Participants.
-<!-- MTH_RUNTIME_DATA_SAFETY_20260510_END -->
-
-<!-- MTH_DOCS_ORGANIZATION_20260510_START -->
-## Docs Organization — 2026-05-10
-
-תיקיית `docs/` מאורגנת לפי תפקיד:
-
-- `docs/architecture/` — ארכיטקטורה, חוזי API וזרימת נתונים.
-- `docs/lti/` — LTI 1.3, NRPS, AGS ונתיבי launch.
-- `docs/imports/` — Participants, Gradebook, Logs וחוזי ייבוא.
-- `docs/persistence/` — Supabase ושמירה קבועה.
-- `docs/privacy/` — פרטיות ונתוני תלמידים.
-- `docs/operations/` — בדיקות, הפעלה, runbooks ומפות ריפו.
-- `docs/ai-handoff/` — מסמכי מעבר ופרומפטים לכלי AI.
-- `docs/dev/` — הערות פיתוח.
-- `docs/archive-candidates/` — מסמכים ישנים לבדיקה לפני ארכיון.
-
-אין לשים ב־docs נתוני תלמידים אמיתיים, קבצי Moodle, גיבויי JSON או secrets.
-<!-- MTH_DOCS_ORGANIZATION_20260510_END -->
-
-<!-- MTH_SCRIPTS_ORGANIZATION_20260510_START -->
-## Scripts Organization — 2026-05-10
-
-תיקיית `scripts/` מאורגנת לפי תפקיד:
-
-- `scripts/maintenance/` — סקריפטים שנדרשים ל־npm lifecycle או תחזוקה בטוחה.
-- `scripts/audit/` — בדיקות ואימותים read-only.
-- `scripts/termux/` — כלי Termux/מובייל.
-- `scripts/dev/` — כלי פיתוח מקומי.
-- `scripts/archive-candidates/` — סקריפטים חד־פעמיים/ישנים לבדיקה לפני ארכיון.
-
-אם סקריפט מופיע ב־`package.json`, אסור להזיז אותו בלי לעדכן את `package.json` ולהריץ `npm run check` ו־`npm run build`.
-
-אין לשים secrets, נתוני תלמידים, גיבויי Moodle או קבצי CSV/XLSX בתוך scripts.
-<!-- MTH_SCRIPTS_ORGANIZATION_20260510_END -->
-
-<!-- MTH_REPO_ORGANIZATION_MASTER_20260510_START -->
-## Repo Organization Master Plan — 2026-05-10
-
-הריפו מאורגן סביב מקור אמת אחד ברור.
-
-### מה כבר הצלחנו
-
-- LTI 1.3 עובד מתוך Moodle.
-- NRPS עובד.
-- NRPS החזיר 62 משתתפים אמיתיים: 59 תלמידים ו־3 מורים.
-- ייבוא Participants אמיתי הצליח.
-- נקלטו 62 שורות.
-- עמוד תלמידים מציג שמות ומיילים אמיתיים.
-- סודר מקור אמת.
-- סודר סיווג קבצים.
-- `data/store.json` יצא ממקור tracked.
-- `docs/` אורגן לפי תפקיד.
-- `scripts/` אורגן לפי תפקיד.
-
-### מבנה עבודה מחייב
-
-- `PROJECT_RULES.md` — מקור אמת עליון.
-- `README.md` — שער כניסה קצר.
-- `STATE/project-status.md` — סטטוס עדכני.
-- `STATE/evidence-log.md` — הוכחות aggregate בלבד.
-- `STATE/file-classification/` — מפת סיווג קבצים.
-- `docs/` — תיעוד לפי תחומים.
-- `scripts/` — אוטומציות לפי תפקיד.
-- `src/` — קוד פעיל.
-- `supabase/` — שכבת persistence עתידית לבדיקה.
-- `data/` — runtime/local בלבד, לא source.
-
-### מה נשאר להמשך
-
-1. לאמת גיבוי מקומי לתלמידים שיובאו.
-2. למזג את שרשרת PRs רק אחרי בדיקה ובסדר הנכון.
-3. לבנות persistence קבוע.
-4. לבנות מיפוי NRPS ↔ Participants.
-5. לבנות Gradebook.
-6. לבנות Logs וזמן תרגול.
-7. לבנות דוחות וייצוא.
-
-אין לסמן ציונים, לוגים, זמן תרגול או דוחות כעובדים עד שיש מקור נתונים אמיתי ואימות.
-<!-- MTH_REPO_ORGANIZATION_MASTER_20260510_END -->
-
-<!-- MTH_PERSISTENCE_PLAN_20260510_START -->
-## Persistence Plan — 2026-05-10
-
-לפני הרחבה לציונים, לוגים, זמן תרגול ודוחות — חובה לבנות persistence קבוע.
-
-### למה
-
-המערכת כבר הצליחה לייבא Participants אמיתי ולהציג שמות תלמידים, אבל נתונים כאלה חייבים להישמר בשכבת אחסון קבועה ולא להישען על runtime זמני.
-
-### שכבת persistence עתידית
-
-הכיוון המועדף הוא Supabase, אבל אין להריץ SQL, migrations או functions בלי בדיקה ואישור.
+- Deployment דרך **Render**, מוגדר ב-**`render.yaml`**; שרת מרכזי אחד, דומיין HTTPS יציב וקבוע, TLS תקין, External Tool מצביע ל-URL **קבוע** — **בלי תלות ב-tunnels זמניים בפרודקשן**.
+- Build: `npm ci --include=dev && npm run build` · Start: `npm run start` · Health: `/health`.
+- **ענף פרודקשן נוכחי (2026-07-10): `rebuild/lti13-secure-teacher-hub`.** Render עוקב אחריו ישירות. `main` מיושן ומפוצל — אין לפרוס/למזג ממנו בעיוור.
+- **משתני Render נדרשים:** `NODE_ENV=production`, `PORT`, `COOKIE_SECURE=true`, `APP_BASE_URL`, `LTI_CONSUMER_KEY`, `LTI_SHARED_SECRET` (זהה ל-Moodle, לא ל-commit), `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (שרת בלבד), ו-LTI 1.3: `LTI13_PRIVATE_KEY_PEM` + `LTI13_*` (מקבל aliases `LTI13_ISSUER`/`LTI13_AUTH_LOGIN_URL`).
+- **Cutover = פעולת פרודקשן דרך לוח הבקרה של Render בלבד** (Service `www` → Settings → Branch → Save) — לא ניתן מהקוד. גיבוי גלגול-אחור: `backup/gemini-pre-cutover-20260710`.
+- dev מקומי אינו ראיית פרודקשן; ראיות פרודקשן נכתבות ל-`STATE/evidence-log.md`.
 
 ---
 
-## Automation Control Center V1 — PR #107
+## 11. מצגת ההדרכה (`/guide`)
 
-Status: implemented in PR #107; pending live validation after merge.
+- **כל צילום אמיתי** — מ-Moodle חי ומאומת של משרד החינוך (ניווט ולחיצות אמיתיות). **אין תמונות מזויפות/סטוק/AI.**
+- פרסום צילומים דורש **אישור מפורש של יניב** (ניתן 2026-07-09), בתנאי שהמצגת מציינת מה מותאם אישית למרחב שלו (`CUSTOM_SPACE_NOTE`).
+- **סינון פרטיות:** לא לפרסם צילומים שחושפים קודי כניסה / שמות צד-ג' / מסכי תלמידים-משתתפים/ציונים חיים. צילום מפורסם יכיל לכל היותר: שם יניב (בהסכמה), שם המרחב שלו, שמות חומרי הלמידה שלו.
+- **כלל קבוע — אין טשטוש** (יניב 2026-07-09): כל שם/נתון אישי בצילום **מוחלף בשם בדוי** (למשל "רות לוי") בעריכת פיקסלים נקייה (RTL תקין), לעולם לא מטושטש. מקורות לא-ערוכים נשארים מקומית (`.shots-extract/`, לא ב-git).
+- שילוב דרך מבנים typed (`Shot {src,caption,custom?}` ב-`src/data/guideButtons.ts`); אין נתוני תלמיד בשום תמונה מפורסמת.
 
-Added in feature branch `feat/automation-control-center-v1`:
+---
 
-- Frontend route: `/automation`
-- Backend endpoint: `GET /api/automation/capabilities`
-- Backend endpoint: `GET /api/automation/export-links`
-- Moodle report target paths for Activity Completion, Gradebook, Logs, and Participants, based on detected Course ID
-- State file: `STATE/automation/AUTOMATION_STATUS.md`
-- Progress file: `STATE/progress/2026-05-19-automation-control.md`
-- Documentation: `docs/automation/AUTOMATION_CONTROL_CENTER_V1.md`
+## 12. גבולות ריפו — מה שייך ומה לא
 
-Safety status:
+- **מותר בריפו:** קוד ותיעוד של Moodle Teacher Hub; LTI/Moodle/Render/Supabase הקשורים למוצר; תיעוד/בדיקות של Moodle בלבד.
+- **אסור בריפו:** אפליקציית יומן Google / SmartCalendar / Apps-Script; סנכרון/ניהול Google Calendar; דשבורד כללי של כל הריפואים; כל מערכת שאינה Moodle Teacher Hub. כל מערכת בריפו משלה עם `RULES.md` משלה (ריפו היומן: `yanivmizrachiy/smartcalendar-titan`).
+- **`luz-teddy/`:** חריג זמני קיים (לוז/מבחנים/אירועים בית-ספריים), **לא** חלק מ-Moodle Teacher Hub. **אסור למחוק** בלי אישור מפורש + גיבוי + העברה מאומתת + קישור ציבורי חדש עובד; אסור להרחיב אותו כאן; workflows בשם `luz-teddy-*` שייכים רק לו וכשלונם ≠ שבירת המוצר.
 
-- Teacher Release remains `NO`.
-- Full Moodle API auto-sync is not enabled yet.
-- No Moodle passwords are stored.
-- No Moodle token storage was added.
-- No Playwright/browser automation was added.
-- No Supabase schema migration was added.
-- No fake/demo Moodle data was added.
-- No raw student rows should be returned by the automation endpoints.
+---
 
-Planning note:
+## 13. "מה אסור לקלקל" בלי סיבה מוכחת ובעיה מוכחת
 
-- Automation progress must be measured by audit output and live validation, not by speculative percentages.
-- Teacher convenience must be validated by real teacher workflow tests.
-- National readiness remains blocked until multi-teacher / multi-course isolation and final release gates pass.
+ייבוא Participants · ייבוא Gradebook · ייבוא Logs · זרימת LTI launch · Supabase migrations · Teacher Release gate · deploy · `render.yaml` · secrets · `.env` · Course Structure import · Smart Import · Export · Reports · Supabase persistence · `check`/`build` · מנוע האמת הבסיסי (`src/lib/automationCapabilities.ts`).
+כמו כן: כללי "אין דמו", "אין נתונים מזויפים", "אין זמן תרגול מומצא", "Teacher Release NO" — אינווריאנטות שאין לגעת בהן.
 
-Every future PR must update a dated `STATE/progress/YYYY-MM-DD-*.md` file.
+---
 
-<!-- MTH_MOODLE_WS_READINESS_20260524_START -->
+## 14. עמוד הבית ומסכי מורה
 
-## Moodle Web Services Readiness Endpoint — 2026-05-24
+- **עמוד הבית = מסך פעולה** (Action Hub), לא הסבר. חובה: כפתורי פעולה עבריים גדולים ועובדים בלבד; שם מורה + שם קורס אם התקבלו מ-LTI/session; סטטוס חיבור קצר; מספרים קצרים (תלמידים, פריטי ציון, ציונים, פרקים, משימות, לוגים); שגיאות רק בכשל אמיתי; שורת "עודכן" בזמן אמת. **אסור בעמוד הבית:** טקסט דמו, תוויות שיווק "no-demo" קבועות, הסברי יכולת ארוכים, פאנלי "מה חסר" ארוכים, טקסט מבלבל, כפתורים לא-עובדים. אבחון/חסמים/Teacher-Release שייכים למסכי הגדרות/"מה חסר"/checks.
+- **מסך תלמיד:** טבלת ציונים אמיתית, ממוצע **רק מציונים קיימים**, צבעים פרימיום, כפתורים עבריים, משימות/פעילות כשיש נתונים, חסר מוצג כחסר.
+- **משימות/פרקים:** רק נתונים אמיתיים — שם משימה, שיוך לפרק, מספר שאלות אם במקור, קישור ישיר רק אם id/link מאומת. **אין משימות מומצאות.**
+- **דוחות וייצוא:** יעד = ציונים/משימות/זמנים/פעילות/שילובים; ייצוא = תצוגה באתר, Excel/XLSX, PDF, הדפסה מסודרת, CSV כבסיס. **לעולם לא להציג Excel/PDF כעובד אם קיים רק CSV/הדפסה.**
 
-Added `GET /api/automation/moodle-webservices/readiness` — a safe, read-only probe endpoint.
+---
 
-Current live status: `missing_env` — `MOODLE_WS_TOKEN` not configured in Render.
+## 15. עיצוב (Design System)
 
-This endpoint will advance to `verified_site_info` only after:
-1. A Moodle administrator enables Web Services and REST protocol.
-2. A token with `core_webservice_get_site_info` capability is created.
-3. `MOODLE_WS_TOKEN` is set in Render environment variables (never in GitHub).
+- UI פרימיום: כפתורים גדולים עם תחושת עומק, גרדיאנטים אלגנטיים, צללים רכים, כרטיסים מעוגלים, טיפוגרפיה עברית נקייה, מיקרו-אנימציות (רק כשעוזרות), מצבי-ריק חזקים, באדג'י סטטוס ברורים, דסקטופ+נייד. **משדרגים מסכים קיימים, לא מחליפים בעיוור**; אין כפתורים שנראים פעילים אך מזויפים; לכל כפתור מצבים: ready/partial/missing-data/blocked/loading/planned.
+- **צבעים חדשים = HSL דרך tokens** ב-`src/index.css` + `tailwind.config.cjs`; **אין HEX גולמי חדש**. tokens סטטוס: `status-proven` (ראיה אמיתית בלבד), `status-missing`, `status-pending`, `status-blocked`. **אין redesign גדול בלי הוראה מפורשת.**
 
-Safety guarantees: no token returned, no student data, no grades, no PII, no raw Moodle response.
+---
 
-Audit: `npm run audit:moodle-webservices-readiness`
+## 16. היגיינת ריפו, CI ועדכון-בשינוי
 
-Teacher Release remains **NO**.
+- הריפו נקי, מסודר, בלי כפילות מיותרת, בלי קוד מיותר, בלי secrets, בלי קבצי תלמיד אמיתיים. **דף כללים אחד (המסמך הזה) תמיד קיים ומעודכן.** הפרדה בין code / docs / STATE / data זמני / backups.
+- **עדכון-בשינוי:** כל שינוי משמעותי מעדכן את המסמך הזה (אם כלל/התנהגות השתנו), `README.md` (אם התנהגות ציבורית השתנתה), `STATE/project-status.md` (אם סטטוס יכולת השתנה), `STATE/evidence-log.md` (אם בוצעה בדיקה).
+- **CI/בדיקות:** `npm run check` · `npm run typecheck` · `npm run build` · `npm run doctor` (סורק קבצים/סודות מסוכנים) · `npm run test:lti:e2e` (בדיקת launch מקצה-לקצה). Claude מריץ check+build+doctor לפני PR. שערי המוצר = `ci.yml` / `moodle-automation-safety.yml`; workflows של luz-teddy אינם שער release.
 
-<!-- MTH_MOODLE_WS_READINESS_20260524_END -->
+---
 
-<!-- MTH_PRODUCT_REQUIREMENTS_20260524_START -->
+## 17. חלוקת תפקידי AI
 
-## דרישות מוצר מלאות — 2026-05-24
+- **GPT** = PM/ארכיטקט, שומר PROJECT_RULES/STATE, כותב Work Orders, סוקר PRs; לא כותב קוד רב-קבצים ולא פותח PRs.
+- **Claude** = סוכן קוד כבד, קורא PROJECT_RULES + STATE תחילה, מבצע Work Order אחד, מריץ check/build/doctor, פותח PR אחד ועוצר; לא מנהל זיכרון חוצה-סשן, לא משכתב את האפליקציה, לא חורג מהיקף.
+- **יניב** = מינימום עבודה ידנית, מאשר אחרי סקירת GPT, מספק דוחות Moodle אמיתיים, סמכות סופית ל-Teacher Release.
 
-מסמך זה שומר את כל דרישות המוצר כפי שהוגדרו. הוא מחייב כמו שאר חלקי PROJECT_RULES.md.
+---
 
-### 1. מה המוצר
-
-Moodle Teacher Hub הוא Action Hub למורה — אתר בעברית מלאה ו-RTL שנפתח מתוך מרחב לימוד אמיתי ב-Moodle.
-
-זה לא אתר כללי. זה לא דף הסבר. זה לא פורטל שיווקי.
-
-כל נתון חייב להיות שייך למרחב הלימוד הנוכחי שממנו המורה פתח את הכלי.
-
-### 2. עמוד הכניסה
-
-עמוד הכניסה חייב להציג:
-- שם מרחב הלימוד / הקורס (מ-LTI context בלבד)
-- שם המורה — לחיץ (פתיחת מסך פרטי מורה)
-- מספר תלמידים (ממקור אמת בלבד; "—" אם חסר)
-- מספר מורים אם יש מקור אמת
-- כפתורי פעולה ראשיים בעברית
-- מה חסר במערכת
-
-אם נתון חסר — לא להמציא. לכתוב מצב חסר ברור.
-
-### 3. מסך פרטי מורה
-
-שם המורה בעמוד הכניסה הוא לחיץ ופותח מסך פרטי מורה.
-
-מוצגים רק פרטים אמיתיים שהתקבלו מה-LTI/session/context:
-- שם מלא
-- שם משתמש (username) אם התקבל
-- role
-- מרחבים / קורסים שפתח (אם ידוע)
-
-אסור להמציא פרטי מורה.
-
-### 4. מורים
-
-כפתור "מורים" פותח רשימת מורים של אותו מרחב בלבד.
-
-אם ידוע רק המורה הנוכחי — מציגים רק אותו ומסבירים שחסר מקור מלא (NRPS missing).
-
-אסור להמציא מורים נוספים.
-
-מקורות עתידיים למורים: NRPS (כשיהיה זמין), Moodle Web Services.
-
-### 5. תלמידים
-
-כפתור "תלמידים" פותח רשימת תלמידים ממוספרת של אותו מרחב בלבד.
-
-**ברשימה הפשוטה מציגים רק:**
-- שם פרטי + שם משפחה / שם תצוגה
-
-**אסור להציג ברשימה הפשוטה:**
-- תעודת זהות
-- מייל
-- username
-- external id
-- מזהים פנימיים
-
-פרטים נוספים מותרים רק במסך פרופיל תלמיד בודד ורק אם הגיעו ממקור אמת.
-
-### 6. ציונים
-
-ציונים מוצגים רק ממקור אמת:
-- Gradebook import (פעיל)
-- AGS — רק אם יאומת
-- Moodle Web Services — רק אם יאומת
-
-**אסור:** להפוך ציון חסר ל-0. חסר נשאר חסר ומוצג כחסר.
-
-### 7. זמני פעילות
-
-זמן מצטבר לתלמיד מוצג רק אם יש מקור משך אמיתי ומאומת (שדה duration רשמי ב-Logs).
-
-אם יש רק Logs בלי duration רשמי — לא להמציא זמן. להציג:
-"לא ניתן לחשב זמן מצטבר ללא מקור משך מאומת"
-
-תמיכה עתידית נדרשת:
-- בחירת יום בודד
-- בחירת טווח תאריכים
-- זמן מצטבר בטווח
-- ניווט נוח
-
-### 8. דוחות ידניים — מעמד ותפקיד
-
-Manual import הוא fallback בלבד — לא המסלול הראשי.
-
-דוחות Moodle הרלוונטיים (לפי סדר עדיפות):
-1. Participants — תלמידים/משתתפים
-2. Gradebook — ציונים
-3. Logs — פעילות
-4. Activity Completion / Progress — השלמות
-5. Course Structure / Course Contents — מבנה קורס
-
-המטרה הסופית: כמה שפחות הורדות ידניות מהמורה.
-
-### 9. סדר אוטומציה
-
-```
-LTI context        → עובד ✓
-NRPS               → missing כרגע
-AGS                → missing כרגע
-Moodle Web Services → missing / not verified
-  └─ core_webservice_get_site_info    ← safe first probe
-  └─ core_enrol_get_enrolled_users   ← אחרי אימות ראשון
-  └─ gradereport_user_get_grade_items ← אחרי אימות ראשון
-  └─ core_course_get_contents         ← אחרי אימות ראשון
-  └─ core_completion_get_activities_completion_status ← אחרי אימות
-  └─ report_log_get_events            ← אחרי אימות
-```
-
-כל שלב מחייב ראיה ב-`STATE/evidence-log.md` לפני המשך.
-
-### 10. Web Services — כלל עבודה עם AI
-
-אין לבקש מהמשתמש token / password / cookie / admin credentials.
-
-הריפו מכין readiness endpoint ו-audits בלבד.
-
-אם Admin צריך להפעיל משהו — לכתוב checklist ברור למנהל Moodle ב-docs.
-
-אסור לשמור סוד בקוד או ב-GitHub.
-
-### 11. פרטיות — מה לא לחשוף בשום מצב
-
-- סיסמאות
-- tokens
-- cookies
-- raw headers
-- raw student rows
-- emails ברשימות פשוטות
-- תעודות זהות
-- מזהים פנימיים מיותרים
-- raw Moodle API response אם יש בו PII
-
-### 12. כלל אמת — רשימה מלאה
-
-- אין דמו
-- אין fake sync
-- אין כפתורים מזויפים
-- אין תלמידים מומצאים
-- אין מורים מומצאים
-- אין ציונים מומצאים
-- אין זמני פעילות מומצאים
-- אין Teacher Release YES
-
-### 13. בידוד נתונים
-
-כל נתון חייב להיות שייך ל-context הנוכחי בלבד.
-
-אסור לערבב: קורסים / מורים / מוסדות / מרחבי לימוד.
-
-Course 259 הוא ראיית pilot בלבד — לא hardcode מוצרי.
-
-### 14. פורמט תאריכים ב-UI
-
-כל תאריך שמורה רואה ב-UI מוצג: `D/M/YY`
-
-דוגמה: `5/3/26`
-
-כלל זה חל על UI בלבד. לא לשנות DB / API / logs / STATE / JSON.
-
-### 15. ניווט
-
-בכל המסכים יהיו כפתורי ניווט עבריים וברורים:
-- חזרה לעמוד הבית
-- מורים
-- תלמידים
-- ציונים
-- זמני פעילות
-- דוחות
-- ייבוא דוחות
-- מה חסר
-- הגדרות
-
-### 16. מה לא לגעת — פיפליינים מוגנים
-
-לא לגעת בלי סיבה מוכחת ובעיה מוכחת:
-- Participants import
-- Gradebook import
-- Logs import
-- LTI launch flow
-- Supabase migrations
-- Teacher Release gate
-- deploy
-- secrets
-
-### 17. מה לשפר עכשיו
-
-סדר עדיפות ל-PRs הבאים:
-1. docs / RULES / PROJECT_RULES / audits / backlog — ✅ בוצע ב-2026-05-24
-2. `/api/import/course-structure` — backend endpoint חסר (page קיים)
-3. UI date format — `D/M/YY` בכל מסכי תאריכים
-4. מסך פרטי מורה לחיץ מעמוד הכניסה
-5. רשימת מורים per-space
-6. Privacy guard ברשימת תלמידים (הסתרת TZ / email)
-7. Moodle WS readiness — ✅ בוצע ב-2026-05-24 (`/api/automation/moodle-webservices/readiness`)
-
-<!-- MTH_PRODUCT_REQUIREMENTS_20260524_END -->
-
-
-<!-- MTH_FINAL_PRODUCT_RULES_ROADMAP_POINTER_20260525_START -->
-
-## דף מוצר משלים — חזון ומפת דרכים (2026-05-25)
-
-נוסף דף מוצר תמציתי שמרכז את החזון הסופי, כללי הליבה, ומפת הדרכים של 8 ה-PRים:
-`docs/product/MOODLE_TEACHER_HUB_FINAL_PRODUCT_RULES_AND_ROADMAP_V1.md`
-
-עיקרי הדף (תמצית — הפירוט המלא בדף עצמו):
-- היעד הסופי = שאיבה אוטומטית מקסימלית מ-Moodle לכל מורה; ייבוא ידני הוא fallback בלבד.
-- אין דמו/נתונים מזויפים; אין המצאת יכולות; מינימום עבודה ליניב / מקסימום עבודה בטוחה ל-AI.
-- לא שוברים פיצ'רים עובדים; PR אחד בכל פעם; אין SQL/deploy/merge ללא אישור מפורש.
-- Teacher Release נשאר NO עד מעבר כל השערים.
-- מפת דרכים: (1) משתתפים+תפקידים+רשימה נקייה (2) צבעי סוגי משימות (3) פרקים→משימות (4) זמן תרגול אמת (5) דשבורד פרימיום (6) דוחות+ייצוא (7) הרחבת אוטומציה חיה (8) הקשחת שחרור רב-מורים.
-
-דף זה משלים את `PROJECT_RULES.md` ואינו מחליף אותו. בכל סתירה — `PROJECT_RULES.md` קובע.
-
-<!-- MTH_FINAL_PRODUCT_RULES_ROADMAP_POINTER_20260525_END -->
-
-<!-- MTH_CURRENT_STATUS_AFTER_PR168_START -->
-
-## Current status after PR #168 — 2026-05-27
-
-The current verified main includes (latest batch):
-
-- PR #162: docs sync after PR #161.
-- PR #163: unified date/time/duration formatting across all teacher pages.
-- PR #164: new /times page — time range report with date selector, per-student estimates, Excel export.
-- PR #165: "פעילויות" nav points to /chapters; ChapterDetail shows due_date formatted and completion counts.
-- PR #166: task report — distinguishes no-data / not-complete / complete with Excel export.
-- PR #167: Smart Import sends LTI token so imports are scoped to the current Moodle session.
-- PR #168: dashboard and grades distinguish loading / no-source / real-zero.
-
-Current new-improvement progress: **90%**.
-
-Teacher Release remains **NO**.
-
-PR #127 remains draft-only and untouched.
-
-Remaining gap to 100%: final live Moodle automation verified, multi-teacher isolation proof, release hardening.
-
-<!-- MTH_CURRENT_STATUS_AFTER_PR168_END -->
+*מסמך זה אוחד מ-`RULES.md`, `docs/requirements.md`, `docs/operations/system-rules.md`, `docs/product/*`, `docs/rules/*`, `docs/privacy/runtime-data-safety.md`, `docs/REPO_BOUNDARY_AND_LUZ_TEDDY.md`, `docs/architecture/*` (חלקי הכללים), `docs/GUIDE_SCREENSHOTS_MANIFEST.md` (חלקי הכללים), `docs/AI_CONTROL_TOWER.md`, `docs/AUTOMATION_STRATEGY.md`, ו-`CLAUDE.md`. סטטוס/היסטוריה חיים ב-`STATE/` ו-`docs/REBUILD_STATUS.md`.*
