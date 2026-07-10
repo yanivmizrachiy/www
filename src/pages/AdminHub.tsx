@@ -44,7 +44,19 @@ type Persistence = {
   missing_tables?: string[];
 } | null;
 
-type Health = { ok?: boolean; supabaseConfigured?: boolean; oauthVerification?: string } | null;
+type Health = {
+  ok?: boolean;
+  supabaseConfigured?: boolean;
+  oauthVerification?: string;
+  readyForMoodleUse?: boolean;
+} | null;
+
+type Blocker = { key: string; severity?: string; message_he?: string };
+type Readiness = {
+  teacher_release_readiness_percent?: number;
+  automation_core_percent?: number;
+  blockers?: Blocker[];
+} | null;
 
 function StatusPill({ ok, label }: { ok: boolean; label: string }) {
   return (
@@ -86,18 +98,21 @@ function LiveSystemStatus() {
   const [loading, setLoading] = useState(true);
   const [persistence, setPersistence] = useState<Persistence>(null);
   const [health, setHealth] = useState<Health>(null);
+  const [readiness, setReadiness] = useState<Readiness>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
     setError(null);
     try {
-      const [pRes, hRes] = await Promise.all([
+      const [pRes, hRes, rRes] = await Promise.all([
         fetch('/api/persistence/validate', { cache: 'no-store' }),
         fetch('/health', { cache: 'no-store' }),
+        fetch('/api/release/readiness', { cache: 'no-store' }),
       ]);
       setPersistence(await pRes.json().catch(() => null));
       setHealth(await hRes.json().catch(() => null));
+      setReadiness(await rRes.json().catch(() => null));
     } catch (e) {
       setError('לא ניתן לטעון את מצב המערכת כרגע.');
     } finally {
@@ -110,6 +125,8 @@ function LiveSystemStatus() {
   }, []);
 
   const tables = persistence?.tables ?? [];
+  const readinessPct = readiness?.teacher_release_readiness_percent;
+  const blockers = (readiness?.blockers ?? []).filter((b) => b?.message_he);
 
   return (
     <Card className="border-2 border-slate-100 shadow-sm">
@@ -146,10 +163,42 @@ function LiveSystemStatus() {
                 label={health?.supabaseConfigured ? 'מסד הנתונים מחובר' : 'מסד הנתונים לא מוגדר'}
               />
               <StatusPill
+                ok={Boolean(health?.readyForMoodleUse)}
+                label={health?.readyForMoodleUse ? 'מוכן לשימוש מ-Moodle' : 'לא מוכן לשימוש'}
+              />
+              <StatusPill
                 ok={Boolean(persistence?.production_persistence_ready)}
                 label={persistence?.production_persistence_ready ? 'שמירה קבועה מוכנה' : 'שמירה קבועה לא מלאה'}
               />
             </div>
+
+            {typeof readinessPct === 'number' && (
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-black text-slate-700">מוכנות לשחרור למורים</span>
+                  <span className="text-sm font-black text-slate-900">{readinessPct}%</span>
+                </div>
+                <div className="h-2.5 w-full rounded-full bg-slate-200 overflow-hidden">
+                  <div
+                    className={
+                      'h-full rounded-full transition-all ' +
+                      (readinessPct >= 100 ? 'bg-emerald-500' : readinessPct >= 60 ? 'bg-amber-500' : 'bg-rose-500')
+                    }
+                    style={{ width: `${Math.max(0, Math.min(100, readinessPct))}%` }}
+                  />
+                </div>
+                {blockers.length > 0 && (
+                  <ul className="pt-1 space-y-1.5">
+                    {blockers.map((b) => (
+                      <li key={b.key} className="flex items-start gap-2 text-xs font-medium text-slate-600">
+                        <XCircle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+                        {b.message_he}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
 
             {tables.length > 0 ? (
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
