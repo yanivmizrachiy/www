@@ -185,7 +185,7 @@
 
 - הריפו נקי, מסודר, בלי כפילות מיותרת, בלי קוד מיותר, בלי secrets, בלי קבצי תלמיד אמיתיים. **דף כללים אחד (המסמך הזה) תמיד קיים ומעודכן.** הפרדה בין code / docs / STATE / data זמני / backups.
 - **עדכון-בשינוי:** כל שינוי משמעותי מעדכן את המסמך הזה (אם כלל/התנהגות השתנו), `README.md` (אם התנהגות ציבורית השתנתה), `STATE/project-status.md` (אם סטטוס יכולת השתנה), `STATE/evidence-log.md` (אם בוצעה בדיקה).
-- **CI/בדיקות:** `npm run check` · `npm run typecheck` · `npm run build` · `npm run doctor` (סורק קבצים/סודות מסוכנים) · `npm run test:lti:e2e` (בדיקת launch מקצה-לקצה). Claude מריץ check+build+doctor לפני PR. שערי המוצר = `ci.yml` / `moodle-automation-safety.yml`; workflows של luz-teddy אינם שער release.
+- **CI/בדיקות:** `npm run check` · `npm run typecheck` · `npm run build` · `npm run doctor` (סורק קבצים/סודות מסוכנים) · `npm run test:lti:e2e` (launch 1.1 מקצה-לקצה) · `npm run test:lti13:e2e` (לחיצת-יד 1.3 מלאה עם קריפטו אמיתי ומטריצת תקיפה). Claude מריץ check+build+doctor+שתי בדיקות ה-e2e לפני PR. שערי המוצר = `ci.yml` / `moodle-automation-safety.yml`; workflows של luz-teddy אינם שער release.
 
 ---
 
