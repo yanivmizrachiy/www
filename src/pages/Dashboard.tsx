@@ -7,6 +7,7 @@ import { safeTeacherDisplayName } from "@/lib/teacherName";
 import { OnboardingBanner } from "@/components/OnboardingBanner";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent } from "@/components/ui/card";
+import { MoodleReportDownloads } from "@/components/MoodleReportDownloads";
 import { Button } from "@/components/ui/button";
 import { Users, GraduationCap, ClipboardList, Database, Calendar, Import, AlertCircle, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
@@ -504,6 +505,8 @@ export default function Dashboard() {
         <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-cyan-300/15 blur-3xl" />
         <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-blue-300/20 blur-3xl" />
       </section>
+
+      {hasSession && <MoodleReportDownloads />}
 
       <section className="grid min-w-0 gap-5 sm:grid-cols-2 xl:grid-cols-4" aria-label="כפתורי פעולה ראשיים בעמוד הבית החכם">
         <div className="relative">
