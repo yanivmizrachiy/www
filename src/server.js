@@ -1647,7 +1647,7 @@ function buildSyncStatus(req, sbCounts) {
         priority: 3,
         required_report_he: hasGrades ? null : "Gradebook / גיליון ציונים",
         target_href: hasGrades ? "/grades" : "/missing-data",
-        teacher_message_he: hasGrades ? "ציונים אמיתיים קיימים במערכת." : "חסר Gradebook אמיתי."
+        teacher_message_he: hasGrades ? "ציונים אמיתיים קיימים במערכת." : "חסרים ציונים אמיתיים מ-Moodle."
       },
       {
         key: "logs",
@@ -1656,7 +1656,7 @@ function buildSyncStatus(req, sbCounts) {
         priority: 4,
         required_report_he: hasLogs ? null : "Logs / לוגים",
         target_href: hasLogs ? "/activity" : "/missing-data",
-        teacher_message_he: hasLogs ? "קיימים לוגים לראיות פעילות ולהערכת חלונות פעילות בלבד." : "חסרים לוגים ולכן אין ראיות פעילות; זמן רשמי דורש שדה משך מאומת."
+        teacher_message_he: hasLogs ? "יש יומני פעילות — מספיק להצגת פעילות ולהערכת זמן פעילות בלבד." : "חסרים יומני פעילות, ולכן אין נתוני פעילות; זמן מדויק דורש שדה משך מאומת."
       }
     ],
     capabilities: {
@@ -2024,7 +2024,7 @@ function buildReleaseReadiness(req, sbCounts) {
     blockers.push({
       key: "production_persistence_missing",
       severity: "required",
-      message_he: "אין עדיין production persistence מלא. חייבים שמירה קבועה לפי מורה ומרחב."
+      message_he: "עדיין אין שמירה קבועה מלאה של הנתונים לכל מורה ומרחב בנפרד."
     });
   }
 
@@ -2047,7 +2047,7 @@ function buildReleaseReadiness(req, sbCounts) {
     blockers.push({
       key: "no_real_import_batch",
       severity: "data_required",
-      message_he: "לא בוצע ייבוא אמיתי של דוחות. נדרש ייבוא Participants, Gradebook ו-Logs מ-Moodle."
+      message_he: "עדיין לא יובאו דוחות אמיתיים מ-Moodle (רשימת משתתפים, ציונים ויומני פעילות)."
     });
   }
 
@@ -2062,7 +2062,7 @@ function buildReleaseReadiness(req, sbCounts) {
       blockers.push({
         key: "practice_time_no_duration_field",
         severity: "data_required",
-        message_he: "קיימים לוגים אך אין שדה משך זמן — ניתן להציג רק הערכת חלונות פעילות, לא זמן תרגול רשמי."
+        message_he: "יש יומני פעילות אבל בלי שדה של משך זמן — אפשר להציג רק הערכה של זמן פעילות, לא זמן תרגול מדויק."
       });
     }
   }
@@ -2071,25 +2071,25 @@ function buildReleaseReadiness(req, sbCounts) {
   blockers.push({
     key: "deploy_live_validation_missing",
     severity: "required",
-    message_he: "נדרשת בדיקת deploy/live אמיתית על הקישור הציבורי."
+    message_he: "צריך לבדוק בפועל שהאתר עובד תקין בכתובת הציבורית."
   });
 
   blockers.push({
     key: "multi_teacher_isolation_not_validated",
     severity: "required",
-    message_he: "נדרש אימות בידוד נתונים: לפחות שני מורים או שני מרחבים שונים, ללא ערבוב נתונים."
+    message_he: "צריך לוודא ששני מורים שונים לא רואים אחד את הנתונים של השני."
   });
 
   blockers.push({
     key: "real_moodle_end_to_end_missing",
     severity: "required",
-    message_he: "נדרשת בדיקה אמיתית מקצה לקצה מתוך Moodle עם נתוני אמת."
+    message_he: "צריך לבדוק את כל התהליך מתוך Moodle אמיתי, עם נתונים אמיתיים."
   });
 
   blockers.push({
     key: "repo_and_infra_manual_check_required",
     severity: "required",
-    message_he: "נדרשת בדיקה ידנית של repo ו-infra: ללא סודות, ללא נתוני תלמידים, ללא ערכי env ב-code."
+    message_he: "צריך לוודא ידנית שאין סודות או נתוני תלמידים ששמורים בטעות בתוך הקוד."
   });
 
   return {

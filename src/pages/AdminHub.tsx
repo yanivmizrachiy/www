@@ -41,6 +41,11 @@ const TABLE_LABELS_HE: Record<string, string> = {
   course_sections: 'פרקים',
   course_tasks: 'משימות',
   task_completions: 'השלמות משימות',
+  teacher_sessions: 'כניסות מורים',
+  lti_launches: 'הפעלות הכלי',
+  nrps_members: 'משתתפים מסונכרנים',
+  student_matches: 'התאמות תלמידים',
+  practice_time_summaries: 'סיכומי זמן תרגול',
 };
 
 type PersistenceTable = { table: string; count: number | null; exists?: boolean; ok?: boolean };
@@ -337,19 +342,19 @@ function AutomationStatus() {
         {!loading && !error && (
           <>
             <div className="flex flex-wrap gap-2">
-              <StatusPill ok={infra} label={infra ? 'תשתית + מפתחות חיים' : 'תשתית חסרה'} />
-              <StatusPill ok={codeReady} label={codeReady ? 'קוד נתיב 1.3 מיושם' : 'קוד חסר'} />
-              <StatusPill ok={liveCertified} label={liveCertified ? 'מאושר חי — לחיצה אחת פעילה' : 'אישור חי ממתין'} />
+              <StatusPill ok={infra} label={infra ? 'התשתית והמפתחות מוכנים' : 'התשתית חסרה'} />
+              <StatusPill ok={codeReady} label={codeReady ? 'הקוד מוכן' : 'הקוד חסר'} />
+              <StatusPill ok={liveCertified} label={liveCertified ? 'מאושר — התקנה בלחיצה אחת פעילה' : 'ממתין לאישור חי'} />
             </div>
 
             {/* Each row shows the real signal. The 1.3 code paths carry "audit"
                 evidence (implemented, not yet live-proven); JWKS is a live check. */}
             <div className="grid gap-2 sm:grid-cols-2">
               {[
-                ['כניסת OIDC', caps.oidc_login, 'מיושם בקוד'],
-                ['אימות launch (JWT)', caps.jwt_launch_validation, 'מיושם בקוד'],
-                ['מפתח ציבורי (JWKS)', caps.jwks_available, 'מאומת חי'],
-                ['אישור launch חי מול Moodle', liveCertified, 'ממתין'],
+                ['זיהוי כניסה מאובטח', caps.oidc_login, 'מוכן בקוד'],
+                ['אימות ההפעלה מ-Moodle', caps.jwt_launch_validation, 'מוכן בקוד'],
+                ['מפתח אבטחה ציבורי', caps.jwks_available, 'עובד חי'],
+                ['אישור חי מול Moodle אמיתי', liveCertified, 'ממתין'],
               ].map(([label, ok, evidence]) => (
                 <div key={label as string} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
                   <span className="text-sm font-medium text-slate-700">{label as string}</span>
@@ -363,10 +368,9 @@ function AutomationStatus() {
 
             {!liveCertified && (
               <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-xs font-medium text-blue-900 leading-relaxed">
-                נתיב ה-1.3 (התקנה בלחיצה אחת) <b>בנוי במלואו</b> — התשתית והקוד מוכנים. נשאר <b>אישור חי אחד</b>:
-                הרצת launch אמיתי של הכלי כ-LTI 1.3 בתוך קורס Moodle של משרד החינוך. זו לחיצת-יד בין השרת שלנו
-                לשרת של משרד החינוך, ולכן אפשר להוכיח אותה רק מול המרחב האמיתי. עד לאישור — המורים מתקינים
-                בדרך הבדוקה (1.1) שבדף ההתקנה.
+                ההתקנה בלחיצה אחת <b>בנויה במלואה</b> — התשתית והקוד מוכנים. נשאר <b>אישור חי אחד</b>:
+                לפתוח את הכלי פעם אחת בתוך קורס Moodle אמיתי של משרד החינוך ולוודא שהוא נטען. זו בדיקה
+                שאפשר לעשות רק מול המערכת האמיתית. עד אז — המורים מתקינים בדרך הרגילה הבדוקה שבדף ההתקנה.
               </div>
             )}
           </>
