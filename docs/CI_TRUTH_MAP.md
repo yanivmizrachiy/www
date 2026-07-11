@@ -54,4 +54,4 @@ Audits אלה לא מוכיחים live data isolation. הם מוכיחים חו�
 - `.github/workflows/moodle-automation-safety.yml` רץ על PR ל־main ו־workflow_dispatch: audits Moodle, check, build, doctor.
 - `.github/workflows/moodle-teacher-hub-safety-check.yml` הוא workflow ישן שמכוון לענף gemini וכולל references לנתיבי scripts ישנים; לא להסתמך עליו כשער release מודרני בלי עדכון.
 - `.github/workflows/build-termux-runtime.yml` מייצר runtime package לענף termux-runtime; אינו שער Teacher Release.
-- workflows של `luz-teddy` נפרדים לפי paths ואינם הוכחה או כישלון של Moodle Teacher Hub.
+- workflows של `luz-teddy` הוסרו ב-2026-07-11 יחד עם כל אפליקציית הלוז הבית-ספרית (לא הייתה חלק מ-Moodle Teacher Hub). גיבוי: ענף `archive/luz-teddy-removed-20260711`.

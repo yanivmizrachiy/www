@@ -1,9 +1,0 @@
-{
-  "updated": "20260515-185052",
-  "canonicalRepo": "yanivmizrachiy/luz-teddy",
-  "oldPublicUrl": "https://yanivmizrachiy.github.io/www/luz-teddy/clean.html",
-  "oldUrlMustRemainActive": true,
-  "safeBridgeCreated": true,
-  "deleteOldFolder": false,
-  "publishScript": "scripts/publish-to-old-url-safe.sh"
-}

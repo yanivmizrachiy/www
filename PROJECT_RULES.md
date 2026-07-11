@@ -153,8 +153,8 @@
 ## 12. גבולות ריפו — מה שייך ומה לא
 
 - **מותר בריפו:** קוד ותיעוד של Moodle Teacher Hub; LTI/Moodle/Render/Supabase הקשורים למוצר; תיעוד/בדיקות של Moodle בלבד.
-- **אסור בריפו:** אפליקציית יומן Google / SmartCalendar / Apps-Script; סנכרון/ניהול Google Calendar; דשבורד כללי של כל הריפואים; כל מערכת שאינה Moodle Teacher Hub. כל מערכת בריפו משלה עם `RULES.md` משלה (ריפו היומן: `yanivmizrachiy/smartcalendar-titan`).
-- **`luz-teddy/`:** חריג זמני קיים (לוז/מבחנים/אירועים בית-ספריים), **לא** חלק מ-Moodle Teacher Hub. **אסור למחוק** בלי אישור מפורש + גיבוי + העברה מאומתת + קישור ציבורי חדש עובד; אסור להרחיב אותו כאן; workflows בשם `luz-teddy-*` שייכים רק לו וכשלונם ≠ שבירת המוצר.
+- **אסור בריפו:** אפליקציית יומן Google / SmartCalendar / Apps-Script; סנכרון/ניהול Google Calendar; לוז/אירועים בית-ספריים; דשבורד כללי של כל הריפואים; כל מערכת שאינה Moodle Teacher Hub. כל מערכת בריפו משלה עם `RULES.md` משלה (ריפו היומן: `yanivmizrachiy/smartcalendar-titan`).
+- **`luz-teddy/` נמחק לצמיתות** (יניב, 2026-07-11): אפליקציית הלוז הבית-ספרית הוסרה במלואה מהריפו (62 קבצים: `luz-teddy/`, `downloads/`, 2 workflows, קבצי STATE) — היא **לא** הייתה חלק מ-Moodle Teacher Hub. גיבוי לשחזור: ענף `archive/luz-teddy-removed-20260711`. אין להחזיר או לבנות אותה כאן.
 
 ---
 
