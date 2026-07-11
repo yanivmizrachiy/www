@@ -148,10 +148,10 @@ export default function Page() {
             {busy ? <Loader2 className="h-8 w-8 animate-spin" /> : <UploadCloud className="h-8 w-8" />}
           </span>
           <div className="text-lg font-extrabold text-slate-900">
-            {busy ? "מעבד קבצים..." : "גרור קבצים לכאן או לחץ לבחירה"}
+            {busy ? "מעבד קבצים..." : "גררו לכאן את הקובץ שהורדתם מ-Moodle"}
           </div>
           <p className="max-w-md text-sm text-muted-foreground">
-            משתתפים, ציונים, לוגים, השלמת פעילויות — אפשר כמה קבצים יחד.
+            אין צורך לבחור סוג — המערכת מזהה לבד אם זה משתתפים, ציונים, לוגים או השלמות, ומייבאת. אפשר כמה קבצים יחד.
           </p>
           <input
             ref={inputRef}

@@ -16,6 +16,8 @@ export interface MoodleReportLink {
   key: string;
   title: string;
   desc: string;
+  // one concrete step for the teacher to do in Moodle after the page opens
+  action: string;
   path: (courseId: number) => string;
   // which app import this report feeds
   importPath: string;
@@ -31,53 +33,63 @@ export function normalizeMoodleBase(siteUrl: string | null | undefined): string 
 }
 
 // The teacher-accessible reports verified to exist per Moodle course.
+// Each report carries a SHORT, plain-Hebrew explainer for the teacher: what the
+// file gives you (`desc`) and the concrete step to do in Moodle after the page
+// opens (`action`). Shown right under each button so nothing is a mystery.
 export const MOODLE_REPORTS: MoodleReportLink[] = [
   {
     key: "participants",
-    title: "רשימת משתתפים",
-    desc: "דף המשתתפים של הקורס — שמות, תפקידים וגישה אחרונה. משם אפשר לייצא את רשימת התלמידים.",
+    title: "רשימת התלמידים",
+    desc: "שמות כל התלמידים בכיתה. הכי כדאי להתחיל מזה.",
+    action: 'ב-Moodle: גללו למטה, לחצו "הורדת נתוני טבלה בתור" ובחרו Excel.',
     path: (id) => `/user/index.php?id=${id}`,
     importPath: "/smart-import",
   },
   {
     key: "grades_csv",
-    title: "ייצוא ציונים (CSV)",
-    desc: "ייצוא גיליון הציונים המלא כקובץ CSV, ישירות מגיליון הציונים של הקורס.",
+    title: "ציונים",
+    desc: "כל הציונים של הכיתה בקובץ אחד.",
+    action: 'ב-Moodle: סמנו את הפריטים ולחצו "הורדה".',
     path: (id) => `/grade/export/txt/index.php?id=${id}`,
     importPath: "/smart-import",
   },
   {
     key: "grades_ods",
-    title: "ייצוא ציונים (ODS)",
-    desc: "ייצוא הציונים כקובץ ODS (OpenOffice/Excel), חלופה ל-CSV.",
+    title: "ציונים (Excel)",
+    desc: "אותם ציונים, בפורמט Excel — אם ה-CSV לא נפתח יפה.",
+    action: 'ב-Moodle: לחצו "הורדה".',
     path: (id) => `/grade/export/ods/index.php?id=${id}`,
     importPath: "/smart-import",
   },
   {
     key: "progress",
-    title: "דוח השלמת פעילות",
-    desc: "מפת ההשלמה של כל תלמיד לכל פעילות — הבסיס למסך הפרקים והמשימות.",
+    title: "השלמת משימות",
+    desc: "מי סיים כל משימה ופעילות בקורס.",
+    action: 'ב-Moodle: לחצו "הורדה בפורמט" ובחרו Excel.',
     path: (id) => `/report/progress/index.php?course=${id}`,
     importPath: "/smart-import",
   },
   {
     key: "logs",
     title: "יומני פעילות",
-    desc: "כל פעולה של כל משתמש עם חותמת זמן — הבסיס לראיות הפעילות. בחר את כל הימים והורד.",
+    desc: "מתי כל תלמיד נכנס ומה עשה — הבסיס לזמני הפעילות.",
+    action: 'ב-Moodle: בחרו "כל הימים", לחצו "קבל יומנים", ואז "הורדה".',
     path: (id) => `/report/log/index.php?id=${id}`,
     importPath: "/smart-import",
   },
   {
     key: "outline",
-    title: "פעילות מרחב-לימוד",
-    desc: "כמות צפיות וגישה אחרונה לכל רכיב בקורס.",
+    title: "צפיות בתכנים",
+    desc: "כמה צפיות וכניסות לכל פריט בקורס.",
+    action: "ב-Moodle: הדף נפתח לצפייה; אפשר להעתיק או להדפיס.",
     path: (id) => `/report/outline/index.php?id=${id}`,
     importPath: "/smart-import",
   },
   {
     key: "participation",
-    title: "השתתפות במרחב-לימוד",
-    desc: "מי עשה מה, עם פילטר לפי רכיב ותפקיד.",
+    title: "השתתפות בפעילות",
+    desc: "מי ביצע כל פעילות, לפי בחירה.",
+    action: "ב-Moodle: בחרו פעילות ותפקיד כדי לראות מי השתתף.",
     path: (id) => `/report/participation/index.php?id=${id}`,
     importPath: "/smart-import",
   },

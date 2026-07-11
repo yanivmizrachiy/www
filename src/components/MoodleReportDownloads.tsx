@@ -25,7 +25,9 @@ export function MoodleReportDownloads({ title = "הורדת דוחות מ-Moodle
         {title}
       </div>
       <p className="mb-3 text-xs leading-6 text-slate-600">
-        לחיצה פותחת את הדוח המדויק של הקורס שלך ב-Moodle בלשונית חדשה — מורידים שם את הקובץ וגוררים אותו לייבוא החכם.
+        <b>1</b> לחצו על הדוח שאתם צריכים ← נפתח ב-Moodle.&nbsp;&nbsp;
+        <b>2</b> הורידו שם את הקובץ.&nbsp;&nbsp;
+        <b>3</b> גררו אותו לאזור הייבוא — והנתונים נטענים לבד.
       </p>
       {courseId && moodleBase ? (
         <div className="grid gap-2 sm:grid-cols-2">
@@ -38,11 +40,14 @@ export function MoodleReportDownloads({ title = "הורדת דוחות מ-Moodle
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                title={r.desc}
-                className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 transition hover:border-primary hover:text-primary"
+                className="group flex flex-col gap-0.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 transition hover:border-primary"
               >
-                <span className="truncate">{r.title}</span>
-                <ExternalLink className="h-4 w-4 shrink-0 opacity-60" />
+                <span className="flex items-center justify-between gap-2 text-sm font-bold text-slate-800 group-hover:text-primary">
+                  <span className="truncate">{r.title}</span>
+                  <ExternalLink className="h-4 w-4 shrink-0 opacity-60" />
+                </span>
+                <span className="text-xs font-medium leading-5 text-slate-500">{r.desc}</span>
+                <span className="text-[11px] leading-5 text-slate-400">{r.action}</span>
               </a>
             );
           })}
