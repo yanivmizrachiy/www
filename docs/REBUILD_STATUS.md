@@ -16,6 +16,19 @@
 
 ---
 
+## 2026-07-11 — ניקוי וארגון עמוק של הריפו
+- **ארכוב היסטוריית STATE:** `STATE/` ירד מ-261 ל-6 קבצים — נשמרו רק הסטטוס החי
+  (`CURRENT.md`, `project-status.md`) ויומן הראיות (`evidence-log.md` + additions).
+  נמחקו 255 סנאפשוטי תהליך (progress/, readiness-audit/, roadmap/, teacher-release/...).
+- **ניקוי docs:** `docs/` ירד מ-85 ל-54 — נמחקו 30 סנאפשוטים מתוארכים (audit/plan
+  של 20260511-12) + 2 מסמכי דרישות כפולים (`teacher-product-requirements.md`,
+  `MOODLE_SETUP_GUIDE.md`) שתוכנם כבר ב-`PROJECT_RULES.md`. נשמר תיעוד-ייחוס (חוזי
+  LTI/API, מודל התקנה, runbooks).
+- **דף דרישות אחד:** `PROJECT_RULES.md` הוא המקור היחיד לדרישות; שאר מסמכי הדרישות
+  אוחדו לתוכו או הפכו ל-stubs מפנים. גיבויים: `archive/state-cleanup-20260711`,
+  `archive/luz-teddy-removed-20260711`.
+- כל הגייטים ירוקים אחרי הניקוי (check/build/doctor + 6 auditים + 2 e2e).
+
 ## 2026-07-11 — הקשחת LTI 1.3, דף ניהול פתוח, מסלול התקנה אמיתי, ניקוי luz-teddy
 - **מחיקת luz-teddy לצמיתות** (החלטת יניב): כל 62 הקבצים של אפליקציית הלוז הבית-ספרית
   (`luz-teddy/`, `downloads/`, 2 workflows, קבצי STATE) הוסרו — לא היו חלק מ-Moodle
