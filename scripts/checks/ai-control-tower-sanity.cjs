@@ -38,9 +38,9 @@ check("WORK_ORDERS/CLAUDE_COURSE_STRUCTURE_ACTIVITIES_V1.md exists", () =>
 
 check("STATE/project-status.md exists", () => fileExists("STATE/project-status.md"));
 
-check("STATE/progress/2026-05-19-fast-sync.md exists", () =>
-  fileExists("STATE/progress/2026-05-19-fast-sync.md")
-);
+// The historical STATE/progress/ snapshots were archived during the 2026-07-11
+// repo cleanup (branch archive/state-cleanup-20260711). Pinning a dated snapshot
+// here was brittle; STATE/project-status.md (checked above) is the stable status.
 
 check('Work Order contains "Course Structure & Activities Import V1"', () =>
   fileContains(
