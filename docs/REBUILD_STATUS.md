@@ -20,10 +20,13 @@
 - **ארכוב היסטוריית STATE:** `STATE/` ירד מ-261 ל-6 קבצים — נשמרו רק הסטטוס החי
   (`CURRENT.md`, `project-status.md`) ויומן הראיות (`evidence-log.md` + additions).
   נמחקו 255 סנאפשוטי תהליך (progress/, readiness-audit/, roadmap/, teacher-release/...).
-- **ניקוי docs:** `docs/` ירד מ-85 ל-54 — נמחקו 30 סנאפשוטים מתוארכים (audit/plan
-  של 20260511-12) + 2 מסמכי דרישות כפולים (`teacher-product-requirements.md`,
-  `MOODLE_SETUP_GUIDE.md`) שתוכנם כבר ב-`PROJECT_RULES.md`. נשמר תיעוד-ייחוס (חוזי
-  LTI/API, מודל התקנה, runbooks).
+- **ניקוי docs (2 פאסים):** `docs/` ירד מ-85 ל-30 — נמחקו סנאפשוטים מתוארכים, תוכניות
+  (`*-plan`, `NEXT_*`), סטטוסים ישנים (`*_AFTER_PR*`), prompts ישנים, מסמכי דרישות
+  כפולים, ומדריכי ייבוא חופפים. נשמר תיעוד-ייחוס בלבד (חוזי LTI/API/ייבוא, מודל התקנה,
+  runbooks, ADR, `store.example.json`). אינדקס `docs/README.md` נכתב מחדש נקי.
+- **WORK_ORDERS:** 6→1 (נשמר רק זה שה-CI דורש). **archive/** (legacy configs/runtime) נמחקה כליל.
+- **דף כללים אחד ויחיד:** כל שברי הכללים (release-gates, GPT-manual) אוחדו ל-
+  `PROJECT_RULES.md` — אין עוד מסמך דרישות/כללים מתחרה בריפו.
 - **דף דרישות אחד:** `PROJECT_RULES.md` הוא המקור היחיד לדרישות; שאר מסמכי הדרישות
   אוחדו לתוכו או הפכו ל-stubs מפנים. גיבויים: `archive/state-cleanup-20260711`,
   `archive/luz-teddy-removed-20260711`.

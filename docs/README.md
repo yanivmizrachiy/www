@@ -1,26 +1,27 @@
 # Documentation Map — Moodle Teacher Hub
 
-This folder is organized by purpose.
+תיעוד-ייחוס בלבד. **מקור האמת היחיד לכל הדרישות והכללים הוא [`../PROJECT_RULES.md`](../PROJECT_RULES.md).**
+כאן שוכנים חוזים, מדריכים ו-runbooks — לא כללים ולא היסטוריה.
 
-## Folders
+## תיקיות
+- `architecture/` — ארכיטקטורת המוצר, זרימת נתונים, וחוזי Moodle/API.
+- `lti/` — חוזה LTI 1.0/1.1 ו-1.3.
+- `imports/` — חוזה ייבוא דוחות Moodle.
+- `automation/` — מוכנות אוטומציה (NRPS/AGS/Web Services) ובדיקות מנהל.
+- `moodle/` — צ'ק-ליסט הפעלה למנהל ה-Moodle.
+- `deployment/` — הגדרת Render, משתני סביבה, והתקנת כלי LTI.
+- `persistence/` — runbook פריסת Supabase.
+- `operations/` — runbooks לייבוא משתתפים/ציונים/לוגים והתקנה.
+- `dev/` — הערות פיתוח.
+- `adr/` — החלטות ארכיטקטורה (ADR).
+- `examples/` — `store.example.json` (הדגימה הסינתטית היחידה המותרת).
 
-- `architecture/` — product architecture, data flow, Moodle/API contracts, and system design.
-- `lti/` — LTI 1.0/1.1, LTI 1.3, NRPS, AGS, launch and service documentation.
-- `imports/` — Moodle Participants, Gradebook, Logs, and import contracts.
-- `persistence/` — durable storage planning, Supabase, schema, and persistence runbooks.
-- `privacy/` — runtime data safety and student-data handling rules.
-- `operations/` — runbooks, testing, repo maps, and operational instructions.
-- `ai-handoff/` — AI handoff prompts/reports and external builder prompts.
-- `dev/` — developer notes.
-- `archive-candidates/` — old snapshots or documents that require review before archive/delete.
+## מסמכי-על
+- [`REBUILD_STATUS.md`](REBUILD_STATUS.md) — רשומת כל השיפורים (מהחדש לישן).
+- [`DATA_MODEL_TRUTH.md`](DATA_MODEL_TRUTH.md) · [`API_CANONICAL_MAP.md`](API_CANONICAL_MAP.md) — סכימת המסד וה-API.
+- [`CUTOVER_RUNBOOK.md`](CUTOVER_RUNBOOK.md) · [`CI_TRUTH_MAP.md`](CI_TRUTH_MAP.md) · [`PR_RISK_MAP.md`](PR_RISK_MAP.md).
 
-## Source of truth
+## סטטוס והיסטוריה
+`../STATE/` — סטטוס חי בלבד (`CURRENT.md`, `project-status.md`, `evidence-log.md`).
 
-The source of truth remains:
-
-- `../PROJECT_RULES.md`
-- `../README.md`
-- `../STATE/project-status.md`
-- `../STATE/evidence-log.md`
-
-Do not put real student data in this folder.
+**אין לשמור נתוני תלמידים אמיתיים בתיקייה זו.**
