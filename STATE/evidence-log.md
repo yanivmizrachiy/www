@@ -6,6 +6,30 @@
 
 ---
 
+## 2026-07-11 — קישורי הורדה ישירים מ-Moodle אומתו חי (קורס 38381)
+
+### Verified
+
+- כל 7 קישורי ההורדה בלחיצה אחת (`src/lib/moodleReportLinks.ts`, מוצגים ב-
+  `MoodleReportDownloads` בדשבורד וב-smart-import) נטענו נכון מול ה-Moodle האמיתי
+  של משרד החינוך, מחובר כמורה (יניב רז), קורס 38381:
+  - `participants` `/user/index.php?id=38381` → עמוד משתתפים (h1 = "בוקר של שבוע טוב!", מזהה קורס 38381 אומת ב-breadcrumb)
+  - `grades_csv` `/grade/export/txt/index.php?id=38381` → יצוא CSV
+  - `grades_ods` `/grade/export/ods/index.php?id=38381` → יצוא ODS
+  - `progress` `/report/progress/index.php?course=38381` → השלמת פעילות
+  - `logs` `/report/log/index.php?id=38381` → יומני מעקב
+  - `outline` `/report/outline/index.php?id=38381` → פעילות מרחב-לימוד
+  - `participation` `/report/participation/index.php?id=38381` → דוח משתתפים
+- כל דף נטען ללא שגיאת הרשאה ונפתר לקורס הנכון. הבדל השם (שם-מלא "מתמטיקה ט`..." מול
+  שם-תצוגה "בוקר של שבוע טוב!") הוא שני שדות שם של אותו קורס.
+- הקישורים נבנים מהסשן החי (`site_url` + `course_id`), אין scraping, אין credentials.
+
+### Not verified yet
+
+- מחזור מלא של הורדת קובץ + ייבוא מקצה-לקצה (אומת שהדפים נטענים; לא הופעלה הורדה בפועל).
+
+---
+
 ## 2026-05-17 — Practice-time truth gate: blocked NO_DURATION_FIELD
 
 ### Verified

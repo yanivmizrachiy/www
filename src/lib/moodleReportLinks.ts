@@ -2,8 +2,10 @@
 // Builds the EXACT Moodle report/export URLs for the teacher's real course,
 // using the live LTI session (course_id) and the real Moodle base URL
 // (site_url). These are the same teacher-accessible report endpoints that
-// exist in every Ministry-of-Education Moodle space, verified by direct
-// inspection of course 259 (moodlemoe.lms.education.gov.il).
+// exist in every Ministry-of-Education Moodle space. All 7 links verified LIVE
+// on 2026-07-11 against course 38381 (signed in as the teacher): every page
+// loaded with no permission error and resolved to the correct course. See
+// STATE/evidence-log.md.
 //
 // IMPORTANT: these are deep links to the teacher's OWN Moodle, opened in a new
 // tab. The app never scrapes them, never stores credentials, and never claims
