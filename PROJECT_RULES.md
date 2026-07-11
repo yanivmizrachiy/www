@@ -1,6 +1,6 @@
 # PROJECT_RULES.md — Moodle Teacher Hub / www
 
-**מקור האמת העליון והיחיד של הפרויקט.** עודכן: 2026-07-10.
+**מקור האמת העליון והיחיד של הפרויקט.** עודכן: 2026-07-11.
 
 מסמך זה מרכז את **כל** הכללים והדרישות של הפרויקט במקום אחד. אם קיימת סתירה בינו
 לבין README, docs, קוד, STATE, PR ישן או שיחה — **מסמך זה קובע**, עד שיעודכן במפורש
@@ -60,7 +60,7 @@
 הריפו מספק **שלושה מוצרים נפרדים לחלוטין**, וההפרדה חייבת להישמר:
 1. **כלי המורה** — ה-hub שנפתח דרך LTI (`/`, `/students`, `/grades`, `/chapters`, `/activity`, `/reports`, `/export`, `/smart-import`, ...).
 2. **`/guide`** — מצגת הדרכה/onboarding **ציבורית** (צילומי Moodle אמיתיים ומאושרים). ראה סעיף 11.
-3. **`/admin-hub`** — מרכז שליטה **מוגן ב-Supabase Auth** (מנהל בלבד): נתוני מערכת חיים, קישור למצגת, קישור לכלי.
+3. **`/admin-hub`** — מרכז שליטה של יניב: נתוני מערכת חיים, קישור למצגת, קישור התקנה למורים, ניהול מהיר, מצב אוטומציה. **גישה פתוחה** (החלטת יניב 2026-07-10, אין שער מייל): הדף **לקריאה בלבד** ומציג רק קישורים ציבוריים ומספרים מצטברים ללא PII/סודות. נתוני מורים/תלמידים נשארים נעולים מאחורי session LTI מאומת — גם עבור יניב. פעולות עריכה כבדות עתידיות מהדף ידרשו מפתח-מנהל פשוט (לא מייל), לא חשיפת נתונים.
 
 אין למזג את המצגת או ה-admin לתוך כלי המורה — לא בניווט, לא בקוד, לא ב-copy.
 
@@ -87,6 +87,8 @@
 - **הפעלת LTI חייבת לעבור אימות** — LTI 1.1: OAuth1 HMAC-SHA1 (חסום אם חסר `LTI_SHARED_SECRET`/חתימה/consumer key, או חתימה שגויה). LTI 1.3: RS256 JWT מול JWKS + nonce.
 - **LTI 1.3 ו-1.0/1.1 נשארים מופרדים בבירור** — הצלחה באחד אינה הוכחה לשני. הבנייה הנוכחית תומכת בשניהם.
 - **הגדרת External Tool למורה:** שם הכלי (מומלץ "המודל החכם"), Tool/Launch URL = `…/api/lti/launch`, Consumer Key (למשל `yaniv-lti-tool`), Shared Secret נשמר בבטחה (**לעולם לא ב-GitHub/frontend/צילום מסך**). מסך ההתקנה למורה = `/setup`.
+- **מסלול ההתקנה האמיתי ב-Moodle של משרד החינוך** (אומת חי 2026-07-10): בורר הפעילויות **אינו** מציע "כלי חיצוני", לכן המורה מוסיף דרך תפריט הקורס **"אפשרויות נוספות" → "כלי או שירות LTI חיצוני" → "Add tool"**, ממלא את השדות (שם הכלי, כתובת האינטרנט של הכלי, LTI version, מפתח, סיסמה), והכלי מופיע בבורר הפעילויות של אותו קורס. דף `/setup` מלמד בדיוק את המסלול הזה.
+- **אוטומציה מקסימלית (LTI 1.3, "התקנה בלחיצה אחת"):** הקוד והתשתית **מוכנים ומאומתים ב-e2e** (`npm run test:lti13:e2e` — לחיצת-יד מלאה עם קריפטוגרפיה אמיתית: role-gate למורה, בדיקת state/nonce/exp, דחיית חתימה מזויפת). נשאר **אישור חי אחד** מול Moodle אמיתי (`live_certified`) שרק יניב/מנהל ה-Moodle יכולים לבצע. עד לאישור — המורים מתקינים בדרך הבדוקה (1.1). לעולם לא לסמן 1.3 כ"עובד live" בלי ראיה ב-`STATE/evidence-log.md`.
 - **שימוש Moodle אמיתי מותר רק אחרי ראיית launch אמיתית ב-`STATE/evidence-log.md`.**
 - **סדר onboarding נתונים:** משתתפים → ציונים → לוגים (זמן מחושב) → השלמת פעילות.
 - **סולם אוטומציה / מצבי יכולת:** `automatic_verified` · `manual_real_import_working` · `planned_adapter_not_verified` · `blocked_missing_permission_or_token` · `blocked_missing_source_field`. NRPS/AGS אוטומטי רק עם claim מאומת + קריאה חיה. WS חסום עד token אמיתי ב-Render + probe קריאה-בלבד; רצף פתיחה: `core_webservice_get_site_info` תחילה, ואז enrolled-users/grade-items/course-contents/completion/logs.
@@ -195,4 +197,4 @@
 
 ---
 
-*מסמך זה אוחד מ-`RULES.md`, `docs/requirements.md`, `docs/operations/system-rules.md`, `docs/product/*`, `docs/rules/*`, `docs/privacy/runtime-data-safety.md`, `docs/REPO_BOUNDARY_AND_LUZ_TEDDY.md`, `docs/architecture/*` (חלקי הכללים), `docs/GUIDE_SCREENSHOTS_MANIFEST.md` (חלקי הכללים), `docs/AI_CONTROL_TOWER.md`, `docs/AUTOMATION_STRATEGY.md`, ו-`CLAUDE.md`. סטטוס/היסטוריה חיים ב-`STATE/` ו-`docs/REBUILD_STATUS.md`.*
+*מסמך זה הוא **דף הדרישות המרכזי היחיד**. אוחד מ-`RULES.md`, `docs/requirements.md`, `docs/operations/system-rules.md`, `docs/product/*`, `docs/rules/*`, `docs/privacy/runtime-data-safety.md`, `docs/REPO_BOUNDARY_AND_LUZ_TEDDY.md`, `docs/architecture/*` (חלקי הכללים), `docs/GUIDE_SCREENSHOTS_MANIFEST.md` (חלקי הכללים), `docs/AI_CONTROL_TOWER.md`, `docs/AUTOMATION_STRATEGY.md`, ו-`CLAUDE.md`. מסמכי המקור שנשארו בריפו הם כעת stubs שמפנים לכאן (או נשמרים לצורכי audit scripts) — אין בהם דרישות מתחרות. **רשומת השיפורים המסודרת:** `docs/REBUILD_STATUS.md`. סטטוס/היסטוריה: `STATE/`.*
