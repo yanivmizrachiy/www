@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -933,12 +933,37 @@ const SCREENSHOT_LINKS: Record<string, string> = {
 function GuideImg({ src, alt }: { src: string; alt: string }) {
   const [loaded, setLoaded] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [inView, setInView] = useState(false);
+  const boxRef = useRef<HTMLDivElement>(null);
+
+  // Arm the hang-watchdog only once the image is near the viewport. A lazy
+  // image below the fold is deliberately not fetching yet — timing it would
+  // remount it in an endless ?r= churn and even abort a fetch that starts
+  // mid-cycle when the user scrolls down.
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setInView(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setInView(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: '300px' }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   useEffect(() => {
-    if (loaded || attempt > 25) return;
+    if (!inView || loaded || attempt > 25) return;
     const t = window.setTimeout(() => setAttempt((a) => a + 1), 3500);
     return () => window.clearTimeout(t);
-  }, [loaded, attempt]);
+  }, [inView, loaded, attempt]);
 
   const file = src.split('/').pop() ?? src;
   const meta = SHOT_META[file];
@@ -947,6 +972,7 @@ function GuideImg({ src, alt }: { src: string; alt: string }) {
 
   return (
     <div
+      ref={boxRef}
       className="relative w-full bg-muted"
       style={{ aspectRatio: meta ? `${meta.w} / ${meta.h}` : '16 / 10' }}
     >
@@ -1010,7 +1036,9 @@ function CoverLogo() {
           width={512}
           height={512}
           decoding="async"
-          fetchPriority="high"
+          // React 18 DOM doesn't know the camelCase prop yet — lowercase
+          // attribute reaches the browser correctly and silences the warning.
+          {...{ fetchpriority: 'high' }}
           onLoad={() => setLoaded(true)}
           onError={() => setAttempt((a) => a + 1)}
           className={cn(
