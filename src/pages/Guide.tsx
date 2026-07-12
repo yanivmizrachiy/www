@@ -691,7 +691,7 @@ const TOPICS: Topic[] = [
     id: 'lti',
     title: 'כלי חיצוני / LTI',
     icon: ExternalLink,
-    color: 'bg-slate-500',
+    color: 'bg-muted0',
     questions: [
       {
         id: 'enter',
@@ -901,16 +901,22 @@ const QUESTION_SHOTS: Record<string, Shot[]> = {
 // Real screenshot in premium frame — צילום אמיתי במסגרת מכובדת.
 function ScreenshotFrame({ shot }: { shot: Shot }) {
   return (
-    <figure className="rounded-2xl bg-white border border-slate-200 shadow-lg overflow-hidden">
-      <figcaption className="px-4 py-2.5 text-xs font-bold text-slate-600 bg-slate-50 border-b border-slate-100">
-        {shot.caption}
-      </figcaption>
+    <figure className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_14px_44px_rgba(20,30,60,0.13)]">
+      {/* browser chrome — the real Ministry-of-Education Moodle address */}
+      <div className="flex items-center gap-2 border-b border-border bg-muted px-4 py-2.5">
+        <span className="h-3 w-3 rounded-full bg-rose-400" />
+        <span className="h-3 w-3 rounded-full bg-amber-400" />
+        <span className="h-3 w-3 rounded-full bg-emerald-400" />
+        <div dir="ltr" className="mx-auto rounded-md bg-card px-3 py-1 text-[11px] font-medium text-muted-foreground">
+          moodlemoe.lms.education.gov.il
+        </div>
+      </div>
       <img
         src={`/guide/screenshots/${shot.src}`}
         alt={shot.caption}
         loading="lazy"
         decoding="async"
-        className="w-full h-auto block bg-slate-100"
+        className="block h-auto w-full bg-slate-100"
         onError={(e) => {
           // Render's free tier sleeps; on wake (~cold start) the first image
           // requests can drop and show a broken icon. Retry with a short backoff
@@ -926,8 +932,11 @@ function ScreenshotFrame({ shot }: { shot: Shot }) {
           }
         }}
       />
+      <figcaption className="border-t border-border px-4 py-3 text-sm font-bold leading-relaxed text-foreground">
+        {shot.caption}
+      </figcaption>
       {shot.custom && (
-        <div className="px-4 py-2 text-[11px] font-medium text-indigo-700 bg-indigo-50 border-t border-indigo-100">
+        <div className="border-t border-gold/25 bg-gold-soft/50 px-4 py-2 text-[11px] font-bold text-gold-foreground">
           מותאם אישית: {shot.custom}
         </div>
       )}
@@ -939,7 +948,7 @@ function ScreenshotFrame({ shot }: { shot: Shot }) {
 function ScreenshotGallery({ shots }: { shots: Shot[] }) {
   return (
     <section className="space-y-3">
-      <h3 className="text-xs font-black uppercase tracking-wider text-slate-500">
+      <h3 className="text-xs font-black uppercase tracking-wider text-muted-foreground">
         צילומים אמיתיים מתוך Moodle
       </h3>
       <div className="grid grid-cols-1 gap-4">
@@ -947,7 +956,7 @@ function ScreenshotGallery({ shots }: { shots: Shot[] }) {
           <ScreenshotFrame key={s.src} shot={s} />
         ))}
       </div>
-      <p className="text-[11px] font-medium text-slate-400 leading-relaxed">{CUSTOM_SPACE_NOTE}</p>
+      <p className="text-[11px] font-medium text-muted-foreground/70 leading-relaxed">{CUSTOM_SPACE_NOTE}</p>
     </section>
   );
 }
@@ -966,13 +975,13 @@ function guideUrl() {
 // Footer appears on every view — managed-by line + Instagram (per site rules).
 function GuideFooter() {
   return (
-    <footer className="mt-16 pt-8 border-t border-slate-200 flex flex-col items-center gap-1.5 text-center">
-      <p className="text-sm font-bold text-slate-600">{YANIV_LINE}</p>
+    <footer className="mt-16 pt-8 border-t border-border flex flex-col items-center gap-1.5 text-center">
+      <p className="text-sm font-bold text-muted-foreground">{YANIV_LINE}</p>
       <a
         href={INSTAGRAM_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-1 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-primary transition-colors"
+        className="mt-1 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
       >
         <Instagram className="h-4 w-4" />
         yani__raz@
@@ -999,7 +1008,7 @@ function GuideShell({
         <nav className="sticky top-0 z-30 border-b border-border bg-card/85 backdrop-blur-md">
           <div className="max-w-5xl mx-auto flex h-14 items-center justify-between px-4 sm:px-6">
             {onBack ? (
-              <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5 font-bold text-slate-700 hover:text-primary">
+              <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5 font-bold text-foreground hover:text-primary">
                 <ChevronRight className="h-4 w-4" />
                 חזרה
               </Button>
@@ -1153,18 +1162,18 @@ export default function Guide() {
   // Home — path chooser
   if (view === 'home') {
     const paths: { id: string; title: string; desc: string; icon: LucideIcon; color: string; go: () => void }[] = [
-      { id: 'q', title: 'שאלות למורה', desc: 'איך עושים פעולה נפוצה, צעד־צעד', icon: HelpCircle, color: 'bg-blue-500', go: openTopics },
-      { id: 'map', title: 'מפת כפתורים', desc: 'לכל כפתור: מה נפתח בלחיצה', icon: MapIcon, color: 'bg-teal-500', go: openAreas },
-      { id: 'edit', title: 'מצב עריכה', desc: 'כל הכפתורים של עריכת המרחב', icon: MousePointerClick, color: 'bg-purple-500', go: () => openArea('edit-mode') },
-      { id: 'dl', title: 'הורדת דוחות וקבצים', desc: 'ציונים, לוגים, השלמות, משתתפים', icon: Download, color: 'bg-indigo-500', go: () => setView('downloads') },
-      { id: 'fix', title: 'פתרון תקלות', desc: 'מה עושים כשמשהו לא עובד', icon: AlertTriangle, color: 'bg-orange-500', go: () => openTopic('troubleshoot') },
+      { id: 'q', title: 'שאלות למורה', desc: 'איך עושים פעולה נפוצה, צעד־צעד', icon: HelpCircle, color: 'bg-primary', go: openTopics },
+      { id: 'map', title: 'מפת כפתורים', desc: 'לכל כפתור: מה נפתח בלחיצה', icon: MapIcon, color: 'bg-gold', go: openAreas },
+      { id: 'edit', title: 'מצב עריכה', desc: 'כל הכפתורים של עריכת המרחב', icon: MousePointerClick, color: 'bg-emerald-600', go: () => openArea('edit-mode') },
+      { id: 'dl', title: 'הורדת דוחות וקבצים', desc: 'ציונים, לוגים, השלמות, משתתפים', icon: Download, color: 'bg-violet-600', go: () => setView('downloads') },
+      { id: 'fix', title: 'פתרון תקלות', desc: 'מה עושים כשמשהו לא עובד', icon: AlertTriangle, color: 'bg-rose-600', go: () => openTopic('troubleshoot') },
     ];
     return (
       <GuideShell onHome={openHome} onBack={goBack} viewKey={view}>
         <div className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-2xl font-black text-slate-900">איך תרצו להתחיל?</h2>
+              <h2 className="text-2xl font-black text-foreground">איך תרצו להתחיל?</h2>
               <p className="text-sm text-muted-foreground font-medium mt-1">
                 בוחרים מסלול. אפשר לחזור לכאן בכל שלב.
               </p>
@@ -1181,14 +1190,14 @@ export default function Guide() {
                 <button
                   key={p.id}
                   onClick={p.go}
-                  className="group text-right rounded-2xl border-2 border-slate-100 bg-white hover:border-primary/60 hover:shadow-luxury transition-all p-6 flex items-center gap-5"
+                  className="group text-right rounded-2xl border-2 border-border bg-card hover:border-primary/60 hover:shadow-luxury hover:-translate-y-1 transition-all p-6 flex items-center gap-5"
                 >
                   <div className={cn('p-4 rounded-2xl text-white shadow-md shrink-0 group-hover:scale-110 transition-transform', p.color)}>
                     <Icon className="h-7 w-7" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-lg font-black text-slate-900 leading-tight">{p.title}</div>
-                    <div className="text-xs font-medium text-slate-500 mt-1">{p.desc}</div>
+                    <div className="text-lg font-black text-foreground leading-tight">{p.title}</div>
+                    <div className="text-xs font-medium text-muted-foreground mt-1">{p.desc}</div>
                   </div>
                   <ChevronLeftIcon className="h-5 w-5 text-slate-300 group-hover:text-primary transition-colors" />
                 </button>
@@ -1207,7 +1216,7 @@ export default function Guide() {
         <div className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-2xl font-black text-slate-900">מפת כפתורים</h2>
+              <h2 className="text-2xl font-black text-foreground">מפת כפתורים</h2>
               <p className="text-sm text-muted-foreground font-medium mt-1">
                 בוחרים אזור במסך, ורואים מה כל כפתור עושה. אם לוחצים על אזור — נפתחת רשימת הכפתורים שלו.
               </p>
@@ -1225,15 +1234,15 @@ export default function Guide() {
                 <button
                   key={a.id}
                   onClick={() => openArea(a.id)}
-                  className="group text-right rounded-2xl border-2 border-slate-100 bg-white hover:border-primary/60 hover:shadow-luxury transition-all p-6 flex items-center gap-5"
+                  className="group text-right rounded-2xl border-2 border-border bg-card hover:border-primary/60 hover:shadow-luxury hover:-translate-y-1 transition-all p-6 flex items-center gap-5"
                 >
                   <div className={cn('p-4 rounded-2xl text-white shadow-md shrink-0 group-hover:scale-110 transition-transform', a.color)}>
                     <Icon className="h-7 w-7" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-lg font-black text-slate-900 leading-tight">{a.title}</div>
-                    <div className="text-xs font-medium text-slate-500 mt-1">{a.where}</div>
-                    <div className="text-[11px] font-bold text-slate-400 mt-1">{count} כפתורים</div>
+                    <div className="text-lg font-black text-foreground leading-tight">{a.title}</div>
+                    <div className="text-xs font-medium text-muted-foreground mt-1">{a.where}</div>
+                    <div className="text-[11px] font-bold text-muted-foreground/70 mt-1">{count} כפתורים</div>
                   </div>
                   <ChevronLeftIcon className="h-5 w-5 text-slate-300 group-hover:text-primary transition-colors" />
                 </button>
@@ -1256,7 +1265,7 @@ export default function Guide() {
             <ChevronRight className="h-3 w-3" />
             <button onClick={openAreas} className="hover:text-primary transition-colors">מפת כפתורים</button>
             <ChevronRight className="h-3 w-3" />
-            <span className="text-slate-700 font-bold">{area.title}</span>
+            <span className="text-foreground font-bold">{area.title}</span>
           </div>
 
           <div className="flex items-center gap-4">
@@ -1264,7 +1273,7 @@ export default function Guide() {
               <Icon className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="text-2xl font-black text-slate-900">{area.title}</h2>
+              <h2 className="text-2xl font-black text-foreground">{area.title}</h2>
               <p className="text-sm text-muted-foreground font-medium mt-1">
                 איפה רואים: {area.where}. לוחצים על הכפתור וקוראים מה נפתח.
               </p>
@@ -1278,15 +1287,15 @@ export default function Guide() {
           {area.buttons && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {area.buttons.map(b => (
-                <div key={b.label} className="rounded-xl border-2 border-slate-100 bg-white p-4 space-y-1.5">
+                <div key={b.label} className="rounded-xl border-2 border-border bg-card p-4 space-y-1.5">
                   <div className="flex items-center gap-2">
                     <span className={cn('h-2 w-2 rounded-full shrink-0', area.color)} />
-                    <span className="text-base font-black text-slate-900 leading-tight">{b.label}</span>
+                    <span className="text-base font-black text-foreground leading-tight">{b.label}</span>
                   </div>
-                  <p className="text-sm font-medium text-slate-600 leading-relaxed">
+                  <p className="text-sm font-medium text-muted-foreground leading-relaxed">
                     אם לוחצים — {b.opens}.
                   </p>
-                  {b.next && <p className="text-xs font-medium text-slate-500">משם: {b.next}.</p>}
+                  {b.next && <p className="text-xs font-medium text-muted-foreground">משם: {b.next}.</p>}
                   {b.also && <p className="text-xs font-medium text-primary/80">{b.also}.</p>}
                 </div>
               ))}
@@ -1295,16 +1304,16 @@ export default function Guide() {
 
           {area.groups && (
             <div className="space-y-4">
-              <p className="text-sm font-medium text-slate-600">
+              <p className="text-sm font-medium text-muted-foreground">
                 אחרי שנפתח בורר ההוספה, בוחרים פריט מאחת הקבוצות:
               </p>
               {area.groups.map(g => (
-                <div key={g.title} className="rounded-2xl border-2 border-slate-100 bg-white p-5 space-y-2">
-                  <div className="text-base font-black text-slate-900">{g.title}</div>
-                  <div className="text-xs font-medium text-slate-500">{g.note}</div>
+                <div key={g.title} className="rounded-2xl border-2 border-border bg-card p-5 space-y-2">
+                  <div className="text-base font-black text-foreground">{g.title}</div>
+                  <div className="text-xs font-medium text-muted-foreground">{g.note}</div>
                   <div className="flex flex-wrap gap-2 pt-1">
                     {g.items.map(it => (
-                      <span key={it} className="rounded-full bg-slate-100 text-slate-700 text-xs font-bold px-3 py-1">
+                      <span key={it} className="rounded-full bg-slate-100 text-foreground text-xs font-bold px-3 py-1">
                         {it}
                       </span>
                     ))}
@@ -1338,7 +1347,7 @@ export default function Guide() {
         <div className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-2xl font-black text-slate-900">הורדת דוחות וקבצים</h2>
+              <h2 className="text-2xl font-black text-foreground">הורדת דוחות וקבצים</h2>
               <p className="text-sm text-muted-foreground font-medium mt-1">
                 מכל אזור אפשר להוריד קובץ. לוחצים כדי לראות את הכפתורים המדויקים.
               </p>
@@ -1353,14 +1362,14 @@ export default function Guide() {
               <button
                 key={it.title}
                 onClick={it.go}
-                className="group text-right rounded-xl border-2 border-slate-100 bg-white hover:border-primary/60 hover:shadow-md transition-all p-5 flex items-center gap-4"
+                className="group text-right rounded-xl border-2 border-border bg-card hover:border-primary/60 hover:shadow-md transition-all p-5 flex items-center gap-4"
               >
                 <div className="p-3 rounded-xl bg-indigo-500 text-white shrink-0">
                   <Download className="h-5 w-5" />
                 </div>
                 <div className="flex-1">
-                  <div className="text-base font-black text-slate-900">{it.title}</div>
-                  <div className="text-xs font-medium text-slate-500 mt-0.5">{it.where}</div>
+                  <div className="text-base font-black text-foreground">{it.title}</div>
+                  <div className="text-xs font-medium text-muted-foreground mt-0.5">{it.where}</div>
                 </div>
                 <ChevronLeftIcon className="h-4 w-4 text-slate-300 group-hover:text-primary transition-colors shrink-0" />
               </button>
@@ -1378,7 +1387,7 @@ export default function Guide() {
         <div className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-2xl font-black text-slate-900">בחירת נושא</h2>
+              <h2 className="text-2xl font-black text-foreground">בחירת נושא</h2>
               <p className="text-sm text-muted-foreground font-medium mt-1">
                 כל נושא כולל שאלות נפוצות עם הסבר פשוט ומה ללחוץ.
               </p>
@@ -1396,7 +1405,7 @@ export default function Guide() {
                 <button
                   key={t.id}
                   onClick={() => openTopic(t.id)}
-                  className="group text-right rounded-2xl border-2 border-slate-100 bg-white hover:border-primary/60 hover:shadow-luxury transition-all p-6 flex items-center gap-5"
+                  className="group text-right rounded-2xl border-2 border-border bg-card hover:border-primary/60 hover:shadow-luxury hover:-translate-y-1 transition-all p-6 flex items-center gap-5"
                 >
                   <div
                     className={cn(
@@ -1407,10 +1416,10 @@ export default function Guide() {
                     <Icon className="h-7 w-7" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-lg font-black text-slate-900 leading-tight">
+                    <div className="text-lg font-black text-foreground leading-tight">
                       {t.title}
                     </div>
-                    <div className="text-xs font-medium text-slate-500 mt-1">
+                    <div className="text-xs font-medium text-muted-foreground mt-1">
                       {t.questions.length} שאלות
                     </div>
                   </div>
@@ -1436,7 +1445,7 @@ export default function Guide() {
                 <Icon className="h-6 w-6" />
               </div>
               <div>
-                <h2 className="text-2xl font-black text-slate-900">{topic.title}</h2>
+                <h2 className="text-2xl font-black text-foreground">{topic.title}</h2>
                 <p className="text-sm text-muted-foreground font-medium mt-1">
                   {topic.questions.length} שאלות · בחרו שאלה כדי לראות תשובה מלאה.
                 </p>
@@ -1459,10 +1468,10 @@ export default function Guide() {
               <button
                 key={q.id}
                 onClick={() => openQuestion(q.id)}
-                className="group text-right rounded-xl border-2 border-slate-100 bg-white hover:border-primary/60 hover:shadow-md transition-all p-5 flex items-center gap-4"
+                className="group text-right rounded-xl border-2 border-border bg-card hover:border-primary/60 hover:shadow-md transition-all p-5 flex items-center gap-4"
               >
                 <div className="flex-1">
-                  <div className="text-base font-bold text-slate-900 leading-relaxed">
+                  <div className="text-base font-bold text-foreground leading-relaxed">
                     {q.title}
                   </div>
                 </div>
@@ -1515,26 +1524,26 @@ export default function Guide() {
                   <Icon className="h-6 w-6" />
                 </div>
                 <div>
-                  <div className="text-xs font-black uppercase tracking-wider text-slate-400">
+                  <div className="text-xs font-black uppercase tracking-wider text-muted-foreground/70">
                     {topic.title}
                   </div>
-                  <h1 className="text-2xl md:text-3xl font-black text-slate-900 mt-1 leading-tight">
+                  <h1 className="text-2xl md:text-3xl font-black text-foreground mt-1 leading-tight">
                     {question.title}
                   </h1>
                 </div>
               </div>
 
               <section className="space-y-2">
-                <h3 className="text-xs font-black uppercase tracking-wider text-slate-500">
+                <h3 className="text-xs font-black uppercase tracking-wider text-muted-foreground">
                   תשובה קצרה
                 </h3>
-                <p className="text-slate-700 leading-relaxed text-base font-medium">
+                <p className="text-foreground leading-relaxed text-base font-medium">
                   {question.short}
                 </p>
               </section>
 
-              <section className="space-y-3 bg-slate-50 rounded-2xl p-6 border border-slate-100">
-                <h3 className="text-xs font-black uppercase tracking-wider text-slate-500">
+              <section className="space-y-3 bg-muted rounded-2xl p-6 border border-border">
+                <h3 className="text-xs font-black uppercase tracking-wider text-muted-foreground">
                   מה ללחוץ
                 </h3>
                 <ol className="space-y-3">
@@ -1548,7 +1557,7 @@ export default function Guide() {
                       >
                         {i + 1}
                       </span>
-                      <span className="text-sm font-medium text-slate-700 leading-relaxed pt-1">
+                      <span className="text-sm font-medium text-foreground leading-relaxed pt-1">
                         {step}
                       </span>
                     </li>
@@ -1577,11 +1586,11 @@ export default function Guide() {
               })()}
 
               {question.tip && (
-                <section className="space-y-2 bg-primary/5 rounded-2xl p-5 border border-primary/10">
-                  <h3 className="text-xs font-black uppercase tracking-wider text-primary">
-                    טיפ
+                <section className="space-y-1.5 rounded-2xl border border-gold/30 bg-gold-soft/40 p-5">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-gold-foreground">
+                    💡 טיפ
                   </h3>
-                  <p className="text-sm text-slate-700 font-medium leading-relaxed">
+                  <p className="text-sm font-medium leading-relaxed text-foreground">
                     {question.tip}
                   </p>
                 </section>
