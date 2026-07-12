@@ -902,39 +902,41 @@ const SCREENSHOT_LINKS: Record<string, string> = {
   '25-wizard-step1-filled.jpg': 'https://moodlemoe.lms.education.gov.il/local/auto_course_create/wizard.php',
 };
 
-// Robust screenshot image: shows a graceful "loading" state instead of the
-// browser's broken-image icon, and retries persistently. On Render's free tier
-// the server sleeps and the first image requests after wake (~cold start) can
-// drop — this keeps a spinner up and re-fetches until the image arrives, so the
-// teacher never sees a broken picture.
+// Robust, fast screenshot image. The real problem on Render's free tier is the
+// cold start: the first request after wake can HANG (pending), not error — so an
+// error-only retry never fires and the spinner sticks. This retries on a short
+// TIMER too: if the image hasn't loaded within ~3s, it abandons the hung request
+// and fires a fresh one (cache-busted), which connects the moment the server is
+// warm. So it self-heals fast and never gets stuck.
 function GuideImg({ src, alt }: { src: string; alt: string }) {
   const [loaded, setLoaded] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    if (loaded || attempt > 25) return;
+    const t = window.setTimeout(() => setAttempt((a) => a + 1), 3000);
+    return () => window.clearTimeout(t);
+  }, [loaded, attempt]);
+
+  const url = attempt === 0 ? src : `${src}?r=${attempt}`;
+
   return (
     <div className="w-full bg-muted">
       {!loaded && (
-        <div className="flex h-44 w-full items-center justify-center gap-2 text-xs font-medium text-muted-foreground">
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-primary" />
-          טוען צילום מ-Moodle...
+        <div className="flex h-40 w-full items-center justify-center">
+          <span className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-primary" />
         </div>
       )}
       {/* Eager: the shot only mounts when its accordion section opens, so it
-          loads immediately (no lazy/below-fold race). Hidden until decoded, then
-          shown — the teacher sees a spinner, never a broken icon. */}
+          fetches immediately. `key={url}` remounts on each retry to abandon a
+          hung request. Hidden until decoded — never a broken icon. */}
       <img
-        src={src}
+        key={url}
+        src={url}
         alt={alt}
         decoding="async"
         onLoad={() => setLoaded(true)}
-        onError={(e) => {
-          const el = e.currentTarget;
-          const n = Number(el.dataset.retry || '0');
-          if (n < 15) {
-            el.dataset.retry = String(n + 1);
-            window.setTimeout(() => {
-              el.src = `${src}?retry=${n + 1}`;
-            }, 1000 + n * 700);
-          }
-        }}
+        onError={() => setAttempt((a) => a + 1)}
         className="block h-auto w-full"
         style={{ display: loaded ? 'block' : 'none' }}
       />
