@@ -1578,7 +1578,18 @@ app.use((_req, res, next) => {
 app.use(express.urlencoded({ extended: true, limit: "80mb" }));
 app.use(express.json({ limit: "80mb" }));
 app.use(cookieParser());
-app.use("/public", express.static(path.join(ROOT, "public")));
+app.use("/public", express.static(path.join(ROOT, "public"), {
+  // Same media tuning as the dist mount below: express's mime table mislabels
+  // .avif (nosniff then blocks it), and stable-named media deserves caching.
+  setHeaders: (res, filePath) => {
+    if (/\.avif$/i.test(filePath)) {
+      res.setHeader("Content-Type", "image/avif");
+    }
+    if (/\.(avif|webp|jpe?g|png|gif|svg|ico|woff2?|ttf)$/i.test(filePath)) {
+      res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+    }
+  }
+}));
 
 
 // >>> MTH_SYNC_STATUS_API_V1 >>>
@@ -6941,7 +6952,13 @@ if (fs.existsSync(distPath)) {
       }
     }
   }));
-  app.get("*", (_req, res) => {
+  app.get("*", (req, res) => {
+    // A missing static asset must 404, not silently become index.html — an
+    // HTML body masquerading as an image feeds the client's onError retry
+    // loop and caches wrong content under the asset URL.
+    if (/\.(avif|webp|jpe?g|png|gif|svg|ico|woff2?|ttf|js|css|map|json|txt|xml)$/i.test(req.path)) {
+      return res.status(404).end();
+    }
     noStore(res);
     res.sendFile(path.join(distPath, "index.html"));
   });

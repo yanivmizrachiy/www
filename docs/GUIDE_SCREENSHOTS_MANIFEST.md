@@ -62,7 +62,10 @@
 | --- | --- | --- |
 | `19-wizard-step1.jpg` | שלב 1 באשף: 4 השלבים למעלה + שני מסלולי הבחירה | שאלה `space/open-new-space` |
 | `20-wizard-step1-selected.jpg` | "ללא קבוצת לימוד" מסומן במסגרת כחולה | שאלה `space/open-new-space` |
-| `21-wizard-step1-form.jpg` | טופס "מרחב למידה חדש": בית ספר, מקצוע, שכבת גיל, כיתה | שאלה `space/open-new-space` |
+| `21-wizard-step1-form.jpg` | טופס "מרחב למידה חדש" ריק: בית ספר, מקצוע, שכבת גיל, כיתה | קיים בריפו, לא מוצג כרגע (הגרסה הממולאת 25 מוצגת במקומו) |
+| `25-wizard-step1-filled.jpg` | טופס שלב 1 אחרי מילוי: בית ספר · מקצוע · שכבה · כיתה (פרטים בדויים) | שאלה `space/open-new-space` |
+| `22-wizard-step2.jpg` | שלב 2 — "סוג מרחב הלמידה": ריק / שכפול תוכן / תוכן מוכן | שאלה `space/open-new-space` |
+| `24-wizard-step4.jpg` | שלב 4 — "אישור וסיום": בדיקת פרטים ולחיצת "אישור" | שאלה `space/open-new-space` |
 
 קישור האשף האמיתי משולב בשאלה ככפתור: `https://moodlemoe.lms.education.gov.il/local/auto_course_create/wizard.php`.
 

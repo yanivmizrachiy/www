@@ -16,8 +16,6 @@ import {
   ChevronLeft,
   Home,
   Layers,
-  Copy,
-  Check,
   Instagram,
   MousePointerClick,
   Map as MapIcon,
@@ -297,10 +295,10 @@ const TOPICS: Topic[] = [
       {
         id: 'course-total',
         title: 'איך רואים ציון סופי בקורס?',
-        short: 'עמודה בשם "Course total" (או "ציון סופי" בעברית) ביומן הציונים מציגה את הציון המצטבר של כל תלמיד בקורס.',
+        short: 'ביומן הציונים יש עמודת סיכום של הקורס — העמודה האחרונה בטבלה — שמציגה את הציון המצטבר של כל תלמיד לפי כל פריטי הציון.',
         steps: [
           'פותחים "ציונים"',
-          'מגלגלים לימין/שמאל לעמודת "Course total"',
+          'מגלגלים עד העמודה האחרונה בטבלה — עמודת הסיכום של הקורס',
           'הערך הוא הציון הסופי לפי כל פריטי הציון',
         ],
         tip: 'הציון הסופי מחושב לפי הגדרות המשקלים בקורס. אם משהו נראה חסר — יש לבדוק את הגדרות פריטי הציון.',
@@ -315,7 +313,7 @@ const TOPICS: Topic[] = [
           'לוחצים "יצוא לגליון האלקטרוני של Excel"',
           'בוחרים פריטים, לוחצים "הורדה"',
         ],
-        tip: 'אפשר גם ODS, CSV או XML. כדי לייבא למודל החכם — Excel או CSV מומלצים.',
+        tip: 'אפשר גם ODS, CSV או XML. לפתיחה נוחה באקסל — Excel או CSV.',
       },
     ],
   },
@@ -438,16 +436,6 @@ const TOPICS: Topic[] = [
         ],
       },
       {
-        id: 'completion',
-        title: 'איך פותחים דוח השלמות פעילות?',
-        short: 'ב"דוחות" בוחרים "דוח השלמות פעילות". הדוח מציג מטריצה של תלמידים מול פעילויות עם סימוני השלמה.',
-        steps: [
-          'פותחים "דוחות"',
-          'בוחרים "דוח השלמות פעילות"',
-          'רואים את המטריצה המלאה',
-        ],
-      },
-      {
         id: 'which',
         title: 'איך יודעים איזה דוח מתאים לשאלה שלי?',
         short: 'לשאלה "מי צפה במה" — פעילות מרחב־לימוד. לשאלה "מי סיים מה" — השלמות פעילות. לשאלה "מה קרה מתי" — יומני מעקב. לשאלה "כמה תלמידים ואיזה ממוצע" — ניהול למידה (משהח).',
@@ -517,19 +505,19 @@ const TOPICS: Topic[] = [
           'לוחצים על תפריט ההורדה',
           'בוחרים פורמט (Excel/CSV/JSON)',
         ],
-        tip: 'CSV/JSON עדיפים על PDF לצורך ייבוא למודל החכם.',
+        tip: 'CSV או Excel נוחים לפתיחה ולמיון בגיליון אלקטרוני.',
       },
       {
         id: 'practice-time',
-        title: 'איך משתמשים ביומני פעילות כדי להבין זמן תרגול?',
-        short: 'זמן תרגול מחושב מהפערים בין אירועי כניסה ויציאה של תלמיד בלוגים. המודל החכם עושה זאת אוטומטית: כשיש לוגים אמיתיים, הוא מציג זמן תרגול לפי 24 שעות / 7 ימים / 30 ימים / טווח מותאם.',
+        title: 'איך מבינים מהלוגים מתי תלמיד באמת עבד?',
+        short: 'כל שורה ביומני המעקב היא אירוע עם שעה מדויקת: כניסה למרחב, צפייה בפעילות, הגשה. סינון לפי תלמיד מציג את רצף הפעולות שלו לאורך היום — כך רואים מתי נכנס, במה עבד וכמה אירועים ביצע.',
         steps: [
-          'מורידים לוגים ל-CSV/JSON ומעלים למודל החכם ב"ייבוא חכם"',
-          'או מפעילים סנכרון אוטומטי אם קיים token',
-          'עוברים ל"פעילות/זמנים" במודל החכם',
-          'בוחרים פרק זמן ורואים זמני תרגול',
+          'פותחים "דוחות" ← "יומני מעקב"',
+          'בוחרים תלמיד ספציפי במסנן המשתמש',
+          'בוחרים יום או "כל הימים" ולוחצים "הצג"',
+          'קוראים את רצף האירועים לפי שעות — מהאירוע הראשון לאחרון',
         ],
-        tip: 'ללא לוגים אמיתיים אין זמן תרגול. המודל החכם לא ימציא ולא ישער מספרים.',
+        tip: 'הרבה אירועים צפופים ברצף = עבודה רציפה. פער גדול בין שעות = הפסקה. הלוגים מציגים רק מה שקרה בפועל.',
       },
     ],
   },
@@ -580,7 +568,7 @@ const TOPICS: Topic[] = [
           'לוחצים על כפתור הורדה בראש הטבלה',
           'בוחרים CSV UTF-8',
         ],
-        tip: 'CSV UTF-8 שומר תווי עברית נכון. הקובץ מתאים לייבוא למודל החכם.',
+        tip: 'CSV UTF-8 שומר תווי עברית נכון.',
       },
       {
         id: 'vs-grade',
@@ -590,56 +578,6 @@ const TOPICS: Topic[] = [
           'השלמה נקבעת ב"תנאי השלמה" של הפעילות',
           'ציון נמצא ביומן הציונים',
           'תלמיד יכול להשלים פעילות גם עם ציון נמוך',
-        ],
-      },
-    ],
-  },
-  {
-    id: 'export',
-    title: 'הורדת Excel / CSV',
-    icon: Download,
-    color: 'bg-indigo-500',
-    questions: [
-      {
-        id: 'gradebook',
-        title: 'איך מורידים יומן ציונים לאקסל?',
-        short: 'בציונים → יצוא → יצוא לגליון האלקטרוני של Excel. בוחרים אילו פריטים לכלול, ולוחצים "הורדה".',
-        steps: [
-          'פותחים "ציונים"',
-          'בוחרים "יצוא"',
-          'בוחרים "יצוא לגליון האלקטרוני של Excel"',
-          'מסמנים פריטים, לוחצים "הורדה"',
-        ],
-      },
-      {
-        id: 'logs',
-        title: 'איך מורידים Logs?',
-        short: 'ב"דוחות → יומני מעקב", ממלאים סינון ולוחצים "הצג". בסוף העמוד לוחצים על תפריט ההורדה ובוחרים CSV / Excel / JSON.',
-        steps: [
-          'פותחים "יומני מעקב"',
-          'מסננים לפי צורך',
-          'לוחצים "הצג"',
-          'בסוף העמוד בוחרים פורמט הורדה',
-        ],
-      },
-      {
-        id: 'completion',
-        title: 'איך מורידים השלמות פעילות?',
-        short: 'ב"דוחות → דוח השלמות פעילות" בוחרים הורדה כ-CSV UTF-8 (מומלץ) או CSV Excel.',
-        steps: [
-          'פותחים "דוח השלמות פעילות"',
-          'לוחצים על כפתור הורדה',
-          'בוחרים CSV UTF-8',
-        ],
-      },
-      {
-        id: 'participants',
-        title: 'איך מורידים רשימת משתתפים?',
-        short: 'ב"משתתפים", מעל הטבלה יש כפתור הורדה. בוחרים בפורמט: CSV, Excel, ODS, JSON, HTML.',
-        steps: [
-          'פותחים "משתתפים"',
-          'לוחצים כפתור הורדה מעל הטבלה',
-          'בוחרים פורמט',
         ],
       },
     ],
@@ -656,7 +594,7 @@ const TOPICS: Topic[] = [
         short: '"ניהול למידה" הוא לוח מחוונים אנליטי ייחודי של משרד החינוך, שקיים בתוך מרחב ה-Moodle שלך. הוא מציג בעיצוב גרפי את נתוני הלמידה בכיתה — ממוצע, השלמה, וגרפים אוטומטיים.',
         steps: [
           'תוסף של משהח (לא של Moodle העולמי)',
-          'קיים במרחב Moodle עצמו, לא במודל החכם',
+          'קיים בתוך מרחב ה-Moodle עצמו',
           'מציג KPIs + 9 גרפים אוטומטיים',
         ],
       },
@@ -706,7 +644,7 @@ const TOPICS: Topic[] = [
     id: 'lti',
     title: 'כלי חיצוני / LTI',
     icon: ExternalLink,
-    color: 'bg-muted0',
+    color: 'bg-slate-500',
     questions: [
       {
         id: 'enter',
@@ -761,12 +699,11 @@ const TOPICS: Topic[] = [
       },
       {
         id: 'pending',
-        title: 'מה אומר מצב בהמתנה?',
-        short: 'כלי חדש שנוסף עשוי להישאר במצב "בהמתנה" עד שמנהל האתר של משהח יאשר אותו. במצב זה הכלי מופיע ברשימה אבל אינו זמין למורים לשימוש בפועל.',
+        title: 'מה עושים אם כלי מופיע במצב המתנה?',
+        short: 'אם כלי חדש מופיע במסך ניהול הכלים עם סטטוס המתנה ואינו עובד עדיין — פונים למנהל המודל הבית ספרי כדי לברר מה נדרש להשלמת ההפעלה.',
         steps: [
-          'מוודאים במסך ניהול הכלים את מצב הכלי',
-          'אם מסומן "בהמתנה" — פונים למנהל הבית ספרי',
-          'רק אחרי אישור — הכלי הופך פעיל',
+          'בודקים במסך ניהול הכלים את הסטטוס שמופיע ליד הכלי',
+          'אם הכלי לא עובד — פונים למנהל הבית ספרי עם צילום של המסך',
         ],
       },
       {
@@ -999,7 +936,8 @@ function GuideImg({ src, alt }: { src: string; alt: string }) {
           loading="lazy"
           decoding="async"
           onLoad={() => setLoaded(true)}
-          onError={() => setAttempt((a) => a + 1)}
+          // capped: a permanently missing file must not retry forever
+          onError={() => setAttempt((a) => (a < 25 ? a + 1 : a))}
           className={cn(
             'block h-auto w-full transition-opacity duration-300',
             loaded ? 'opacity-100' : 'opacity-0'
@@ -1040,7 +978,7 @@ function CoverLogo() {
           // attribute reaches the browser correctly and silences the warning.
           {...{ fetchpriority: 'high' }}
           onLoad={() => setLoaded(true)}
-          onError={() => setAttempt((a) => a + 1)}
+          onError={() => setAttempt((a) => (a < 12 ? a + 1 : a))}
           className={cn(
             'h-full w-full rounded-full object-contain transition-opacity duration-300',
             loaded ? 'opacity-100' : 'opacity-0'
@@ -1067,7 +1005,9 @@ function ScreenshotFrame({ shot }: { shot: Shot }) {
       <div
         dir="ltr"
         className={cn(
-          'mx-auto rounded-md px-3 py-1 text-[11px] font-medium',
+          // min-w-0 + truncate: the long unbreakable URL must ellipsize inside
+          // the flex row instead of overflowing the frame on narrow screens.
+          'mx-auto min-w-0 truncate rounded-md px-3 py-1 text-[11px] font-medium',
           href ? 'bg-primary/10 font-bold text-primary group-hover:bg-primary/15' : 'bg-card text-muted-foreground'
         )}
       >
@@ -1076,7 +1016,9 @@ function ScreenshotFrame({ shot }: { shot: Shot }) {
     </div>
   );
 
-  const img = <GuideImg src={`/guide/screenshots/${shot.src}`} alt={shot.caption} />;
+  // alt="" — the identical text lives in the adjacent <figcaption>; a
+  // meaningful alt here makes screen readers announce every caption twice.
+  const img = <GuideImg src={`/guide/screenshots/${shot.src}`} alt="" />;
 
   const caption = (
     <figcaption className="border-t border-border px-4 py-3 text-sm font-bold leading-relaxed text-foreground">
@@ -1129,10 +1071,6 @@ const YANIV_LINE = 'המדריך מנוהל ע״י יניב רז';
 const BIG_TITLE = 'מרחב הלמידה במערכת המודל של משרד החינוך';
 const INSTAGRAM_URL = 'https://www.instagram.com/yani__raz';
 
-function guideUrl() {
-  return typeof window !== 'undefined' ? `${window.location.origin}/guide` : '/guide';
-}
-
 // Footer appears on every view — managed-by line + Instagram (per site rules).
 function GuideFooter() {
   return (
@@ -1164,6 +1102,15 @@ function GuideShell({
   onBack?: () => void;
   viewKey?: string;
 }) {
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Screen-reader/keyboard context: each view swap unmounts the previously
+  // focused element, which silently drops focus to <body>. Re-anchor focus on
+  // the fresh content so Tab and SR reading continue from the new view.
+  useEffect(() => {
+    contentRef.current?.focus({ preventScroll: true });
+  }, [viewKey]);
+
   return (
     <div dir="rtl" className="guide-theme min-h-screen bg-background text-foreground">
       {(onHome || onBack) && (
@@ -1188,7 +1135,12 @@ function GuideShell({
       )}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 md:py-12">
         {/* keyed + animated so each view fades/slides in — smooth, instant, no page reload */}
-        <div key={viewKey} className="animate-in fade-in-0 slide-in-from-bottom-1 duration-300">
+        <div
+          key={viewKey}
+          ref={contentRef}
+          tabIndex={-1}
+          className="outline-none animate-in fade-in-0 slide-in-from-bottom-1 duration-300"
+        >
           {children}
         </div>
         <GuideFooter />
@@ -1272,9 +1224,11 @@ export default function Guide() {
   }
 
   // Every view change starts at the top — comfortable, no leftover scroll.
+  // questionId/areaId are included so flipping questions with the sticky
+  // הבא/הקודם buttons (view stays 'answer') also resets to the new title.
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [view]);
+  }, [view, questionId, areaId]);
 
   // Slideshow keyboard controls — flip questions with the arrow keys (RTL: ←
   // next, → previous), Esc goes back. Makes the guide feel like a real deck.
@@ -1666,7 +1620,9 @@ export default function Guide() {
     const nextQ = idx < topic.questions.length - 1 ? topic.questions[idx + 1] : null;
 
     return (
-      <GuideShell onHome={openHome} onBack={goBack} viewKey={view}>
+      // questionId in the key: flipping הבא/הקודם re-animates and re-anchors
+      // focus on the fresh question, not just on view changes.
+      <GuideShell onHome={openHome} onBack={goBack} viewKey={`${view}-${question.id}`}>
         <div className="space-y-6 max-w-4xl mx-auto">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground">
