@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Users, GraduationCap, Activity, FileBarChart2,
-  Download, Settings, LogOut, Wrench, Upload, AlertCircle,
+  Download, Settings, LogOut, Wrench, Upload, AlertCircle, Presentation,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
@@ -120,6 +120,21 @@ export function AppSidebar() {
           {!collapsed && <SidebarGroupLabel>תמיכה</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>
+              {/* Training presentation — a view-only web page, opened in a new
+                  tab so the teacher keeps the tool open. Not a download. */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="מצגת הדרכה">
+                  <a
+                    href="/guide"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 rounded-md text-primary transition-colors hover:bg-sidebar-accent"
+                  >
+                    <Presentation className="h-4 w-4 shrink-0" />
+                    {!collapsed && <span className="font-medium">מצגת הדרכה</span>}
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               {supportItems.map((item) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>

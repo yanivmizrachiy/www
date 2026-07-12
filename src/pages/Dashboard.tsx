@@ -9,7 +9,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent } from "@/components/ui/card";
 import { MoodleReportDownloads } from "@/components/MoodleReportDownloads";
 import { Button } from "@/components/ui/button";
-import { Users, GraduationCap, ClipboardList, Database, Calendar, Import, AlertCircle, RefreshCw } from "lucide-react";
+import { Users, GraduationCap, ClipboardList, Database, Calendar, Import, AlertCircle, RefreshCw, Presentation } from "lucide-react";
 import { motion } from "motion/react";
 import { formatTeacherDateDmyShort, formatTeacherDateTime } from "@/lib/teacherDateFormat";
 
@@ -498,6 +498,8 @@ export default function Dashboard() {
               <Button size="lg" onClick={() => void handleSyncSpace()} disabled={syncing || syncStatus.running} className="bg-white text-[#06152f] hover:bg-white/90 font-black shadow-xl"><RefreshCw className={(syncing || syncStatus.running) ? "h-4 w-4 animate-spin" : "h-4 w-4"} />סנכרן מרחב</Button>
               <Button asChild size="lg" className="border border-white/35 bg-[#0f3d75]/90 text-white hover:bg-[#15559a] font-black shadow-lg"><Link to="/smart-import" className="flex items-center gap-2"><Import className="h-4 w-4" />ייבוא חכם</Link></Button>
               <Button asChild variant="outline" size="lg" className="border-white/40 bg-[#06152f]/55 text-white hover:bg-[#0f3d75]/90 font-black"><Link to="/reports">דוחות</Link></Button>
+              {/* Training presentation — view-only web page, new tab (not a download) */}
+              <Button asChild variant="outline" size="lg" className="border-white/40 bg-[#06152f]/55 text-white hover:bg-[#0f3d75]/90 font-black"><a href="/guide" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2"><Presentation className="h-4 w-4" />מצגת הדרכה</a></Button>
             </motion.div>
           </div>
           <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.35, type: "spring" }}><StatusBadge status={hasSession ? "proven" : "missing"} className="self-start shadow-2xl xl:scale-125 2xl:scale-150" /></motion.div>
