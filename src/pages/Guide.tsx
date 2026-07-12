@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -514,7 +514,7 @@ const TOPICS: Topic[] = [
           'עוברים ל"פעילות/זמנים" במודל החכם',
           'בוחרים פרק זמן ורואים זמני תרגול',
         ],
-        tip: 'ללא לוגים אמיתיים אין זמן תרגול. המודל החכם לא יציג מספרים משוערים או דמו.',
+        tip: 'ללא לוגים אמיתיים אין זמן תרגול. המודל החכם לא ימציא ולא ישער מספרים.',
       },
     ],
   },
@@ -909,6 +909,7 @@ function ScreenshotFrame({ shot }: { shot: Shot }) {
         src={`/guide/screenshots/${shot.src}`}
         alt={shot.caption}
         loading="lazy"
+        decoding="async"
         className="w-full h-auto block bg-slate-100"
         onError={(e) => {
           // Render's free tier sleeps; on wake (~cold start) the first image
@@ -983,11 +984,44 @@ function GuideFooter() {
 }
 
 // Self-contained presentation shell — light, RTL, no המודל החכם chrome.
-function GuideShell({ children }: { children: ReactNode }) {
+function GuideShell({
+  children,
+  onHome,
+  onBack,
+  viewKey,
+}: {
+  children: ReactNode;
+  onHome?: () => void;
+  onBack?: () => void;
+  viewKey?: string;
+}) {
   return (
     <div dir="rtl" className="min-h-screen bg-slate-50 text-slate-900">
+      {(onHome || onBack) && (
+        <nav className="sticky top-0 z-30 border-b border-slate-200 bg-white/85 backdrop-blur-md">
+          <div className="max-w-5xl mx-auto flex h-14 items-center justify-between px-4 sm:px-6">
+            {onBack ? (
+              <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5 font-bold text-slate-700 hover:text-primary">
+                <ChevronRight className="h-4 w-4" />
+                חזרה
+              </Button>
+            ) : (
+              <span />
+            )}
+            {onHome && (
+              <Button variant="outline" size="sm" onClick={onHome} className="gap-1.5 font-bold">
+                <Home className="h-4 w-4" />
+                תפריט ראשי
+              </Button>
+            )}
+          </div>
+        </nav>
+      )}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 md:py-12">
-        {children}
+        {/* keyed + animated so each view fades/slides in — smooth, instant, no page reload */}
+        <div key={viewKey} className="animate-in fade-in-0 slide-in-from-bottom-1 duration-300">
+          {children}
+        </div>
         <GuideFooter />
       </div>
     </div>
@@ -1057,16 +1091,34 @@ export default function Guide() {
     setView('cover');
   }
 
+  // One "back" that always knows where the current view came from — powers the
+  // sticky nav bar so the teacher never gets lost.
+  function goBack() {
+    if (view === 'answer') return backToQuestions();
+    if (view === 'questions') return openTopics();
+    if (view === 'area') return openAreas();
+    // topics / areas / downloads sit under the main menu
+    if (view === 'topics' || view === 'areas' || view === 'downloads') return openHome();
+    return backToCover();
+  }
+
+  // Every view change starts at the top — comfortable, no leftover scroll.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [view]);
+
   // Cover
   if (view === 'cover') {
     return (
-      <GuideShell>
+      <GuideShell viewKey="cover">
         <div className="min-h-[70vh] flex flex-col items-center justify-center text-center gap-8 py-12">
           {/* Official Jerusalem-district math logo supplied by Yaniv (2026-07-09).
               Blue background removed, circle content untouched, aspect ratio kept. */}
           <img
             src="/guide/jerusalem-math-logo.png"
             alt="לוגו מחוז ירושלים"
+            decoding="async"
+            fetchPriority="high"
             className="h-32 w-32 md:h-44 md:w-44 object-contain drop-shadow-xl"
           />
 
@@ -1110,7 +1162,7 @@ export default function Guide() {
       { id: 'fix', title: 'פתרון תקלות', desc: 'מה עושים כשמשהו לא עובד', icon: AlertTriangle, color: 'bg-orange-500', go: () => openTopic('troubleshoot') },
     ];
     return (
-      <GuideShell>
+      <GuideShell onHome={openHome} onBack={goBack} viewKey={view}>
         <div className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -1153,7 +1205,7 @@ export default function Guide() {
   // Areas — button map (list of screen areas)
   if (view === 'areas') {
     return (
-      <GuideShell>
+      <GuideShell onHome={openHome} onBack={goBack} viewKey={view}>
         <div className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -1199,7 +1251,7 @@ export default function Guide() {
   if (view === 'area' && area) {
     const Icon = area.icon;
     return (
-      <GuideShell>
+      <GuideShell onHome={openHome} onBack={goBack} viewKey={view}>
         <div className="space-y-6">
           <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground">
             <button onClick={openHome} className="hover:text-primary transition-colors">מסלולים</button>
@@ -1284,7 +1336,7 @@ export default function Guide() {
       { title: 'רשימת משתתפים', where: 'משתתפים → הורדת טבלת משתתפים', go: () => openArea('participants') },
     ];
     return (
-      <GuideShell>
+      <GuideShell onHome={openHome} onBack={goBack} viewKey={view}>
         <div className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -1324,7 +1376,7 @@ export default function Guide() {
   // Topics
   if (view === 'topics') {
     return (
-      <GuideShell>
+      <GuideShell onHome={openHome} onBack={goBack} viewKey={view}>
         <div className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -1378,7 +1430,7 @@ export default function Guide() {
   if (view === 'questions' && topic) {
     const Icon = topic.icon;
     return (
-      <GuideShell>
+      <GuideShell onHome={openHome} onBack={goBack} viewKey={view}>
         <div className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-4">
@@ -1433,7 +1485,7 @@ export default function Guide() {
     const nextQ = idx < topic.questions.length - 1 ? topic.questions[idx + 1] : null;
 
     return (
-      <GuideShell>
+      <GuideShell onHome={openHome} onBack={goBack} viewKey={view}>
         <div className="space-y-6 max-w-4xl mx-auto">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground">
@@ -1571,7 +1623,7 @@ export default function Guide() {
 
   // Fallback — shouldn't reach here
   return (
-    <GuideShell>
+    <GuideShell onHome={openHome} onBack={goBack} viewKey={view}>
       <div className="text-center py-20">
         <Button onClick={backToCover}>חזרה לעמוד הראשי</Button>
       </div>
