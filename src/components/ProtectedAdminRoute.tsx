@@ -14,8 +14,10 @@ function Shell({ children }: { children: ReactNode }) {
 }
 
 export function ProtectedAdminRoute({ children }: { children: ReactNode }) {
-  const { loading, user, isAdmin, error, signInWithEmail, signOut } = useAdminAuth();
+  const { loading, user, isAdmin, error, signInWithEmail, signInWithPassword, signOut } =
+    useAdminAuth();
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -54,10 +56,18 @@ export function ProtectedAdminRoute({ children }: { children: ReactNode }) {
     );
   }
 
-  // 2. Not signed in — email magic-link sign-in.
+  // 2. Not signed in — password sign-in (primary; the admin user has a
+  // dashboard-created password) with magic-link email as fallback.
   if (!user) {
-    async function submit(e: React.FormEvent) {
+    async function submitPassword(e: React.FormEvent) {
       e.preventDefault();
+      if (!email.trim() || !password) return;
+      setBusy(true);
+      await signInWithPassword(email.trim(), password);
+      setBusy(false);
+      // on success onAuthStateChange re-renders into the hub automatically
+    }
+    async function sendMagicLink() {
       if (!email.trim()) return;
       setBusy(true);
       const ok = await signInWithEmail(email.trim());
@@ -75,7 +85,7 @@ export function ProtectedAdminRoute({ children }: { children: ReactNode }) {
               </div>
               <h1 className="text-2xl font-black text-slate-900">מרכז השליטה של יניב</h1>
               <p className="text-sm font-medium text-slate-500 leading-relaxed">
-                אזור פרטי למנהל בלבד. יש להתחבר עם דוא״ל מורשה כדי להמשיך.
+                אזור פרטי למנהל בלבד. מתחברים עם דוא״ל וסיסמה.
               </p>
             </div>
 
@@ -87,7 +97,7 @@ export function ProtectedAdminRoute({ children }: { children: ReactNode }) {
                 </p>
               </div>
             ) : (
-              <form onSubmit={submit} className="space-y-3">
+              <form onSubmit={submitPassword} className="space-y-3">
                 <label className="block text-sm font-bold text-slate-700">כתובת דוא״ל</label>
                 <input
                   type="email"
@@ -96,12 +106,33 @@ export function ProtectedAdminRoute({ children }: { children: ReactNode }) {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   dir="ltr"
+                  autoComplete="email"
+                  className="w-full rounded-xl border-2 border-slate-200 px-4 py-3 text-sm focus:border-primary focus:outline-none"
+                />
+                <label className="block text-sm font-bold text-slate-700">סיסמה</label>
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  dir="ltr"
+                  autoComplete="current-password"
                   className="w-full rounded-xl border-2 border-slate-200 px-4 py-3 text-sm focus:border-primary focus:outline-none"
                 />
                 <Button type="submit" disabled={busy} className="w-full gap-2 h-12 font-bold">
-                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                  שליחת קישור התחברות
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                  כניסה
                 </Button>
+                <button
+                  type="button"
+                  onClick={sendMagicLink}
+                  disabled={busy || !email.trim()}
+                  className="w-full text-center text-xs font-bold text-slate-500 hover:text-primary transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-1.5 pt-1"
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  או שליחת קישור התחברות לדוא״ל
+                </button>
               </form>
             )}
 

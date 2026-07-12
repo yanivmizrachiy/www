@@ -75,11 +75,30 @@ export function useAdminAuth() {
     return true;
   }, []);
 
+  // Password sign-in — primary path. The admin user was created in the Supabase
+  // dashboard with a password; magic-link email is unreliable on the free tier.
+  const signInWithPassword = useCallback(
+    async (email: string, password: string): Promise<boolean> => {
+      setError(null);
+      const { error: signErr } = await supabase.auth.signInWithPassword({ email, password });
+      if (signErr) {
+        setError(
+          signErr.message === 'Invalid login credentials'
+            ? 'אימייל או סיסמה שגויים'
+            : signErr.message
+        );
+        return false;
+      }
+      return true;
+    },
+    []
+  );
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
     setIsAdmin(false);
   }, []);
 
-  return { loading, user, isAdmin, error, signInWithEmail, signOut };
+  return { loading, user, isAdmin, error, signInWithEmail, signInWithPassword, signOut };
 }

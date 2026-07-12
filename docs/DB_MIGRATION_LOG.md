@@ -26,14 +26,17 @@
 - **טבלאות `imported_*` אינן קיימות במסד** — הקוד (`useImports.ts`) קורא `imported_students`/`imported_grades`/`imported_grade_items` אך הן לא נוצרו. לכן חשש ה-RLS על `imported_*` שנרשם ב-PROJECT_MEMORY **אינו רלוונטי כרגע** (אין טבלאות). כשייווצרו — יש להגדיר להן RLS מחמיר.
 - **`auth.users` ריק (0 שורות)** — אף אחד עדיין לא התחבר ל-Supabase Auth של האפליקציה.
 
-## הצעד היחיד שנותר לזריעת admin
+## 2026-07-10 — זריעת ה-admin הושלמה ✅
 
-לא ניתן לזרוע admin ללא `auth.users.id` אמיתי. הצעד:
-1. יניב פותח את `https://www-tijc.onrender.com/admin-hub`, מזין `yanivmiz77@gmail.com`, ולוחץ "שליחת קישור התחברות".
-2. פותח את ה-magic link מהמייל → נוצרת שורה ב-`auth.users`.
-3. ואז (SQL editor):
+מסלול ה-magic-link נכשל (תקלה פעילה ב-Supabase + מגבלות מייל במסלול חינמי), לכן:
+1. יניב יצר משתמש Auth בדשבורד (Authentication → Users → Add user → Create new user, עם ✓ Auto-Confirm): `yanivmiz77@gmail.com`, UID `be498e6a-141f-47e5-85e0-f85f3a35670e`, כולל סיסמה שבחר.
+2. הורצה הזריעה ב-SQL Editor:
    ```sql
    insert into public.admin_users (user_id, email, role)
-   select id, email, 'owner' from auth.users where email = 'yanivmiz77@gmail.com';
+   select id, email, 'owner' from auth.users where email = 'yanivmiz77@gmail.com'
+   on conflict (user_id) do nothing;
    ```
-4. אחרי הזריעה — `/admin-hub` יציג את מרכז השליטה ליניב בלבד.
+3. **אומת במסד:** `admin_users` מכילה שורה אחת — `yanivmiz77@gmail.com` / role **owner**.
+4. נוספה ל-`/admin-hub` התחברות עם **סיסמה** (`signInWithPassword`) כדרך ראשית; magic-link נשאר כגיבוי.
+
+**מצב סופי: שער ה-Admin פתוח.** יניב מתחבר ב-`/admin-hub` עם המייל + הסיסמה שבחר בדשבורד. `is_admin()` מחזיר true עבורו בלבד.
