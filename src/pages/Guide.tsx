@@ -1042,7 +1042,7 @@ type View = 'cover' | 'home' | 'topics' | 'questions' | 'answer' | 'areas' | 'ar
 
 const HEADER_LINE = 'הדרכה במחוז ירושלים והעיר ירושלים - מנח״י, בהובלת איילת קריספין';
 const YANIV_LINE = 'המדריך מנוהל ע״י יניב רז';
-const BIG_TITLE = 'המדריך המלא למורים — מרחב הלמידה במערכת המודל של משרד החינוך';
+const BIG_TITLE = 'מרחב הלמידה במערכת המודל של משרד החינוך';
 const INSTAGRAM_URL = 'https://www.instagram.com/yani__raz';
 
 function guideUrl() {
@@ -1209,12 +1209,15 @@ export default function Guide() {
             className="h-28 w-28 rounded-full bg-white/95 p-2.5 shadow-2xl ring-2 ring-gold/70 md:h-36 md:w-36"
           />
 
-          <p className="font-display text-sm font-bold leading-relaxed text-gold md:text-lg">
-            {HEADER_LINE}
-          </p>
+          <div className="space-y-1">
+            <p className="font-display text-sm font-bold leading-relaxed text-gold md:text-lg">
+              {HEADER_LINE}
+            </p>
+            <p className="text-sm font-medium text-white/70">{YANIV_LINE}</p>
+          </div>
 
-          <h1 className="font-display text-5xl font-black leading-none text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.35)] md:text-7xl">
-            המודל החכם
+          <h1 className="font-display text-4xl font-black leading-tight text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.35)] md:text-6xl">
+            המדריך המלא למורים
           </h1>
 
           <p className="max-w-xl text-lg font-medium leading-relaxed text-white/85 md:text-xl">
@@ -1229,8 +1232,6 @@ export default function Guide() {
             כניסה למדריך
             <ChevronLeft className="h-6 w-6" />
           </Button>
-
-          <p className="mt-6 text-sm font-medium text-white/65">{YANIV_LINE}</p>
         </div>
       </div>
     );
