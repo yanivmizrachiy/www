@@ -1215,20 +1215,31 @@ export default function Guide() {
         <div className="absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-primary/40 blur-3xl" />
 
         <div className="relative z-10 mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center gap-6 px-6 py-16 text-center">
-          {/* Official Jerusalem-district math logo (Yaniv, 2026-07-09). */}
+          {/* Official Jerusalem-district math logo (Yaniv, 2026-07-09).
+              Retries on error so a Render cold-start can't leave it broken. */}
           <img
             src="/guide/jerusalem-math-logo.png"
             alt="לוגו מחוז ירושלים"
             decoding="async"
             fetchPriority="high"
+            onError={(e) => {
+              const el = e.currentTarget;
+              const n = Number(el.dataset.retry || '0');
+              if (n < 10) {
+                el.dataset.retry = String(n + 1);
+                window.setTimeout(() => {
+                  el.src = `/guide/jerusalem-math-logo.png?retry=${n + 1}`;
+                }, 800 + n * 600);
+              }
+            }}
             className="h-28 w-28 rounded-full bg-white/95 p-2.5 shadow-2xl ring-2 ring-gold/70 md:h-36 md:w-36"
           />
 
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <p className="font-display text-sm font-bold leading-relaxed text-gold md:text-lg">
               {HEADER_LINE}
             </p>
-            <p className="text-sm font-medium text-white/70">{YANIV_LINE}</p>
+            <p className="text-base font-bold text-white/90 md:text-xl">{YANIV_LINE}</p>
           </div>
 
           <h1 className="font-display text-4xl font-black leading-tight text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.35)] md:text-6xl">
