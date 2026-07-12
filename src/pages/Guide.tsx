@@ -26,7 +26,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { BUTTON_AREAS, CUSTOM_SPACE_NOTE, type Shot } from '@/data/guideButtons';
+import { BUTTON_AREAS, type Shot } from '@/data/guideButtons';
 
 type Question = {
   id: string;
@@ -814,14 +814,12 @@ const QUESTION_SHOTS: Record<string, Shot[]> = {
     {
       src: '02-my-courses-home.jpg',
       caption: 'אחרי הכניסה — עמוד "מרחבי־הלימוד שלי" עם הכפתור "פתיחת מרחב כיתתי"',
-      custom: 'הברכה "שלום יניב" תופיע אצלכם עם השם שלכם',
     },
   ],
   'space/rename-space': [
     {
       src: '10-course-page.jpg',
       caption: 'לוחצים "הגדרות" בתפריט הקורס כדי לשנות את שם המרחב',
-      custom: 'כאן רואים את התוצאה — למרחב בצילום כבר יש שם אישי (השם בדוי)',
     },
   ],
   'space/open-new-space': [
@@ -836,7 +834,6 @@ const QUESTION_SHOTS: Record<string, Shot[]> = {
     {
       src: '25-wizard-step1-filled.jpg',
       caption: 'כך נראה הטופס אחרי מילוי: בית ספר · מקצוע · שכבה · כיתה — לוחצים "הבא"',
-      custom: 'הפרטים כאן הם דוגמה (שם בדוי)',
     },
     {
       src: '22-wizard-step2.jpg',
@@ -845,55 +842,46 @@ const QUESTION_SHOTS: Record<string, Shot[]> = {
     {
       src: '24-wizard-step4.jpg',
       caption: 'שלב 4 — "אישור וסיום": בודקים את הפרטים ולוחצים "אישור" כדי לפתוח את המרחב',
-      custom: 'שם הכיתה כאן בדוי — אצלכם יופיעו הפרטים שלכם',
     },
   ],
   'participants/self-enrol': [
     {
       src: '28-selfenrol-student-view.jpg',
       caption: 'תצוגת תלמיד — מה שהתלמיד רואה אחרי פתיחת הקישור: לוחץ "רשום אותי" כדי להצטרף למרחב',
-      custom: 'שם המרחב והשם בסרגל העליון הם דוגמה (שם בדוי) — אצלכם יופיעו שלכם',
     },
     {
       src: '29-selfenrol-success-studentview.jpg',
       caption: 'תצוגת תלמיד — מיד אחרי הלחיצה: ההודעה "נרשמתם לקורס בהצלחה", והתלמיד רואה רק מרחב־לימוד, ציונים ודוחות',
-      custom: 'שם המרחב והשם בסרגל העליון הם דוגמה (שם בדוי) — אצלכם יופיעו שלכם',
     },
     {
       src: '26-selfenrol-methods-list.jpg',
       caption: 'מהצד שלכם: עמוד "שיטות שיוך לתפקיד" — שורת "שיוך עצמי (תלמיד)" עם סמל עין פתוחה (=פעיל)',
-      custom: 'שם המרחב והשם בסרגל העליון הם דוגמה (שם בדוי) — אצלכם יופיעו שלכם',
     },
     {
       src: '27-selfenrol-settings.jpg',
       caption: 'הגדרות "שיוך עצמי" — שני השדות הקריטיים מוגדרים "כן"',
-      custom: 'שם המרחב והשם בסרגל העליון הם דוגמה (שם בדוי) — אצלכם יופיעו שלכם',
     },
   ],
   'participants/my-space-vs-self-learning': [
     {
       src: '30-student-mycourses-selflearning.jpg',
       caption: 'תצוגת תלמיד — "מרחבי הלמידה שלי" של התלמיד: המרחב של המורה לצד מרחב "למידה עצמית" ארצי',
-      custom: 'שם המרחב והשם בסרגל העליון הם דוגמה (שם בדוי) — אצלכם יופיעו שלכם',
     },
   ],
   'space/content-updates': [
     {
       src: '31-updates-drawer.jpg',
       caption: 'הפאנל שנפתח בלחיצה על החץ: "פעולות למורה" ומתחתיו "תבניות ללמידה דיגיטלית" עם כפתורי העדכונים — כולל ההנחיה "כדי לגרור עדכון יש להפעיל עריכה במרחב הלמידה"',
-      custom: 'השם בסרגל העליון בדוי — אצלכם יופיע שלכם',
     },
     {
       src: '32-updates-list-expanded.jpg',
       caption: 'לחיצה על "נוספו 24 עדכונים ברכיבים" פותחת את הרשימה — לכל עדכון: היחידה שלו, שם הרכיב וידית גרירה ✛',
-      custom: 'השם בסרגל העליון בדוי — אצלכם יופיע שלכם',
     },
   ],
   'tasks/question-behaviour': [
     {
       src: '33-quiz-question-behaviour.jpg',
       caption: 'הגדרות בוחן — למעלה "מספר נסיונות מותרים" (כאן קובעים כמה ניסיונות), ובסעיף "התנהגות השאלה" נבחר המצב "אינטרקטיבי - מספר ניסיונות מענה לשאלה + רמזים"',
-      custom: 'השם בסרגל העליון בדוי — אצלכם יופיע שלכם',
     },
   ],
 };
@@ -988,12 +976,6 @@ function ScreenshotFrame({ shot }: { shot: Shot }) {
     </figcaption>
   );
 
-  const customNote = shot.custom ? (
-    <div className="border-t border-gold/25 bg-gold-soft/50 px-4 py-2 text-[11px] font-bold text-gold-foreground">
-      מותאם אישית: {shot.custom}
-    </div>
-  ) : null;
-
   if (href) {
     return (
       <a
@@ -1006,7 +988,6 @@ function ScreenshotFrame({ shot }: { shot: Shot }) {
         {chrome}
         {img}
         {caption}
-        {customNote}
       </a>
     );
   }
@@ -1016,25 +997,19 @@ function ScreenshotFrame({ shot }: { shot: Shot }) {
       {chrome}
       {img}
       {caption}
-      {customNote}
+      
     </figure>
   );
 }
 
-// גלריית צילומים + ההערה הקבועה על העיצוב האישי של יניב.
+// גלריית צילומים — הצילומים עצמם, בלי כיתובי-מטא.
 function ScreenshotGallery({ shots }: { shots: Shot[] }) {
   return (
-    <section className="space-y-3">
-      <h3 className="text-xs font-black uppercase tracking-wider text-muted-foreground">
-        צילומים אמיתיים מתוך Moodle
-      </h3>
-      <div className="grid grid-cols-1 gap-4">
-        {shots.map(s => (
-          <ScreenshotFrame key={s.src} shot={s} />
-        ))}
-      </div>
-      <p className="text-[11px] font-medium text-muted-foreground/70 leading-relaxed">{CUSTOM_SPACE_NOTE}</p>
-    </section>
+    <div className="grid grid-cols-1 gap-4">
+      {shots.map(s => (
+        <ScreenshotFrame key={s.src} shot={s} />
+      ))}
+    </div>
   );
 }
 

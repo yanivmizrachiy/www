@@ -25,13 +25,10 @@ export type Btn = {
   also?: string; // דדופ: איפה עוד מופיע / ראו גם
 };
 
-// צילום אמיתי מתוך Moodle של משרד החינוך (session חי, מרחב של יניב).
-// custom = מה בצילום הוא עיצוב אישי של יניב; אצל כל מורה יופיעו השם והתכנים שלו.
-// המקור והפירוט המלא: docs/GUIDE_SCREENSHOTS_MANIFEST.md
+// צילום מסך של Moodle (מקור: docs/GUIDE_SCREENSHOTS_MANIFEST.md).
 export type Shot = {
   src: string; // נתיב תחת /guide/screenshots/
   caption: string; // כותרת קצרה בשפה פשוטה
-  custom?: string; // הערת "מותאם אישית" אם רלוונטי
 };
 
 export type ActivityGroup = {
@@ -48,12 +45,8 @@ export type ButtonArea = {
   color: string;
   buttons?: Btn[];
   groups?: ActivityGroup[]; // רק לאזור הוספת משאב או פעילות
-  screenshots?: Shot[]; // צילומים אמיתיים של האזור
+  screenshots?: Shot[]; // צילומי האזור
 };
-
-// הערה קבועה שמוצגת ליד צילומים מתוך מרחב אמיתי.
-export const CUSTOM_SPACE_NOTE =
-  'הצילומים אמיתיים מתוך המערכת; השמות שבהם (כמו "רות לוי") הוחלפו לשמות בדויים לצורך ההדגמה. אצלכם יופיעו השם והתכנים שלכם — הכפתורים והתפריטים זהים אצל כל מורה.';
 
 export const BUTTON_AREAS: ButtonArea[] = [
   {
@@ -68,7 +61,6 @@ export const BUTTON_AREAS: ButtonArea[] = [
       {
         src: '02-my-courses-home.jpg',
         caption: 'עמוד "מרחבי־הלימוד שלי" עם הכפתורים הגדולים, כולל "פתיחת מרחב כיתתי"',
-        custom: 'הברכה תופיע עם השם שלכם (השם בצילום בדוי)',
       },
       { src: '01-login.jpg', caption: 'עמוד הכניסה של משרד החינוך — מזינים קוד משתמש וסיסמה ולוחצים "כניסה"' },
     ],
@@ -94,7 +86,6 @@ export const BUTTON_AREAS: ButtonArea[] = [
       {
         src: '09-user-menu.jpg',
         caption: 'התפריט שנפתח בלחיצה על השם — פרופיל, ציונים, לוח־שנה, קבצים, דוחות, העדפות והתנתקות',
-        custom: 'בסרגל מופיע שם המשתמש — אצלכם יופיע השם שלכם (בצילום שם בדוי)',
       },
     ],
     buttons: [
@@ -119,12 +110,10 @@ export const BUTTON_AREAS: ButtonArea[] = [
       {
         src: '11-notifications.jpg',
         caption: 'פאנל ההתראות — למעלה: ✓ סימון הכל כנקרא ו־⚙️ הגדרות התראות',
-        custom: 'אצלכם יופיעו ההתראות שלכם (השם בצילום בדוי)',
       },
       {
         src: '12-messages.jpg',
         caption: 'פאנל המסרים — חיפוש אנשים, מועדפים, קבוצה ופרטי',
-        custom: 'אנשי הקשר יהיו שלכם (השם בצילום בדוי)',
       },
     ],
     buttons: [
@@ -148,7 +137,6 @@ export const BUTTON_AREAS: ButtonArea[] = [
       {
         src: '10-course-page.jpg',
         caption: 'עמוד קורס עם תפריט הקורס למעלה: מרחב־לימוד, הגדרות, משתתפים, ציונים, דוחות ואפשרויות נוספות. בצד — הסרגל הצדדי עם רשימת היחידות',
-        custom: 'שם המרחב ושמות היחידות הם עיצוב אישי של המורה — אצלכם יופיעו שלכם (השם בצילום בדוי)',
       },
     ],
     buttons: [
@@ -196,7 +184,6 @@ export const BUTTON_AREAS: ButtonArea[] = [
       {
         src: '06-course-edit-on.jpg',
         caption: 'קורס במצב עריכה — רואים "עריכה מרובה", כפתורי + ו־⋮ ליד כל יחידה',
-        custom: 'שמות היחידות (יסודות, אלגברה...) הם דוגמה ממרחב אמיתי',
       },
       { src: '07-unit-menu.jpg', caption: 'לחיצה על ⋮ של יחידה פותחת: עריכת יחידת הוראה וקישור קבוע' },
       {
@@ -206,7 +193,6 @@ export const BUTTON_AREAS: ButtonArea[] = [
       {
         src: '14-hidden-items.jpg',
         caption: 'פריטים מוסתרים — התג "מוסתר בפני תלמידים" והתג "זמין אך אינו מוצג בעמוד הראשי"',
-        custom: 'שמות הפריטים הם דוגמה ממרחב אמיתי',
       },
       { src: '05-home-edit-on.jpg', caption: 'גם עמוד הבית במצב עריכה — מופיעים "הוספת משבצת" וכפתורי ⋮' },
     ],
