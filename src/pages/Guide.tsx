@@ -1191,6 +1191,21 @@ export default function Guide() {
     window.scrollTo(0, 0);
   }, [view]);
 
+  // Slideshow keyboard controls — flip questions with the arrow keys (RTL: ←
+  // next, → previous), Esc goes back. Makes the guide feel like a real deck.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape' && view !== 'cover') { goBack(); return; }
+      if (view === 'answer' && topic && question) {
+        const i = topic.questions.findIndex(q => q.id === question.id);
+        if (e.key === 'ArrowLeft' && topic.questions[i + 1]) openQuestion(topic.questions[i + 1].id);
+        if (e.key === 'ArrowRight' && topic.questions[i - 1]) openQuestion(topic.questions[i - 1].id);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [view, topicId, questionId]);
+
   // Cover — full-bleed premium hero (Jerusalem blue + gold). Real logo/credits.
   if (view === 'cover') {
     return (
@@ -1594,6 +1609,7 @@ export default function Guide() {
             </div>
           </div>
 
+          <div key={question.id} className="animate-in fade-in-0 slide-in-from-left-4 duration-300">
           <Card className="border-none shadow-luxury overflow-hidden">
             <div className={cn('h-2 w-full', topic.color)} />
             <CardContent className="p-8 space-y-8">
@@ -1675,31 +1691,43 @@ export default function Guide() {
               )}
             </CardContent>
           </Card>
+          </div>
 
-          <div className="flex items-center justify-between gap-3">
-            <Button
-              variant="outline"
-              onClick={() => prevQ && openQuestion(prevQ.id)}
-              disabled={!prevQ}
-              className="gap-2 font-bold"
-            >
-              <ChevronRight className="h-4 w-4" />
-              שאלה קודמת
-            </Button>
+          {/* Slideshow controls — always visible (sticky), flip questions like
+              slides. Also works with the ← → arrow keys. */}
+          <div className="sticky bottom-3 z-20 pt-2">
+            <div className="mx-auto flex max-w-lg items-center justify-between gap-2 rounded-2xl border border-border bg-card/90 p-2 shadow-[0_10px_30px_rgba(20,30,60,0.14)] backdrop-blur-md">
+              <Button
+                variant="ghost"
+                onClick={() => prevQ && openQuestion(prevQ.id)}
+                disabled={!prevQ}
+                className="gap-1 font-bold disabled:opacity-30"
+              >
+                <ChevronRight className="h-5 w-5" />
+                הקודם
+              </Button>
 
-            <div className="text-xs font-bold text-muted-foreground">
-              שאלה {idx + 1} מתוך {topic.questions.length}
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-xs font-black text-foreground">
+                  {idx + 1} / {topic.questions.length}
+                </span>
+                <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted sm:w-32">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-300"
+                    style={{ width: `${((idx + 1) / topic.questions.length) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              <Button
+                onClick={() => nextQ && openQuestion(nextQ.id)}
+                disabled={!nextQ}
+                className="gap-1 font-bold disabled:opacity-30"
+              >
+                הבא
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
             </div>
-
-            <Button
-              variant="default"
-              onClick={() => nextQ && openQuestion(nextQ.id)}
-              disabled={!nextQ}
-              className="gap-2 font-bold"
-            >
-              שאלה הבאה
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       </GuideShell>
