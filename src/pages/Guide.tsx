@@ -954,9 +954,8 @@ function ScreenshotGallery({ shots }: { shots: Shot[] }) {
 
 type View = 'cover' | 'home' | 'topics' | 'questions' | 'answer' | 'areas' | 'area' | 'downloads';
 
-const HEADER_LINE = 'הדרכה במחוז ירושלים והעיר ירושלים - מנח״י';
+const HEADER_LINE = 'הדרכה במחוז ירושלים והעיר ירושלים - מנח״י, בהובלת איילת קריספין';
 const YANIV_LINE = 'המדריך מנוהל ע״י יניב רז';
-const CREDIT_LINE = 'בהובלת איילת קריספין';
 const BIG_TITLE = 'המדריך המלא למורים — מרחב הלמידה במערכת המודל של משרד החינוך';
 const INSTAGRAM_URL = 'https://www.instagram.com/yani__raz';
 
@@ -969,7 +968,6 @@ function GuideFooter() {
   return (
     <footer className="mt-16 pt-8 border-t border-slate-200 flex flex-col items-center gap-1.5 text-center">
       <p className="text-sm font-bold text-slate-600">{YANIV_LINE}</p>
-      <p className="text-xs font-medium text-slate-400">{CREDIT_LINE}</p>
       <a
         href={INSTAGRAM_URL}
         target="_blank"
