@@ -898,48 +898,105 @@ const QUESTION_SHOTS: Record<string, Shot[]> = {
   ],
 };
 
-// Real screenshot in premium frame — צילום אמיתי במסגרת מכובדת.
+// Screenshots that map to a REAL, stable, non-course-specific Moodle page. The
+// framed "window" becomes a live link to it (opens in a new tab). Course-
+// specific pages (participants/grades/logs/reports) need a course id the public
+// guide doesn't have, so they are intentionally left non-clickable — we link
+// ONLY where a real, working URL exists.
+const SCREENSHOT_LINKS: Record<string, string> = {
+  '01-login.jpg': 'https://moodlemoe.lms.education.gov.il/',
+  '02-my-courses-home.jpg': 'https://moodlemoe.lms.education.gov.il/my/',
+  '19-wizard-step1.jpg': 'https://moodlemoe.lms.education.gov.il/local/auto_course_create/wizard.php',
+  '20-wizard-step1-selected.jpg': 'https://moodlemoe.lms.education.gov.il/local/auto_course_create/wizard.php',
+  '21-wizard-step1-form.jpg': 'https://moodlemoe.lms.education.gov.il/local/auto_course_create/wizard.php',
+  '22-wizard-step2.jpg': 'https://moodlemoe.lms.education.gov.il/local/auto_course_create/wizard.php',
+  '24-wizard-step4.jpg': 'https://moodlemoe.lms.education.gov.il/local/auto_course_create/wizard.php',
+  '25-wizard-step1-filled.jpg': 'https://moodlemoe.lms.education.gov.il/local/auto_course_create/wizard.php',
+};
+
+// Real screenshot in a premium browser frame. When the shot maps to a live
+// Moodle page (SCREENSHOT_LINKS), the whole window becomes a clickable link.
 function ScreenshotFrame({ shot }: { shot: Shot }) {
+  const href = SCREENSHOT_LINKS[shot.src];
+  const address = href
+    ? href.replace(/^https?:\/\//, '').replace(/\/$/, '') || 'moodlemoe.lms.education.gov.il'
+    : 'moodlemoe.lms.education.gov.il';
+
+  const chrome = (
+    <div className="flex items-center gap-2 border-b border-border bg-muted px-4 py-2.5">
+      <span className="h-3 w-3 rounded-full bg-rose-400" />
+      <span className="h-3 w-3 rounded-full bg-amber-400" />
+      <span className="h-3 w-3 rounded-full bg-emerald-400" />
+      <div
+        dir="ltr"
+        className={cn(
+          'mx-auto rounded-md px-3 py-1 text-[11px] font-medium',
+          href ? 'bg-primary/10 font-bold text-primary group-hover:bg-primary/15' : 'bg-card text-muted-foreground'
+        )}
+      >
+        {address}{href ? ' ↗' : ''}
+      </div>
+    </div>
+  );
+
+  const img = (
+    <img
+      src={`/guide/screenshots/${shot.src}`}
+      alt={shot.caption}
+      loading="lazy"
+      decoding="async"
+      className="block h-auto w-full bg-slate-100"
+      onError={(e) => {
+        // Render free tier sleeps; on wake the first image requests can drop.
+        // Retry with backoff + cache-bust so the guide self-heals.
+        const el = e.currentTarget;
+        const n = Number(el.dataset.retry || '0');
+        if (n < 8) {
+          el.dataset.retry = String(n + 1);
+          window.setTimeout(() => {
+            el.src = `/guide/screenshots/${shot.src}?retry=${n + 1}`;
+          }, 1200 + n * 800);
+        }
+      }}
+    />
+  );
+
+  const caption = (
+    <figcaption className="border-t border-border px-4 py-3 text-sm font-bold leading-relaxed text-foreground">
+      {shot.caption}
+      {href && <span className="font-medium text-primary"> · לחצו לפתיחה ב-Moodle ↗</span>}
+    </figcaption>
+  );
+
+  const customNote = shot.custom ? (
+    <div className="border-t border-gold/25 bg-gold-soft/50 px-4 py-2 text-[11px] font-bold text-gold-foreground">
+      מותאם אישית: {shot.custom}
+    </div>
+  ) : null;
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        title="פתיחת העמוד ב-Moodle בלשונית חדשה"
+        className="group block overflow-hidden rounded-2xl border border-border bg-card shadow-[0_14px_44px_rgba(20,30,60,0.13)] transition hover:-translate-y-0.5 hover:ring-2 hover:ring-primary/60"
+      >
+        {chrome}
+        {img}
+        {caption}
+        {customNote}
+      </a>
+    );
+  }
+
   return (
     <figure className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_14px_44px_rgba(20,30,60,0.13)]">
-      {/* browser chrome — the real Ministry-of-Education Moodle address */}
-      <div className="flex items-center gap-2 border-b border-border bg-muted px-4 py-2.5">
-        <span className="h-3 w-3 rounded-full bg-rose-400" />
-        <span className="h-3 w-3 rounded-full bg-amber-400" />
-        <span className="h-3 w-3 rounded-full bg-emerald-400" />
-        <div dir="ltr" className="mx-auto rounded-md bg-card px-3 py-1 text-[11px] font-medium text-muted-foreground">
-          moodlemoe.lms.education.gov.il
-        </div>
-      </div>
-      <img
-        src={`/guide/screenshots/${shot.src}`}
-        alt={shot.caption}
-        loading="lazy"
-        decoding="async"
-        className="block h-auto w-full bg-slate-100"
-        onError={(e) => {
-          // Render's free tier sleeps; on wake (~cold start) the first image
-          // requests can drop and show a broken icon. Retry with a short backoff
-          // + cache-bust until the server is warm, so the guide self-heals
-          // instead of the teacher seeing broken images.
-          const el = e.currentTarget;
-          const n = Number(el.dataset.retry || '0');
-          if (n < 8) {
-            el.dataset.retry = String(n + 1);
-            window.setTimeout(() => {
-              el.src = `/guide/screenshots/${shot.src}?retry=${n + 1}`;
-            }, 1200 + n * 800);
-          }
-        }}
-      />
-      <figcaption className="border-t border-border px-4 py-3 text-sm font-bold leading-relaxed text-foreground">
-        {shot.caption}
-      </figcaption>
-      {shot.custom && (
-        <div className="border-t border-gold/25 bg-gold-soft/50 px-4 py-2 text-[11px] font-bold text-gold-foreground">
-          מותאם אישית: {shot.custom}
-        </div>
-      )}
+      {chrome}
+      {img}
+      {caption}
+      {customNote}
     </figure>
   );
 }
