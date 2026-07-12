@@ -900,7 +900,21 @@ function ScreenshotFrame({ shot }: { shot: Shot }) {
         src={`/guide/screenshots/${shot.src}`}
         alt={shot.caption}
         loading="lazy"
-        className="w-full h-auto block"
+        className="w-full h-auto block bg-slate-100"
+        onError={(e) => {
+          // Render's free tier sleeps; on wake (~cold start) the first image
+          // requests can drop and show a broken icon. Retry with a short backoff
+          // + cache-bust until the server is warm, so the guide self-heals
+          // instead of the teacher seeing broken images.
+          const el = e.currentTarget;
+          const n = Number(el.dataset.retry || '0');
+          if (n < 8) {
+            el.dataset.retry = String(n + 1);
+            window.setTimeout(() => {
+              el.src = `/guide/screenshots/${shot.src}?retry=${n + 1}`;
+            }, 1200 + n * 800);
+          }
+        }}
       />
       {shot.custom && (
         <div className="px-4 py-2 text-[11px] font-medium text-indigo-700 bg-indigo-50 border-t border-indigo-100">
