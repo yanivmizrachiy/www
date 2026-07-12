@@ -949,10 +949,14 @@ function GuideImg({ src, alt }: { src: string; alt: string }) {
       )}
       {/* key={attempt} remounts the whole <picture> on retry to abandon a hung
           request and re-fetch cache-busted. Lazy + async: offscreen shots don't
-          fetch until near the viewport; decoding never blocks the main thread. */}
+          fetch until near the viewport; decoding never blocks the main thread.
+          The AVIF/WebP sources are emitted only when a manifest entry exists —
+          which the optimizer writes iff it also produced those siblings. A shot
+          added without running `npm run guide:optimize` thus degrades gracefully
+          to its JPEG instead of erroring on a missing .avif/.webp. */}
       <picture key={attempt}>
-        <source type="image/avif" srcSet={`${stem}.avif${bust}`} />
-        <source type="image/webp" srcSet={`${stem}.webp${bust}`} />
+        {meta && <source type="image/avif" srcSet={`${stem}.avif${bust}`} />}
+        {meta && <source type="image/webp" srcSet={`${stem}.webp${bust}`} />}
         <img
           src={`${src}${bust}`}
           alt={alt}
