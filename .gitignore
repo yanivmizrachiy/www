@@ -25,7 +25,8 @@ Thumbs.db
 
 # Moodle Teacher Hub runtime/private data
 # Never commit files that may contain real student names, emails, grades, logs, tokens, or runtime state.
-data/
+# Root-anchored so it ignores the runtime /data folder WITHOUT catching src/data (real source).
+/data/
 store.json
 **/store.json
 MOODLE_TEACHER_HUB_BACKUP_TOOLS/
