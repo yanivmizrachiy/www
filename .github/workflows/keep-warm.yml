@@ -1,0 +1,42 @@
+name: keep-warm
+
+# Keeps the Render free-tier service awake so the first visitor to the guide (or
+# the teacher tool) never waits ~50s for a cold start. Render sleeps after ~15
+# minutes with no traffic; this pings /health every ~10 minutes.
+#
+# The repo is public, so GitHub Actions minutes are free/unlimited. This
+# complements the in-app useKeepAlive (which only pings while someone already has
+# the app open). A missed ping is never a failure — keep-warm must not turn the
+# checks red.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keep-warm
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Ping /health (wakes the server if it slept)
+        run: |
+          echo "Pinging https://www-tijc.onrender.com/health ..."
+          code=$(curl -sS -m 90 --retry 3 --retry-delay 20 --retry-all-errors \
+            -o /dev/null -w "%{http_code}" \
+            https://www-tijc.onrender.com/health || echo "000")
+          echo "HTTP $code"
+          if [ "$code" = "200" ]; then
+            echo "Server is awake."
+          else
+            echo "No 200 yet (server may still be waking) — will try again next run."
+          fi
+          # keep-warm is a heartbeat, not a gate — never fail the run.
+          exit 0
