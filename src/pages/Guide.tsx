@@ -914,6 +914,46 @@ const SCREENSHOT_LINKS: Record<string, string> = {
   '25-wizard-step1-filled.jpg': 'https://moodlemoe.lms.education.gov.il/local/auto_course_create/wizard.php',
 };
 
+// Robust screenshot image: shows a graceful "loading" state instead of the
+// browser's broken-image icon, and retries persistently. On Render's free tier
+// the server sleeps and the first image requests after wake (~cold start) can
+// drop — this keeps a spinner up and re-fetches until the image arrives, so the
+// teacher never sees a broken picture.
+function GuideImg({ src, alt }: { src: string; alt: string }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className="w-full bg-muted">
+      {!loaded && (
+        <div className="flex h-44 w-full items-center justify-center gap-2 text-xs font-medium text-muted-foreground">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-primary" />
+          טוען צילום מ-Moodle...
+        </div>
+      )}
+      {/* Eager: the shot only mounts when its accordion section opens, so it
+          loads immediately (no lazy/below-fold race). Hidden until decoded, then
+          shown — the teacher sees a spinner, never a broken icon. */}
+      <img
+        src={src}
+        alt={alt}
+        decoding="async"
+        onLoad={() => setLoaded(true)}
+        onError={(e) => {
+          const el = e.currentTarget;
+          const n = Number(el.dataset.retry || '0');
+          if (n < 15) {
+            el.dataset.retry = String(n + 1);
+            window.setTimeout(() => {
+              el.src = `${src}?retry=${n + 1}`;
+            }, 1000 + n * 700);
+          }
+        }}
+        className="block h-auto w-full"
+        style={{ display: loaded ? 'block' : 'none' }}
+      />
+    </div>
+  );
+}
+
 // Real screenshot in a premium browser frame. When the shot maps to a live
 // Moodle page (SCREENSHOT_LINKS), the whole window becomes a clickable link.
 function ScreenshotFrame({ shot }: { shot: Shot }) {
@@ -939,27 +979,7 @@ function ScreenshotFrame({ shot }: { shot: Shot }) {
     </div>
   );
 
-  const img = (
-    <img
-      src={`/guide/screenshots/${shot.src}`}
-      alt={shot.caption}
-      loading="lazy"
-      decoding="async"
-      className="block h-auto w-full bg-slate-100"
-      onError={(e) => {
-        // Render free tier sleeps; on wake the first image requests can drop.
-        // Retry with backoff + cache-bust so the guide self-heals.
-        const el = e.currentTarget;
-        const n = Number(el.dataset.retry || '0');
-        if (n < 8) {
-          el.dataset.retry = String(n + 1);
-          window.setTimeout(() => {
-            el.src = `/guide/screenshots/${shot.src}?retry=${n + 1}`;
-          }, 1200 + n * 800);
-        }
-      }}
-    />
-  );
+  const img = <GuideImg src={`/guide/screenshots/${shot.src}`} alt={shot.caption} />;
 
   const caption = (
     <figcaption className="border-t border-border px-4 py-3 text-sm font-bold leading-relaxed text-foreground">
