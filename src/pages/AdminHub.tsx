@@ -42,10 +42,30 @@ const TABLE_LABELS_HE: Record<string, string> = {
   course_tasks: 'משימות',
   task_completions: 'השלמות משימות',
   teacher_sessions: 'כניסות מורים',
-  lti_launches: 'הפעלות הכלי',
-  nrps_members: 'משתתפים מסונכרנים',
-  student_matches: 'התאמות תלמידים',
-  practice_time_summaries: 'סיכומי זמן תרגול',
+  lti_launches: 'הפעלות דרך LTI',
+  nrps_members: 'תלמידים שנמשכו אוטומטית',
+  student_matches: 'התאמות פנימיות',
+  practice_time_summaries: 'זמני תרגול',
+};
+
+// One short, plain-Hebrew line per count so nothing is a mystery. Anything not
+// listed shows its raw name (never hidden) with no hint.
+const COUNT_HINTS_HE: Record<string, string> = {
+  teachers: 'מורים שפתחו את הכלי',
+  courses: 'מרחבי לימוד שנפתחו',
+  students: 'תלמידים שיובאו מ-Moodle',
+  import_batches: 'כמה קבצים יובאו עד כה',
+  grade_items: 'מבחנים ומטלות בגיליון הציונים',
+  grade_results: 'ציונים בודדים שנשמרו',
+  log_events: 'שורות פעילות שיובאו מ-Moodle',
+  course_sections: 'פרקים במבנה הקורס',
+  course_tasks: 'משימות במבנה הקורס',
+  task_completions: 'סימוני "בוצע" של תלמידים',
+  teacher_sessions: 'כמה פעמים מורה פתח את הכלי',
+  lti_launches: 'רישום פתיחות נפרד (בדרך כלל 0)',
+  nrps_members: 'משיכה אוטומטית — כבויה עד שמשרד החינוך יפעיל',
+  student_matches: 'קישור פנימי בין ציון לתלמיד',
+  practice_time_summaries: 'דורש שדה משך-זמן מ-Moodle שלא קיים כרגע',
 };
 
 type PersistenceTable = { table: string; count: number | null; exists?: boolean; ok?: boolean };
@@ -245,21 +265,25 @@ function LiveSystemStatus() {
             )}
 
             {tables.length > 0 ? (
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-2 sm:grid-cols-2">
                 {tables.map((t) => {
                   const exists = t.exists !== false && t.count !== null;
+                  const hint = COUNT_HINTS_HE[t.table];
                   return (
                     <div
                       key={t.table}
-                      className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
+                      className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
                     >
-                      <span className="text-sm font-bold text-slate-700">
-                        {TABLE_LABELS_HE[t.table] ?? t.table}
-                      </span>
+                      <div className="min-w-0">
+                        <div className="text-sm font-bold text-slate-700">
+                          {TABLE_LABELS_HE[t.table] ?? t.table}
+                        </div>
+                        {hint && <div className="text-[11px] font-medium leading-4 text-slate-400">{hint}</div>}
+                      </div>
                       {exists ? (
-                        <span className="text-sm font-black text-slate-900">{t.count ?? 0}</span>
+                        <span className="shrink-0 text-lg font-black text-slate-900">{t.count ?? 0}</span>
                       ) : (
-                        <span className="text-xs font-bold text-rose-600">חסר</span>
+                        <span className="shrink-0 text-xs font-bold text-rose-600">חסר</span>
                       )}
                     </div>
                   );
@@ -272,7 +296,9 @@ function LiveSystemStatus() {
             )}
 
             <p className="text-xs font-medium text-slate-400 leading-relaxed border-t border-slate-100 pt-3">
-              המספרים כאן הם סכומים אמיתיים מהמסד החי בלבד — ללא שמות תלמידים, ללא סודות, ללא נתונים מומצאים.
+              כל מספר כאן הוא סכום אמיתי מהמסד החי — <b className="text-slate-500">אין דמו ואין נתונים מומצאים</b>.
+              מספר <b className="text-slate-500">0</b> אמיתי גם הוא: פירושו שהנתון הזה עדיין לא יובא או שהאוטומציה שלו עדיין כבויה.
+              ללא שמות תלמידים וללא סודות.
             </p>
           </>
         )}
