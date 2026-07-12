@@ -73,6 +73,43 @@
     --sidebar-ring: 199 89% 55%;
   }
 
+  /* ── Guide presentation theme (SCOPED) ───────────────────────────────────
+     Jerusalem-district blue + gold, applied ONLY inside .guide-theme so the
+     teacher tool keeps its own palette. The /guide is a separate product. */
+  .guide-theme {
+    --background: 40 33% 97%;   /* warm cream */
+    --foreground: 220 28% 16%;  /* ink */
+    --card: 0 0% 100%;
+    --card-foreground: 220 28% 16%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 28% 16%;
+    --primary: 219 64% 30%;     /* Jerusalem blue */
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 219 60% 46%;
+    --secondary: 40 25% 94%;
+    --secondary-foreground: 219 40% 24%;
+    --muted: 40 22% 94%;
+    --muted-foreground: 220 12% 46%;
+    --accent: 41 58% 90%;       /* gold-soft */
+    --accent-foreground: 41 72% 26%;
+    --destructive: 4 68% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 40 20% 89%;
+    --input: 40 20% 89%;
+    --ring: 219 64% 30%;
+    --gold: 41 72% 52%;
+    --gold-soft: 41 58% 88%;
+    --gold-foreground: 41 72% 22%;
+    color: hsl(var(--foreground));
+    font-family: "Assistant", "Heebo", system-ui, sans-serif;
+  }
+  .guide-theme h1,
+  .guide-theme h2,
+  .guide-theme h3,
+  .guide-theme .font-display {
+    font-family: "Rubik", "Heebo", system-ui, sans-serif;
+  }
+
   .dark {
     --background: 222 35% 8%;
     --foreground: 220 15% 95%;

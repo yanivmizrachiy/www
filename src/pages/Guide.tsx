@@ -994,9 +994,9 @@ function GuideShell({
   viewKey?: string;
 }) {
   return (
-    <div dir="rtl" className="min-h-screen bg-slate-50 text-slate-900">
+    <div dir="rtl" className="guide-theme min-h-screen bg-background text-foreground">
       {(onHome || onBack) && (
-        <nav className="sticky top-0 z-30 border-b border-slate-200 bg-white/85 backdrop-blur-md">
+        <nav className="sticky top-0 z-30 border-b border-border bg-card/85 backdrop-blur-md">
           <div className="max-w-5xl mx-auto flex h-14 items-center justify-between px-4 sm:px-6">
             {onBack ? (
               <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5 font-bold text-slate-700 hover:text-primary">
@@ -1105,48 +1105,48 @@ export default function Guide() {
     window.scrollTo(0, 0);
   }, [view]);
 
-  // Cover
+  // Cover — full-bleed premium hero (Jerusalem blue + gold). Real logo/credits.
   if (view === 'cover') {
     return (
-      <GuideShell viewKey="cover">
-        <div className="min-h-[70vh] flex flex-col items-center justify-center text-center gap-8 py-12">
-          {/* Official Jerusalem-district math logo supplied by Yaniv (2026-07-09).
-              Blue background removed, circle content untouched, aspect ratio kept. */}
+      <div dir="rtl" className="guide-theme relative min-h-screen overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-[hsl(219,60%,19%)] via-[hsl(219,64%,27%)] to-[hsl(219,58%,15%)]" />
+        <div className="absolute -top-32 left-1/2 h-[26rem] w-[26rem] -translate-x-1/2 rounded-full bg-gold/20 blur-[100px]" />
+        <div className="absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-primary/40 blur-3xl" />
+
+        <div className="relative z-10 mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center gap-6 px-6 py-16 text-center">
+          {/* Official Jerusalem-district math logo (Yaniv, 2026-07-09). */}
           <img
             src="/guide/jerusalem-math-logo.png"
             alt="לוגו מחוז ירושלים"
             decoding="async"
             fetchPriority="high"
-            className="h-32 w-32 md:h-44 md:w-44 object-contain drop-shadow-xl"
+            className="h-28 w-28 rounded-full bg-white/95 p-2.5 shadow-2xl ring-2 ring-gold/70 md:h-36 md:w-36"
           />
 
-          <div className="space-y-2 max-w-3xl">
-            <p className="text-xl md:text-3xl font-black leading-snug bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent drop-shadow-sm">
-              {HEADER_LINE}
-            </p>
-            <p className="text-base md:text-lg font-black text-amber-600">{YANIV_LINE}</p>
-          </div>
+          <p className="font-display text-sm font-bold leading-relaxed text-gold md:text-lg">
+            {HEADER_LINE}
+          </p>
 
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-tight max-w-4xl">
-            {BIG_TITLE}
+          <h1 className="font-display text-5xl font-black leading-none text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.35)] md:text-7xl">
+            המודל החכם
           </h1>
 
-          <div className="flex flex-col items-center gap-4">
-            <Button
-              size="lg"
-              onClick={openHome}
-              className="h-16 px-16 text-2xl font-black gap-3 shadow-luxury"
-            >
-              כניסה
-              <ChevronLeft className="h-6 w-6" />
-            </Button>
-          </div>
-
-          <p className="text-xs text-slate-400 font-medium mt-4">
-            עברית · RTL · הסבר פשוט וברור · תמונות אמיתיות ממודל
+          <p className="max-w-xl text-lg font-medium leading-relaxed text-white/85 md:text-xl">
+            {BIG_TITLE}
           </p>
+
+          <Button
+            size="lg"
+            onClick={openHome}
+            className="mt-3 h-16 gap-3 rounded-2xl bg-gold px-14 text-xl font-black text-gold-foreground shadow-[0_18px_50px_rgba(0,0,0,0.35)] transition hover:-translate-y-0.5 hover:bg-gold/90"
+          >
+            כניסה למדריך
+            <ChevronLeft className="h-6 w-6" />
+          </Button>
+
+          <p className="mt-6 text-sm font-medium text-white/65">{YANIV_LINE}</p>
         </div>
-      </GuideShell>
+      </div>
     );
   }
 

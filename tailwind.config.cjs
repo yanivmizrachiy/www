@@ -27,6 +27,13 @@ module.exports = {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
         },
+        // Guide presentation accent (Jerusalem-district gold). Only used inside
+        // the .guide-theme scope; the teacher tool never references it.
+        gold: {
+          DEFAULT: "hsl(var(--gold, 41 72% 52%))",
+          soft: "hsl(var(--gold-soft, 41 58% 88%))",
+          foreground: "hsl(var(--gold-foreground, 41 72% 22%))",
+        },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
