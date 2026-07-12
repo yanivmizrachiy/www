@@ -6916,7 +6916,29 @@ if (fs.existsSync(distPath)) {
     // auto-redirect is disabled, so /guide falls through to the SPA index.html.
     redirect: false,
     setHeaders: (res, filePath) => {
-      if (filePath.endsWith("index.html")) noStore(res);
+      if (filePath.endsWith("index.html")) {
+        noStore(res);
+        return;
+      }
+      // Vite emits content-hashed filenames under /assets — the content can never
+      // change under a given name, so cache it forever.
+      if (/[\\/]assets[\\/]/.test(filePath)) {
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        return;
+      }
+      // Express's mime table doesn't know AVIF, so it mislabels .avif as
+      // application/octet-stream. With nosniff on, the browser then refuses to
+      // treat it as an image and the <picture> AVIF source is wasted. Force it.
+      if (/\.avif$/i.test(filePath)) {
+        res.setHeader("Content-Type", "image/avif");
+      }
+      // Stable-named media (guide screenshots/logo, fonts, icons): cache for a day
+      // then serve stale instantly while revalidating in the background, so repeat
+      // visits and cold starts skip the round-trip. A replaced screenshot still
+      // propagates within a day — no hard purge needed.
+      if (/\.(avif|webp|jpe?g|png|gif|svg|ico|woff2?|ttf)$/i.test(filePath)) {
+        res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+      }
     }
   }));
   app.get("*", (_req, res) => {
