@@ -38,6 +38,9 @@ const LtiBootstrap = lazy(() => import("./pages/LtiBootstrap"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Guide = lazy(() => import("./pages/Guide"));
 const AdminHub = lazy(() => import("./pages/AdminHub"));
+const ProtectedAdminRoute = lazy(() =>
+  import("./components/ProtectedAdminRoute").then((m) => ({ default: m.ProtectedAdminRoute }))
+);
 
 const queryClient = new QueryClient();
 
@@ -69,7 +72,16 @@ const App = () => {
                 decision (2026-07-10): it shows only public links and non-PII
                 aggregate diagnostics — no student data, no secrets. Anything
                 touching teacher/student data stays behind the LTI session. */}
-            <Route path="/admin-hub" element={<AdminHub />} />
+            {/* Admin center gated by Supabase Auth + admin role (is_admin) + RLS.
+                Password sign-in (magic-link fallback). Non-admins never see it. */}
+            <Route
+              path="/admin-hub"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminHub />
+                </ProtectedAdminRoute>
+              }
+            />
             {/* Rescue route: if a Moodle iframe/browser lands on the backend launch URL as a page, keep the teacher inside the app instead of showing NotFound. */}
             <Route path="/api/lti/launch" element={<Navigate to="/" replace />} />
             {/* No teacher login exists — any old /auth /login /signup link goes to setup. */}
