@@ -1,0 +1,52 @@
+name: keep-warm
+
+# Keeps the Render free-tier service awake so the first visitor to the guide
+# (/guide) or the teacher tool never waits ~50s for a cold start. Render sleeps
+# after ~15 minutes with no traffic; this pings /health every 5 minutes.
+#
+# Why every 5 min (not 10): GitHub-hosted scheduled runs can be delayed several
+# minutes under load, especially at the top of the hour. Pinging every 5 min
+# gives ~3 attempts inside Render's 15-min sleep window, so a delayed or dropped
+# run never lets the server go cold.
+#
+# The repo is public, so GitHub Actions minutes are free/unlimited. This
+# complements the in-app useKeepAlive (which only pings while someone already has
+# the app open). A missed ping is never a failure — keep-warm must not turn the
+# checks red.
+#
+# NOTE: This workflow lives on the DEFAULT branch (main) on purpose — GitHub only
+# runs `schedule` triggers from the default branch. It is a self-contained
+# heartbeat: it touches no product code and does not affect the production
+# deploy, which builds from rebuild/lti13-secure-teacher-hub.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keep-warm
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Ping /health (wakes the server if it slept)
+        run: |
+          echo "Pinging https://www-tijc.onrender.com/health ..."
+          code=$(curl -sS -m 90 --retry 3 --retry-delay 20 --retry-all-errors \
+            -o /dev/null -w "%{http_code}" \
+            https://www-tijc.onrender.com/health || echo "000")
+          echo "HTTP $code"
+          if [ "$code" = "200" ]; then
+            echo "Server is awake."
+          else
+            echo "No 200 yet (server may still be waking) — will try again next run."
+          fi
+          # keep-warm is a heartbeat, not a gate — never fail the run.
+          exit 0
