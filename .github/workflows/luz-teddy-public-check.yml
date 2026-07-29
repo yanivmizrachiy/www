@@ -6,8 +6,6 @@ on:
       - 'luz-teddy/**'
       - '.github/workflows/luz-teddy-public-check.yml'
   workflow_dispatch:
-  schedule:
-    - cron: '17 5 * * *'
 
 jobs:
   public-check:
