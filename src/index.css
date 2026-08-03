@@ -205,3 +205,25 @@
     box-shadow: var(--shadow-glow);
   }
 }
+
+/* Guide cover refinements — 2026-08-03 */
+@keyframes guide-logo-continuous-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* The Jerusalem mathematics logo rotates continuously on the guide cover. */
+.guide-theme img[src*="jerusalem-math-logo"] {
+  animation: guide-logo-continuous-spin 10s linear infinite;
+  transform-origin: center;
+  will-change: transform;
+}
+
+/* Keep the proper Yaniv Raz credit under the header; remove the duplicate footer credit. */
+.guide-theme > .relative.z-10 > p:last-child {
+  display: none;
+}
