@@ -2,11 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
-  BookOpen,
   Check,
   ExternalLink,
   Home,
-  Keyboard,
   List,
   Maximize2,
   Menu,
@@ -39,6 +37,7 @@ function getModeFromUrl(): DeckMode {
   const params = new URLSearchParams(window.location.search);
   const requestedMode = params.get('mode');
   const requestedSlide = params.get('slide');
+
   return requestedMode === 'quick' && requestedSlide && QUICK_START_SLIDE_IDS.includes(requestedSlide)
     ? 'quick'
     : 'all';
@@ -55,9 +54,10 @@ function GuideScreenshot({ src, caption }: { src: string; caption: string }) {
         <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
         <span className="mr-auto text-[11px] font-bold text-slate-500">Moodle משרד החינוך</span>
       </div>
+
       {failed ? (
         <div className="flex aspect-video items-center justify-center bg-slate-100 px-6 text-center text-sm font-bold text-slate-500">
-          צילום המסך אינו זמין כרגע. ההסבר הכתוב נשאר מלא ותקין.
+          צילום המסך לא נטען.
         </div>
       ) : (
         <img
@@ -66,9 +66,10 @@ function GuideScreenshot({ src, caption }: { src: string; caption: string }) {
           loading="eager"
           decoding="async"
           onError={() => setFailed(true)}
-          className="block max-h-[42vh] w-full object-contain bg-slate-50"
+          className="block max-h-[42vh] w-full bg-slate-50 object-contain"
         />
       )}
+
       <figcaption className="border-t border-slate-200 px-4 py-3 text-sm font-bold leading-relaxed text-slate-700">
         {caption}
       </figcaption>
@@ -123,20 +124,6 @@ function SlideContent({
                 {slide.summary}
               </p>
             </div>
-
-            {slide.points && (
-              <div className="grid gap-2 sm:grid-cols-2">
-                {slide.points.map((point) => (
-                  <div
-                    key={point}
-                    className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/7 px-4 py-3 text-right text-sm font-bold text-white/85 backdrop-blur"
-                  >
-                    <Check className="h-4 w-4 shrink-0 text-amber-300" />
-                    <span>{point}</span>
-                  </div>
-                ))}
-              </div>
-            )}
 
             <div className="flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
               <Button
@@ -210,9 +197,6 @@ function SlideContent({
 
             {slide.points && slide.points.length > 0 && (
               <section aria-labelledby={`${slide.id}-points`}>
-                <h2 id={`${slide.id}-points`} className="mb-3 text-sm font-black text-slate-500">
-                  העיקר
-                </h2>
                 <ul className="grid gap-3 sm:grid-cols-2">
                   {slide.points.map((point) => (
                     <li
@@ -321,6 +305,7 @@ export default function Guide() {
     const nextMode = requestedMode === 'quick' && QUICK_START_SLIDE_IDS.includes(slideId)
       ? 'quick'
       : 'all';
+
     setMode(nextMode);
     setCurrentIndex(index);
     setPanel(null);
@@ -456,7 +441,7 @@ export default function Guide() {
 
         <div className="min-w-0 text-center">
           <p className="truncate text-xs font-black text-amber-300 sm:text-sm">
-            {safeMode === 'quick' ? 'מסלול התחלה מהירה' : currentSection?.title ?? 'מדריך Moodle'}
+            {safeMode === 'quick' ? 'התחלה מהירה' : currentSection?.title ?? 'Moodle'}
           </p>
           <p className="hidden max-w-[48vw] truncate text-xs font-bold text-white/60 sm:block">{slide.title}</p>
         </div>
@@ -469,7 +454,7 @@ export default function Guide() {
               onClick={() => jumpToSlide(slide.id, 'all', true)}
               className="hidden text-white/80 hover:bg-white/10 hover:text-white sm:inline-flex"
             >
-              הצגת כל השקופיות
+              כל השקופיות
             </Button>
           )}
           <Button
@@ -555,16 +540,9 @@ export default function Guide() {
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-3 backdrop-blur-md sm:p-6">
           <section className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/15 bg-white shadow-2xl">
             <header className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-7">
-              <div>
-                <h2 className="text-2xl font-black text-slate-950">
-                  {panel === 'menu' ? 'תוכן העניינים' : 'חיפוש במדריך'}
-                </h2>
-                <p className="mt-1 text-sm font-medium text-slate-500">
-                  {panel === 'menu'
-                    ? 'בחרו נושא או שקופית. אפשר לחזור לכאן בכל שלב.'
-                    : 'חפשו פעולה, כפתור או מושג בשפה חופשית.'}
-                </p>
-              </div>
+              <h2 className="text-2xl font-black text-slate-950">
+                {panel === 'menu' ? 'תוכן העניינים' : 'חיפוש'}
+              </h2>
               <Button variant="ghost" size="icon" onClick={() => setPanel(null)} aria-label="סגירה">
                 <X className="h-6 w-6" />
               </Button>
@@ -578,20 +556,14 @@ export default function Guide() {
                     className="flex items-center gap-4 rounded-2xl border-2 border-amber-300 bg-amber-50 p-5 text-right transition hover:-translate-y-0.5 hover:shadow-lg"
                   >
                     <PlayCircle className="h-9 w-9 shrink-0 text-amber-600" />
-                    <span>
-                      <span className="block text-lg font-black text-slate-950">התחלה מהירה</span>
-                      <span className="mt-1 block text-sm font-bold text-slate-600">המסלול החיוני למורה מתחיל</span>
-                    </span>
+                    <span className="text-lg font-black text-slate-950">התחלה מהירה</span>
                   </button>
                   <button
                     onClick={() => jumpToSlide('cover', 'all')}
                     className="flex items-center gap-4 rounded-2xl border-2 border-slate-200 bg-white p-5 text-right transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-lg"
                   >
                     <Home className="h-9 w-9 shrink-0 text-blue-700" />
-                    <span>
-                      <span className="block text-lg font-black text-slate-950">עמוד הפתיחה</span>
-                      <span className="mt-1 block text-sm font-bold text-slate-600">חזרה לתחילת המצגת</span>
-                    </span>
+                    <span className="text-lg font-black text-slate-950">עמוד הפתיחה</span>
                   </button>
                 </div>
 
@@ -603,7 +575,6 @@ export default function Guide() {
                     return (
                       <div key={section.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
                         <h3 className="text-lg font-black text-slate-950">{section.title}</h3>
-                        <p className="mt-1 text-sm font-medium text-slate-500">{section.description}</p>
                         <div className="mt-4 grid gap-2">
                           {sectionSlides.map((item) => (
                             <button
@@ -636,7 +607,7 @@ export default function Guide() {
                       ref={searchInputRef}
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}
-                      placeholder="לדוגמה: ייצוא ציונים, שיוך תלמידים, בוחן..."
+                      placeholder="חיפוש פעולה או כפתור"
                       className="h-14 w-full rounded-2xl border-2 border-slate-200 bg-slate-50 pr-12 pl-4 text-base font-bold text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
                     />
                   </div>
@@ -661,21 +632,12 @@ export default function Guide() {
                   ) : (
                     <div className="py-16 text-center">
                       <Search className="mx-auto h-10 w-10 text-slate-300" />
-                      <p className="mt-4 text-lg font-black text-slate-700">לא נמצאה שקופית מתאימה</p>
-                      <p className="mt-1 text-sm font-medium text-slate-500">נסו מילה קצרה יותר או מונח אחר.</p>
+                      <p className="mt-4 text-lg font-black text-slate-700">לא נמצאו תוצאות</p>
                     </div>
                   )}
                 </div>
               </div>
             )}
-
-            <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-5 py-3 text-xs font-bold text-slate-500 sm:px-7">
-              <span className="inline-flex items-center gap-2">
-                <Keyboard className="h-4 w-4" />
-                חצים: ניווט · F: חיפוש · M: תוכן · Esc: סגירה
-              </span>
-              <span>{GUIDE_SLIDES.length} שקופיות מקצועיות</span>
-            </footer>
           </section>
         </div>
       )}
