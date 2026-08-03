@@ -1280,8 +1280,6 @@ export default function Guide() {
             כניסה למדריך
             <ChevronLeft className="h-6 w-6" />
           </Button>
-
-          <p className="mt-4 text-xs text-white/50">האתר מנוהל על ידי הנברז</p>
         </div>
       </div>
     );
@@ -1780,3 +1778,4 @@ export default function Guide() {
     </GuideShell>
   );
 }
+
