@@ -77,20 +77,20 @@
      Jerusalem-district blue + gold, applied ONLY inside .guide-theme so the
      teacher tool keeps its own palette. The /guide is a separate product. */
   .guide-theme {
-    --background: 40 33% 97%;   /* warm cream */
-    --foreground: 220 28% 16%;  /* ink */
+    --background: 40 33% 97%;
+    --foreground: 220 28% 16%;
     --card: 0 0% 100%;
     --card-foreground: 220 28% 16%;
     --popover: 0 0% 100%;
     --popover-foreground: 220 28% 16%;
-    --primary: 219 64% 30%;     /* Jerusalem blue */
+    --primary: 219 64% 30%;
     --primary-foreground: 0 0% 100%;
     --primary-glow: 219 60% 46%;
     --secondary: 40 25% 94%;
     --secondary-foreground: 219 40% 24%;
     --muted: 40 22% 94%;
     --muted-foreground: 220 12% 46%;
-    --accent: 41 58% 90%;       /* gold-soft */
+    --accent: 41 58% 90%;
     --accent-foreground: 41 72% 26%;
     --destructive: 4 68% 52%;
     --destructive-foreground: 0 0% 100%;
@@ -103,6 +103,7 @@
     color: hsl(var(--foreground));
     font-family: "Assistant", "Heebo", system-ui, sans-serif;
   }
+
   .guide-theme h1,
   .guide-theme h2,
   .guide-theme h3,
@@ -189,18 +190,23 @@
   .bg-gradient-primary {
     background: var(--gradient-primary);
   }
+
   .bg-gradient-surface {
     background: var(--gradient-surface);
   }
+
   .bg-gradient-hero {
     background: var(--gradient-hero);
   }
+
   .shadow-elegant {
     box-shadow: var(--shadow-md);
   }
+
   .shadow-premium {
     box-shadow: var(--shadow-lg);
   }
+
   .shadow-glow {
     box-shadow: var(--shadow-glow);
   }
@@ -211,20 +217,306 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
 }
 
-/* The Jerusalem mathematics logo rotates continuously on the guide cover. */
 .guide-theme img[src*="jerusalem-math-logo"] {
   animation: guide-logo-continuous-spin 10s linear infinite;
   transform-origin: center;
   will-change: transform;
 }
 
-/* Keep the proper Yaniv Raz credit under the header; remove the duplicate footer credit. */
-.guide-theme > .relative.z-10 > p:last-child {
+/* Remove the second, redundant management credit in the repeated footer. */
+.guide-theme footer > p:last-child {
   display: none;
 }
 
+/* ──────────────────────────────────────────────────────────────────────────
+   REAL PRESENTATION EXPERIENCE — landscape 16:9 desktop deck
+   One framed slide per screen. The browser page itself never scrolls; only a
+   content-heavy slide may scroll inside its own canvas.
+   ────────────────────────────────────────────────────────────────────────── */
+@media (min-width: 900px) and (orientation: landscape) {
+  html:has(.guide-theme),
+  body:has(.guide-theme),
+  #root:has(.guide-theme) {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    overflow: hidden;
+  }
+
+  body:has(.guide-theme) {
+    margin: 0;
+    background:
+      radial-gradient(circle at 50% 8%, hsl(219 70% 34% / 0.72), transparent 42%),
+      linear-gradient(145deg, hsl(222 64% 10%), hsl(219 60% 18%) 55%, hsl(222 64% 8%));
+  }
+
+  .guide-theme {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    min-height: 0 !important;
+    height: 100dvh;
+    flex-direction: column;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 50% -10%, hsl(219 68% 38% / 0.44), transparent 46%),
+      linear-gradient(145deg, hsl(222 62% 9%), hsl(219 57% 18%) 56%, hsl(222 62% 8%));
+  }
+
+  /* Floating presenter toolbar. */
+  .guide-theme > nav {
+    position: relative !important;
+    top: auto !important;
+    flex: 0 0 58px;
+    border: 0 !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+  }
+
+  .guide-theme > nav > div {
+    width: min(96vw, 1600px);
+    max-width: none !important;
+    height: 58px;
+    margin-inline: auto;
+    padding-inline: 0.4rem !important;
+    color: white;
+  }
+
+  .guide-theme > nav > div::before {
+    content: "מצב מצגת  •  F11 למסך מלא  •  חצים ימינה ושמאלה לניווט";
+    position: absolute;
+    right: 50%;
+    transform: translateX(50%);
+    color: hsl(0 0% 100% / 0.66);
+    font-size: 0.77rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    pointer-events: none;
+  }
+
+  .guide-theme > nav button {
+    min-height: 38px;
+    border-color: hsl(0 0% 100% / 0.22) !important;
+    background: hsl(0 0% 100% / 0.09) !important;
+    color: white !important;
+    box-shadow: 0 8px 28px hsl(222 70% 4% / 0.22);
+    backdrop-filter: blur(14px);
+  }
+
+  .guide-theme > nav button:hover {
+    background: hsl(0 0% 100% / 0.17) !important;
+  }
+
+  /* The actual slide canvas. */
+  .guide-theme > nav + div {
+    position: relative;
+    width: min(96vw, calc((100dvh - 78px) * 16 / 9), 1600px) !important;
+    max-width: none !important;
+    height: min(calc(100dvh - 78px), calc(96vw * 9 / 16), 900px);
+    aspect-ratio: 16 / 9;
+    margin: 0 auto 20px !important;
+    padding: 0 !important;
+    overflow: hidden;
+    border: 1px solid hsl(0 0% 100% / 0.24);
+    border-radius: 28px;
+    background:
+      radial-gradient(circle at 100% 0%, hsl(41 72% 52% / 0.11), transparent 28%),
+      hsl(var(--background));
+    box-shadow:
+      0 42px 110px hsl(222 72% 3% / 0.58),
+      0 0 0 1px hsl(0 0% 100% / 0.06) inset;
+  }
+
+  .guide-theme > nav + div > div[tabindex="-1"] {
+    width: 100%;
+    height: 100%;
+    padding: clamp(1.25rem, 2.2vw, 2.7rem);
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary) / 0.44) transparent;
+  }
+
+  .guide-theme > nav + div > div[tabindex="-1"]::-webkit-scrollbar {
+    width: 9px;
+  }
+
+  .guide-theme > nav + div > div[tabindex="-1"]::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: hsl(var(--primary) / 0.36);
+    background-clip: padding-box;
+  }
+
+  /* Repeated website footer is hidden in slide mode; the cover credit remains. */
+  .guide-theme > nav + div > footer {
+    display: none;
+  }
+
+  /* Bigger presentation typography and denser, landscape-friendly grids. */
+  .guide-theme > nav + div h2 {
+    font-size: clamp(1.85rem, 2.45vw, 3rem) !important;
+    line-height: 1.08;
+  }
+
+  .guide-theme > nav + div h1 {
+    font-size: clamp(2rem, 2.85vw, 3.6rem) !important;
+    line-height: 1.08;
+  }
+
+  .guide-theme > nav + div .grid.lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .guide-theme > nav + div .grid.sm\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .guide-theme > nav + div button.rounded-2xl,
+  .guide-theme > nav + div button.rounded-xl {
+    min-height: 92px;
+  }
+
+  /* Question answer becomes a full slide with its own internal document area. */
+  .guide-theme > nav + div .max-w-4xl {
+    width: 100%;
+    max-width: none !important;
+    min-height: 100%;
+    padding-bottom: 5.6rem;
+  }
+
+  .guide-theme > nav + div .max-w-4xl > div:nth-child(2) {
+    min-height: 0;
+  }
+
+  .guide-theme > nav + div .max-w-4xl [class*="shadow-luxury"] {
+    border: 1px solid hsl(var(--border));
+    border-radius: 24px;
+    box-shadow: 0 18px 55px hsl(219 42% 18% / 0.14);
+  }
+
+  .guide-theme > nav + div .max-w-4xl [class*="p-8"] {
+    padding: clamp(1.25rem, 2vw, 2.4rem) !important;
+  }
+
+  .guide-theme > nav + div .max-w-4xl .sticky.bottom-3 {
+    position: absolute !important;
+    right: 50%;
+    bottom: 16px !important;
+    z-index: 40;
+    width: min(560px, calc(100% - 3rem));
+    transform: translateX(50%);
+    padding-top: 0 !important;
+  }
+
+  .guide-theme > nav + div .max-w-4xl .sticky.bottom-3 > div {
+    max-width: none !important;
+    border-color: hsl(var(--primary) / 0.18);
+    background: hsl(var(--card) / 0.94);
+    box-shadow: 0 20px 50px hsl(219 52% 12% / 0.22);
+  }
+
+  .guide-theme .grid.grid-cols-1.gap-4:has(figure),
+  .guide-theme .grid.grid-cols-1.gap-4:has(a > div.relative) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Cover slide: real horizontal composition instead of a tall web hero. */
+  .guide-theme.relative.min-h-screen {
+    display: grid;
+    place-items: center;
+    min-height: 0 !important;
+    height: 100dvh;
+    padding: 3vh 2vw;
+  }
+
+  .guide-theme.relative.min-h-screen > .relative.z-10 {
+    display: grid !important;
+    grid-template-columns: minmax(260px, 34%) minmax(0, 66%);
+    grid-template-rows: auto auto auto auto;
+    column-gap: clamp(2rem, 4vw, 5rem);
+    row-gap: clamp(0.8rem, 1.4vh, 1.45rem) !important;
+    align-content: center;
+    align-items: center;
+    width: min(96vw, calc(94dvh * 16 / 9), 1600px);
+    max-width: none !important;
+    min-height: 0 !important;
+    height: min(94dvh, calc(96vw * 9 / 16), 900px);
+    aspect-ratio: 16 / 9;
+    padding: clamp(2rem, 4vw, 5.2rem) !important;
+    overflow: hidden;
+    border: 1px solid hsl(0 0% 100% / 0.18);
+    border-radius: 32px;
+    background:
+      radial-gradient(circle at 18% 48%, hsl(199 88% 62% / 0.15), transparent 24%),
+      radial-gradient(circle at 88% 10%, hsl(41 76% 57% / 0.14), transparent 25%),
+      linear-gradient(135deg, hsl(219 62% 22%), hsl(219 66% 29%) 46%, hsl(219 59% 17%));
+    box-shadow: 0 46px 120px hsl(222 74% 3% / 0.62);
+    text-align: right !important;
+  }
+
+  .guide-theme.relative.min-h-screen > .relative.z-10 > :first-child {
+    grid-column: 1;
+    grid-row: 1 / 5;
+    justify-self: center;
+    align-self: center;
+    width: clamp(180px, 21vw, 330px) !important;
+    height: clamp(180px, 21vw, 330px) !important;
+  }
+
+  .guide-theme.relative.min-h-screen > .relative.z-10 > :nth-child(2),
+  .guide-theme.relative.min-h-screen > .relative.z-10 > h1,
+  .guide-theme.relative.min-h-screen > .relative.z-10 > p,
+  .guide-theme.relative.min-h-screen > .relative.z-10 > button {
+    grid-column: 2;
+    justify-self: stretch;
+  }
+
+  .guide-theme.relative.min-h-screen > .relative.z-10 > :nth-child(2) {
+    align-self: end;
+  }
+
+  .guide-theme.relative.min-h-screen > .relative.z-10 > h1 {
+    margin: 0;
+    font-size: clamp(3.3rem, 5.4vw, 6.5rem) !important;
+    line-height: 0.98 !important;
+    text-align: right;
+  }
+
+  .guide-theme.relative.min-h-screen > .relative.z-10 > p {
+    max-width: none !important;
+    margin: 0;
+    font-size: clamp(1.2rem, 1.8vw, 2rem) !important;
+    text-align: right;
+  }
+
+  .guide-theme.relative.min-h-screen > .relative.z-10 > button {
+    width: min(390px, 100%);
+    margin-top: 0.8rem !important;
+    justify-self: start;
+  }
+}
+
+/* Tablet/mobile remains touch-friendly and scrollable, while still feeling
+   like a deck rather than forcing a tiny 16:9 canvas. */
+@media (max-width: 899px), (orientation: portrait) {
+  .guide-theme {
+    min-height: 100dvh;
+  }
+
+  .guide-theme > nav + div {
+    max-width: 100% !important;
+  }
+
+  .guide-theme footer {
+    margin-top: 2rem !important;
+    padding-top: 1.25rem !important;
+  }
+}
