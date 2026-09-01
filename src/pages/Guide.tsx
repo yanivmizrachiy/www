@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
   GUIDE_SECTIONS,
-  GUIDE_SLIDES,
+  PUBLISHED_GUIDE_SLIDES,
   QUICK_START_SLIDE_IDS,
   type GuideSlide,
 } from '@/data/guideDeck';
@@ -28,7 +28,7 @@ type DeckMode = 'all' | 'quick';
 function getSlideIndexFromUrl(): number {
   if (typeof window === 'undefined') return 0;
   const slideId = new URLSearchParams(window.location.search).get('slide');
-  const index = GUIDE_SLIDES.findIndex((slide) => slide.id === slideId);
+  const index = PUBLISHED_GUIDE_SLIDES.findIndex((slide) => slide.id === slideId);
   return index >= 0 ? index : 0;
 }
 
@@ -45,9 +45,10 @@ function getModeFromUrl(): DeckMode {
 
 function GuideScreenshot({ src, caption }: { src: string; caption: string }) {
   const [failed, setFailed] = useState(false);
+  const imageUrl = `/guide/screenshots/${src}`;
 
   return (
-    <figure className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_16px_45px_rgba(15,23,42,0.12)]">
+    <figure className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.14)]">
       <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-100 px-4 py-2">
         <span className="h-2.5 w-2.5 rounded-full bg-rose-400" />
         <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
@@ -60,14 +61,16 @@ function GuideScreenshot({ src, caption }: { src: string; caption: string }) {
           צילום המסך לא נטען.
         </div>
       ) : (
-        <img
-          src={`/guide/screenshots/${src}`}
-          alt=""
-          loading="eager"
-          decoding="async"
-          onError={() => setFailed(true)}
-          className="block max-h-[42vh] w-full bg-slate-50 object-contain"
-        />
+        <a href={imageUrl} target="_blank" rel="noopener noreferrer" title="פתיחת הצילום בגודל מלא">
+          <img
+            src={imageUrl}
+            alt={caption}
+            loading="eager"
+            decoding="async"
+            onError={() => setFailed(true)}
+            className="block max-h-[54vh] w-full bg-slate-50 object-contain"
+          />
+        </a>
       )}
 
       <figcaption className="border-t border-slate-200 px-4 py-3 text-sm font-bold leading-relaxed text-slate-700">
@@ -117,9 +120,7 @@ function SlideContent({
             </div>
 
             <div className="space-y-4">
-              <h1 className="font-display text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
-                {slide.title}
-              </h1>
+              <h1 className="font-display text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">{slide.title}</h1>
               <p className="mx-auto max-w-3xl text-lg font-medium leading-relaxed text-white/85 lg:mx-0 lg:text-xl">
                 {slide.summary}
               </p>
@@ -153,42 +154,37 @@ function SlideContent({
   const hasScreenshots = Boolean(slide.screenshots?.length);
 
   return (
-    <div className="min-h-full bg-[radial-gradient(circle_at_100%_0%,rgba(251,191,36,0.10),transparent_28%),linear-gradient(180deg,#ffffff,#f8fafc)] p-5 sm:p-8 lg:p-10">
+    <div className="min-h-full bg-[radial-gradient(circle_at_100%_0%,rgba(251,191,36,0.10),transparent_28%),linear-gradient(180deg,#ffffff,#f8fafc)] p-4 sm:p-7 lg:p-8">
       <div
         className={cn(
-          'mx-auto grid min-h-full max-w-[1450px] gap-7',
-          hasScreenshots ? 'lg:grid-cols-[1.02fr_0.98fr]' : 'max-w-5xl'
+          'mx-auto grid min-h-full max-w-[1500px] gap-6',
+          hasScreenshots ? 'lg:grid-cols-[0.76fr_1.24fr]' : 'max-w-5xl'
         )}
       >
         <div className="flex min-w-0 flex-col">
-          <header className="border-b border-slate-200 pb-5">
+          <header className="border-b border-slate-200 pb-4">
             <p className="text-sm font-black text-blue-700">{slide.eyebrow}</p>
-            <h1 className="mt-2 font-display text-3xl font-black leading-tight text-slate-950 sm:text-4xl lg:text-5xl">
+            <h1 className="mt-2 font-display text-3xl font-black leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
               {slide.title}
             </h1>
-            <p className="mt-4 max-w-4xl text-base font-medium leading-relaxed text-slate-600 sm:text-lg">
+            <p className="mt-3 max-w-4xl text-base font-semibold leading-relaxed text-slate-600 sm:text-lg">
               {slide.summary}
             </p>
           </header>
 
-          <div className="mt-6 grid gap-5">
+          <div className="mt-5 grid gap-4">
             {slide.steps && slide.steps.length > 0 && (
               <section aria-labelledby={`${slide.id}-steps`}>
-                <h2 id={`${slide.id}-steps`} className="mb-3 text-sm font-black text-slate-500">
-                  מה עושים
+                <h2 id={`${slide.id}-steps`} className="mb-2 text-sm font-black text-slate-500">
+                  כפתור אחרי כפתור
                 </h2>
-                <ol className="grid gap-3 sm:grid-cols-2">
+                <ol className="grid gap-2">
                   {slide.steps.map((step, index) => (
-                    <li
-                      key={step}
-                      className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-                    >
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-800 text-sm font-black text-white">
+                    <li key={`${slide.id}-${index}`} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-800 text-sm font-black text-white">
                         {index + 1}
                       </span>
-                      <span className="pt-1 text-sm font-bold leading-relaxed text-slate-700 sm:text-base">
-                        {step}
-                      </span>
+                      <span className="pt-0.5 text-sm font-bold leading-relaxed text-slate-700 sm:text-base">{step}</span>
                     </li>
                   ))}
                 </ol>
@@ -197,12 +193,9 @@ function SlideContent({
 
             {slide.points && slide.points.length > 0 && (
               <section aria-labelledby={`${slide.id}-points`}>
-                <ul className="grid gap-3 sm:grid-cols-2">
+                <ul className="grid gap-2 sm:grid-cols-2">
                   {slide.points.map((point) => (
-                    <li
-                      key={point}
-                      className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-                    >
+                    <li key={point} className="flex items-start gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
                       <Check className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
                       <span className="text-sm font-bold leading-relaxed text-slate-700 sm:text-base">{point}</span>
                     </li>
@@ -212,22 +205,20 @@ function SlideContent({
             )}
 
             {slide.tip && (
-              <aside className="rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm font-bold leading-relaxed text-amber-950 sm:text-base">
-                <span className="ml-2 font-black">טיפ:</span>
-                {slide.tip}
+              <aside className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-bold leading-relaxed text-amber-950 sm:text-base">
+                <span className="ml-2 font-black">טיפ:</span>{slide.tip}
               </aside>
             )}
 
             {slide.warning && (
-              <aside className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-bold leading-relaxed text-rose-950 sm:text-base">
-                <span className="ml-2 font-black">חשוב:</span>
-                {slide.warning}
+              <aside className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold leading-relaxed text-rose-950 sm:text-base">
+                <span className="ml-2 font-black">חשוב:</span>{slide.warning}
               </aside>
             )}
 
             {slide.link && (
               <div>
-                <Button asChild size="lg" className="gap-2 rounded-xl font-black">
+                <Button asChild size="lg" className="h-12 gap-2 rounded-xl px-6 font-black shadow-sm">
                   <a href={slide.link.href} target="_blank" rel="noopener noreferrer">
                     {slide.link.label}
                     <ExternalLink className="h-4 w-4" />
@@ -240,9 +231,7 @@ function SlideContent({
 
         {hasScreenshots && (
           <div className="grid content-start gap-4 lg:pt-1">
-            {slide.screenshots?.map((screenshot) => (
-              <GuideScreenshot key={screenshot.src} {...screenshot} />
-            ))}
+            {slide.screenshots?.map((screenshot) => <GuideScreenshot key={screenshot.src} {...screenshot} />)}
           </div>
         )}
       </div>
@@ -260,8 +249,8 @@ export default function Guide() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const touchStartX = useRef<number | null>(null);
 
-  const slide = GUIDE_SLIDES[currentIndex] ?? GUIDE_SLIDES[0];
-  const allSequence = useMemo(() => GUIDE_SLIDES.map((item) => item.id), []);
+  const slide = PUBLISHED_GUIDE_SLIDES[currentIndex] ?? PUBLISHED_GUIDE_SLIDES[0];
+  const allSequence = useMemo(() => PUBLISHED_GUIDE_SLIDES.map((item) => item.id), []);
   const activeSequence = mode === 'quick' ? QUICK_START_SLIDE_IDS : allSequence;
   const activePosition = activeSequence.indexOf(slide.id);
   const safeMode: DeckMode = activePosition >= 0 ? mode : 'all';
@@ -273,17 +262,10 @@ export default function Guide() {
 
   const searchResults = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('he');
-    if (!normalized) return GUIDE_SLIDES.filter((item) => !item.cover).slice(0, 12);
+    if (!normalized) return PUBLISHED_GUIDE_SLIDES.filter((item) => !item.cover).slice(0, 14);
 
-    return GUIDE_SLIDES.filter((item) => {
-      const searchable = [
-        item.title,
-        item.summary,
-        item.eyebrow,
-        ...(item.steps ?? []),
-        ...(item.points ?? []),
-        ...(item.keywords ?? []),
-      ]
+    return PUBLISHED_GUIDE_SLIDES.filter((item) => {
+      const searchable = [item.title, item.summary, item.eyebrow, ...(item.steps ?? []), ...(item.points ?? []), ...(item.keywords ?? [])]
         .join(' ')
         .toLocaleLowerCase('he');
       return searchable.includes(normalized);
@@ -299,13 +281,10 @@ export default function Guide() {
   }
 
   function jumpToSlide(slideId: string, requestedMode: DeckMode = 'all', replace = false) {
-    const index = GUIDE_SLIDES.findIndex((item) => item.id === slideId);
+    const index = PUBLISHED_GUIDE_SLIDES.findIndex((item) => item.id === slideId);
     if (index < 0) return;
 
-    const nextMode = requestedMode === 'quick' && QUICK_START_SLIDE_IDS.includes(slideId)
-      ? 'quick'
-      : 'all';
-
+    const nextMode = requestedMode === 'quick' && QUICK_START_SLIDE_IDS.includes(slideId) ? 'quick' : 'all';
     setMode(nextMode);
     setCurrentIndex(index);
     setPanel(null);
@@ -404,56 +383,31 @@ export default function Guide() {
   const progress = safePosition >= 0 ? ((safePosition + 1) / safeSequence.length) * 100 : 0;
 
   return (
-    <div
-      dir="rtl"
-      className="fixed inset-0 z-[100] grid h-dvh grid-rows-[auto_1fr_auto] overflow-hidden bg-[radial-gradient(circle_at_50%_0%,#1e3a8a_0%,#0f172a_48%,#020617_100%)] text-slate-900"
-    >
+    <div dir="rtl" className="fixed inset-0 z-[100] grid h-dvh grid-rows-[auto_1fr_auto] overflow-hidden bg-[radial-gradient(circle_at_50%_0%,#1e3a8a_0%,#0f172a_48%,#020617_100%)] text-slate-900">
       <header className="flex min-h-16 items-center justify-between gap-3 border-b border-white/10 px-3 text-white sm:px-5 lg:px-8">
         <div className="flex min-w-0 items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setPanel('menu')}
-            className="gap-2 text-white hover:bg-white/10 hover:text-white"
-          >
+          <Button variant="ghost" size="sm" onClick={() => setPanel('menu')} className="gap-2 text-white hover:bg-white/10 hover:text-white">
             <Menu className="h-5 w-5" />
             <span className="hidden sm:inline">תוכן</span>
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setPanel('search')}
-            className="gap-2 text-white hover:bg-white/10 hover:text-white"
-          >
+          <Button variant="ghost" size="sm" onClick={() => setPanel('search')} className="gap-2 text-white hover:bg-white/10 hover:text-white">
             <Search className="h-5 w-5" />
             <span className="hidden sm:inline">חיפוש</span>
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => jumpToSlide('cover', 'all')}
-            className="hidden gap-2 text-white hover:bg-white/10 hover:text-white md:inline-flex"
-          >
+          <Button variant="ghost" size="sm" onClick={() => jumpToSlide('cover', 'all')} className="hidden gap-2 text-white hover:bg-white/10 hover:text-white md:inline-flex">
             <Home className="h-4 w-4" />
             פתיחה
           </Button>
         </div>
 
         <div className="min-w-0 text-center">
-          <p className="truncate text-xs font-black text-amber-300 sm:text-sm">
-            {safeMode === 'quick' ? 'התחלה מהירה' : currentSection?.title ?? 'Moodle'}
-          </p>
-          <p className="hidden max-w-[48vw] truncate text-xs font-bold text-white/60 sm:block">{slide.title}</p>
+          <p className="truncate text-xs font-black text-amber-300 sm:text-sm">{safeMode === 'quick' ? 'התחלה מהירה' : currentSection?.title ?? 'Moodle'}</p>
+          <p className="hidden max-w-[48vw] truncate text-xs font-bold text-white/70 sm:block">{slide.title}</p>
         </div>
 
         <div className="flex items-center gap-2">
           {safeMode === 'quick' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => jumpToSlide(slide.id, 'all', true)}
-              className="hidden text-white/80 hover:bg-white/10 hover:text-white sm:inline-flex"
-            >
+            <Button variant="ghost" size="sm" onClick={() => jumpToSlide(slide.id, 'all', true)} className="hidden text-white/80 hover:bg-white/10 hover:text-white sm:inline-flex">
               כל השקופיות
             </Button>
           )}
@@ -499,28 +453,34 @@ export default function Guide() {
         </article>
       </main>
 
-      <footer className="grid min-h-[68px] grid-cols-[1fr_auto_1fr] items-center gap-3 border-t border-white/10 px-3 text-white sm:px-5 lg:px-8">
+      <footer className="grid min-h-[72px] grid-cols-[1fr_auto_1fr] items-center gap-3 border-t border-white/10 px-3 text-white sm:px-5 lg:px-8">
         <div className="flex justify-start">
           <Button
             variant="ghost"
             onClick={() => goBy(-1)}
             disabled={!canGoPrevious}
-            className="gap-2 font-black text-white hover:bg-white/10 hover:text-white disabled:text-white/25"
+            className="h-11 gap-2 px-4 font-black text-white hover:bg-white/10 hover:text-white disabled:text-white/25"
           >
             <ArrowRight className="h-5 w-5" />
             <span className="hidden sm:inline">הקודם</span>
           </Button>
         </div>
 
-        <div className="flex min-w-[130px] flex-col items-center gap-1.5 sm:min-w-[220px]">
-          <div className="text-xs font-black text-white/85">
-            {safePosition + 1} מתוך {safeSequence.length}
-          </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/15">
-            <div
-              className="h-full rounded-full bg-amber-400 transition-[width] duration-300"
-              style={{ width: `${progress}%` }}
-            />
+        <div className="flex min-w-[150px] items-center gap-3 sm:min-w-[300px]">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setPanel('menu')}
+            className="hidden shrink-0 gap-2 font-black text-white hover:bg-white/10 hover:text-white sm:inline-flex"
+          >
+            <List className="h-4 w-4" />
+            תוכן
+          </Button>
+          <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
+            <div className="text-xs font-black text-white/90">{safePosition + 1} מתוך {safeSequence.length}</div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/15">
+              <div className="h-full rounded-full bg-amber-400 transition-[width] duration-300" style={{ width: `${progress}%` }} />
+            </div>
           </div>
         </div>
 
@@ -528,7 +488,7 @@ export default function Guide() {
           <Button
             onClick={() => goBy(1)}
             disabled={!canGoNext}
-            className="gap-2 bg-amber-400 font-black text-slate-950 hover:bg-amber-300 disabled:bg-white/10 disabled:text-white/25"
+            className="h-11 gap-2 bg-amber-400 px-5 font-black text-slate-950 hover:bg-amber-300 disabled:bg-white/10 disabled:text-white/25"
           >
             <span className="hidden sm:inline">הבא</span>
             <ArrowLeft className="h-5 w-5" />
@@ -540,9 +500,7 @@ export default function Guide() {
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-3 backdrop-blur-md sm:p-6">
           <section className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/15 bg-white shadow-2xl">
             <header className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-7">
-              <h2 className="text-2xl font-black text-slate-950">
-                {panel === 'menu' ? 'תוכן העניינים' : 'חיפוש'}
-              </h2>
+              <h2 className="text-2xl font-black text-slate-950">{panel === 'menu' ? 'תוכן העניינים' : 'חיפוש'}</h2>
               <Button variant="ghost" size="icon" onClick={() => setPanel(null)} aria-label="סגירה">
                 <X className="h-6 w-6" />
               </Button>
@@ -569,9 +527,8 @@ export default function Guide() {
 
                 <div className="grid gap-5 lg:grid-cols-2">
                   {GUIDE_SECTIONS.map((section) => {
-                    const sectionSlides = GUIDE_SLIDES.filter(
-                      (item) => item.section === section.id && !item.cover
-                    );
+                    const sectionSlides = PUBLISHED_GUIDE_SLIDES.filter((item) => item.section === section.id && !item.cover);
+                    if (sectionSlides.length === 0) return null;
                     return (
                       <div key={section.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
                         <h3 className="text-lg font-black text-slate-950">{section.title}</h3>
@@ -583,9 +540,7 @@ export default function Guide() {
                               aria-current={item.id === slide.id ? 'page' : undefined}
                               className={cn(
                                 'flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-right text-sm font-bold transition',
-                                item.id === slide.id
-                                  ? 'bg-blue-800 text-white'
-                                  : 'bg-white text-slate-700 hover:bg-blue-50 hover:text-blue-900'
+                                item.id === slide.id ? 'bg-blue-800 text-white' : 'bg-white text-slate-700 hover:bg-blue-50 hover:text-blue-900'
                               )}
                             >
                               <span>{item.title}</span>
@@ -607,7 +562,7 @@ export default function Guide() {
                       ref={searchInputRef}
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}
-                      placeholder="חיפוש פעולה או כפתור"
+                      placeholder="חיפוש שאלה, פעולה או כפתור"
                       className="h-14 w-full rounded-2xl border-2 border-slate-200 bg-slate-50 pr-12 pl-4 text-base font-bold text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
                     />
                   </div>
@@ -623,9 +578,7 @@ export default function Guide() {
                         >
                           <span className="text-xs font-black text-blue-700">{item.eyebrow}</span>
                           <span className="mt-1 block text-lg font-black text-slate-950">{item.title}</span>
-                          <span className="mt-2 block text-sm font-medium leading-relaxed text-slate-500">
-                            {item.summary}
-                          </span>
+                          <span className="mt-2 block text-sm font-medium leading-relaxed text-slate-500">{item.summary}</span>
                         </button>
                       ))}
                     </div>
