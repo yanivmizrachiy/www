@@ -91,61 +91,67 @@ function SlideContent({
 }) {
   if (slide.cover) {
     return (
-      <div className="relative flex min-h-full items-center overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 px-6 py-8 text-white sm:px-10 lg:px-16">
+      <div className="relative flex min-h-full flex-col overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white">
         <div className="pointer-events-none absolute -right-32 -top-36 h-96 w-96 rounded-full bg-blue-500/25 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-32 -left-24 h-96 w-96 rounded-full bg-amber-400/15 blur-3xl" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-blue-800/25 to-transparent" />
 
-        <div className="relative z-10 grid w-full items-center gap-8 lg:grid-cols-[0.78fr_1.22fr] lg:gap-14">
-          <div className="flex justify-center lg:justify-start">
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-5 py-5 text-center sm:px-10 sm:py-7 lg:px-16">
+          <div className="mb-3 flex justify-center sm:mb-4">
             <div className="relative">
-              <div className="absolute inset-0 rounded-full bg-amber-300/25 blur-3xl" />
+              <div className="absolute inset-0 rounded-full bg-amber-300/30 blur-2xl" />
               <picture className="relative block">
                 <source type="image/webp" srcSet="/guide/jerusalem-math-logo.webp" />
                 <img
                   src="/guide/jerusalem-math-logo.png"
-                  alt="לוגו המתמטיקה של מחוז ירושלים"
+                  alt="יחידת מתמטיקה — מחוז ירושלים והעיר ירושלים"
                   width={512}
                   height={512}
-                  className="h-40 w-40 animate-[spin_14s_linear_infinite] rounded-full bg-white/95 object-contain p-3 shadow-2xl ring-4 ring-amber-300/70 sm:h-52 sm:w-52 lg:h-72 lg:w-72"
+                  className="h-24 w-24 animate-[spin_14s_linear_infinite] rounded-full bg-white object-contain p-2 shadow-[0_14px_45px_rgba(0,0,0,0.48)] ring-4 ring-amber-300/80 sm:h-32 sm:w-32 lg:h-36 lg:w-36"
                 />
               </picture>
             </div>
           </div>
 
-          <div className="space-y-6 text-center lg:text-right">
-            <div className="space-y-2">
-              <p className="text-sm font-black text-amber-300 sm:text-base">{slide.eyebrow}</p>
-              <p className="text-sm font-bold text-white/80">בהובלת איילת קריספין</p>
-              <p className="text-sm font-bold text-white/70">המדריך מנוהל ע״י יניב רז</p>
-            </div>
+          <p className="text-sm font-black text-amber-300 sm:text-base">{slide.eyebrow}</p>
 
-            <div className="space-y-4">
-              <h1 className="font-display text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">{slide.title}</h1>
-              <p className="mx-auto max-w-3xl text-lg font-medium leading-relaxed text-white/85 lg:mx-0 lg:text-xl">
-                {slide.summary}
-              </p>
-            </div>
-
-            <div className="flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
-              <Button
-                size="lg"
-                onClick={onQuickStart}
-                className="h-14 gap-2 rounded-2xl bg-amber-400 px-8 text-lg font-black text-slate-950 hover:bg-amber-300"
-              >
-                <PlayCircle className="h-5 w-5" />
-                התחלה מהירה
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={onOpenMenu}
-                className="h-14 gap-2 rounded-2xl border-white/25 bg-white/10 px-8 text-lg font-black text-white hover:bg-white/20 hover:text-white"
-              >
-                <List className="h-5 w-5" />
-                תוכן העניינים
-              </Button>
-            </div>
+          <div className="mt-3 w-full max-w-5xl rounded-[28px] border border-white/20 bg-slate-950/55 px-5 py-5 shadow-[0_24px_70px_rgba(0,0,0,0.38)] backdrop-blur-sm sm:px-9 sm:py-6">
+            <h1 className="font-display text-4xl font-black leading-tight text-white drop-shadow-[0_3px_14px_rgba(0,0,0,0.72)] sm:text-5xl lg:text-6xl">
+              {slide.title}
+            </h1>
+            <p className="mx-auto mt-3 max-w-3xl text-base font-semibold leading-relaxed text-slate-50 sm:text-lg lg:text-xl">
+              {slide.summary}
+            </p>
           </div>
+
+          <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
+            <Button
+              size="lg"
+              onClick={onQuickStart}
+              className="h-14 gap-2 rounded-2xl bg-amber-400 px-8 text-lg font-black text-slate-950 shadow-lg hover:bg-amber-300"
+            >
+              <PlayCircle className="h-5 w-5" />
+              התחלה מהירה
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={onOpenMenu}
+              className="h-14 gap-2 rounded-2xl border-white/35 bg-white/10 px-8 text-lg font-black text-white shadow-lg backdrop-blur-sm hover:bg-white/20 hover:text-white"
+            >
+              <List className="h-5 w-5" />
+              תוכן העניינים
+            </Button>
+          </div>
+        </div>
+
+        <div className="relative z-10 border-t border-amber-300/40 bg-slate-950/85 px-4 py-3 text-center shadow-[0_-8px_30px_rgba(0,0,0,0.18)] sm:px-8">
+          <p className="text-xs font-black leading-relaxed text-amber-200 sm:text-sm">
+            הדרכה במחוז ירושלים והעיר ירושלים - מנח״י, בהובלת איילת קריספין
+          </p>
+          <p className="mt-1 text-xs font-bold leading-relaxed text-white sm:text-sm">
+            האתר מנוהל ע״י יניב רז · מדריך מחוזי חט״ב בעיר ירושלים
+          </p>
         </div>
       </div>
     );
