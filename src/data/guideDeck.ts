@@ -13,14 +13,24 @@ export type {
 
 export const GUIDE_SECTIONS = SOURCE_GUIDE_SECTIONS;
 
-// Normalize legacy source debt defensively: if a real screenshot requirement is
-// still open, the application must treat the slide as needs-capture even when
-// an older source entry accidentally says ready.
-export const GUIDE_SLIDES = SOURCE_GUIDE_SLIDES.map((slide) =>
-  slide.missingCaptureId && slide.status === 'ready'
-    ? { ...slide, status: 'needs-capture' as const }
-    : slide
-);
+function toModernScreenshotFilename(src: string) {
+  return src.replace(/\.[^.]+$/, '.avif');
+}
+
+// Normalize the source once before anything reaches the application:
+// 1) unresolved screenshot requirements are always needs-capture;
+// 2) every existing screenshot uses the verified AVIF derivative for faster loading.
+export const GUIDE_SLIDES = SOURCE_GUIDE_SLIDES.map((slide) => ({
+  ...slide,
+  status:
+    slide.missingCaptureId && slide.status === 'ready'
+      ? ('needs-capture' as const)
+      : slide.status,
+  screenshots: slide.screenshots?.map((screenshot) => ({
+    ...screenshot,
+    src: toModernScreenshotFilename(screenshot.src),
+  })),
+}));
 
 // Publication invariant: a slide is public only when the normalized source
 // explicitly marks it ready AND there is no unresolved real-screenshot requirement.
