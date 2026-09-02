@@ -13,29 +13,42 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Wait for Render to deploy this exact commit
+      - name: Checkout canonical main content
+        uses: actions/checkout@v4
+
+      - name: Compute canonical Guide fingerprint
+        shell: bash
+        run: |
+          set -euo pipefail
+          GUIDE_HASH="$(node scripts/maintenance/guide-content-hash.cjs)"
+          echo "EXPECTED_GUIDE_HASH=${GUIDE_HASH}" >> "$GITHUB_ENV"
+          echo "Canonical Guide hash: ${GUIDE_HASH}"
+
+      - name: Wait for live Guide content to match main
         env:
-          EXPECTED_SHA: ${{ github.sha }}
           BASE_URL: https://www-tijc.onrender.com
         shell: bash
         run: |
           set -euo pipefail
 
-          for attempt in $(seq 1 24); do
+          for attempt in $(seq 1 36); do
             HEALTH_CODE="$(curl -sS -o /tmp/guide-health.txt -w '%{http_code}' --max-time 20 "${BASE_URL}/health" || true)"
             RELEASE_CODE="$(curl -sS -o /tmp/guide-release.json -w '%{http_code}' --max-time 20 "${BASE_URL}/guide/release.json" || true)"
-            echo "Attempt ${attempt}/24: health=${HEALTH_CODE:-curl-error} release=${RELEASE_CODE:-curl-error} expected=${EXPECTED_SHA}"
+            echo "Attempt ${attempt}/36: health=${HEALTH_CODE:-curl-error} release=${RELEASE_CODE:-curl-error} expectedGuideHash=${EXPECTED_GUIDE_HASH}"
 
             if [ "$HEALTH_CODE" = "200" ] && [ "$RELEASE_CODE" = "200" ]; then
-              LIVE_SHA="$(node -e "const fs=require('fs');try{const x=JSON.parse(fs.readFileSync('/tmp/guide-release.json','utf8'));process.stdout.write(x.commit||'')}catch(e){process.stdout.write('invalid-json')}")"
-              echo "Live guide commit: ${LIVE_SHA:-missing}"
+              LIVE_HASH="$(node -e "const fs=require('fs');try{const x=JSON.parse(fs.readFileSync('/tmp/guide-release.json','utf8'));process.stdout.write(x.guideHash||'')}catch(e){process.stdout.write('invalid-json')}")"
+              LIVE_SHA="$(node -e "const fs=require('fs');try{const x=JSON.parse(fs.readFileSync('/tmp/guide-release.json','utf8'));process.stdout.write(x.commit||'')}catch(e){}")"
+              LIVE_BRANCH="$(node -e "const fs=require('fs');try{const x=JSON.parse(fs.readFileSync('/tmp/guide-release.json','utf8'));process.stdout.write(x.branch||'')}catch(e){}")"
+              echo "Live Guide: hash=${LIVE_HASH:-missing} commit=${LIVE_SHA:-missing} branch=${LIVE_BRANCH:-missing}"
 
-              if [ "$LIVE_SHA" = "$EXPECTED_SHA" ]; then
+              if [ "$LIVE_HASH" = "$EXPECTED_GUIDE_HASH" ]; then
                 GUIDE_CODE="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "${BASE_URL}/guide" || true)"
-                SHOT_CODE="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "${BASE_URL}/guide/screenshots/01-login.jpg" || true)"
-                echo "Final endpoints: guide=${GUIDE_CODE:-curl-error} screenshot=${SHOT_CODE:-curl-error}"
-                if [ "$GUIDE_CODE" = "200" ] && [ "$SHOT_CODE" = "200" ]; then
-                  echo "Verified: /guide, release marker, and a real Moodle screenshot are live for ${EXPECTED_SHA}."
+                SHOT_CODE="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "${BASE_URL}/guide/screenshots/01-login.avif" || true)"
+                SW_CODE="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "${BASE_URL}/guide/sw.js" || true)"
+                echo "Final endpoints: guide=${GUIDE_CODE:-curl-error} avif=${SHOT_CODE:-curl-error} sw=${SW_CODE:-curl-error}"
+                if [ "$GUIDE_CODE" = "200" ] && [ "$SHOT_CODE" = "200" ] && [ "$SW_CODE" = "200" ]; then
+                  echo "Verified: live Guide content matches canonical main fingerprint ${EXPECTED_GUIDE_HASH}."
                   exit 0
                 fi
               fi
@@ -44,7 +57,7 @@ jobs:
             sleep 10
           done
 
-          echo "Render did not expose the expected guide commit within the verification window."
+          echo "Live Guide did not match canonical main content fingerprint within the verification window."
           echo "Last health response:"
           cat /tmp/guide-health.txt 2>/dev/null || true
           echo
