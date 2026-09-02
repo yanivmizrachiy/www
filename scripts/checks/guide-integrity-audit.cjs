@@ -158,11 +158,15 @@ if (!fs.existsSync(guideSwPath)) {
 
   for (const requiredFragment of [
     "CACHE_PREFIX = 'moodle-guide-'",
+    "CACHE_NAME = `${CACHE_PREFIX}v2`",
+    'NAVIGATION_FRESHNESS_MS = 1200',
+    'Promise.race([',
+    'event.waitUntil(networkPromise)',
     "url.pathname === '/guide/release.json'",
     "url.pathname.startsWith('/assets/')",
   ]) {
     if (!guideSw.includes(requiredFragment)) {
-      fail(`Guide service worker is missing isolation/safety rule: ${requiredFragment}`);
+      fail(`Guide service worker is missing freshness/isolation rule: ${requiredFragment}`);
     }
   }
 }
