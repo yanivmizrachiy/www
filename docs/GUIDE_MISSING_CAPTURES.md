@@ -2,7 +2,7 @@
 
 עודכן: 2026-09-02  
 מקור הדרישות: `PROJECT_MEMORY.md`, שסונכרן מתיקיית `מודל` ב-Google Drive.  
-בסיס הנכסים שנבדק: `public/guide/screenshots/`, `src/data/guideButtons.ts`, `src/data/guideDeck.ts`, `docs/GUIDE_SCREENSHOTS_MANIFEST.md` בענף הפרודקשן `rebuild/lti13-secure-teacher-hub`.
+בסיס הנכסים שנבדק בעת המיפוי: `public/guide/screenshots/`, `src/data/guideDeckSource.ts` ו-`docs/GUIDE_SCREENSHOTS_MANIFEST.md`. ענף `rebuild/lti13-secure-teacher-hub` שימש כמקור היסטורי לנכסי המצגת; המקור הקנוני וענף הפריסה הנוכחי הם `main`.
 
 ## כלל מחייב
 
