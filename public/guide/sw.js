@@ -1,5 +1,6 @@
 const CACHE_PREFIX = 'moodle-guide-';
-const CACHE_NAME = `${CACHE_PREFIX}v1`;
+const CACHE_NAME = `${CACHE_PREFIX}v2`;
+const NAVIGATION_FRESHNESS_MS = 1200;
 const GUIDE_SHELL = [
   '/guide',
   '/guide-visual-isolation.css',
@@ -11,6 +12,12 @@ const GUIDE_SHELL = [
 async function putIfUsable(cache, key, response) {
   if (response && response.ok) await cache.put(key, response.clone());
   return response;
+}
+
+function timeoutAfter(milliseconds) {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(null), milliseconds);
+  });
 }
 
 self.addEventListener('install', (event) => {
@@ -44,6 +51,8 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  // Deployment verification must always see the server's real release marker.
   if (url.pathname === '/guide/release.json') return;
 
   const isGuideNavigation =
@@ -56,17 +65,26 @@ self.addEventListener('fetch', (event) => {
       const cacheKey = '/guide';
       const cached = await cache.match(cacheKey);
 
-      const refresh = fetch(request)
+      const networkPromise = fetch(request)
         .then((response) => putIfUsable(cache, cacheKey, response))
         .catch(() => null);
 
-      if (cached) {
-        event.waitUntil(refresh);
-        return cached;
+      // First visit has no safe local copy, so wait for the real server.
+      if (!cached) {
+        const network = await networkPromise;
+        return network || Response.error();
       }
 
-      const network = await refresh;
-      return network || Response.error();
+      // On repeat visits, prefer fresh HTML when Render is responsive. If the
+      // service is sleeping, fall back quickly to the last verified Guide and
+      // keep refreshing it in the background for the next navigation.
+      event.waitUntil(networkPromise);
+      const fresh = await Promise.race([
+        networkPromise,
+        timeoutAfter(NAVIGATION_FRESHNESS_MS),
+      ]);
+
+      return fresh || cached;
     })());
     return;
   }
