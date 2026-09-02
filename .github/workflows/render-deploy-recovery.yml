@@ -17,9 +17,19 @@ jobs:
       DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
       RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
       RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
-      EXPECTED_SHA: ${{ github.sha }}
       BASE_URL: https://www-tijc.onrender.com
     steps:
+      - name: Checkout canonical main content
+        uses: actions/checkout@v4
+
+      - name: Compute canonical Guide fingerprint
+        shell: bash
+        run: |
+          set -euo pipefail
+          GUIDE_HASH="$(node scripts/maintenance/guide-content-hash.cjs)"
+          echo "EXPECTED_GUIDE_HASH=${GUIDE_HASH}" >> "$GITHUB_ENV"
+          echo "Canonical Guide hash: ${GUIDE_HASH}"
+
       - name: Trigger Render deploy when credentials already exist
         shell: bash
         run: |
@@ -43,10 +53,9 @@ jobs:
             echo "Render API deploy triggered."
           else
             echo "NO_RENDER_DEPLOY_CREDENTIALS_CONFIGURED"
-            exit 0
           fi
 
-      - name: Verify deployed branch and commit
+      - name: Verify live Guide fingerprint
         shell: bash
         run: |
           set -euo pipefail
@@ -54,7 +63,7 @@ jobs:
           for attempt in $(seq 1 36); do
             HEALTH_CODE="$(curl -sS -o /tmp/render-health.json -w '%{http_code}' --max-time 20 "${BASE_URL}/health" || true)"
             RELEASE_CODE="$(curl -sS -o /tmp/render-release.json -w '%{http_code}' --max-time 20 "${BASE_URL}/guide/release.json" || true)"
-            echo "Attempt ${attempt}/36: health=${HEALTH_CODE:-curl-error} release=${RELEASE_CODE:-curl-error}"
+            echo "Attempt ${attempt}/36: health=${HEALTH_CODE:-curl-error} release=${RELEASE_CODE:-curl-error} expectedGuideHash=${EXPECTED_GUIDE_HASH}"
 
             if [ "$RELEASE_CODE" = "200" ]; then
               node - <<'NODE'
@@ -62,16 +71,17 @@ jobs:
           const data = JSON.parse(fs.readFileSync('/tmp/render-release.json', 'utf8'));
           console.log(`LIVE_RENDER_COMMIT=${data.commit || 'missing'}`);
           console.log(`LIVE_RENDER_BRANCH=${data.branch || 'missing'}`);
+          console.log(`LIVE_GUIDE_HASH=${data.guideHash || 'missing'}`);
           NODE
-              LIVE_SHA="$(node -e "const x=require('/tmp/render-release.json');process.stdout.write(x.commit||'')")"
-              if [ "$LIVE_SHA" = "$EXPECTED_SHA" ]; then
-                echo "RENDER_MAIN_DEPLOY_VERIFIED=${EXPECTED_SHA}"
+              LIVE_HASH="$(node -e "const x=require('/tmp/render-release.json');process.stdout.write(x.guideHash||'')")"
+              if [ "$LIVE_HASH" = "$EXPECTED_GUIDE_HASH" ]; then
+                echo "RENDER_GUIDE_CONTENT_VERIFIED=${EXPECTED_GUIDE_HASH}"
                 exit 0
               fi
             fi
             sleep 10
           done
 
-          echo "Render deploy was triggered but the live service did not reach main SHA ${EXPECTED_SHA} in time."
+          echo "Render live Guide did not reach canonical main content fingerprint ${EXPECTED_GUIDE_HASH} in time."
           cat /tmp/render-release.json 2>/dev/null || true
           exit 1
