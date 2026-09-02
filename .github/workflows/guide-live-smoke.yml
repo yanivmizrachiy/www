@@ -1,0 +1,45 @@
+name: Guide Live Smoke
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-live-guide:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Wait for Render to deploy this exact commit
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          BASE_URL: https://www-tijc.onrender.com
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for attempt in $(seq 1 36); do
+            echo "Attempt ${attempt}/36: expecting ${EXPECTED_SHA}"
+
+            if curl -fsS --max-time 20 "${BASE_URL}/health" >/dev/null 2>&1 \
+              && curl -fsS --max-time 20 "${BASE_URL}/guide/release.json" -o /tmp/guide-release.json 2>/dev/null; then
+              LIVE_SHA="$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('/tmp/guide-release.json','utf8'));process.stdout.write(x.commit||'')")"
+              echo "Live guide commit: ${LIVE_SHA:-missing}"
+
+              if [ "$LIVE_SHA" = "$EXPECTED_SHA" ]; then
+                curl -fsS --max-time 20 "${BASE_URL}/guide" >/dev/null
+                curl -fsS --max-time 20 "${BASE_URL}/guide/screenshots/01-login.jpg" >/dev/null
+                echo "Verified: /guide, release marker, and a real Moodle screenshot are live for ${EXPECTED_SHA}."
+                exit 0
+              fi
+            fi
+
+            sleep 10
+          done
+
+          echo "Render did not expose the expected guide commit within the verification window."
+          if [ -f /tmp/guide-release.json ]; then cat /tmp/guide-release.json; fi
+          exit 1
