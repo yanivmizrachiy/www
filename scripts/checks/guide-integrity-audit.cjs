@@ -31,13 +31,22 @@ const deck = fs.readFileSync(deckPath, 'utf8');
 const missing = fs.readFileSync(missingPath, 'utf8');
 
 // 1) There must be exactly one application-facing publication gate.
+// Use an allow-list: only slides explicitly marked ready can be public.
 for (const requiredFragment of [
-  "slide.status !== 'needs-capture'",
-  "slide.status !== 'needs-fact'",
+  "slide.status === 'ready'",
   '!slide.missingCaptureId',
 ]) {
   if (!deck.includes(requiredFragment)) {
     fail(`guideDeck.ts publication gate is missing: ${requiredFragment}`);
+  }
+}
+
+for (const forbiddenFragment of [
+  "slide.status !== 'needs-capture'",
+  "slide.status !== 'needs-fact'",
+]) {
+  if (deck.includes(forbiddenFragment)) {
+    fail(`guideDeck.ts uses a deny-list publication rule instead of explicit ready status: ${forbiddenFragment}`);
   }
 }
 
@@ -65,6 +74,14 @@ while ((titleMatch = titleRegex.exec(slidesBlock))) {
   const title = titleMatch[1].trim();
   if (title === 'מדריך למורים במערכת Moodle') continue;
   if (!title.endsWith('?')) fail(`Slide title is not a question: ${title}`);
+}
+
+// Surface source-status debt without weakening the publication gate.
+const readyWithMissingIds = [
+  ...slidesBlock.matchAll(/status:\s*'ready',\s*\n\s*missingCaptureId:\s*'(M\d{2})'/g),
+].map((match) => match[1]);
+if (readyWithMissingIds.length) {
+  notes.push(`Source status cleanup still needed for: ${readyWithMissingIds.join(', ')}. These slides remain withheld because missingCaptureId is authoritative.`);
 }
 
 // 3) Missing-capture IDs in source and docs must stay synchronized.

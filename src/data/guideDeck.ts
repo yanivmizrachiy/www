@@ -14,14 +14,11 @@ export type {
 export const GUIDE_SECTIONS = SOURCE_GUIDE_SECTIONS;
 export const GUIDE_SLIDES = SOURCE_GUIDE_SLIDES;
 
-// Publication invariant: an operational slide is public only when its real
-// screenshot sequence is complete and no factual answer is still unresolved.
-// Incomplete slides remain fully preserved in GUIDE_SLIDES / guideDeckSource.ts.
+// Publication invariant: a slide is public only when the source explicitly
+// marks it ready AND there is no unresolved real-screenshot requirement.
+// Anything incomplete stays preserved in GUIDE_SLIDES / guideDeckSource.ts.
 export const PUBLISHED_GUIDE_SLIDES = GUIDE_SLIDES.filter(
-  (slide) =>
-    slide.status !== 'needs-capture' &&
-    slide.status !== 'needs-fact' &&
-    !slide.missingCaptureId
+  (slide) => slide.status === 'ready' && !slide.missingCaptureId
 );
 
 const PUBLISHED_SLIDE_IDS = new Set(PUBLISHED_GUIDE_SLIDES.map((slide) => slide.id));
