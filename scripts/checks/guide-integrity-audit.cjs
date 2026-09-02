@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { computeGuideHash } = require('../maintenance/guide-content-hash.cjs');
 
 const root = path.resolve(__dirname, '../..');
 const sourcePath = path.join(root, 'src/data/guideDeckSource.ts');
@@ -7,6 +8,9 @@ const deckPath = path.join(root, 'src/data/guideDeck.ts');
 const missingPath = path.join(root, 'docs/GUIDE_MISSING_CAPTURES.md');
 const screenshotsDir = path.join(root, 'public/guide/screenshots');
 const guideSwPath = path.join(root, 'public/guide/sw.js');
+const viteConfigPath = path.join(root, 'vite.config.ts');
+const liveSmokePath = path.join(root, '.github/workflows/guide-live-smoke.yml');
+const renderRecoveryPath = path.join(root, '.github/workflows/render-deploy-recovery.yml');
 
 const errors = [];
 const notes = [];
@@ -171,7 +175,43 @@ if (!fs.existsSync(guideSwPath)) {
   }
 }
 
-// 6) The canonical missing-capture document must explicitly forbid fake/demo captures.
+// 6) Live verification must compare canonical Guide content, not branch commit SHA.
+const guideHash = computeGuideHash();
+if (!/^[a-f0-9]{64}$/.test(guideHash)) {
+  fail(`Guide content fingerprint is invalid: ${guideHash}`);
+}
+
+const viteConfig = fs.readFileSync(viteConfigPath, 'utf8');
+for (const requiredFragment of [
+  'guide-content-hash.cjs',
+  'const guideHash = currentGuideHash()',
+  'guideHash, generatedAt',
+]) {
+  if (!viteConfig.includes(requiredFragment)) {
+    fail(`vite.config.ts is missing Guide release fingerprint wiring: ${requiredFragment}`);
+  }
+}
+
+for (const [workflowName, workflowPath] of [
+  ['Guide Live Smoke', liveSmokePath],
+  ['Render Deploy Recovery', renderRecoveryPath],
+]) {
+  const workflow = fs.readFileSync(workflowPath, 'utf8');
+  for (const requiredFragment of [
+    'EXPECTED_GUIDE_HASH',
+    'guideHash',
+    'guide-content-hash.cjs',
+  ]) {
+    if (!workflow.includes(requiredFragment)) {
+      fail(`${workflowName} is missing content-fingerprint verification: ${requiredFragment}`);
+    }
+  }
+  if (workflow.includes('LIVE_SHA" = "$EXPECTED_SHA')) {
+    fail(`${workflowName} still gates Guide success on an exact branch commit SHA.`);
+  }
+}
+
+// 7) The canonical missing-capture document must explicitly forbid fake/demo captures.
 for (const requiredPhrase of ['אין Demo', 'אין Placeholder', 'אין צילום מומצא']) {
   if (!missing.includes(requiredPhrase)) fail(`GUIDE_MISSING_CAPTURES.md is missing safety rule: ${requiredPhrase}`);
 }
@@ -186,4 +226,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`Guide integrity audit passed: ${screenshotRefs.length} screenshot references, ${docMissingSet.size} canonical missing-capture IDs.`);
+console.log(`Guide integrity audit passed: ${screenshotRefs.length} screenshot references, ${docMissingSet.size} canonical missing-capture IDs, guideHash=${guideHash}.`);
