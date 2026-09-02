@@ -6,16 +6,13 @@ const sourcePath = path.join(root, 'src/data/guideDeckSource.ts');
 const deckPath = path.join(root, 'src/data/guideDeck.ts');
 const missingPath = path.join(root, 'docs/GUIDE_MISSING_CAPTURES.md');
 const screenshotsDir = path.join(root, 'public/guide/screenshots');
+const guideSwPath = path.join(root, 'public/guide/sw.js');
 
 const errors = [];
 const notes = [];
 
 function fail(message) {
   errors.push(message);
-}
-
-function read(relativePath) {
-  return fs.readFileSync(path.join(root, relativePath), 'utf8');
 }
 
 function walk(directory) {
@@ -50,6 +47,17 @@ for (const forbiddenFragment of [
   }
 }
 
+// Legacy source entries may still say ready while carrying missingCaptureId.
+// Runtime must normalize those entries to needs-capture before publication/search/quick-start.
+for (const requiredFragment of [
+  "slide.missingCaptureId && slide.status === 'ready'",
+  "status: 'needs-capture' as const",
+]) {
+  if (!deck.includes(requiredFragment)) {
+    fail(`guideDeck.ts is missing defensive status normalization: ${requiredFragment}`);
+  }
+}
+
 const srcFiles = walk(path.join(root, 'src')).filter((file) => /\.[cm]?[jt]sx?$/.test(file));
 for (const file of srcFiles) {
   const relative = path.relative(root, file).replaceAll('\\', '/');
@@ -76,12 +84,11 @@ while ((titleMatch = titleRegex.exec(slidesBlock))) {
   if (!title.endsWith('?')) fail(`Slide title is not a question: ${title}`);
 }
 
-// Surface source-status debt without weakening the publication gate.
 const readyWithMissingIds = [
   ...slidesBlock.matchAll(/status:\s*'ready',\s*\n\s*missingCaptureId:\s*'(M\d{2})'/g),
 ].map((match) => match[1]);
 if (readyWithMissingIds.length) {
-  notes.push(`Source status cleanup still needed for: ${readyWithMissingIds.join(', ')}. These slides remain withheld because missingCaptureId is authoritative.`);
+  notes.push(`Legacy source status normalized at runtime for: ${readyWithMissingIds.join(', ')}.`);
 }
 
 // 3) Missing-capture IDs in source and docs must stay synchronized.
@@ -104,19 +111,52 @@ for (const id of expectedIds) {
   if (!docMissingSet.has(id)) fail(`Expected missing-capture item ${id} is absent from the canonical missing-capture list.`);
 }
 
-// 4) Every screenshot referenced by the deck must physically exist.
+// 4) Every screenshot referenced by the deck must physically exist, together
+// with modern AVIF + WebP derivatives used by the Guide performance layer.
 const screenshotRefs = [...source.matchAll(/src:\s*'([^']+\.(?:jpg|jpeg|png|webp|avif))'/g)].map((match) => match[1]);
 for (const screenshot of new Set(screenshotRefs)) {
   if (screenshot.includes('/') || screenshot.includes('\\')) {
     fail(`Screenshot reference must be a filename only: ${screenshot}`);
     continue;
   }
+
   if (!fs.existsSync(path.join(screenshotsDir, screenshot))) {
     fail(`Referenced screenshot does not exist: public/guide/screenshots/${screenshot}`);
   }
+
+  const base = screenshot.replace(/\.[^.]+$/, '');
+  for (const extension of ['avif', 'webp']) {
+    const modern = `${base}.${extension}`;
+    if (!fs.existsSync(path.join(screenshotsDir, modern))) {
+      fail(`Modern Guide screenshot derivative is missing: public/guide/screenshots/${modern}`);
+    }
+  }
 }
 
-// 5) The canonical missing-capture document must explicitly forbid fake/demo captures.
+// 5) The isolated Guide service worker must exist and remain syntax-valid.
+if (!fs.existsSync(guideSwPath)) {
+  fail('Guide service worker is missing: public/guide/sw.js');
+} else {
+  const guideSw = fs.readFileSync(guideSwPath, 'utf8');
+  try {
+    // Syntax validation only; the worker is not executed in Node.
+    new Function(guideSw);
+  } catch (error) {
+    fail(`Guide service worker has invalid JavaScript: ${error.message}`);
+  }
+
+  for (const requiredFragment of [
+    "CACHE_PREFIX = 'moodle-guide-'",
+    "url.pathname === '/guide/release.json'",
+    "url.pathname.startsWith('/assets/')",
+  ]) {
+    if (!guideSw.includes(requiredFragment)) {
+      fail(`Guide service worker is missing isolation/safety rule: ${requiredFragment}`);
+    }
+  }
+}
+
+// 6) The canonical missing-capture document must explicitly forbid fake/demo captures.
 for (const requiredPhrase of ['אין Demo', 'אין Placeholder', 'אין צילום מומצא']) {
   if (!missing.includes(requiredPhrase)) fail(`GUIDE_MISSING_CAPTURES.md is missing safety rule: ${requiredPhrase}`);
 }

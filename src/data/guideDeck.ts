@@ -12,11 +12,18 @@ export type {
 } from './guideDeckSource';
 
 export const GUIDE_SECTIONS = SOURCE_GUIDE_SECTIONS;
-export const GUIDE_SLIDES = SOURCE_GUIDE_SLIDES;
 
-// Publication invariant: a slide is public only when the source explicitly
-// marks it ready AND there is no unresolved real-screenshot requirement.
-// Anything incomplete stays preserved in GUIDE_SLIDES / guideDeckSource.ts.
+// Normalize legacy source debt defensively: if a real screenshot requirement is
+// still open, the application must treat the slide as needs-capture even when
+// an older source entry accidentally says ready.
+export const GUIDE_SLIDES = SOURCE_GUIDE_SLIDES.map((slide) =>
+  slide.missingCaptureId && slide.status === 'ready'
+    ? { ...slide, status: 'needs-capture' as const }
+    : slide
+);
+
+// Publication invariant: a slide is public only when the normalized source
+// explicitly marks it ready AND there is no unresolved real-screenshot requirement.
 export const PUBLISHED_GUIDE_SLIDES = GUIDE_SLIDES.filter(
   (slide) => slide.status === 'ready' && !slide.missingCaptureId
 );
