@@ -21,19 +21,23 @@ jobs:
         run: |
           set -euo pipefail
 
-          for attempt in $(seq 1 36); do
-            echo "Attempt ${attempt}/36: expecting ${EXPECTED_SHA}"
+          for attempt in $(seq 1 24); do
+            HEALTH_CODE="$(curl -sS -o /tmp/guide-health.txt -w '%{http_code}' --max-time 20 "${BASE_URL}/health" || true)"
+            RELEASE_CODE="$(curl -sS -o /tmp/guide-release.json -w '%{http_code}' --max-time 20 "${BASE_URL}/guide/release.json" || true)"
+            echo "Attempt ${attempt}/24: health=${HEALTH_CODE:-curl-error} release=${RELEASE_CODE:-curl-error} expected=${EXPECTED_SHA}"
 
-            if curl -fsS --max-time 20 "${BASE_URL}/health" >/dev/null 2>&1 \
-              && curl -fsS --max-time 20 "${BASE_URL}/guide/release.json" -o /tmp/guide-release.json 2>/dev/null; then
-              LIVE_SHA="$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('/tmp/guide-release.json','utf8'));process.stdout.write(x.commit||'')")"
+            if [ "$HEALTH_CODE" = "200" ] && [ "$RELEASE_CODE" = "200" ]; then
+              LIVE_SHA="$(node -e "const fs=require('fs');try{const x=JSON.parse(fs.readFileSync('/tmp/guide-release.json','utf8'));process.stdout.write(x.commit||'')}catch(e){process.stdout.write('invalid-json')}")"
               echo "Live guide commit: ${LIVE_SHA:-missing}"
 
               if [ "$LIVE_SHA" = "$EXPECTED_SHA" ]; then
-                curl -fsS --max-time 20 "${BASE_URL}/guide" >/dev/null
-                curl -fsS --max-time 20 "${BASE_URL}/guide/screenshots/01-login.jpg" >/dev/null
-                echo "Verified: /guide, release marker, and a real Moodle screenshot are live for ${EXPECTED_SHA}."
-                exit 0
+                GUIDE_CODE="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "${BASE_URL}/guide" || true)"
+                SHOT_CODE="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "${BASE_URL}/guide/screenshots/01-login.jpg" || true)"
+                echo "Final endpoints: guide=${GUIDE_CODE:-curl-error} screenshot=${SHOT_CODE:-curl-error}"
+                if [ "$GUIDE_CODE" = "200" ] && [ "$SHOT_CODE" = "200" ]; then
+                  echo "Verified: /guide, release marker, and a real Moodle screenshot are live for ${EXPECTED_SHA}."
+                  exit 0
+                fi
               fi
             fi
 
@@ -41,5 +45,9 @@ jobs:
           done
 
           echo "Render did not expose the expected guide commit within the verification window."
-          if [ -f /tmp/guide-release.json ]; then cat /tmp/guide-release.json; fi
+          echo "Last health response:"
+          cat /tmp/guide-health.txt 2>/dev/null || true
+          echo
+          echo "Last release response:"
+          cat /tmp/guide-release.json 2>/dev/null || true
           exit 1
