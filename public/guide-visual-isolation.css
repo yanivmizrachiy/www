@@ -1,5 +1,14 @@
-/* Standalone Moodle guide: protect presentation visuals from Teacher Hub global CSS. */
+/* Standalone Moodle guide: isolate presentation visuals from Teacher Hub global CSS. */
 
+/* Scope every override to the full-screen /guide shell only. */
+div[dir="rtl"][class*="fixed"][class*="inset-0"] {
+  --guide-ink: #020617;
+  --guide-muted: #475569;
+  --guide-white: #ffffff;
+  --guide-gold: #fcd34d;
+}
+
+/* Cover: never allow dark-on-dark text, even if Teacher Hub heading rules load later. */
 div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] h1.font-display {
   color: #ffffff !important;
   font-size: clamp(2.35rem, 6vw, 4.35rem) !important;
@@ -27,16 +36,82 @@ div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] butto
   border-radius: 1rem !important;
 }
 
+div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] button[class*="bg-amber-400"] {
+  background-color: #fbbf24 !important;
+  color: #020617 !important;
+}
+
+div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] button[class*="bg-white/10"] {
+  color: #ffffff !important;
+}
+
 div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] img[alt^="יחידת מתמטיקה"] {
   display: block !important;
   opacity: 1 !important;
   filter: none !important;
 }
 
+/* Interior slides: lock readable dark text on the light canvas. */
+div[dir="rtl"][class*="fixed"][class*="inset-0"] article > div:not([class*="from-slate-950"]) h1.font-display {
+  color: #020617 !important;
+  text-shadow: none !important;
+}
+
+div[dir="rtl"][class*="fixed"][class*="inset-0"] article > div:not([class*="from-slate-950"]) h2 {
+  color: #475569 !important;
+}
+
+div[dir="rtl"][class*="fixed"][class*="inset-0"] article > div:not([class*="from-slate-950"]) p[class*="text-blue-700"] {
+  color: #1d4ed8 !important;
+}
+
+div[dir="rtl"][class*="fixed"][class*="inset-0"] article > div:not([class*="from-slate-950"]) p[class*="text-slate-600"] {
+  color: #475569 !important;
+}
+
+div[dir="rtl"][class*="fixed"][class*="inset-0"] article > div:not([class*="from-slate-950"]) span[class*="text-slate-700"],
+div[dir="rtl"][class*="fixed"][class*="inset-0"] article > div:not([class*="from-slate-950"]) figcaption {
+  color: #334155 !important;
+}
+
+/* Top and bottom presentation chrome must stay legible over the dark shell. */
+div[dir="rtl"][class*="fixed"][class*="inset-0"] > header button,
+div[dir="rtl"][class*="fixed"][class*="inset-0"] > footer button {
+  color: #ffffff !important;
+}
+
+div[dir="rtl"][class*="fixed"][class*="inset-0"] > footer button[class*="bg-amber-400"] {
+  background-color: #fbbf24 !important;
+  color: #020617 !important;
+}
+
+/* Menu/search overlays are white surfaces; protect them from global heading/button rules. */
+div[dir="rtl"][class*="fixed"][class*="inset-0"] section[class*="bg-white"] h2,
+div[dir="rtl"][class*="fixed"][class*="inset-0"] section[class*="bg-white"] h3,
+div[dir="rtl"][class*="fixed"][class*="inset-0"] section[class*="bg-white"] span[class*="text-slate-950"] {
+  color: #020617 !important;
+}
+
+div[dir="rtl"][class*="fixed"][class*="inset-0"] section[class*="bg-white"] input {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  caret-color: #1d4ed8 !important;
+}
+
+div[dir="rtl"][class*="fixed"][class*="inset-0"] section[class*="bg-white"] input::placeholder {
+  color: #64748b !important;
+  opacity: 1 !important;
+}
+
 @media (max-width: 640px) {
   div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] h1.font-display {
     font-size: clamp(2rem, 10vw, 3rem) !important;
     line-height: 1.04 !important;
+  }
+
+  div[dir="rtl"][class*="fixed"][class*="inset-0"] article > div:not([class*="from-slate-950"]) h1.font-display {
+    font-size: clamp(1.8rem, 8vw, 2.5rem) !important;
+    line-height: 1.08 !important;
   }
 }
 
@@ -53,5 +128,11 @@ div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] img[a
   div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] button {
     min-height: 2.75rem !important;
     height: 2.75rem !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] img[alt^="יחידת מתמטיקה"] {
+    animation: none !important;
   }
 }
