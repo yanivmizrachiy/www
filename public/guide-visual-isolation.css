@@ -1,0 +1,57 @@
+/* Standalone Moodle guide: protect presentation visuals from Teacher Hub global CSS. */
+
+div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] h1.font-display {
+  color: #ffffff !important;
+  font-size: clamp(2.35rem, 6vw, 4.35rem) !important;
+  line-height: 1.02 !important;
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.62) !important;
+}
+
+div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] p[class*="text-slate-50"] {
+  color: #f8fafc !important;
+}
+
+div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] p[class*="text-amber-300"] {
+  color: #fcd34d !important;
+}
+
+div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] p[class*="text-amber-200"] {
+  color: #fde68a !important;
+}
+
+div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] p[class*="text-white"] {
+  color: #ffffff !important;
+}
+
+div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] button {
+  border-radius: 1rem !important;
+}
+
+div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] img[alt^="יחידת מתמטיקה"] {
+  display: block !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+@media (max-width: 640px) {
+  div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] h1.font-display {
+    font-size: clamp(2rem, 10vw, 3rem) !important;
+    line-height: 1.04 !important;
+  }
+}
+
+@media (max-height: 540px) and (min-width: 641px) {
+  div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] h1.font-display {
+    font-size: clamp(2.2rem, 5vw, 3.25rem) !important;
+  }
+
+  div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] img[alt^="יחידת מתמטיקה"] {
+    width: 5rem !important;
+    height: 5rem !important;
+  }
+
+  div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] button {
+    min-height: 2.75rem !important;
+    height: 2.75rem !important;
+  }
+}
