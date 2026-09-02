@@ -48,13 +48,24 @@ for (const forbiddenFragment of [
 }
 
 // Legacy source entries may still say ready while carrying missingCaptureId.
-// Runtime must normalize those entries to needs-capture before publication/search/quick-start.
+// Runtime must normalize those entries before publication/search/quick-start.
 for (const requiredFragment of [
   "slide.missingCaptureId && slide.status === 'ready'",
-  "status: 'needs-capture' as const",
+  "'needs-capture' as const",
 ]) {
   if (!deck.includes(requiredFragment)) {
     fail(`guideDeck.ts is missing defensive status normalization: ${requiredFragment}`);
+  }
+}
+
+// Runtime must use the verified AVIF derivatives rather than heavier source JPG/PNG files.
+for (const requiredFragment of [
+  'toModernScreenshotFilename',
+  "return src.replace(/\\.[^.]+$/, '.avif')",
+  'src: toModernScreenshotFilename(screenshot.src)',
+]) {
+  if (!deck.includes(requiredFragment)) {
+    fail(`guideDeck.ts is missing AVIF screenshot mapping: ${requiredFragment}`);
   }
 }
 
