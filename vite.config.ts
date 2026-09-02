@@ -1,8 +1,8 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 
-function guideReleaseMarker() {
+function guideReleaseMarker(): Plugin {
   return {
     name: "guide-release-marker",
     generateBundle() {
