@@ -7,20 +7,32 @@
     <meta name="description" content="כלי אמת למורים מעל Moodle. תלמידים, משימות, ציונים, פעילות ודוחות — רק מנתונים אמיתיים." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700;800;900&family=Heebo:wght@300;400;500;600;700;800&family=Assistant:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&family=Assistant:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/guide-visual-isolation.css" />
     <script>
-      if (location.pathname === '/guide' || location.pathname.startsWith('/guide/')) {
-        const logoPreload = document.createElement('link');
-        logoPreload.rel = 'preload';
-        logoPreload.as = 'image';
-        logoPreload.type = 'image/webp';
-        logoPreload.href = '/guide/jerusalem-math-logo.webp';
-        document.head.appendChild(logoPreload);
+      const isGuideRoute = location.pathname === '/guide' || location.pathname.startsWith('/guide/');
+      if (isGuideRoute) {
+        [
+          ['/guide/jerusalem-math-logo.webp', 'image/webp'],
+          ['/guide/screenshots/01-login.avif', 'image/avif'],
+          ['/guide/screenshots/02-my-courses-home.avif', 'image/avif'],
+        ].forEach(([href, type]) => {
+          const preload = document.createElement('link');
+          preload.rel = 'preload';
+          preload.as = 'image';
+          preload.type = type;
+          preload.href = href;
+          document.head.appendChild(preload);
+        });
+
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/guide/sw.js', { scope: '/guide/' }).catch(() => {});
+          });
+        }
       }
     </script>
   </head>
   <body><div id="root"></div><script>!function(){function e(){try{var e=window.frameElement;if(!e)return;e.style.setProperty("width","100vw","important");e.style.setProperty("height","100vh","important");e.style.setProperty("position","fixed","important");e.style.setProperty("top","0","important");e.style.setProperty("left","0","important");e.style.setProperty("z-index","9999","important");e.style.setProperty("border","none","important");var t=e.parentElement;if(t){t.style.setProperty("padding","0","important");t.style.setProperty("overflow","hidden","important")}}catch(e){}}e();document.addEventListener("DOMContentLoaded",e);window.addEventListener("load",e)}();</script>
   <script type="module" src="/src/main.tsx"></script></body>
 </html>
-
