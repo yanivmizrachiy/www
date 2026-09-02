@@ -1,0 +1,77 @@
+name: Render Deploy Recovery
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recover-render-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+      DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+      EXPECTED_SHA: ${{ github.sha }}
+      BASE_URL: https://www-tijc.onrender.com
+    steps:
+      - name: Trigger Render deploy when credentials already exist
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -n "${DEPLOY_HOOK_URL:-}" ]; then
+            echo "Render deploy hook secret found: RENDER_DEPLOY_HOOK_URL"
+            curl -fsS -X POST "$DEPLOY_HOOK_URL" >/tmp/render-trigger.json
+            echo "Render deploy hook triggered."
+          elif [ -n "${DEPLOY_HOOK:-}" ]; then
+            echo "Render deploy hook secret found: RENDER_DEPLOY_HOOK"
+            curl -fsS -X POST "$DEPLOY_HOOK" >/tmp/render-trigger.json
+            echo "Render deploy hook triggered."
+          elif [ -n "${RENDER_API_KEY:-}" ] && [ -n "${RENDER_SERVICE_ID:-}" ]; then
+            echo "Render API credentials found."
+            curl -fsS -X POST \
+              -H "Authorization: Bearer ${RENDER_API_KEY}" \
+              -H "Content-Type: application/json" \
+              "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys" \
+              -d '{"clearCache":"do_not_clear"}' >/tmp/render-trigger.json
+            echo "Render API deploy triggered."
+          else
+            echo "NO_RENDER_DEPLOY_CREDENTIALS_CONFIGURED"
+            exit 0
+          fi
+
+      - name: Verify deployed branch and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for attempt in $(seq 1 36); do
+            HEALTH_CODE="$(curl -sS -o /tmp/render-health.json -w '%{http_code}' --max-time 20 "${BASE_URL}/health" || true)"
+            RELEASE_CODE="$(curl -sS -o /tmp/render-release.json -w '%{http_code}' --max-time 20 "${BASE_URL}/guide/release.json" || true)"
+            echo "Attempt ${attempt}/36: health=${HEALTH_CODE:-curl-error} release=${RELEASE_CODE:-curl-error}"
+
+            if [ "$RELEASE_CODE" = "200" ]; then
+              node - <<'NODE'
+          const fs = require('fs');
+          const data = JSON.parse(fs.readFileSync('/tmp/render-release.json', 'utf8'));
+          console.log(`LIVE_RENDER_COMMIT=${data.commit || 'missing'}`);
+          console.log(`LIVE_RENDER_BRANCH=${data.branch || 'missing'}`);
+          NODE
+              LIVE_SHA="$(node -e "const x=require('/tmp/render-release.json');process.stdout.write(x.commit||'')")"
+              if [ "$LIVE_SHA" = "$EXPECTED_SHA" ]; then
+                echo "RENDER_MAIN_DEPLOY_VERIFIED=${EXPECTED_SHA}"
+                exit 0
+              fi
+            fi
+            sleep 10
+          done
+
+          echo "Render deploy was triggered but the live service did not reach main SHA ${EXPECTED_SHA} in time."
+          cat /tmp/render-release.json 2>/dev/null || true
+          exit 1
