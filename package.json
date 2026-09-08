@@ -14,6 +14,7 @@
     "doctor": "node scripts/checks/repo-doctor.cjs",
     "audit:guide": "node scripts/checks/guide-integrity-audit.cjs",
     "audit:guide-surface": "node scripts/checks/guide-surface-isolation-audit.cjs",
+    "audit:guide-entry": "node scripts/checks/guide-entry-isolation-audit.cjs",
     "report:guide-gaps": "node scripts/checks/guide-gap-report.cjs",
     "audit:moodle-automation": "node scripts/checks/moodle-automation-readiness-audit.cjs",
     "validate:lti:live": "node scripts/checks/validate-lti-live.cjs",
