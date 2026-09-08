@@ -37,8 +37,14 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ["react", "react-dom", "react-router-dom"],
-          ui: ["@radix-ui/react-accordion", "@radix-ui/react-tabs", "lucide-react"],
+          vendor: [
+            "react",
+            "react-dom",
+            "react-router-dom",
+            "@radix-ui/react-accordion",
+            "@radix-ui/react-tabs",
+            "lucide-react",
+          ],
           supabase: ["@supabase/supabase-js"],
           xlsx: ["xlsx"],
         }
