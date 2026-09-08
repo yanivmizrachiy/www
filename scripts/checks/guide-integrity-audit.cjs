@@ -15,7 +15,7 @@ const guideSwPath = path.join(root, 'public/guide/sw.js');
 const viteConfigPath = path.join(root, 'vite.config.ts');
 const liveSmokePath = path.join(root, '.github/workflows/guide-live-smoke.yml');
 const renderRecoveryPath = path.join(root, '.github/workflows/render-deploy-recovery.yml');
-const staticPagesPath = path.join(root, '.github/workflows/guide-static-pages.yml');
+const staticPagesPath = path.join(root, '.github/workflows/guide-static-always-on.yml');
 
 const errors = [];
 const notes = [];
@@ -209,12 +209,19 @@ for (const [workflowName, workflowPath] of [
 }
 
 // The source-of-truth performance rule requires an always-on static Guide route independent of Render sleep.
+// PRs may build/prove the static artifact, but deployment must remain main-push-only.
 if (!fs.existsSync(staticPagesPath)) {
-  fail('Static always-on Guide deployment workflow is missing: .github/workflows/guide-static-pages.yml');
+  fail('Canonical static always-on Guide workflow is missing: .github/workflows/guide-static-always-on.yml');
 } else {
   const staticPages = fs.readFileSync(staticPagesPath, 'utf8');
-  for (const requiredFragment of ['actions/configure-pages@v5', 'actions/upload-pages-artifact@v4', 'actions/deploy-pages@v4', 'dist/guide/index.html']) {
-    if (!staticPages.includes(requiredFragment)) fail(`Static Guide deployment workflow is missing: ${requiredFragment}`);
+  for (const requiredFragment of [
+    'actions/configure-pages@v5',
+    'actions/upload-pages-artifact@v4',
+    'actions/deploy-pages@v4',
+    'dist/guide/index.html',
+    "github.event_name == 'push' && github.ref == 'refs/heads/main'",
+  ]) {
+    if (!staticPages.includes(requiredFragment)) fail(`Static Guide workflow is missing required always-on/no-PR-deploy rule: ${requiredFragment}`);
   }
 }
 
