@@ -1,38 +1,53 @@
 # CLAUDE.md
-> קרא לפני כל פעולה בריפו זה.
 
-## זהות הריפו
-- ריפו: `yanivmizrachiy/www`
-- מוצר: Moodle Teacher Hub — כלי מורה עברי RTL
-- מקור אמת עליון: `PROJECT_RULES.md`
-- Runtime: `https://www-tijc.onrender.com`
-- Teacher Release: **NO**
+קרא לפני כל פעולה בריפו `yanivmizrachiy/www`.
 
-## שפה
-- קוד / comments / commits → אנגלית
-- תשובות / README / תיעוד → עברית
-- תאריך ב-UI: `D/M/YY`
+## מקור אמת
 
-## Git — חובה
-- אין commit ישיר ל-main
-- branch: feat/<name> / fix/<name> / chore/<name>
-- חובה PR לפני merge
-- אין מחיקת קבצים בלי אישור
+מקור האמת העליון של הריפו הוא `README.md` בשורש.
 
-## אבטחה
-- אין secrets בקוד לעולם
-- secrets רק דרך GitHub Secrets / Render Environment
+אין להמציא מקור אמת חדש ואין להסתמך על מסמך היסטורי אם הוא סותר את `README.md`.
 
-## אמת
-- אין דמו, אין נתונים מזויפים, אין כפתורים מזויפים
-- Teacher Release נשאר NO עד מעבר כל השערים
+מפת המוצרים:
 
-## לא לגעת בלי הוראה מפורשת
-- LTI launch flow
-- Participants / Gradebook / Logs import
-- Supabase migrations
-- Teacher Release gate
-- deploy / render.yaml
+- Moodle Teacher Hub → `PROJECT_RULES.md`
+- Guide Presentation → `PROJECT_MEMORY.md`
+- August Experience → `august-experience/README.md`
 
-## הפעלת Claude אוטומטית
-כתוב `@claude` בכל Issue או PR comment.
+שלושת המוצרים נפרדים. אין לערבב קוד, routes או החלטות מוצר ביניהם בלי סיבה מפורשת ומתועדת.
+
+## Git
+
+- אין commit ישיר ל־`main`.
+- עבודה נעשית ב־branch ייעודי ו־PR לפני merge.
+- אין למחוק יכולת פעילה בלי הוכחה שהיא הועברה או שאינה בשימוש.
+- generated/backup/archive/history כפולים יש להסיר מהריפו הפעיל לאחר אימות.
+
+## אמת ואבטחה
+
+- אין demo/fake data כתחליף למקור אמיתי.
+- אין secrets, `.env`, tokens, cookies או raw student PII בריפו.
+- אין הודעות success שאינן מגובות בבדיקה אמיתית.
+- Teacher Release נשאר `NO` לכל מוצר עד ששערי ה־release שלו עברו בפועל.
+
+## Teacher Hub
+
+Runtime קנוני ידוע: `https://www-tijc.onrender.com`.
+
+אין לשנות LTI launch flow, imports, Supabase migrations, release gate או `render.yaml` בלי בעיה מוכחת והוראה מפורשת.
+
+## August Experience
+
+עבודה פעילה בענף `feat/august-experience-v1`.
+
+V1 היא שכבת תצוגה קריאה בלבד מעל Moodle; אין איסוף credentials ואין כתיבה ל־Moodle. חוסר ודאות חייב להישאר fail-open ל־Moodle המקורי.
+
+## שפה ו־UI
+
+- קוד / comments / commits → אנגלית.
+- README / תיעוד למשתמש → עברית כשמתאים.
+- תאריך שמורה רואה ב־UI → `D/M/YY`.
+
+## כלל ניקיון
+
+אל תיצור `SESSION_HISTORY`, `AI_MEMORY`, `WORK_ORDER`, `BACKUP`, `OLD`, `COPY`, `ARCHIVE` או מסמך progress מקביל אם המידע יכול להיכנס למקור הקנוני או ל־Git/PR history.
