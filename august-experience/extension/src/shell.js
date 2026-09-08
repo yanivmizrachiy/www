@@ -188,6 +188,13 @@
     }
 
     document.documentElement.classList.add('august-active');
+    August.installCommandPalette?.(root, model);
+    August.motion?.animateIn(root);
+    August.diagnostics?.record('shell-rendered', {
+      sections: model.sections.length,
+      activities: Number(root.dataset.augustActivityCount || 0),
+      refresh: Boolean(options.refresh)
+    });
     if (options.refresh) August.diagnostics?.record('shell-rebuilt');
     return true;
   };
