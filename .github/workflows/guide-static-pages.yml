@@ -1,0 +1,110 @@
+name: Guide Static Always-On
+
+on:
+  push:
+    branches:
+      - main
+      - fix/guide-source-truth-completion-20260908
+    paths:
+      - 'PROJECT_MEMORY.md'
+      - 'public/PROJECT_MEMORY.md'
+      - 'index.html'
+      - 'vite.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'src/main.tsx'
+      - 'src/pages/Guide.tsx'
+      - 'src/data/guideDeck.ts'
+      - 'src/data/guideDeckSource.ts'
+      - 'src/index.css'
+      - 'public/guide/**'
+      - 'public/guide-visual-isolation.css'
+      - 'scripts/checks/guide-*.cjs'
+      - '.github/workflows/guide-static-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: guide-static-pages
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify Guide source truth
+        run: |
+          npm run check
+          npm run audit:guide
+          npm run audit:guide-surface
+          npm run audit:guide-entry
+          npm run audit:guide-focus
+          npm run report:guide-gaps
+
+      - name: Build static Guide bundle
+        run: npm run build -- --base "${{ steps.pages.outputs.base_path }}/"
+
+      - name: Prepare static Guide route
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/guide
+          cp dist/index.html dist/guide/index.html
+          cp dist/guide/index.html dist/404.html
+          cat > dist/index.html <<'HTML'
+          <!doctype html>
+          <html lang="he" dir="rtl">
+            <head>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width,initial-scale=1" />
+              <meta http-equiv="refresh" content="0;url=./guide/" />
+              <title>מדריך Moodle למורים</title>
+            </head>
+            <body><a href="./guide/">פתיחת מדריך Moodle למורים</a></body>
+          </html>
+          HTML
+          test -f dist/guide/index.html
+          test -f dist/guide/sw.js
+          test -f dist/guide/release.json
+          test -f dist/guide-visual-isolation.css
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy static Guide
+        id: deployment
+        uses: actions/deploy-pages@v4
