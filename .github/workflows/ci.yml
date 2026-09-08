@@ -21,6 +21,7 @@ jobs:
       - run: npm run audit:guide-surface
       - run: npm run audit:guide-entry
       - run: npm run audit:guide-focus
+      - run: npm run audit:guide-copy
       - run: npm run report:guide-gaps
       - run: npm run build
       - run: npm run doctor
