@@ -6,6 +6,15 @@ Current extension version: `0.4.0`
 Teacher Release: **NO**  
 Production/Main impact: **NONE**
 
+## Canonical docs
+
+- Project entry point: `../README.md`
+- Architecture and safety: `../ARCHITECTURE_V1.md`
+- Teacher usage flow: `../docs/TEACHER_USE.md`
+- Definition of 100% / release gates: `../docs/RELEASE_GATES.md`
+
+This file is only the chronological/current state log. Product rules and release requirements belong in the canonical documents above.
+
 ## Product boundary
 
 August Experience is the alternate teacher presentation layer inside the teacher's existing Moodle course. It is not the training presentation and it is not the separate Moodle Teacher Hub/LTI surface. Moodle remains the source of identity, authorization, data, links and writes.
@@ -64,6 +73,17 @@ Technology principles locked:
 7. Moodle-specific DOM knowledge remains in adapters, not visual components;
 8. architecture remains portable toward an official Moodle theme/plugin later.
 
+## 2026-09-08 — Repository organization
+
+Created a clear canonical documentation structure under `august-experience/`:
+
+- `README.md` — product definition, boundaries, status, structure and iron rules.
+- `docs/TEACHER_USE.md` — exact teacher installation/login/use flow and future official plugin route.
+- `docs/RELEASE_GATES.md` — authoritative definition of 100% and all blocking Teacher Release gates.
+- `STATE/PROGRESS.md` — current/chronological state only.
+
+This explicitly prevents mixing August Experience with the Moodle presentation or Teacher Hub.
+
 ## Verified from repository/code
 
 - isolated feature branch; `main` unchanged;
@@ -75,66 +95,21 @@ Technology principles locked:
 - premium UI is local CSS/JS;
 - search/filter is local;
 - feature policy is centralized;
-- command palette and motion are progressive enhancements.
-
-## 100% definition
-
-“100%” means **Teacher Release ready**, not merely that code exists. It requires all gates below to be evidenced.
-
-### Gate A — Real Moodle evidence — BLOCKING
-
-- capture/sanitize the actual Ministry Moodle teacher course DOM needed by the adapter;
-- validate exact selectors and teacher capability signals;
-- validate real course title/sections/activities extraction;
-- tune premium layout against the real course screenshot and density.
-
-### Gate B — Safety/role validation — BLOCKING
-
-- verify teacher account activates August;
-- verify student account remains completely native;
-- verify unsupported/ambiguous pages fail open;
-- verify native-view escape and extension disable restore Moodle fully.
-
-### Gate C — Compatibility — BLOCKING
-
-- verify Moodle dynamic/AJAX changes and back/forward navigation;
-- verify the course formats actually used by the Ministry spaces in scope;
-- verify Chrome and Edge desktop;
-- verify common viewport sizes and 200% zoom.
-
-### Gate D — Accessibility/quality — BLOCKING
-
-- keyboard-only walkthrough;
-- focus order and visible focus;
-- RTL and Hebrew truncation/long-title cases;
-- reduced motion;
-- contrast and screen-reader landmark sanity check;
-- visual polish pass against real Moodle content.
-
-### Gate E — Distribution — BLOCKING
-
-- package the extension release artifact;
-- choose controlled distribution method (pilot/unpacked vs managed/store distribution);
-- write one-page teacher installation/use instructions;
-- define version/update/rollback procedure;
-- verify a clean teacher device installation from the packaged artifact.
-
-### Gate F — Pilot and release decision — BLOCKING
-
-- pilot on an authorized teacher course;
-- record defects without student PII;
-- fix blocker/high-severity defects;
-- perform final regression;
-- only then tag the first Teacher Release candidate.
+- command palette and motion are progressive enhancements;
+- canonical project documentation is now separated by purpose.
 
 ## Current completion assessment
 
-Engineering foundation and premium concept are substantially built, but real-environment validation is the critical missing half. Repository-only completion is estimated at **about 65%** of a safe Teacher Release. This is not a claim of 65% compatibility with Ministry Moodle; compatibility remains unverified until Gate A–C evidence exists.
+Engineering foundation and premium concept are substantially built, but real-environment validation is the critical missing half.
+
+Repository-only completion estimate: **about 65%** toward a safe Teacher Release.
+
+This is not a claim of 65% compatibility with Ministry Moodle. Compatibility remains unverified until real-environment release gates pass.
 
 ## Immediate next work
 
-1. Finish local unsupported-state/compatibility scoring and release diagnostics.
-2. Add fixture-test harness that can run against sanitized real Moodle HTML once captured.
-3. Prepare pilot packaging and teacher installation documentation.
-4. Obtain real authorized teacher-course evidence and run Gates A–D.
+1. Finish unsupported-state/compatibility scoring and release diagnostics.
+2. Add fixture-test harness for sanitized real Moodle HTML.
+3. Prepare pilot packaging and clean teacher installation flow.
+4. Obtain real authorized teacher-course evidence and run release gates.
 5. Package, pilot, regress and tag only after all blocking gates pass.
