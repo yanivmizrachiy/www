@@ -13,6 +13,7 @@ if ($LASTEXITCODE -ne 0) { throw 'git branch failed' }
 Write-Host "Guide local verification" -ForegroundColor Cyan
 Write-Host "Repo: $repoRoot"
 Write-Host "Branch: $currentBranch"
+Write-Host 'Mode: verify/build only; no merge, push, or deployment.' -ForegroundColor Yellow
 
 if ($currentBranch -ne $expectedBranch) {
   throw "Wrong branch. Expected '$expectedBranch' but current branch is '$currentBranch'. No files were changed."
@@ -37,10 +38,12 @@ if ($LASTEXITCODE -ne 0) { throw "npm ci failed with exit code $LASTEXITCODE" }
 
 $checks = @(
   'check',
+  'typecheck',
   'audit:guide',
   'audit:guide-surface',
   'audit:guide-entry',
   'audit:guide-focus',
+  'audit:guide-copy',
   'report:guide-gaps',
   'build',
   'doctor'
@@ -54,3 +57,4 @@ foreach ($check in $checks) {
 
 Write-Host "`nGUIDE LOCAL VERIFY: PASS" -ForegroundColor Green
 Write-Host 'Dependencies are installed and all canonical Guide checks passed.' -ForegroundColor Green
+Write-Host 'No deployment was performed.' -ForegroundColor Yellow
