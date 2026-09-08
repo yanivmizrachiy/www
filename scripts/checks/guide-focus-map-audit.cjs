@@ -77,24 +77,29 @@ for (const [filename, box] of Object.entries(focusMap)) {
 
 const engine = fs.readFileSync(enginePath, 'utf8');
 for (const requiredFragment of [
-  "fetch('/guide/focus-map.json'",
+  "const scriptUrl = document.currentScript?.src || window.location.href",
+  "const focusMapUrl = new URL('focus-map.json', scriptUrl).href",
+  'fetch(focusMapUrl',
   'Missing/invalid evidence means no overlay',
   'if (!validBox(box)) return',
 ]) {
-  if (!engine.includes(requiredFragment)) fail(`focus-overlays.js is missing safety rule: ${requiredFragment}`);
+  if (!engine.includes(requiredFragment)) fail(`focus-overlays.js is missing base-aware safety rule: ${requiredFragment}`);
+}
+if (engine.includes("fetch('/guide/focus-map.json'")) {
+  fail('focus-overlays.js regressed to a root-only focus-map URL; static always-on hosting would break.');
 }
 if (/const\s+FOCUS_MAP\s*=/.test(engine)) {
   fail('focus-overlays.js contains a hard-coded focus map; use focus-map.json as the auditable source.');
 }
 
 const index = fs.readFileSync(indexPath, 'utf8');
-if (!index.includes("focusOverlays.src = '/guide/focus-overlays.js'")) {
-  fail('index.html does not load the focus overlay engine on the Guide route.');
+if (!index.includes("focusOverlays.src = withBase('/guide/focus-overlays.js')")) {
+  fail('index.html does not load the base-aware focus overlay engine on the Guide route.');
 }
 
 const sw = fs.readFileSync(swPath, 'utf8');
-for (const shellAsset of ["'/guide/focus-overlays.js'", "'/guide/focus-map.json'"]) {
-  if (!sw.includes(shellAsset)) fail(`Guide service worker does not precache ${shellAsset}.`);
+for (const shellAsset of ["withBase('/guide/focus-overlays.js')", "withBase('/guide/focus-map.json')"]) {
+  if (!sw.includes(shellAsset)) fail(`Guide service worker does not precache base-aware ${shellAsset}.`);
 }
 
 if (errors.length) {
