@@ -1,60 +1,155 @@
+:root {
+  --august-surface: #ffffff;
+  --august-surface-soft: #f7f8fb;
+  --august-text: #152033;
+  --august-muted: #667085;
+  --august-border: #e4e7ec;
+  --august-accent: #3157d5;
+  --august-accent-soft: #eef2ff;
+  --august-radius-lg: 18px;
+  --august-radius-md: 12px;
+  --august-shadow: 0 14px 40px rgba(16, 24, 40, .08);
+}
+
 #august-experience-root {
-  position: sticky;
-  top: 0;
-  z-index: 10000;
   box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 56px;
-  padding: 10px 18px;
+  width: min(1240px, calc(100% - 32px));
+  margin: 20px auto 24px;
+  padding: 24px;
   direction: rtl;
   font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
-  background: Canvas;
-  color: CanvasText;
-  border-block-end: 1px solid color-mix(in srgb, CanvasText 16%, transparent);
-  box-shadow: 0 4px 18px color-mix(in srgb, CanvasText 8%, transparent);
+  background: var(--august-surface-soft);
+  color: var(--august-text);
+  border: 1px solid var(--august-border);
+  border-radius: var(--august-radius-lg);
+  box-shadow: var(--august-shadow);
 }
 
-#august-experience-root strong {
-  font-size: 1rem;
+.august-shell-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 22px;
 }
 
-#august-experience-root span {
-  font-size: .875rem;
-  opacity: .72;
+.august-heading-wrap {
+  min-width: 0;
+}
+
+.august-eyebrow {
+  display: inline-block;
+  margin-bottom: 6px;
+  color: var(--august-accent);
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.august-course-title {
+  margin: 0;
+  font-size: clamp(1.45rem, 2.5vw, 2.15rem);
+  line-height: 1.2;
+}
+
+.august-status {
+  margin: 8px 0 0;
+  color: var(--august-muted);
+  font-size: .95rem;
 }
 
 .august-native-toggle {
   margin-inline-start: auto;
-  min-height: 40px;
-  padding: 8px 14px;
-  border: 1px solid currentColor;
-  border-radius: 10px;
-  background: transparent;
-  color: inherit;
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 9px 15px;
+  border: 1px solid var(--august-accent);
+  border-radius: var(--august-radius-md);
+  background: var(--august-surface);
+  color: var(--august-accent);
   font: inherit;
+  font-weight: 650;
   cursor: pointer;
 }
 
-.august-native-toggle:focus-visible {
+.august-native-toggle:hover {
+  background: var(--august-accent-soft);
+}
+
+.august-native-toggle:focus-visible,
+.august-activity-link:focus-visible {
   outline: 3px solid Highlight;
-  outline-offset: 2px;
+  outline-offset: 3px;
+}
+
+.august-section-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.august-section-card {
+  min-width: 0;
+  padding: 18px;
+  background: var(--august-surface);
+  border: 1px solid var(--august-border);
+  border-radius: var(--august-radius-md);
+}
+
+.august-section-title {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+}
+
+.august-activity-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.august-activity-item {
+  margin: 0;
+}
+
+.august-activity-link {
+  display: block;
+  padding: 10px 12px;
+  color: var(--august-text);
+  text-decoration: none;
+  background: var(--august-surface-soft);
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+
+.august-activity-link:hover {
+  color: var(--august-accent);
+  border-color: var(--august-border);
+}
+
+html.august-active:not(.august-native-view) #page-content,
+html.august-active:not(.august-native-view) [role="main"],
+html.august-active:not(.august-native-view) main {
+  opacity: .18;
+  filter: grayscale(.25);
 }
 
 html.august-native-view #august-experience-root {
-  opacity: .72;
+  display: none;
 }
 
 @media (max-width: 700px) {
   #august-experience-root {
-    align-items: flex-start;
-    flex-wrap: wrap;
+    width: calc(100% - 20px);
+    margin-block: 10px 16px;
+    padding: 16px;
   }
 
-  #august-experience-root span {
-    flex-basis: 100%;
+  .august-shell-header {
+    flex-direction: column;
+  }
+
+  .august-native-toggle {
+    margin-inline-start: 0;
   }
 }
 
