@@ -45,6 +45,7 @@ jobs:
           git rm .github/workflows/guide-copy-hotfix-once.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/data/guideDeckSource.ts index.html
+          git add -f src/data/guideDeckSource.ts
+          git add index.html
           git commit -m "fix(guide): remove internal copy from public cover"
           git push origin HEAD:fix/guide-remove-demo-copy-20260908
