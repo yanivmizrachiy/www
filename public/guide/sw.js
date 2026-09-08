@@ -1,9 +1,10 @@
 const CACHE_PREFIX = 'moodle-guide-';
-const CACHE_NAME = `${CACHE_PREFIX}v2`;
+const CACHE_NAME = `${CACHE_PREFIX}v3`;
 const NAVIGATION_FRESHNESS_MS = 1200;
 const GUIDE_SHELL = [
   '/guide',
   '/guide-visual-isolation.css',
+  '/guide/focus-overlays.js',
   '/guide/jerusalem-math-logo.webp',
   '/guide/screenshots/01-login.avif',
   '/guide/screenshots/02-my-courses-home.avif',
