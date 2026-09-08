@@ -1,12 +1,9 @@
 (() => {
   'use strict';
 
-  // Evidence-only focus map. Add an entry only after the real screenshot was
-  // visually inspected and the target bounds were verified. Empty means no
-  // overlay — never guess, never draw a fake Moodle control.
-  // Coordinates are percentages of the rendered screenshot: x/y/w/h in 0..100.
-  const FOCUS_MAP = Object.freeze({});
-
+  // Evidence-only focus overlays. Coordinates live in /guide/focus-map.json so
+  // CI can audit them independently. Missing/invalid evidence means no overlay.
+  let focusMap = Object.freeze({});
   const OVERLAY_CLASS = 'guide-focus-overlay';
   const APPLIED_ATTR = 'data-guide-focus-applied';
 
@@ -28,16 +25,22 @@
     return typeof box.label === 'string' && box.label.trim().length > 0;
   }
 
+  function removeExistingOverlay(anchor) {
+    anchor.querySelector(`:scope > .${OVERLAY_CLASS}`)?.remove();
+  }
+
   function applyToImage(image) {
     if (!(image instanceof HTMLImageElement)) return;
-    if (image.getAttribute(APPLIED_ATTR) === 'true') return;
 
     const filename = filenameFromImage(image);
-    const box = FOCUS_MAP[filename];
-    if (!validBox(box)) return;
-
+    const box = focusMap[filename];
     const anchor = image.closest('a');
     if (!anchor) return;
+
+    removeExistingOverlay(anchor);
+    image.removeAttribute(APPLIED_ATTR);
+
+    if (!validBox(box)) return;
 
     anchor.style.position = 'relative';
     anchor.style.display = 'block';
@@ -61,31 +64,45 @@
   }
 
   function scan(root = document) {
+    if (root instanceof HTMLImageElement && root.matches('img[src*="/guide/screenshots/"]')) {
+      applyToImage(root);
+    }
     root.querySelectorAll?.('img[src*="/guide/screenshots/"]').forEach(applyToImage);
   }
 
+  async function loadFocusMap() {
+    try {
+      const response = await fetch('/guide/focus-map.json', { cache: 'no-cache', credentials: 'same-origin' });
+      if (!response.ok) return;
+      const data = await response.json();
+      if (!data || typeof data !== 'object' || Array.isArray(data)) return;
+      focusMap = Object.freeze(data);
+      scan();
+    } catch {
+      // Fail open: the Guide remains fully usable without focus overlays.
+    }
+  }
+
   function start() {
-    scan();
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
-          if (!(node instanceof Element)) continue;
-          if (node.matches?.('img[src*="/guide/screenshots/"]')) applyToImage(node);
-          scan(node);
+          if (node instanceof Element) scan(node);
         }
       }
     });
     observer.observe(document.getElementById('root') || document.body, { childList: true, subtree: true });
+    void loadFocusMap();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
   else start();
 
-  // Read-only diagnostic surface for local verification; no page/student data.
   Object.defineProperty(window, 'GUIDE_FOCUS_OVERLAYS', {
     value: Object.freeze({
-      filenames: Object.freeze(Object.keys(FOCUS_MAP)),
+      getFilenames: () => Object.freeze(Object.keys(focusMap)),
       rescan: () => scan(),
+      reload: () => loadFocusMap(),
     }),
     configurable: false,
     enumerable: false,
