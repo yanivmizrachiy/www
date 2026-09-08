@@ -1,0 +1,123 @@
+name: Guide Integrate No-Demo Once
+
+on:
+  push:
+    branches:
+      - fix/guide-source-truth-completion-20260908
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/guide-source-truth-completion-20260908
+          fetch-depth: 0
+
+      - name: Apply no-demo and local-safety fixes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          source = Path('src/data/guideDeckSource.ts')
+          text = source.read_text(encoding='utf-8')
+          old = "summary: 'מצגת אינטראקטיבית קצרה: שאלה אחת בכל שקף, צילום אמיתי ורצף לחיצות ברור.',"
+          if old in text:
+              text = text.replace(old, "summary: '',", 1)
+          source.write_text(text, encoding='utf-8')
+
+          index = Path('index.html')
+          text = index.read_text(encoding='utf-8')
+          old = "description.setAttribute('content', 'מצגת אינטראקטיבית למורי Moodle: שאלה אחת בכל שקף, צילומים אמיתיים ורצף לחיצות ברור.');"
+          new = "description.setAttribute('content', 'מדריך למורים במערכת Moodle במחוז ירושלים והעיר ירושלים.');"
+          if old in text:
+              text = text.replace(old, new, 1)
+          index.write_text(text, encoding='utf-8')
+
+          audit = Path('scripts/checks/guide-public-copy-audit.cjs')
+          audit.write_text(r'''const fs = require('node:fs');
+const path = require('node:path');
+
+const root = path.resolve(__dirname, '../..');
+const source = fs.readFileSync(path.join(root, 'src/data/guideDeckSource.ts'), 'utf8');
+const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+
+const slidesStart = source.indexOf('export const GUIDE_SLIDES');
+const coverStart = source.indexOf("id: 'cover'", slidesStart);
+const nextSlide = source.indexOf("id: 'quick-start'", coverStart);
+if (slidesStart < 0 || coverStart < 0 || nextSlide < 0) {
+  console.error('Guide public-copy audit failed: full cover object boundaries were not found.');
+  process.exit(1);
+}
+
+const coverBlock = source.slice(coverStart, nextSlide);
+const forbiddenCoverCopy = [
+  'שאלה אחת בכל שקף',
+  'צילום אמיתי',
+  'צילומים אמיתיים',
+  'רצף לחיצות ברור',
+  'דמו',
+  'demo',
+  'placeholder',
+];
+
+const errors = [];
+const lowerCover = coverBlock.toLocaleLowerCase();
+for (const phrase of forbiddenCoverCopy) {
+  if (lowerCover.includes(phrase.toLocaleLowerCase())) {
+    errors.push(`Public Guide cover exposes internal/demo copy: ${phrase}`);
+  }
+}
+
+for (const phrase of ['שאלה אחת בכל שקף', 'צילום אמיתי', 'צילומים אמיתיים', 'רצף לחיצות ברור']) {
+  if (indexHtml.includes(phrase)) {
+    errors.push(`Guide HTML metadata exposes internal design copy: ${phrase}`);
+  }
+}
+
+if (errors.length) {
+  console.error('Guide public-copy audit failed:');
+  for (const error of errors) console.error(`- ${error}`);
+  process.exit(1);
+}
+
+console.log('GUIDE_PUBLIC_COPY_OK');
+''', encoding='utf-8')
+
+          pkg_path = Path('package.json')
+          pkg = json.loads(pkg_path.read_text(encoding='utf-8'))
+          scripts = pkg.setdefault('scripts', {})
+          scripts['audit:guide-copy'] = 'node scripts/checks/guide-public-copy-audit.cjs'
+          pkg_path.write_text(json.dumps(pkg, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          ci = Path('.github/workflows/ci.yml')
+          text = ci.read_text(encoding='utf-8')
+          if 'npm run audit:guide-copy' not in text:
+              marker = '      - run: npm run audit:guide-focus\n'
+              if marker not in text:
+                  raise SystemExit('CI insertion point not found')
+              text = text.replace(marker, marker + '      - run: npm run audit:guide-copy\n', 1)
+          ci.write_text(text, encoding='utf-8')
+
+          gi = Path('.gitignore')
+          text = gi.read_text(encoding='utf-8')
+          if '.vercel/' not in text.splitlines():
+              text = text.rstrip() + '\n\n# Local deployment metadata; never commit project binding.\n.vercel/\n'
+          gi.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Commit integrated Guide fixes and remove one-shot workflow
+        shell: bash
+        run: |
+          git rm .github/workflows/guide-integrate-no-demo-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f src/data/guideDeckSource.ts
+          git add index.html scripts/checks/guide-public-copy-audit.cjs package.json .github/workflows/ci.yml .gitignore
+          git commit -m "fix(guide): integrate no-demo rule into full Guide branch"
+          git push origin HEAD:fix/guide-source-truth-completion-20260908
