@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "המודל של אוגוסט",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "שכבת תצוגת מורה מעל מרחב Moodle הקיים — ללא שינוי נתונים בגרסת V1.",
   "content_scripts": [
     {
@@ -12,6 +12,7 @@
         "src/detector.js",
         "src/adapter-registry.js",
         "src/adapters/moodle-course.js",
+        "src/compatibility.js",
         "src/command-palette.js",
         "src/motion.js",
         "src/shell.js",
