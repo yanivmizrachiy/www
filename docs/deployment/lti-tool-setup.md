@@ -24,6 +24,18 @@ Launch URL קנוני:
 - Shared secret: נשמר רק בסביבת deploy / secrets ואסור להכניסו ל־GitHub
 - Tool URL: ה־Launch URL הקנוני לעיל
 
+## אזהרת אבטחה מחייבת
+
+Shared Secret אמיתי של LTI נכתב בעבר בקובץ תיעוד בענף Git ולאחר מכן הוסר מה־HEAD. לכן יש להתייחס לערך ההיסטורי כ־**exposed**.
+
+לפני כל שימוש אמיתי/production חובה:
+
+1. לבצע rotation ל־LTI shared secret במערכת Moodle ובסביבת ה־deploy;
+2. לוודא שהערך החדש אינו מופיע בקוד, docs, logs או screenshots;
+3. לבצע Launch אמיתי מחדש לאחר ה־rotation ולתעד evidence בטוח.
+
+מחיקת הקובץ הישן אינה מוחקת secret מהיסטוריית Git ולכן אינה מחליפה rotation.
+
 ## תנאי Launch תקין
 
 השרת חייב לאמת OAuth1 HMAC-SHA1 ולדחות launch כאשר חסרים או שגויים consumer key, signature או shared secret.
