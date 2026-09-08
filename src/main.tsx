@@ -4,6 +4,7 @@ import "./index.css";
 const rootElement = document.getElementById("root");
 if (!rootElement) throw new Error("Missing #root element");
 
+const root = createRoot(rootElement);
 const pathname = window.location.pathname;
 const guideMarker = "/guide";
 const guideIndex = pathname.indexOf(guideMarker);
@@ -14,9 +15,8 @@ const isGuideRoute =
 async function bootstrap() {
   if (isGuideRoute) {
     // The Guide is a standalone presentation surface. Do not load Teacher Hub,
-    // Supabase, LTI/session hooks or premium Hub CSS on the Guide entry path.
-    // The marker-based check also supports static hosts with a repository base
-    // path, for example /www/guide/ on GitHub Pages.
+    // Supabase, LTI/session hooks or Hub-only CSS on the Guide route. The
+    // marker-based check also supports static project paths such as /www/guide/.
     const { default: Guide } = await import("./pages/Guide.tsx");
     root.render(<Guide />);
     return;
