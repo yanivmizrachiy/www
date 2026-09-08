@@ -9,6 +9,7 @@ const missingPath = path.join(root, 'docs/GUIDE_MISSING_CAPTURES.md');
 const manifestPath = path.join(root, 'docs/GUIDE_SCREENSHOTS_MANIFEST.md');
 const memoryPath = path.join(root, 'PROJECT_MEMORY.md');
 const publicMemoryPath = path.join(root, 'public/PROJECT_MEMORY.md');
+const guideCssPath = path.join(root, 'public/guide-visual-isolation.css');
 const screenshotsDir = path.join(root, 'public/guide/screenshots');
 const guideSwPath = path.join(root, 'public/guide/sw.js');
 const viteConfigPath = path.join(root, 'vite.config.ts');
@@ -30,7 +31,15 @@ function walk(directory) {
   });
 }
 
-for (const requiredPath of [sourcePath, deckPath, missingPath, manifestPath, memoryPath, publicMemoryPath]) {
+for (const requiredPath of [
+  sourcePath,
+  deckPath,
+  missingPath,
+  manifestPath,
+  memoryPath,
+  publicMemoryPath,
+  guideCssPath,
+]) {
   if (!fs.existsSync(requiredPath)) fail(`Required Guide truth file is missing: ${path.relative(root, requiredPath)}`);
 }
 
@@ -46,6 +55,7 @@ const missing = fs.readFileSync(missingPath, 'utf8');
 const manifest = fs.readFileSync(manifestPath, 'utf8');
 const memory = fs.readFileSync(memoryPath, 'utf8');
 const publicMemory = fs.readFileSync(publicMemoryPath, 'utf8');
+const guideCss = fs.readFileSync(guideCssPath, 'utf8');
 
 // 1) Canonical truth must remain singular. public/PROJECT_MEMORY.md is only a mirror.
 if (memory !== publicMemory) {
@@ -53,7 +63,13 @@ if (memory !== publicMemory) {
 }
 
 // 2) There must be exactly one application-facing publication gate.
-// Use an allow-list: only slides explicitly marked ready and without unresolved capture evidence can be public.
+// Source defines content only; guideDeck.ts owns normalization, publication and quick-start policy.
+for (const forbiddenSourceExport of ['PUBLISHED_GUIDE_SLIDES', 'QUICK_START_SLIDE_IDS']) {
+  if (new RegExp(`export\\s+const\\s+${forbiddenSourceExport}\\b`).test(source)) {
+    fail(`guideDeckSource.ts must not export ${forbiddenSourceExport}; publication policy belongs only in guideDeck.ts.`);
+  }
+}
+
 for (const requiredFragment of [
   "slide.status === 'ready'",
   '!slide.missingCaptureId',
@@ -104,17 +120,9 @@ for (const file of srcFiles) {
   }
 }
 
-if (/export const PUBLISHED_GUIDE_SLIDES\s*=/.test(source)) {
-  notes.push('guideDeckSource.ts still contains a legacy publication export; remove it when source cleanup is committed.');
-}
-
 // 3) Every slide heading is a question, except the cover.
 const slidesStart = source.indexOf('export const GUIDE_SLIDES');
-const legacyPublicationStart = source.indexOf('export const PUBLISHED_GUIDE_SLIDES', slidesStart);
-const quickStartStart = source.indexOf('export const QUICK_START_SLIDE_IDS', slidesStart);
-const slidesEndCandidates = [legacyPublicationStart, quickStartStart].filter((index) => index > slidesStart);
-const slidesEnd = slidesEndCandidates.length ? Math.min(...slidesEndCandidates) : undefined;
-const slidesBlock = source.slice(slidesStart, slidesEnd);
+const slidesBlock = source.slice(slidesStart);
 const titleRegex = /title:\s*'([^']+)'/g;
 let titleMatch;
 while ((titleMatch = titleRegex.exec(slidesBlock))) {
@@ -165,7 +173,20 @@ for (const screenshot of new Set(screenshotRefs)) {
   }
 }
 
-// 6) The isolated Guide service worker must exist and remain syntax-valid.
+// 6) Guide visual isolation must be route-scoped and must not depend on the cover's Tailwind gradient utilities.
+if (!guideCss.includes('html[data-surface="guide"]')) {
+  fail('guide-visual-isolation.css is not scoped to html[data-surface="guide"].');
+}
+for (const fragileCoverSelector of ['from-slate-950', 'via-blue-950', 'to-slate-900']) {
+  if (guideCss.includes(fragileCoverSelector)) {
+    fail(`guide-visual-isolation.css still depends on fragile cover utility class: ${fragileCoverSelector}`);
+  }
+}
+if (!guideCss.includes(':has(img[alt^="יחידת מתמטיקה"])')) {
+  fail('guide-visual-isolation.css is missing the stable branded-cover selector.');
+}
+
+// 7) The isolated Guide service worker must exist and remain syntax-valid.
 if (!fs.existsSync(guideSwPath)) {
   fail('Guide service worker is missing: public/guide/sw.js');
 } else {
@@ -189,7 +210,7 @@ if (!fs.existsSync(guideSwPath)) {
   }
 }
 
-// 7) Live verification must compare canonical Guide content, not branch commit SHA.
+// 8) Live verification must compare canonical Guide content, not branch commit SHA.
 const guideHash = computeGuideHash();
 if (!/^[a-f0-9]{64}$/.test(guideHash)) fail(`Guide content fingerprint is invalid: ${guideHash}`);
 
@@ -211,7 +232,7 @@ for (const [workflowName, workflowPath] of [
   }
 }
 
-// 8) Missing-capture and screenshot documentation must preserve truth/safety rules.
+// 9) Missing-capture and screenshot documentation must preserve truth/safety rules.
 for (const requiredPhrase of ['אין Demo', 'אין Placeholder', 'אין צילום מומצא']) {
   if (!missing.includes(requiredPhrase)) fail(`GUIDE_MISSING_CAPTURES.md is missing safety rule: ${requiredPhrase}`);
 }
