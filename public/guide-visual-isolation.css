@@ -21,13 +21,11 @@ html[data-surface="guide"] #root {
   background: #020617;
 }
 
-/* Presentation shell only. */
 html[data-surface="guide"] #root > div[dir="rtl"] {
   isolation: isolate;
   font-family: Heebo, Assistant, Arial, sans-serif;
 }
 
-/* Stable cover selector: the only Guide slide containing the official brand logo. */
 html[data-surface="guide"] #root > div[dir="rtl"] article > div:has(img[alt^="יחידת מתמטיקה"]) h1.font-display {
   color: #ffffff !important;
   font-size: clamp(2.35rem, 6vw, 4.35rem) !important;
@@ -72,7 +70,6 @@ html[data-surface="guide"] img[alt^="יחידת מתמטיקה"] {
   transform-origin: center;
 }
 
-/* Interior slides: everything that is not the branded cover. */
 html[data-surface="guide"] #root > div[dir="rtl"] article > div:not(:has(img[alt^="יחידת מתמטיקה"])) h1.font-display {
   color: #020617 !important;
   text-shadow: none !important;
@@ -112,7 +109,34 @@ html[data-surface="guide"] #root > div[dir="rtl"] article figure a:focus-visible
   outline-offset: -4px;
 }
 
-/* Top and bottom presentation chrome. */
+/* Evidence-only focus overlay. The engine creates these nodes only when a real
+   screenshot has verified percentage coordinates in its focus map. */
+html[data-surface="guide"] .guide-focus-overlay {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  border: max(3px, 0.22vw) solid #fbbf24;
+  border-radius: 0.65rem;
+  background: rgba(251, 191, 36, 0.08);
+  box-shadow: 0 0 0 4px rgba(2, 6, 23, 0.62), 0 0 26px rgba(251, 191, 36, 0.75);
+}
+
+html[data-surface="guide"] .guide-focus-overlay__label {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.4rem);
+  max-width: min(18rem, 72vw);
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.6rem;
+  background: #fbbf24;
+  color: #020617;
+  font-size: clamp(0.72rem, 1.35vw, 0.95rem);
+  font-weight: 900;
+  line-height: 1.15;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(2, 6, 23, 0.34);
+}
+
 html[data-surface="guide"] #root > div[dir="rtl"] > header button,
 html[data-surface="guide"] #root > div[dir="rtl"] > footer button {
   color: #ffffff !important;
@@ -123,7 +147,6 @@ html[data-surface="guide"] #root > div[dir="rtl"] > footer button[class*="bg-amb
   color: #020617 !important;
 }
 
-/* Menu/search overlays are the direct overlay section under the Guide shell. */
 html[data-surface="guide"] #root > div[dir="rtl"] > div > section h2,
 html[data-surface="guide"] #root > div[dir="rtl"] > div > section h3,
 html[data-surface="guide"] #root > div[dir="rtl"] > div > section span[class*="text-slate-950"] {
@@ -161,6 +184,10 @@ html[data-surface="guide"] #root > div[dir="rtl"] input:focus-visible {
 
   html[data-surface="guide"] #root > div[dir="rtl"] article figure img {
     max-height: 46vh !important;
+  }
+
+  html[data-surface="guide"] .guide-focus-overlay__label {
+    white-space: normal;
   }
 }
 
