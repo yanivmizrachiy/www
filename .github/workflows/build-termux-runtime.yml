@@ -2,16 +2,6 @@ name: Build Termux Runtime Package
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - gemini/ai-studio-sync-20260428-193953
-    paths:
-      - "src/**"
-      - "package.json"
-      - "package-lock.json"
-      - "vite.config.*"
-      - "index.html"
-      - ".github/workflows/build-termux-runtime.yml"
 
 permissions:
   contents: write
