@@ -50,7 +50,7 @@ export const GUIDE_SLIDES: GuideSlide[] = [
     section: 'start',
     eyebrow: 'מחוז ירושלים והעיר ירושלים — מנח״י',
     title: 'מדריך למורים במערכת Moodle',
-    summary: 'מצגת אינטראקטיבית קצרה: שאלה אחת בכל שקף, צילום אמיתי ורצף לחיצות ברור.',
+    summary: '',
     keywords: ['מודל', 'Moodle', 'מדריך', 'מצגת'],
     cover: true,
     status: 'ready',
