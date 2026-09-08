@@ -1,13 +1,16 @@
 (() => {
   'use strict';
 
-  // Evidence-only focus overlays. Coordinates live in /guide/focus-map.json so
-  // CI can audit them independently. Missing/invalid evidence means no overlay.
+  // Evidence-only focus overlays. Coordinates live beside this script in
+  // focus-map.json so the same bundle works at /guide/ and repository-base
+  // static paths such as /www/guide/. Missing/invalid evidence means no overlay.
   let focusMap = Object.freeze({});
   const OVERLAY_CLASS = 'guide-focus-overlay';
   const APPLIED_ATTR = 'data-guide-focus-applied';
   const ORIGINAL_ARIA_ATTR = 'data-guide-focus-original-aria-label';
   const HAD_ARIA_ATTR = 'data-guide-focus-had-aria-label';
+  const scriptUrl = document.currentScript?.src || window.location.href;
+  const focusMapUrl = new URL('focus-map.json', scriptUrl).href;
 
   function filenameFromImage(image) {
     try {
@@ -91,7 +94,7 @@
 
   async function loadFocusMap() {
     try {
-      const response = await fetch('/guide/focus-map.json', { cache: 'no-cache', credentials: 'same-origin' });
+      const response = await fetch(focusMapUrl, { cache: 'no-cache', credentials: 'same-origin' });
       if (!response.ok) return;
       const data = await response.json();
       if (!data || typeof data !== 'object' || Array.isArray(data)) return;
