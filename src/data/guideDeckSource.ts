@@ -630,10 +630,6 @@ export const GUIDE_SLIDES: GuideSlide[] = [
   },
 ];
 
-export const PUBLISHED_GUIDE_SLIDES = GUIDE_SLIDES.filter(
-  (slide) => slide.status !== 'needs-capture' && slide.status !== 'needs-fact'
-);
-
 export const QUICK_START_SLIDE_IDS = [
   'quick-start',
   'login',
