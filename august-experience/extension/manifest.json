@@ -1,16 +1,18 @@
 {
   "manifest_version": 3,
   "name": "המודל של אוגוסט",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "שכבת תצוגת מורה מעל מרחב Moodle הקיים — ללא שינוי נתונים בגרסת V1.",
   "content_scripts": [
     {
       "matches": ["https://moodlemoe.lms.education.gov.il/*"],
       "js": [
+        "src/diagnostics.js",
         "src/detector.js",
         "src/adapter-registry.js",
         "src/adapters/moodle-course.js",
         "src/shell.js",
+        "src/dynamic-refresh.js",
         "src/bootstrap.js"
       ],
       "css": ["src/styles.css"],
