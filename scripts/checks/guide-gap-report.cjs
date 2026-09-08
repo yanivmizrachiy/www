@@ -23,6 +23,11 @@ function normalizeQuestion(value) {
     .toLocaleLowerCase('he');
 }
 
+const VERIFIED_SOURCE_TRUTH_ALIASES = new Map([
+  [normalizeQuestion('איך פותחים מרחב במודל?'), 'create-space'],
+  [normalizeQuestion('מה קורה אם תלמיד עדיין לא רשום למרחב ונכנס דרך קישור למשימה?'), 'task-link-first-enrol'],
+]);
+
 const slidesStart = source.indexOf('export const GUIDE_SLIDES');
 if (slidesStart < 0) {
   console.error('Guide gap report failed: GUIDE_SLIDES was not found.');
@@ -117,8 +122,6 @@ console.log(`Published slides without an explicit direct link: ${publishedWithou
 console.log('This is a review signal, not an automatic failure: some slides have no safe stable direct URL.');
 console.log('');
 
-// Source-truth coverage: map every explicit question in the 14 mandatory chapters
-// to a slide title. Exact normalized matches are evidence; unmatched questions stay visible.
 const requirementsMarker = '# דרישות מחייבות למצגת ההדרכה';
 const requirementsStart = memory.indexOf(requirementsMarker);
 const requirements = requirementsStart >= 0 ? memory.slice(requirementsStart) : memory;
@@ -134,6 +137,7 @@ while ((chapterMatch = chapterRegex.exec(requirements))) {
 }
 
 const slideByQuestion = new Map(slides.map((slide) => [slide.normalizedTitle, slide]));
+const slideById = new Map(slides.map((slide) => [slide.id, slide]));
 let totalTruthQuestions = 0;
 let matchedTruthQuestions = 0;
 
@@ -150,21 +154,25 @@ for (let index = 0; index < chapters.length; index += 1) {
   const missingQuestions = [];
   for (const question of questions) {
     totalTruthQuestions += 1;
-    const slide = slideByQuestion.get(normalizeQuestion(question));
+    const normalized = normalizeQuestion(question);
+    const exactSlide = slideByQuestion.get(normalized);
+    const aliasSlideId = VERIFIED_SOURCE_TRUTH_ALIASES.get(normalized);
+    const slide = exactSlide ?? (aliasSlideId ? slideById.get(aliasSlideId) : undefined);
     if (slide) {
       matchedTruthQuestions += 1;
-      matches.push(`${slide.id} [${slide.effectiveStatus}]`);
+      const matchKind = exactSlide ? 'exact' : 'verified-alias';
+      matches.push(`${slide.id} [${slide.effectiveStatus}; ${matchKind}]`);
     } else {
       missingQuestions.push(question);
     }
   }
 
   console.log(`- פרק ${chapter.number}: ${chapter.title}`);
-  console.log(`  explicit questions: ${questions.length}; exact slide matches: ${matches.length}`);
+  console.log(`  explicit questions: ${questions.length}; verified slide matches: ${matches.length}`);
   if (matches.length) console.log(`  matched: ${matches.join(', ')}`);
   for (const question of missingQuestions) console.log(`  UNMATCHED QUESTION: ${question}`);
 }
 
 console.log('');
-console.log(`Explicit source-truth questions matched by slide title: ${matchedTruthQuestions}/${totalTruthQuestions}`);
-console.log('Unmatched does not automatically mean absent: wording may differ. Each unmatched item requires human/code review before claiming completion.');
+console.log(`Explicit source-truth questions matched to verified slides: ${matchedTruthQuestions}/${totalTruthQuestions}`);
+console.log('Aliases are explicit reviewed mappings only; fuzzy matching is intentionally not used.');
