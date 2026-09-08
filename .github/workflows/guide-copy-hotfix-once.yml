@@ -1,0 +1,98 @@
+name: Guide Copy Hotfix Once
+
+on:
+  push:
+    branches:
+      - fix/guide-remove-demo-copy-20260908
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/guide-remove-demo-copy-20260908
+          fetch-depth: 0
+
+      - name: Remove internal/demo copy from Guide cover
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          source = Path('src/data/guideDeckSource.ts')
+          text = source.read_text(encoding='utf-8')
+          old = "summary: 'מצגת אינטראקטיבית קצרה: שאלה אחת בכל שקף, צילום אמיתי ורצף לחיצות ברור.',"
+          new = "summary: '',"
+          if old not in text:
+              raise SystemExit('Expected Guide cover demo/meta summary was not found')
+          source.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          index = Path('index.html')
+          text = index.read_text(encoding='utf-8')
+          old = "description.setAttribute('content', 'מצגת אינטראקטיבית למורי Moodle: שאלה אחת בכל שקף, צילומים אמיתיים ורצף לחיצות ברור.');"
+          new = "description.setAttribute('content', 'מדריך למורים במערכת Moodle במחוז ירושלים והעיר ירושלים.');"
+          if old not in text:
+              raise SystemExit('Expected Guide meta description was not found')
+          index.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          audit = Path('scripts/checks/guide-integrity-audit.cjs')
+          text = audit.read_text(encoding='utf-8')
+          anchor = "// 5) The Guide service worker must be syntax-valid and base-path aware so the\n"
+          guard = r'''// 5) The public Guide cover must contain user-facing content only. Internal design
+// instructions belong in PROJECT_MEMORY.md, never in the presentation itself.
+const coverBlock = source.match(/id:\s*'cover'[\s\S]*?status:\s*'ready'/)?.[0] ?? '';
+if (!coverBlock) {
+  fail('Guide cover block could not be located for public-copy validation.');
+} else {
+  for (const forbiddenCoverCopy of [
+    'שאלה אחת בכל שקף',
+    'צילום אמיתי',
+    'צילומים אמיתיים',
+    'רצף לחיצות ברור',
+    'דמו',
+    'demo',
+    'placeholder',
+  ]) {
+    if (coverBlock.toLocaleLowerCase().includes(forbiddenCoverCopy.toLocaleLowerCase())) {
+      fail(`Guide cover exposes internal/demo copy: ${forbiddenCoverCopy}`);
+    }
+  }
+}
+
+const guideIndexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+for (const forbiddenMetaCopy of [
+  'שאלה אחת בכל שקף',
+  'צילום אמיתי',
+  'צילומים אמיתיים',
+  'רצף לחיצות ברור',
+]) {
+  if (guideIndexHtml.includes(forbiddenMetaCopy)) {
+    fail(`Guide HTML metadata exposes internal design copy: ${forbiddenMetaCopy}`);
+  }
+}
+
+// 6) The Guide service worker must be syntax-valid and base-path aware so the
+'''
+          if anchor not in text:
+              raise SystemExit('Guide integrity audit insertion anchor was not found')
+          text = text.replace(anchor, guard, 1)
+          # Keep following section numbering readable.
+          text = text.replace('// 6) The repository must contain a static always-on deployment gate.', '// 7) The repository must contain a static always-on deployment gate.', 1)
+          text = text.replace('// 7) Live verification must compare canonical Guide content, not branch commit SHA.', '// 8) Live verification must compare canonical Guide content, not branch commit SHA.', 1)
+          text = text.replace('// 8) The canonical missing-capture document must explicitly forbid fake/demo captures.', '// 9) The canonical missing-capture document must explicitly forbid fake/demo captures.', 1)
+          audit.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Remove one-shot workflow and commit patch
+        shell: bash
+        run: |
+          git rm .github/workflows/guide-copy-hotfix-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/guideDeckSource.ts index.html scripts/checks/guide-integrity-audit.cjs
+          git commit -m "fix(guide): remove internal demo copy from public cover"
+          git push origin HEAD:fix/guide-remove-demo-copy-20260908
