@@ -8,10 +8,23 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&family=Assistant:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/guide-visual-isolation.css" />
     <script>
       const isGuideRoute = location.pathname === '/guide' || location.pathname.startsWith('/guide/');
       if (isGuideRoute) {
+        document.documentElement.dataset.surface = 'guide';
+        document.title = 'מדריך Moodle למורים';
+
+        const description = document.querySelector('meta[name="description"]');
+        if (description) {
+          description.setAttribute('content', 'מצגת אינטראקטיבית למורי Moodle: שאלה אחת בכל שקף, צילומים אמיתיים ורצף לחיצות ברור.');
+        }
+
+        const guideStyles = document.createElement('link');
+        guideStyles.rel = 'stylesheet';
+        guideStyles.href = '/guide-visual-isolation.css';
+        guideStyles.dataset.guideStyles = 'true';
+        document.head.appendChild(guideStyles);
+
         [
           ['/guide/jerusalem-math-logo.webp', 'image/webp'],
           ['/guide/screenshots/01-login.avif', 'image/avif'],
