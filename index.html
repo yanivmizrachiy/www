@@ -8,14 +8,36 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&family=Assistant:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/guide-visual-isolation.css" />
     <script>
-      const isGuideRoute = location.pathname === '/guide' || location.pathname.startsWith('/guide/');
+      const guideMarker = '/guide';
+      const guideIndex = location.pathname.indexOf(guideMarker);
+      const isGuideRoute = guideIndex >= 0 && (
+        guideIndex + guideMarker.length === location.pathname.length ||
+        location.pathname[guideIndex + guideMarker.length] === '/'
+      );
+
       if (isGuideRoute) {
+        const siteBase = location.pathname.slice(0, guideIndex);
+        const withBase = (path) => `${siteBase}${path}`;
+
+        document.documentElement.dataset.surface = 'guide';
+        document.title = 'מדריך Moodle למורים';
+
+        const description = document.querySelector('meta[name="description"]');
+        if (description) {
+          description.setAttribute('content', 'מצגת אינטראקטיבית למורי Moodle: שאלה אחת בכל שקף, צילומים אמיתיים ורצף לחיצות ברור.');
+        }
+
+        const guideStyles = document.createElement('link');
+        guideStyles.rel = 'stylesheet';
+        guideStyles.href = withBase('/guide-visual-isolation.css');
+        guideStyles.dataset.guideStyles = 'true';
+        document.head.appendChild(guideStyles);
+
         [
-          ['/guide/jerusalem-math-logo.webp', 'image/webp'],
-          ['/guide/screenshots/01-login.avif', 'image/avif'],
-          ['/guide/screenshots/02-my-courses-home.avif', 'image/avif'],
+          [withBase('/guide/jerusalem-math-logo.webp'), 'image/webp'],
+          [withBase('/guide/screenshots/01-login.avif'), 'image/avif'],
+          [withBase('/guide/screenshots/02-my-courses-home.avif'), 'image/avif'],
         ].forEach(([href, type]) => {
           const preload = document.createElement('link');
           preload.rel = 'preload';
@@ -27,7 +49,7 @@
 
         if ('serviceWorker' in navigator) {
           window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/guide/sw.js', { scope: '/guide/' }).catch(() => {});
+            navigator.serviceWorker.register(withBase('/guide/sw.js'), { scope: withBase('/guide/') }).catch(() => {});
           });
         }
       }
