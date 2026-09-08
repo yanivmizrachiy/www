@@ -15,19 +15,16 @@ const guideSwPath = path.join(root, 'public/guide/sw.js');
 const viteConfigPath = path.join(root, 'vite.config.ts');
 const liveSmokePath = path.join(root, '.github/workflows/guide-live-smoke.yml');
 const renderRecoveryPath = path.join(root, '.github/workflows/render-deploy-recovery.yml');
+const staticPagesPath = path.join(root, '.github/workflows/guide-static-pages.yml');
 
 const errors = [];
 const notes = [];
-
-function fail(message) {
-  errors.push(message);
-}
+const fail = (message) => errors.push(message);
 
 function walk(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const fullPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) return walk(fullPath);
-    return [fullPath];
+    return entry.isDirectory() ? walk(fullPath) : [fullPath];
   });
 }
 
@@ -63,7 +60,6 @@ if (memory !== publicMemory) {
 }
 
 // 2) There must be exactly one application-facing publication gate.
-// Source defines content only; guideDeck.ts owns normalization and publication policy.
 if (/export\s+const\s+PUBLISHED_GUIDE_SLIDES\b/.test(source)) {
   fail('guideDeckSource.ts must not export PUBLISHED_GUIDE_SLIDES; publication policy belongs only in guideDeck.ts.');
 }
@@ -71,44 +67,23 @@ if (/export\s+const\s+QUICK_START_SLIDE_IDS\b/.test(source)) {
   notes.push('guideDeckSource.ts still carries a legacy QUICK_START_SLIDE_IDS list; application policy remains protected in guideDeck.ts and source cleanup is still pending.');
 }
 
-for (const requiredFragment of [
-  "slide.status === 'ready'",
-  '!slide.missingCaptureId',
-]) {
-  if (!deck.includes(requiredFragment)) {
-    fail(`guideDeck.ts publication gate is missing: ${requiredFragment}`);
-  }
+for (const requiredFragment of ["slide.status === 'ready'", '!slide.missingCaptureId']) {
+  if (!deck.includes(requiredFragment)) fail(`guideDeck.ts publication gate is missing: ${requiredFragment}`);
 }
-
-for (const forbiddenFragment of [
-  "slide.status !== 'needs-capture'",
-  "slide.status !== 'needs-fact'",
-]) {
+for (const forbiddenFragment of ["slide.status !== 'needs-capture'", "slide.status !== 'needs-fact'"]) {
   if (deck.includes(forbiddenFragment)) {
     fail(`guideDeck.ts uses a deny-list publication rule instead of explicit ready status: ${forbiddenFragment}`);
   }
 }
-
-// Legacy source entries may still say ready while carrying missingCaptureId.
-// Runtime must normalize those entries before publication/search/quick-start.
-for (const requiredFragment of [
-  "slide.missingCaptureId && slide.status === 'ready'",
-  "'needs-capture' as const",
-]) {
-  if (!deck.includes(requiredFragment)) {
-    fail(`guideDeck.ts is missing defensive status normalization: ${requiredFragment}`);
-  }
+for (const requiredFragment of ["slide.missingCaptureId && slide.status === 'ready'", "'needs-capture' as const"]) {
+  if (!deck.includes(requiredFragment)) fail(`guideDeck.ts is missing defensive status normalization: ${requiredFragment}`);
 }
-
-// Runtime must use verified AVIF derivatives rather than heavier source JPG/PNG files.
 for (const requiredFragment of [
   'toModernScreenshotFilename',
   "return src.replace(/\\.[^.]+$/, '.avif')",
   'src: toModernScreenshotFilename(screenshot.src)',
 ]) {
-  if (!deck.includes(requiredFragment)) {
-    fail(`guideDeck.ts is missing AVIF screenshot mapping: ${requiredFragment}`);
-  }
+  if (!deck.includes(requiredFragment)) fail(`guideDeck.ts is missing AVIF screenshot mapping: ${requiredFragment}`);
 }
 
 const srcFiles = walk(path.join(root, 'src')).filter((file) => /\.[cm]?[jt]sx?$/.test(file));
@@ -145,7 +120,6 @@ const sourceMissingIds = [...source.matchAll(/missingCaptureId:\s*'(M\d{2})'/g)]
 const docMissingIds = [...missing.matchAll(/^##\s+(M\d{2})\b/gm)].map((match) => match[1]);
 const sourceMissingSet = new Set(sourceMissingIds);
 const docMissingSet = new Set(docMissingIds);
-
 for (const id of sourceMissingSet) {
   if (!docMissingSet.has(id)) fail(`${id} is referenced by guideDeckSource.ts but missing from GUIDE_MISSING_CAPTURES.md.`);
 }
@@ -154,7 +128,7 @@ for (const id of docMissingSet) {
 }
 if (docMissingIds.length !== docMissingSet.size) fail('GUIDE_MISSING_CAPTURES.md contains duplicate M-IDs.');
 
-// 5) Every screenshot referenced by the deck must physically exist, together with AVIF + WebP derivatives.
+// 5) Every screenshot referenced by the deck must exist with AVIF + WebP derivatives.
 const screenshotRefs = [...source.matchAll(/src:\s*'([^']+\.(?:jpg|jpeg|png|webp|avif))'/g)].map((match) => match[1]);
 for (const screenshot of new Set(screenshotRefs)) {
   if (screenshot.includes('/') || screenshot.includes('\\')) {
@@ -173,20 +147,18 @@ for (const screenshot of new Set(screenshotRefs)) {
   }
 }
 
-// 6) Guide visual isolation must be route-scoped and must not depend on the cover's Tailwind gradient utilities.
+// 6) Guide visual isolation must be route-scoped and avoid fragile Tailwind selectors.
 if (!guideCss.includes('html[data-surface="guide"]')) {
   fail('guide-visual-isolation.css is not scoped to html[data-surface="guide"].');
 }
 for (const fragileCoverSelector of ['from-slate-950', 'via-blue-950', 'to-slate-900']) {
-  if (guideCss.includes(fragileCoverSelector)) {
-    fail(`guide-visual-isolation.css still depends on fragile cover utility class: ${fragileCoverSelector}`);
-  }
+  if (guideCss.includes(fragileCoverSelector)) fail(`guide-visual-isolation.css still depends on fragile cover utility class: ${fragileCoverSelector}`);
 }
 if (!guideCss.includes(':has(img[alt^="יחידת מתמטיקה"])')) {
   fail('guide-visual-isolation.css is missing the stable branded-cover selector.');
 }
 
-// 7) The isolated Guide service worker must exist and remain syntax-valid.
+// 7) Service worker must stay valid, fail-open, and work both at /guide and a static host base path such as /www/guide.
 if (!fs.existsSync(guideSwPath)) {
   fail('Guide service worker is missing: public/guide/sw.js');
 } else {
@@ -196,17 +168,24 @@ if (!fs.existsSync(guideSwPath)) {
   } catch (error) {
     fail(`Guide service worker has invalid JavaScript: ${error.message}`);
   }
+
   for (const requiredFragment of [
     "CACHE_PREFIX = 'moodle-guide-'",
     'NAVIGATION_FRESHNESS_MS',
     'Promise.race([',
     'event.waitUntil(networkPromise)',
-    "url.pathname === '/guide/release.json'",
-    "url.pathname.startsWith('/assets/')",
+    'self.registration.scope',
+    "scopePath.endsWith('/guide')",
+    "`${scopePath}/release.json`",
+    "withBase('/assets/')",
   ]) {
     if (!guideSw.includes(requiredFragment)) {
-      fail(`Guide service worker is missing freshness/isolation rule: ${requiredFragment}`);
+      fail(`Guide service worker is missing base-aware freshness/isolation rule: ${requiredFragment}`);
     }
+  }
+
+  if (guideSw.includes("url.pathname === '/guide/release.json'") || guideSw.includes("url.pathname.startsWith('/assets/')")) {
+    fail('Guide service worker regressed to root-only hard-coded paths; static always-on hosting would break.');
   }
 }
 
@@ -229,14 +208,22 @@ for (const [workflowName, workflowPath] of [
   }
 }
 
+// The source-of-truth performance rule requires an always-on static Guide route independent of Render sleep.
+if (!fs.existsSync(staticPagesPath)) {
+  fail('Static always-on Guide deployment workflow is missing: .github/workflows/guide-static-pages.yml');
+} else {
+  const staticPages = fs.readFileSync(staticPagesPath, 'utf8');
+  for (const requiredFragment of ['actions/configure-pages@v5', 'actions/upload-pages-artifact@v4', 'actions/deploy-pages@v4', 'dist/guide/index.html']) {
+    if (!staticPages.includes(requiredFragment)) fail(`Static Guide deployment workflow is missing: ${requiredFragment}`);
+  }
+}
+
 // 9) Missing-capture and screenshot documentation must preserve truth/safety rules.
 for (const requiredPhrase of ['אין Demo', 'אין Placeholder', 'אין צילום מומצא']) {
   if (!missing.includes(requiredPhrase)) fail(`GUIDE_MISSING_CAPTURES.md is missing safety rule: ${requiredPhrase}`);
 }
 for (const staleArchitectureTerm of ['guideButtons.ts', 'ButtonArea', 'QUESTION_SHOTS']) {
-  if (manifest.includes(staleArchitectureTerm)) {
-    fail(`GUIDE_SCREENSHOTS_MANIFEST.md still documents retired Guide architecture: ${staleArchitectureTerm}`);
-  }
+  if (manifest.includes(staleArchitectureTerm)) fail(`GUIDE_SCREENSHOTS_MANIFEST.md still documents retired Guide architecture: ${staleArchitectureTerm}`);
 }
 
 if (notes.length) for (const note of notes) console.log(`NOTE: ${note}`);
