@@ -1,14 +1,19 @@
 const CACHE_PREFIX = 'moodle-guide-';
-const CACHE_NAME = `${CACHE_PREFIX}v4`;
+const CACHE_NAME = `${CACHE_PREFIX}v5`;
 const NAVIGATION_FRESHNESS_MS = 1200;
+
+const scopePath = new URL(self.registration.scope).pathname.replace(/\/$/, '');
+const siteBase = scopePath.endsWith('/guide') ? scopePath.slice(0, -'/guide'.length) : '';
+const withBase = (path) => `${siteBase}${path}`;
+
 const GUIDE_SHELL = [
-  '/guide',
-  '/guide-visual-isolation.css',
-  '/guide/focus-overlays.js',
-  '/guide/focus-map.json',
-  '/guide/jerusalem-math-logo.webp',
-  '/guide/screenshots/01-login.avif',
-  '/guide/screenshots/02-my-courses-home.avif',
+  `${scopePath}/`,
+  withBase('/guide-visual-isolation.css'),
+  withBase('/guide/focus-overlays.js'),
+  withBase('/guide/focus-map.json'),
+  withBase('/guide/jerusalem-math-logo.webp'),
+  withBase('/guide/screenshots/01-login.avif'),
+  withBase('/guide/screenshots/02-my-courses-home.avif'),
 ];
 
 async function putIfUsable(cache, key, response) {
@@ -54,17 +59,17 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Deployment verification must always see the server's real release marker.
-  if (url.pathname === '/guide/release.json') return;
+  // Deployment verification must always see the host's real release marker.
+  if (url.pathname === `${scopePath}/release.json`) return;
 
   const isGuideNavigation =
     request.mode === 'navigate' &&
-    (url.pathname === '/guide' || url.pathname.startsWith('/guide/'));
+    (url.pathname === scopePath || url.pathname.startsWith(`${scopePath}/`));
 
   if (isGuideNavigation) {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
-      const cacheKey = '/guide';
+      const cacheKey = `${scopePath}/`;
       const cached = await cache.match(cacheKey);
 
       const networkPromise = fetch(request)
@@ -88,9 +93,9 @@ self.addEventListener('fetch', (event) => {
   }
 
   const isGuideAsset =
-    url.pathname === '/guide-visual-isolation.css' ||
-    url.pathname.startsWith('/guide/') ||
-    url.pathname.startsWith('/assets/');
+    url.pathname === withBase('/guide-visual-isolation.css') ||
+    url.pathname.startsWith(`${scopePath}/`) ||
+    url.pathname.startsWith(withBase('/assets/'));
 
   if (!isGuideAsset) return;
 
