@@ -629,20 +629,3 @@ export const GUIDE_SLIDES: GuideSlide[] = [
     status: 'ready',
   },
 ];
-
-export const QUICK_START_SLIDE_IDS = [
-  'quick-start',
-  'login',
-  'my-courses',
-  'create-space',
-  'self-learning-space',
-  'edit-mode',
-  'add-content',
-  'student-view',
-  'self-enrol',
-  'quiz-settings',
-  'assignment-submissions',
-  'gradebook',
-  'report-chooser',
-  'final-checklist',
-];
