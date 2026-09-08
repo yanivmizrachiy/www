@@ -25,6 +25,12 @@
         guideStyles.dataset.guideStyles = 'true';
         document.head.appendChild(guideStyles);
 
+        const focusOverlays = document.createElement('script');
+        focusOverlays.src = '/guide/focus-overlays.js';
+        focusOverlays.defer = true;
+        focusOverlays.dataset.guideFocus = 'true';
+        document.head.appendChild(focusOverlays);
+
         [
           ['/guide/jerusalem-math-logo.webp', 'image/webp'],
           ['/guide/screenshots/01-login.avif', 'image/avif'],
