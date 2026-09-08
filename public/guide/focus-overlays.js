@@ -6,6 +6,8 @@
   let focusMap = Object.freeze({});
   const OVERLAY_CLASS = 'guide-focus-overlay';
   const APPLIED_ATTR = 'data-guide-focus-applied';
+  const ORIGINAL_ARIA_ATTR = 'data-guide-focus-original-aria-label';
+  const HAD_ARIA_ATTR = 'data-guide-focus-had-aria-label';
 
   function filenameFromImage(image) {
     try {
@@ -25,8 +27,24 @@
     return typeof box.label === 'string' && box.label.trim().length > 0;
   }
 
+  function rememberAnchorAria(anchor) {
+    if (anchor.hasAttribute(HAD_ARIA_ATTR)) return;
+    const hadAria = anchor.hasAttribute('aria-label');
+    anchor.setAttribute(HAD_ARIA_ATTR, hadAria ? 'true' : 'false');
+    if (hadAria) anchor.setAttribute(ORIGINAL_ARIA_ATTR, anchor.getAttribute('aria-label') || '');
+  }
+
+  function restoreAnchorAria(anchor) {
+    if (anchor.getAttribute(HAD_ARIA_ATTR) === 'true') {
+      anchor.setAttribute('aria-label', anchor.getAttribute(ORIGINAL_ARIA_ATTR) || '');
+    } else {
+      anchor.removeAttribute('aria-label');
+    }
+  }
+
   function removeExistingOverlay(anchor) {
     anchor.querySelector(`:scope > .${OVERLAY_CLASS}`)?.remove();
+    restoreAnchorAria(anchor);
   }
 
   function applyToImage(image) {
@@ -37,6 +55,7 @@
     const anchor = image.closest('a');
     if (!anchor) return;
 
+    rememberAnchorAria(anchor);
     removeExistingOverlay(anchor);
     image.removeAttribute(APPLIED_ATTR);
 
