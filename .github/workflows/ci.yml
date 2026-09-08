@@ -18,6 +18,7 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run audit:guide
+      - run: npm run audit:guide-surface
       - run: npm run report:guide-gaps
       - run: npm run build
       - run: npm run doctor
