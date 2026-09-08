@@ -100,6 +100,31 @@ Any missing module, unsupported page, low-confidence context, missing adapter or
 
 Manifest version raised to `0.2.0`.
 
+## 2026-09-08 — Premium visual system direction lock
+
+The previous shell was judged technically correct but visually too conservative for the product goal.
+
+The visual target is now explicitly: **the teacher should feel they entered a new premium workspace, not a mildly restyled Moodle page.**
+
+Implemented in `src/shell.js` + `src/styles.css`:
+
+- large immersive hero area with layered gradients and controlled glow;
+- glass/blur command surfaces with graceful fallback behavior;
+- strong typography hierarchy and balanced RTL composition;
+- premium top brand pill and persistent native-view escape control;
+- course-derived statistic cards for sections and activities;
+- central command/search bar with live filtering;
+- numbered section cards with strong visual hierarchy;
+- richer activity rows with icon treatment and directional affordance;
+- card depth, hover elevation and staggered micro-motion;
+- responsive mobile composition;
+- reduced-motion accessibility support;
+- Moodle native page remains preserved underneath and can be restored instantly.
+
+No external images, third-party trackers or decorative assets were added. The premium effect is produced locally from CSS, semantic course data and native links only.
+
+Important: this visual system is **not yet declared final**. It must be judged against real Ministry Moodle screenshots/DOM before a Teacher Release. The next visual iteration should be driven by the actual Moodle page structure and Yaniv's final visual profile, not generic UI fashion.
+
 ## Current verified state
 
 Verified from repository structure/code only:
@@ -111,7 +136,9 @@ Verified from repository structure/code only:
 - extension requests no broad browser permissions;
 - V1 code contains no Moodle writes;
 - V1 has an explicit native-view escape hatch;
-- DOM selectors are centralized in the course adapter.
+- DOM selectors are centralized in the course adapter;
+- premium shell is built from local CSS/JS only;
+- search/filter operates locally over the extracted read-only semantic model.
 
 ## Not yet verified — do not claim
 
@@ -127,11 +154,11 @@ Verified from repository structure/code only:
 
 ## Next implementation gates
 
-1. Add bounded/idempotent dynamic-page remount support for Moodle AJAX/navigation changes.
-2. Add a compatibility diagnostic panel that exposes only non-personal detector/adapter evidence locally.
-3. Add local course search/filter over the extracted semantic model.
+1. Validate the premium shell against a real authorized Ministry Moodle course DOM/screenshot.
+2. Add bounded/idempotent dynamic-page remount support for Moodle AJAX/navigation changes.
+3. Add a compatibility diagnostic panel that exposes only non-personal detector/adapter evidence locally.
 4. Add explicit unsupported-state handling rather than partial visual transformation.
 5. Add fixture-based adapter tests using sanitized Moodle HTML snapshots already approved for repository use.
-6. Validate against a real authorized teacher course.
-7. Validate that a student account remains completely native.
-8. Only after those validations, refine the visual system toward the final Yaniv design profile.
+6. Validate that a student account remains completely native.
+7. Tune the visual profile from real Moodle evidence: density, card proportions, command actions and teacher workflow priority.
+8. Only after those validations, mark a first Teacher Release candidate.
