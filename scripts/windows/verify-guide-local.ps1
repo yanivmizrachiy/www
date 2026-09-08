@@ -6,7 +6,7 @@ $OutputEncoding = [System.Text.UTF8Encoding]::new()
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 Set-Location $repoRoot
 
-$expectedBranch = 'fix/guide-source-truth-completion-20260908'
+$expectedBranch = 'fix/guide-consolidated-20260908'
 $currentBranch = (git branch --show-current).Trim()
 if ($LASTEXITCODE -ne 0) { throw 'git branch failed' }
 
