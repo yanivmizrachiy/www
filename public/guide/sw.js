@@ -1,10 +1,11 @@
 const CACHE_PREFIX = 'moodle-guide-';
-const CACHE_NAME = `${CACHE_PREFIX}v3`;
+const CACHE_NAME = `${CACHE_PREFIX}v4`;
 const NAVIGATION_FRESHNESS_MS = 1200;
 const GUIDE_SHELL = [
   '/guide',
   '/guide-visual-isolation.css',
   '/guide/focus-overlays.js',
+  '/guide/focus-map.json',
   '/guide/jerusalem-math-logo.webp',
   '/guide/screenshots/01-login.avif',
   '/guide/screenshots/02-my-courses-home.avif',
@@ -70,15 +71,11 @@ self.addEventListener('fetch', (event) => {
         .then((response) => putIfUsable(cache, cacheKey, response))
         .catch(() => null);
 
-      // First visit has no safe local copy, so wait for the real server.
       if (!cached) {
         const network = await networkPromise;
         return network || Response.error();
       }
 
-      // On repeat visits, prefer fresh HTML when Render is responsive. If the
-      // service is sleeping, fall back quickly to the last verified Guide and
-      // keep refreshing it in the background for the next navigation.
       event.waitUntil(networkPromise);
       const fresh = await Promise.race([
         networkPromise,
