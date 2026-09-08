@@ -6,9 +6,13 @@ const sourcePath = path.join(root, 'src/data/guideDeckSource.ts');
 const missingPath = path.join(root, 'docs/GUIDE_MISSING_CAPTURES.md');
 const memoryPath = path.join(root, 'PROJECT_MEMORY.md');
 
-const source = fs.readFileSync(sourcePath, 'utf8');
-const missingDoc = fs.readFileSync(missingPath, 'utf8');
-const memory = fs.readFileSync(memoryPath, 'utf8');
+function readTextPortable(filePath) {
+  return fs.readFileSync(filePath, 'utf8').replace(/\r\n?/g, '\n');
+}
+
+const source = readTextPortable(sourcePath);
+const missingDoc = readTextPortable(missingPath);
+const memory = readTextPortable(memoryPath);
 
 function normalizeQuestion(value) {
   return value
