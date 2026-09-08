@@ -2,7 +2,7 @@
 
 Branch: `feat/august-experience-v1`  
 Base: `august-moodle-model-20260823`  
-Current extension version: `0.4.0`  
+Current extension version: `0.5.0`  
 Teacher Release: **NO**  
 Production/Main impact: **NONE**
 
@@ -12,6 +12,7 @@ Production/Main impact: **NONE**
 - Architecture and safety: `../ARCHITECTURE_V1.md`
 - Teacher usage flow: `../docs/TEACHER_USE.md`
 - Definition of 100% / release gates: `../docs/RELEASE_GATES.md`
+- Fixture validation contract: `../tests/README.md`
 
 This file is only the chronological/current state log. Product rules and release requirements belong in the canonical documents above.
 
@@ -60,7 +61,6 @@ Added modular technology capabilities instead of embedding them into Moodle-spec
 - `src/command-palette.js`: keyboard-first local command palette (`Ctrl/Cmd+K`) for fast teacher navigation/actions already exposed by August.
 - `src/command-palette.css`: isolated accessible palette presentation.
 - `src/motion.js`: progressive-enhancement motion engine using the Web Animations API when available and respecting `prefers-reduced-motion`.
-- manifest upgraded to `0.4.0` and explicit module load order.
 
 Technology principles locked:
 
@@ -84,6 +84,40 @@ Created a clear canonical documentation structure under `august-experience/`:
 
 This explicitly prevents mixing August Experience with the Moodle presentation or Teacher Hub.
 
+## 2026-09-08 — Compatibility gate v0.5
+
+Added `src/compatibility.js` and wired it into bootstrap before any August UI can render.
+
+The compatibility engine scores only structural/safety evidence:
+
+- course surface detected;
+- teacher capability evidence detected;
+- context confidence;
+- compatible adapter selected;
+- high-confidence semantic model extracted.
+
+The engine returns a compatibility score, level and `safeToRender` decision. Bootstrap now fails open and removes August UI when the compatibility gate rejects the page. Compatibility results are written only to local diagnostics.
+
+Manifest upgraded to `0.5.0`.
+
+Important: `verified-shape` is a code-level structural label, not a claim that the Ministry Moodle environment has been verified. Real compatibility still requires authorized real-environment evidence.
+
+## 2026-09-08 — Fixture validation contract
+
+Added `tests/README.md`.
+
+Defined the required sanitized fixture set for:
+
+- teacher standard course;
+- alternate teacher course format;
+- student course;
+- unsupported Moodle page;
+- empty/ambiguous course.
+
+Defined assertions for detector, adapter, model confidence, compatibility gate and fail-open behavior.
+
+No fake Moodle fixture was added. Real fixture HTML must be sanitized from authorized Moodle evidence before entering the repository. Passwords, cookies, tokens and student PII are explicitly forbidden from fixtures.
+
 ## Verified from repository/code
 
 - isolated feature branch; `main` unchanged;
@@ -96,20 +130,23 @@ This explicitly prevents mixing August Experience with the Moodle presentation o
 - search/filter is local;
 - feature policy is centralized;
 - command palette and motion are progressive enhancements;
-- canonical project documentation is now separated by purpose.
+- compatibility gate now runs before rendering;
+- unsupported/low-confidence states fail open to native Moodle;
+- fixture-test requirements are now explicitly defined;
+- canonical project documentation is separated by purpose.
 
 ## Current completion assessment
 
-Engineering foundation and premium concept are substantially built, but real-environment validation is the critical missing half.
+Engineering foundation and premium concept are substantially built, and the code now has a formal compatibility gate. Real-environment validation remains the critical blocker.
 
-Repository-only completion estimate: **about 65%** toward a safe Teacher Release.
+Repository-only completion estimate: **about 72%** toward a safe Teacher Release.
 
-This is not a claim of 65% compatibility with Ministry Moodle. Compatibility remains unverified until real-environment release gates pass.
+This is not a claim of 72% compatibility with Ministry Moodle. Compatibility remains unverified until real-environment release gates pass.
 
 ## Immediate next work
 
-1. Finish unsupported-state/compatibility scoring and release diagnostics.
-2. Add fixture-test harness for sanitized real Moodle HTML.
-3. Prepare pilot packaging and clean teacher installation flow.
-4. Obtain real authorized teacher-course evidence and run release gates.
-5. Package, pilot, regress and tag only after all blocking gates pass.
+1. Prepare pilot packaging and clean teacher installation flow.
+2. Add a local compatibility/status surface for pilot diagnostics without PII.
+3. Obtain sanitized authorized teacher/student Moodle evidence and populate fixture tests.
+4. Run real Chrome/Edge, role, AJAX, accessibility and visual validation.
+5. Fix blockers, package, pilot, regress and tag only after all blocking gates pass.
