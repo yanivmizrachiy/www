@@ -1,0 +1,149 @@
+name: Guide Static Always-On
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'src/main.tsx'
+      - 'src/pages/Guide.tsx'
+      - 'src/data/guideDeck.ts'
+      - 'src/data/guideDeckSource.ts'
+      - 'public/guide/**'
+      - 'public/guide-visual-isolation.css'
+      - 'vite.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/guide-static-always-on.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'src/main.tsx'
+      - 'src/pages/Guide.tsx'
+      - 'src/data/guideDeck.ts'
+      - 'src/data/guideDeckSource.ts'
+      - 'public/guide/**'
+      - 'public/guide-visual-isolation.css'
+      - 'vite.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/guide-static-always-on.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: guide-static-always-on-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+  GUIDE_BASE_PATH: /www
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify repository
+        run: |
+          npm run check
+          npm run typecheck
+          npm run doctor
+
+      - name: Build static Guide
+        run: npm run build -- --base "${GUIDE_BASE_PATH}/"
+
+      - name: Rewrite Guide public asset URLs for project Pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const base = process.env.GUIDE_BASE_PATH;
+          const assets = path.join(process.cwd(), 'dist', 'assets');
+          for (const name of fs.readdirSync(assets)) {
+            if (!name.endsWith('.js')) continue;
+            const file = path.join(assets, name);
+            const original = fs.readFileSync(file, 'utf8');
+            const rewritten = original.replace(/(["'`])\/guide\//g, `$1${base}/guide/`);
+            if (rewritten !== original) fs.writeFileSync(file, rewritten, 'utf8');
+          }
+          NODE
+
+      - name: Prepare static /guide route
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/guide
+          cp dist/index.html dist/guide/index.html
+          cp dist/guide/index.html dist/404.html
+          cat > dist/index.html <<'HTML'
+          <!doctype html>
+          <html lang="he" dir="rtl">
+            <head>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width,initial-scale=1" />
+              <meta http-equiv="refresh" content="0;url=./guide/" />
+              <title>מדריך Moodle למורים</title>
+            </head>
+            <body><a href="./guide/">פתיחת מדריך Moodle למורים</a></body>
+          </html>
+          HTML
+
+      - name: Prove static artifact is independent of Render wake-up
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f dist/guide/index.html
+          test -f dist/guide/sw.js
+          test -f dist/guide/jerusalem-math-logo.webp
+          test -f dist/guide/screenshots/01-login.avif
+          grep -q '/www/assets/' dist/guide/index.html
+          ! grep -R -F 'SERVICE WAKING UP' dist
+          ! grep -R -F 'www-tijc.onrender.com/guide' dist
+          if grep -R -E '["'"'"'`]\/guide\/(screenshots|jerusalem-math-logo)' dist/assets/*.js; then
+            echo 'Root-only Guide asset URL remains in compiled JavaScript.' >&2
+            exit 1
+          fi
+          echo 'STATIC_GUIDE_ARTIFACT_OK'
+
+      - name: Configure Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload Pages artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy static Guide
+        id: deployment
+        uses: actions/deploy-pages@v4
