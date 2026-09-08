@@ -17,12 +17,16 @@ if (!index.includes("document.documentElement.dataset.surface = 'guide'")) {
   fail('index.html does not mark the Guide route with data-surface="guide".');
 }
 
-if (!index.includes("guideStyles.href = '/guide-visual-isolation.css'")) {
-  fail('index.html does not load Guide presentation CSS from the Guide-only route branch.');
+if (!index.includes("guideStyles.href = withBase('/guide-visual-isolation.css')")) {
+  fail('index.html does not load base-aware Guide presentation CSS from the Guide-only route branch.');
 }
 
-if (/<link[^>]+href=["']\/guide-visual-isolation\.css["']/i.test(index)) {
-  fail('Guide isolation CSS is linked globally; it must load only when isGuideRoute is true.');
+if (!index.includes("const withBase = (path) => `${siteBase}${path}`")) {
+  fail('index.html is missing the static-host base-path helper required by the Guide-only route.');
+}
+
+if (/<link[^>]+href=["'](?:\/[^"']*)?guide-visual-isolation\.css["']/i.test(index)) {
+  fail('Guide isolation CSS is linked globally; it must load only when the Guide route is active.');
 }
 
 if (!css.includes('html[data-surface="guide"]')) {
@@ -53,8 +57,6 @@ function selectorPreludes(text) {
 const nonScopedSelectors = [];
 for (const prelude of selectorPreludes(css)) {
   for (const selector of prelude.split(',').map((value) => value.trim()).filter(Boolean)) {
-    // Keyframe selectors would be percentages/from/to, but this stylesheet does
-    // not define keyframes. If that changes, the audit should be updated deliberately.
     if (!selector.startsWith('html[data-surface="guide"]')) {
       nonScopedSelectors.push(selector);
     }
