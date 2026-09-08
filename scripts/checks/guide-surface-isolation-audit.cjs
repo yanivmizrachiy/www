@@ -29,15 +29,40 @@ if (!css.includes('html[data-surface="guide"]')) {
   fail('Guide CSS is not scoped to html[data-surface="guide"].');
 }
 
-const nonScopedRule = css
-  .split(/\n(?=[^\s@/])/)
-  .filter((chunk) => chunk.includes('{'))
-  .filter((chunk) => !chunk.startsWith('@'))
-  .filter((chunk) => !chunk.startsWith('html[data-surface="guide"]'))
-  .filter((chunk) => !chunk.startsWith('/*'));
+// Validate real selector preludes instead of splitting CSS text by lines.
+// This correctly handles nested @media blocks: every actual selector inside them
+// must still begin with the Guide surface scope. At-rules themselves are allowed.
+function selectorPreludes(text) {
+  const clean = text.replace(/\/\*[\s\S]*?\*\//g, '');
+  const preludes = [];
+  let boundary = -1;
 
-if (nonScopedRule.length) {
-  fail(`Guide CSS contains selectors outside the Guide surface scope: ${nonScopedRule.slice(0, 3).join(' | ')}`);
+  for (let i = 0; i < clean.length; i += 1) {
+    const char = clean[i];
+    if (char === '{') {
+      const prelude = clean.slice(boundary + 1, i).trim();
+      if (prelude && !prelude.startsWith('@')) preludes.push(prelude);
+      boundary = i;
+    } else if (char === '}') {
+      boundary = i;
+    }
+  }
+  return preludes;
+}
+
+const nonScopedSelectors = [];
+for (const prelude of selectorPreludes(css)) {
+  for (const selector of prelude.split(',').map((value) => value.trim()).filter(Boolean)) {
+    // Keyframe selectors would be percentages/from/to, but this stylesheet does
+    // not define keyframes. If that changes, the audit should be updated deliberately.
+    if (!selector.startsWith('html[data-surface="guide"]')) {
+      nonScopedSelectors.push(selector);
+    }
+  }
+}
+
+if (nonScopedSelectors.length) {
+  fail(`Guide CSS contains selectors outside the Guide surface scope: ${nonScopedSelectors.slice(0, 5).join(' | ')}`);
 }
 
 for (const requiredAccessibilityRule of [
@@ -56,4 +81,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('Guide surface isolation audit passed.');
+console.log(`Guide surface isolation audit passed: ${selectorPreludes(css).length} scoped rule groups checked.`);
