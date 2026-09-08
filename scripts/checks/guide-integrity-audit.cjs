@@ -11,6 +11,7 @@ const guideSwPath = path.join(root, 'public/guide/sw.js');
 const viteConfigPath = path.join(root, 'vite.config.ts');
 const liveSmokePath = path.join(root, '.github/workflows/guide-live-smoke.yml');
 const renderRecoveryPath = path.join(root, '.github/workflows/render-deploy-recovery.yml');
+const staticGuideWorkflowPath = path.join(root, '.github/workflows/guide-static-always-on.yml');
 
 const errors = [];
 const notes = [];
@@ -148,13 +149,14 @@ for (const screenshot of new Set(screenshotRefs)) {
   }
 }
 
-// 5) The isolated Guide service worker must exist and remain syntax-valid.
+// 5) The Guide service worker must be syntax-valid and base-path aware so the
+// presentation can run from an always-on static host instead of depending on
+// a sleeping Render backend.
 if (!fs.existsSync(guideSwPath)) {
   fail('Guide service worker is missing: public/guide/sw.js');
 } else {
   const guideSw = fs.readFileSync(guideSwPath, 'utf8');
   try {
-    // Syntax validation only; the worker is not executed in Node.
     new Function(guideSw);
   } catch (error) {
     fail(`Guide service worker has invalid JavaScript: ${error.message}`);
@@ -162,20 +164,48 @@ if (!fs.existsSync(guideSwPath)) {
 
   for (const requiredFragment of [
     "CACHE_PREFIX = 'moodle-guide-'",
-    "CACHE_NAME = `${CACHE_PREFIX}v2`",
     'NAVIGATION_FRESHNESS_MS = 1200',
     'Promise.race([',
     'event.waitUntil(networkPromise)',
+    'self.registration.scope',
+    "scopePath.endsWith('/guide')",
+    "`${scopePath}/release.json`",
+    "withBase('/assets/')",
+  ]) {
+    if (!guideSw.includes(requiredFragment)) {
+      fail(`Guide service worker is missing base-aware freshness/isolation rule: ${requiredFragment}`);
+    }
+  }
+
+  for (const forbiddenFragment of [
     "url.pathname === '/guide/release.json'",
     "url.pathname.startsWith('/assets/')",
   ]) {
-    if (!guideSw.includes(requiredFragment)) {
-      fail(`Guide service worker is missing freshness/isolation rule: ${requiredFragment}`);
+    if (guideSw.includes(forbiddenFragment)) {
+      fail(`Guide service worker regressed to a Render/root-only path: ${forbiddenFragment}`);
     }
   }
 }
 
-// 6) Live verification must compare canonical Guide content, not branch commit SHA.
+// 6) The repository must contain a static always-on deployment gate. PRs build
+// and prove the artifact; only main is allowed to deploy it to GitHub Pages.
+if (!fs.existsSync(staticGuideWorkflowPath)) {
+  fail('Missing .github/workflows/guide-static-always-on.yml required by the Guide always-on rule.');
+} else {
+  const staticWorkflow = fs.readFileSync(staticGuideWorkflowPath, 'utf8');
+  for (const requiredFragment of [
+    'Guide Static Always-On',
+    'Prove static artifact is independent of Render wake-up',
+    "github.event_name == 'push' && github.ref == 'refs/heads/main'",
+    'actions/deploy-pages@v4',
+  ]) {
+    if (!staticWorkflow.includes(requiredFragment)) {
+      fail(`Static Guide workflow is missing always-on deployment rule: ${requiredFragment}`);
+    }
+  }
+}
+
+// 7) Live verification must compare canonical Guide content, not branch commit SHA.
 const guideHash = computeGuideHash();
 if (!/^[a-f0-9]{64}$/.test(guideHash)) {
   fail(`Guide content fingerprint is invalid: ${guideHash}`);
@@ -211,7 +241,7 @@ for (const [workflowName, workflowPath] of [
   }
 }
 
-// 7) The canonical missing-capture document must explicitly forbid fake/demo captures.
+// 8) The canonical missing-capture document must explicitly forbid fake/demo captures.
 for (const requiredPhrase of ['אין Demo', 'אין Placeholder', 'אין צילום מומצא']) {
   if (!missing.includes(requiredPhrase)) fail(`GUIDE_MISSING_CAPTURES.md is missing safety rule: ${requiredPhrase}`);
 }
