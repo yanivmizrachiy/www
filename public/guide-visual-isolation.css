@@ -1,138 +1,231 @@
-/* Standalone Moodle guide: isolate presentation visuals from Teacher Hub global CSS. */
+/* Moodle Guide visual isolation.
+   Loaded only on /guide and scoped again with html[data-surface="guide"].
+   The cover is identified by its official Jerusalem math logo, not by Tailwind
+   gradient class names, so visual safety survives utility-class refactors. */
 
-/* Scope every override to the full-screen /guide shell only. */
-div[dir="rtl"][class*="fixed"][class*="inset-0"] {
+html[data-surface="guide"] {
   --guide-ink: #020617;
   --guide-muted: #475569;
   --guide-white: #ffffff;
   --guide-gold: #fcd34d;
+  --guide-blue: #1d4ed8;
+  background: #020617;
 }
 
-/* Cover: never allow dark-on-dark text, even if Teacher Hub heading rules load later. */
-div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] h1.font-display {
+html[data-surface="guide"],
+html[data-surface="guide"] body,
+html[data-surface="guide"] #root {
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  background: #020617;
+}
+
+html[data-surface="guide"] #root > div[dir="rtl"] {
+  isolation: isolate;
+  font-family: Heebo, Assistant, Arial, sans-serif;
+}
+
+html[data-surface="guide"] #root > div[dir="rtl"] article > div:has(img[alt^="יחידת מתמטיקה"]) h1.font-display {
   color: #ffffff !important;
   font-size: clamp(2.35rem, 6vw, 4.35rem) !important;
   line-height: 1.02 !important;
+  text-wrap: balance;
   text-shadow: 0 4px 18px rgba(0, 0, 0, 0.62) !important;
 }
 
-div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] p[class*="text-slate-50"] {
+html[data-surface="guide"] #root > div[dir="rtl"] article > div:has(img[alt^="יחידת מתמטיקה"]) p[class*="text-slate-50"] {
   color: #f8fafc !important;
 }
 
-div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] p[class*="text-amber-300"] {
+html[data-surface="guide"] #root > div[dir="rtl"] article > div:has(img[alt^="יחידת מתמטיקה"]) p[class*="text-amber-300"] {
   color: #fcd34d !important;
 }
 
-div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] p[class*="text-amber-200"] {
+html[data-surface="guide"] #root > div[dir="rtl"] article > div:has(img[alt^="יחידת מתמטיקה"]) p[class*="text-amber-200"] {
   color: #fde68a !important;
 }
 
-div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] p[class*="text-white"] {
+html[data-surface="guide"] #root > div[dir="rtl"] article > div:has(img[alt^="יחידת מתמטיקה"]) p[class*="text-white"] {
   color: #ffffff !important;
 }
 
-div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] button {
+html[data-surface="guide"] #root > div[dir="rtl"] article > div:has(img[alt^="יחידת מתמטיקה"]) button {
   border-radius: 1rem !important;
 }
 
-div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] button[class*="bg-amber-400"] {
+html[data-surface="guide"] #root > div[dir="rtl"] article > div:has(img[alt^="יחידת מתמטיקה"]) button[class*="bg-amber-400"] {
   background-color: #fbbf24 !important;
   color: #020617 !important;
 }
 
-div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] button[class*="bg-white/10"] {
+html[data-surface="guide"] #root > div[dir="rtl"] article > div:has(img[alt^="יחידת מתמטיקה"]) button[class*="bg-white/10"] {
   color: #ffffff !important;
 }
 
-div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] img[alt^="יחידת מתמטיקה"] {
+html[data-surface="guide"] img[alt^="יחידת מתמטיקה"] {
   display: block !important;
   opacity: 1 !important;
   filter: none !important;
+  transform-origin: center;
 }
 
-/* Interior slides: lock readable dark text on the light canvas. */
-div[dir="rtl"][class*="fixed"][class*="inset-0"] article > div:not([class*="from-slate-950"]) h1.font-display {
+html[data-surface="guide"] #root > div[dir="rtl"] article > div:not(:has(img[alt^="יחידת מתמטיקה"])) h1.font-display {
   color: #020617 !important;
   text-shadow: none !important;
+  text-wrap: balance;
 }
 
-div[dir="rtl"][class*="fixed"][class*="inset-0"] article > div:not([class*="from-slate-950"]) h2 {
+html[data-surface="guide"] #root > div[dir="rtl"] article > div:not(:has(img[alt^="יחידת מתמטיקה"])) h2 {
   color: #475569 !important;
 }
 
-div[dir="rtl"][class*="fixed"][class*="inset-0"] article > div:not([class*="from-slate-950"]) p[class*="text-blue-700"] {
+html[data-surface="guide"] #root > div[dir="rtl"] article > div:not(:has(img[alt^="יחידת מתמטיקה"])) p[class*="text-blue-700"] {
   color: #1d4ed8 !important;
 }
 
-div[dir="rtl"][class*="fixed"][class*="inset-0"] article > div:not([class*="from-slate-950"]) p[class*="text-slate-600"] {
+html[data-surface="guide"] #root > div[dir="rtl"] article > div:not(:has(img[alt^="יחידת מתמטיקה"])) p[class*="text-slate-600"] {
   color: #475569 !important;
 }
 
-div[dir="rtl"][class*="fixed"][class*="inset-0"] article > div:not([class*="from-slate-950"]) span[class*="text-slate-700"],
-div[dir="rtl"][class*="fixed"][class*="inset-0"] article > div:not([class*="from-slate-950"]) figcaption {
+html[data-surface="guide"] #root > div[dir="rtl"] article > div:not(:has(img[alt^="יחידת מתמטיקה"])) span[class*="text-slate-700"],
+html[data-surface="guide"] #root > div[dir="rtl"] article > div:not(:has(img[alt^="יחידת מתמטיקה"])) figcaption {
   color: #334155 !important;
 }
 
-/* Top and bottom presentation chrome must stay legible over the dark shell. */
-div[dir="rtl"][class*="fixed"][class*="inset-0"] > header button,
-div[dir="rtl"][class*="fixed"][class*="inset-0"] > footer button {
+/* Screenshot stage: real Moodle captures remain visually dominant and sharp. */
+html[data-surface="guide"] #root > div[dir="rtl"] article figure {
+  contain: layout paint;
+  background: #ffffff;
+}
+
+html[data-surface="guide"] #root > div[dir="rtl"] article figure img {
+  image-rendering: auto;
+}
+
+html[data-surface="guide"] #root > div[dir="rtl"] article figure a:focus-visible {
+  display: block;
+  outline: 4px solid #f59e0b;
+  outline-offset: -4px;
+}
+
+/* Evidence-only focus overlay. The engine creates these nodes only when a real
+   screenshot has verified percentage coordinates in its focus map. */
+html[data-surface="guide"] .guide-focus-overlay {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  border: max(3px, 0.22vw) solid #fbbf24;
+  border-radius: 0.65rem;
+  background: rgba(251, 191, 36, 0.08);
+  box-shadow: 0 0 0 4px rgba(2, 6, 23, 0.62), 0 0 26px rgba(251, 191, 36, 0.75);
+}
+
+html[data-surface="guide"] .guide-focus-overlay__label {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.4rem);
+  max-width: min(18rem, 72vw);
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.6rem;
+  background: #fbbf24;
+  color: #020617;
+  font-size: clamp(0.72rem, 1.35vw, 0.95rem);
+  font-weight: 900;
+  line-height: 1.15;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(2, 6, 23, 0.34);
+}
+
+html[data-surface="guide"] #root > div[dir="rtl"] > header button,
+html[data-surface="guide"] #root > div[dir="rtl"] > footer button {
   color: #ffffff !important;
 }
 
-div[dir="rtl"][class*="fixed"][class*="inset-0"] > footer button[class*="bg-amber-400"] {
+html[data-surface="guide"] #root > div[dir="rtl"] > footer button[class*="bg-amber-400"] {
   background-color: #fbbf24 !important;
   color: #020617 !important;
 }
 
-/* Menu/search overlays are white surfaces; protect them from global heading/button rules. */
-div[dir="rtl"][class*="fixed"][class*="inset-0"] section[class*="bg-white"] h2,
-div[dir="rtl"][class*="fixed"][class*="inset-0"] section[class*="bg-white"] h3,
-div[dir="rtl"][class*="fixed"][class*="inset-0"] section[class*="bg-white"] span[class*="text-slate-950"] {
+html[data-surface="guide"] #root > div[dir="rtl"] > div > section h2,
+html[data-surface="guide"] #root > div[dir="rtl"] > div > section h3,
+html[data-surface="guide"] #root > div[dir="rtl"] > div > section span[class*="text-slate-950"] {
   color: #020617 !important;
 }
 
-div[dir="rtl"][class*="fixed"][class*="inset-0"] section[class*="bg-white"] input {
+html[data-surface="guide"] #root > div[dir="rtl"] > div > section input {
   background-color: #f8fafc !important;
   color: #0f172a !important;
   caret-color: #1d4ed8 !important;
 }
 
-div[dir="rtl"][class*="fixed"][class*="inset-0"] section[class*="bg-white"] input::placeholder {
+html[data-surface="guide"] #root > div[dir="rtl"] > div > section input::placeholder {
   color: #64748b !important;
   opacity: 1 !important;
 }
 
+html[data-surface="guide"] #root > div[dir="rtl"] button:focus-visible,
+html[data-surface="guide"] #root > div[dir="rtl"] a:focus-visible,
+html[data-surface="guide"] #root > div[dir="rtl"] input:focus-visible {
+  outline: 3px solid #fbbf24;
+  outline-offset: 3px;
+}
+
 @media (max-width: 640px) {
-  div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] h1.font-display {
+  html[data-surface="guide"] #root > div[dir="rtl"] article > div:has(img[alt^="יחידת מתמטיקה"]) h1.font-display {
     font-size: clamp(2rem, 10vw, 3rem) !important;
     line-height: 1.04 !important;
   }
 
-  div[dir="rtl"][class*="fixed"][class*="inset-0"] article > div:not([class*="from-slate-950"]) h1.font-display {
+  html[data-surface="guide"] #root > div[dir="rtl"] article > div:not(:has(img[alt^="יחידת מתמטיקה"])) h1.font-display {
     font-size: clamp(1.8rem, 8vw, 2.5rem) !important;
     line-height: 1.08 !important;
+  }
+
+  html[data-surface="guide"] #root > div[dir="rtl"] article figure img {
+    max-height: 46vh !important;
+  }
+
+  html[data-surface="guide"] .guide-focus-overlay__label {
+    white-space: normal;
   }
 }
 
 @media (max-height: 540px) and (min-width: 641px) {
-  div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] h1.font-display {
+  html[data-surface="guide"] #root > div[dir="rtl"] article > div:has(img[alt^="יחידת מתמטיקה"]) h1.font-display {
     font-size: clamp(2.2rem, 5vw, 3.25rem) !important;
   }
 
-  div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] img[alt^="יחידת מתמטיקה"] {
+  html[data-surface="guide"] img[alt^="יחידת מתמטיקה"] {
     width: 5rem !important;
     height: 5rem !important;
   }
 
-  div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] button {
+  html[data-surface="guide"] #root > div[dir="rtl"] article > div:has(img[alt^="יחידת מתמטיקה"]) button {
     min-height: 2.75rem !important;
     height: 2.75rem !important;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] img[alt^="יחידת מתמטיקה"] {
+  html[data-surface="guide"] *,
+  html[data-surface="guide"] *::before,
+  html[data-surface="guide"] *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  html[data-surface="guide"] img[alt^="יחידת מתמטיקה"] {
     animation: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  html[data-surface="guide"] #root > div[dir="rtl"] button,
+  html[data-surface="guide"] #root > div[dir="rtl"] a,
+  html[data-surface="guide"] #root > div[dir="rtl"] input {
+    forced-color-adjust: auto;
   }
 }

@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'moodle-guide-';
-const CACHE_NAME = `${CACHE_PREFIX}v3-static`;
+const CACHE_NAME = `${CACHE_PREFIX}v5`;
 const NAVIGATION_FRESHNESS_MS = 1200;
 
 const scopePath = new URL(self.registration.scope).pathname.replace(/\/$/, '');
@@ -9,6 +9,8 @@ const withBase = (path) => `${siteBase}${path}`;
 const GUIDE_SHELL = [
   `${scopePath}/`,
   withBase('/guide-visual-isolation.css'),
+  withBase('/guide/focus-overlays.js'),
+  withBase('/guide/focus-map.json'),
   withBase('/guide/jerusalem-math-logo.webp'),
   withBase('/guide/screenshots/01-login.avif'),
   withBase('/guide/screenshots/02-my-courses-home.avif'),
@@ -57,6 +59,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  // Deployment verification must always see the host's real release marker.
   if (url.pathname === `${scopePath}/release.json`) return;
 
   const isGuideNavigation =
@@ -68,6 +71,7 @@ self.addEventListener('fetch', (event) => {
       const cache = await caches.open(CACHE_NAME);
       const cacheKey = `${scopePath}/`;
       const cached = await cache.match(cacheKey);
+
       const networkPromise = fetch(request)
         .then((response) => putIfUsable(cache, cacheKey, response))
         .catch(() => null);
@@ -78,7 +82,11 @@ self.addEventListener('fetch', (event) => {
       }
 
       event.waitUntil(networkPromise);
-      const fresh = await Promise.race([networkPromise, timeoutAfter(NAVIGATION_FRESHNESS_MS)]);
+      const fresh = await Promise.race([
+        networkPromise,
+        timeoutAfter(NAVIGATION_FRESHNESS_MS),
+      ]);
+
       return fresh || cached;
     })());
     return;
@@ -94,6 +102,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
     const cached = await cache.match(request, { ignoreSearch: true });
+
     const refresh = fetch(request)
       .then((response) => putIfUsable(cache, request, response))
       .catch(() => null);

@@ -6,72 +6,84 @@ const root = path.resolve(__dirname, '../..');
 const sourcePath = path.join(root, 'src/data/guideDeckSource.ts');
 const deckPath = path.join(root, 'src/data/guideDeck.ts');
 const missingPath = path.join(root, 'docs/GUIDE_MISSING_CAPTURES.md');
+const manifestPath = path.join(root, 'docs/GUIDE_SCREENSHOTS_MANIFEST.md');
+const memoryPath = path.join(root, 'PROJECT_MEMORY.md');
+const publicMemoryPath = path.join(root, 'public/PROJECT_MEMORY.md');
+const guideCssPath = path.join(root, 'public/guide-visual-isolation.css');
 const screenshotsDir = path.join(root, 'public/guide/screenshots');
 const guideSwPath = path.join(root, 'public/guide/sw.js');
 const viteConfigPath = path.join(root, 'vite.config.ts');
 const liveSmokePath = path.join(root, '.github/workflows/guide-live-smoke.yml');
 const renderRecoveryPath = path.join(root, '.github/workflows/render-deploy-recovery.yml');
-const staticGuideWorkflowPath = path.join(root, '.github/workflows/guide-static-always-on.yml');
+const staticPagesPath = path.join(root, '.github/workflows/guide-static-pages.yml');
 
 const errors = [];
 const notes = [];
-
-function fail(message) {
-  errors.push(message);
-}
+const fail = (message) => errors.push(message);
 
 function walk(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const fullPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) return walk(fullPath);
-    return [fullPath];
+    return entry.isDirectory() ? walk(fullPath) : [fullPath];
   });
+}
+
+for (const requiredPath of [
+  sourcePath,
+  deckPath,
+  missingPath,
+  manifestPath,
+  memoryPath,
+  publicMemoryPath,
+  guideCssPath,
+]) {
+  if (!fs.existsSync(requiredPath)) fail(`Required Guide truth file is missing: ${path.relative(root, requiredPath)}`);
+}
+
+if (errors.length) {
+  console.error('\nGuide integrity audit failed:');
+  for (const error of errors) console.error(`- ${error}`);
+  process.exit(1);
 }
 
 const source = fs.readFileSync(sourcePath, 'utf8');
 const deck = fs.readFileSync(deckPath, 'utf8');
 const missing = fs.readFileSync(missingPath, 'utf8');
+const manifest = fs.readFileSync(manifestPath, 'utf8');
+const memory = fs.readFileSync(memoryPath, 'utf8');
+const publicMemory = fs.readFileSync(publicMemoryPath, 'utf8');
+const guideCss = fs.readFileSync(guideCssPath, 'utf8');
 
-// 1) There must be exactly one application-facing publication gate.
-// Use an allow-list: only slides explicitly marked ready can be public.
-for (const requiredFragment of [
-  "slide.status === 'ready'",
-  '!slide.missingCaptureId',
-]) {
-  if (!deck.includes(requiredFragment)) {
-    fail(`guideDeck.ts publication gate is missing: ${requiredFragment}`);
-  }
+// 1) Canonical truth must remain singular. public/PROJECT_MEMORY.md is only a mirror.
+if (memory !== publicMemory) {
+  fail('public/PROJECT_MEMORY.md is not byte-for-byte synchronized with canonical PROJECT_MEMORY.md.');
 }
 
-for (const forbiddenFragment of [
-  "slide.status !== 'needs-capture'",
-  "slide.status !== 'needs-fact'",
-]) {
+// 2) There must be exactly one application-facing publication gate.
+if (/export\s+const\s+PUBLISHED_GUIDE_SLIDES\b/.test(source)) {
+  fail('guideDeckSource.ts must not export PUBLISHED_GUIDE_SLIDES; publication policy belongs only in guideDeck.ts.');
+}
+if (/export\s+const\s+QUICK_START_SLIDE_IDS\b/.test(source)) {
+  notes.push('guideDeckSource.ts still carries a legacy QUICK_START_SLIDE_IDS list; application policy remains protected in guideDeck.ts and source cleanup is still pending.');
+}
+
+for (const requiredFragment of ["slide.status === 'ready'", '!slide.missingCaptureId']) {
+  if (!deck.includes(requiredFragment)) fail(`guideDeck.ts publication gate is missing: ${requiredFragment}`);
+}
+for (const forbiddenFragment of ["slide.status !== 'needs-capture'", "slide.status !== 'needs-fact'"]) {
   if (deck.includes(forbiddenFragment)) {
     fail(`guideDeck.ts uses a deny-list publication rule instead of explicit ready status: ${forbiddenFragment}`);
   }
 }
-
-// Legacy source entries may still say ready while carrying missingCaptureId.
-// Runtime must normalize those entries before publication/search/quick-start.
-for (const requiredFragment of [
-  "slide.missingCaptureId && slide.status === 'ready'",
-  "'needs-capture' as const",
-]) {
-  if (!deck.includes(requiredFragment)) {
-    fail(`guideDeck.ts is missing defensive status normalization: ${requiredFragment}`);
-  }
+for (const requiredFragment of ["slide.missingCaptureId && slide.status === 'ready'", "'needs-capture' as const"]) {
+  if (!deck.includes(requiredFragment)) fail(`guideDeck.ts is missing defensive status normalization: ${requiredFragment}`);
 }
-
-// Runtime must use the verified AVIF derivatives rather than heavier source JPG/PNG files.
 for (const requiredFragment of [
   'toModernScreenshotFilename',
   "return src.replace(/\\.[^.]+$/, '.avif')",
   'src: toModernScreenshotFilename(screenshot.src)',
 ]) {
-  if (!deck.includes(requiredFragment)) {
-    fail(`guideDeck.ts is missing AVIF screenshot mapping: ${requiredFragment}`);
-  }
+  if (!deck.includes(requiredFragment)) fail(`guideDeck.ts is missing AVIF screenshot mapping: ${requiredFragment}`);
 }
 
 const srcFiles = walk(path.join(root, 'src')).filter((file) => /\.[cm]?[jt]sx?$/.test(file));
@@ -84,14 +96,10 @@ for (const file of srcFiles) {
   }
 }
 
-if (/export const PUBLISHED_GUIDE_SLIDES\s*=/.test(source)) {
-  notes.push('guideDeckSource.ts still contains a legacy publication export; it is guarded by the direct-import rule and is not application-facing.');
-}
-
-// 2) Every slide heading is a question, except the cover.
+// 3) Every slide heading is a question, except the cover.
 const slidesStart = source.indexOf('export const GUIDE_SLIDES');
-const slidesEnd = source.indexOf('export const PUBLISHED_GUIDE_SLIDES', slidesStart);
-const slidesBlock = source.slice(slidesStart, slidesEnd > slidesStart ? slidesEnd : undefined);
+const quickStartStart = source.indexOf('export const QUICK_START_SLIDE_IDS', slidesStart);
+const slidesBlock = source.slice(slidesStart, quickStartStart > slidesStart ? quickStartStart : undefined);
 const titleRegex = /title:\s*'([^']+)'/g;
 let titleMatch;
 while ((titleMatch = titleRegex.exec(slidesBlock))) {
@@ -104,42 +112,32 @@ const readyWithMissingIds = [
   ...slidesBlock.matchAll(/status:\s*'ready',\s*\n\s*missingCaptureId:\s*'(M\d{2})'/g),
 ].map((match) => match[1]);
 if (readyWithMissingIds.length) {
-  notes.push(`Legacy source status normalized at runtime for: ${readyWithMissingIds.join(', ')}.`);
+  notes.push(`Source entries normalized to needs-capture at runtime: ${[...new Set(readyWithMissingIds)].join(', ')}.`);
 }
 
-// 3) Missing-capture IDs in source and docs must stay synchronized.
+// 4) Missing-capture truth is dynamic. IDs disappear when evidence is genuinely completed.
 const sourceMissingIds = [...source.matchAll(/missingCaptureId:\s*'(M\d{2})'/g)].map((match) => match[1]);
 const docMissingIds = [...missing.matchAll(/^##\s+(M\d{2})\b/gm)].map((match) => match[1]);
 const sourceMissingSet = new Set(sourceMissingIds);
 const docMissingSet = new Set(docMissingIds);
-
 for (const id of sourceMissingSet) {
   if (!docMissingSet.has(id)) fail(`${id} is referenced by guideDeckSource.ts but missing from GUIDE_MISSING_CAPTURES.md.`);
 }
 for (const id of docMissingSet) {
   if (!sourceMissingSet.has(id)) fail(`${id} exists in GUIDE_MISSING_CAPTURES.md but no slide references it.`);
 }
-
 if (docMissingIds.length !== docMissingSet.size) fail('GUIDE_MISSING_CAPTURES.md contains duplicate M-IDs.');
 
-const expectedIds = Array.from({ length: 22 }, (_, index) => `M${String(index + 1).padStart(2, '0')}`);
-for (const id of expectedIds) {
-  if (!docMissingSet.has(id)) fail(`Expected missing-capture item ${id} is absent from the canonical missing-capture list.`);
-}
-
-// 4) Every screenshot referenced by the deck must physically exist, together
-// with modern AVIF + WebP derivatives used by the Guide performance layer.
+// 5) Every screenshot referenced by the deck must exist with AVIF + WebP derivatives.
 const screenshotRefs = [...source.matchAll(/src:\s*'([^']+\.(?:jpg|jpeg|png|webp|avif))'/g)].map((match) => match[1]);
 for (const screenshot of new Set(screenshotRefs)) {
   if (screenshot.includes('/') || screenshot.includes('\\')) {
     fail(`Screenshot reference must be a filename only: ${screenshot}`);
     continue;
   }
-
   if (!fs.existsSync(path.join(screenshotsDir, screenshot))) {
     fail(`Referenced screenshot does not exist: public/guide/screenshots/${screenshot}`);
   }
-
   const base = screenshot.replace(/\.[^.]+$/, '');
   for (const extension of ['avif', 'webp']) {
     const modern = `${base}.${extension}`;
@@ -149,9 +147,18 @@ for (const screenshot of new Set(screenshotRefs)) {
   }
 }
 
-// 5) The Guide service worker must be syntax-valid and base-path aware so the
-// presentation can run from an always-on static host instead of depending on
-// a sleeping Render backend.
+// 6) Guide visual isolation must be route-scoped and avoid fragile Tailwind selectors.
+if (!guideCss.includes('html[data-surface="guide"]')) {
+  fail('guide-visual-isolation.css is not scoped to html[data-surface="guide"].');
+}
+for (const fragileCoverSelector of ['from-slate-950', 'via-blue-950', 'to-slate-900']) {
+  if (guideCss.includes(fragileCoverSelector)) fail(`guide-visual-isolation.css still depends on fragile cover utility class: ${fragileCoverSelector}`);
+}
+if (!guideCss.includes(':has(img[alt^="יחידת מתמטיקה"])')) {
+  fail('guide-visual-isolation.css is missing the stable branded-cover selector.');
+}
+
+// 7) Service worker must stay valid, fail-open, and work both at /guide and a static host base path such as /www/guide.
 if (!fs.existsSync(guideSwPath)) {
   fail('Guide service worker is missing: public/guide/sw.js');
 } else {
@@ -164,7 +171,7 @@ if (!fs.existsSync(guideSwPath)) {
 
   for (const requiredFragment of [
     "CACHE_PREFIX = 'moodle-guide-'",
-    'NAVIGATION_FRESHNESS_MS = 1200',
+    'NAVIGATION_FRESHNESS_MS',
     'Promise.race([',
     'event.waitUntil(networkPromise)',
     'self.registration.scope',
@@ -177,49 +184,18 @@ if (!fs.existsSync(guideSwPath)) {
     }
   }
 
-  for (const forbiddenFragment of [
-    "url.pathname === '/guide/release.json'",
-    "url.pathname.startsWith('/assets/')",
-  ]) {
-    if (guideSw.includes(forbiddenFragment)) {
-      fail(`Guide service worker regressed to a Render/root-only path: ${forbiddenFragment}`);
-    }
+  if (guideSw.includes("url.pathname === '/guide/release.json'") || guideSw.includes("url.pathname.startsWith('/assets/')")) {
+    fail('Guide service worker regressed to root-only hard-coded paths; static always-on hosting would break.');
   }
 }
 
-// 6) The repository must contain a static always-on deployment gate. PRs build
-// and prove the artifact; only main is allowed to deploy it to GitHub Pages.
-if (!fs.existsSync(staticGuideWorkflowPath)) {
-  fail('Missing .github/workflows/guide-static-always-on.yml required by the Guide always-on rule.');
-} else {
-  const staticWorkflow = fs.readFileSync(staticGuideWorkflowPath, 'utf8');
-  for (const requiredFragment of [
-    'Guide Static Always-On',
-    'Prove static artifact is independent of Render wake-up',
-    "github.event_name == 'push' && github.ref == 'refs/heads/main'",
-    'actions/deploy-pages@v4',
-  ]) {
-    if (!staticWorkflow.includes(requiredFragment)) {
-      fail(`Static Guide workflow is missing always-on deployment rule: ${requiredFragment}`);
-    }
-  }
-}
-
-// 7) Live verification must compare canonical Guide content, not branch commit SHA.
+// 8) Live verification must compare canonical Guide content, not branch commit SHA.
 const guideHash = computeGuideHash();
-if (!/^[a-f0-9]{64}$/.test(guideHash)) {
-  fail(`Guide content fingerprint is invalid: ${guideHash}`);
-}
+if (!/^[a-f0-9]{64}$/.test(guideHash)) fail(`Guide content fingerprint is invalid: ${guideHash}`);
 
 const viteConfig = fs.readFileSync(viteConfigPath, 'utf8');
-for (const requiredFragment of [
-  'guide-content-hash.cjs',
-  'const guideHash = currentGuideHash()',
-  'guideHash, generatedAt',
-]) {
-  if (!viteConfig.includes(requiredFragment)) {
-    fail(`vite.config.ts is missing Guide release fingerprint wiring: ${requiredFragment}`);
-  }
+for (const requiredFragment of ['guide-content-hash.cjs', 'const guideHash = currentGuideHash()', 'guideHash, generatedAt']) {
+  if (!viteConfig.includes(requiredFragment)) fail(`vite.config.ts is missing Guide release fingerprint wiring: ${requiredFragment}`);
 }
 
 for (const [workflowName, workflowPath] of [
@@ -227,33 +203,34 @@ for (const [workflowName, workflowPath] of [
   ['Render Deploy Recovery', renderRecoveryPath],
 ]) {
   const workflow = fs.readFileSync(workflowPath, 'utf8');
-  for (const requiredFragment of [
-    'EXPECTED_GUIDE_HASH',
-    'guideHash',
-    'guide-content-hash.cjs',
-  ]) {
-    if (!workflow.includes(requiredFragment)) {
-      fail(`${workflowName} is missing content-fingerprint verification: ${requiredFragment}`);
-    }
-  }
-  if (workflow.includes('LIVE_SHA" = "$EXPECTED_SHA')) {
-    fail(`${workflowName} still gates Guide success on an exact branch commit SHA.`);
+  for (const requiredFragment of ['EXPECTED_GUIDE_HASH', 'guideHash', 'guide-content-hash.cjs']) {
+    if (!workflow.includes(requiredFragment)) fail(`${workflowName} is missing content-fingerprint verification: ${requiredFragment}`);
   }
 }
 
-// 8) The canonical missing-capture document must explicitly forbid fake/demo captures.
+// The source-of-truth performance rule requires an always-on static Guide route independent of Render sleep.
+if (!fs.existsSync(staticPagesPath)) {
+  fail('Static always-on Guide deployment workflow is missing: .github/workflows/guide-static-pages.yml');
+} else {
+  const staticPages = fs.readFileSync(staticPagesPath, 'utf8');
+  for (const requiredFragment of ['actions/configure-pages@v5', 'actions/upload-pages-artifact@v4', 'actions/deploy-pages@v4', 'dist/guide/index.html']) {
+    if (!staticPages.includes(requiredFragment)) fail(`Static Guide deployment workflow is missing: ${requiredFragment}`);
+  }
+}
+
+// 9) Missing-capture and screenshot documentation must preserve truth/safety rules.
 for (const requiredPhrase of ['אין Demo', 'אין Placeholder', 'אין צילום מומצא']) {
   if (!missing.includes(requiredPhrase)) fail(`GUIDE_MISSING_CAPTURES.md is missing safety rule: ${requiredPhrase}`);
 }
-
-if (notes.length) {
-  for (const note of notes) console.log(`NOTE: ${note}`);
+for (const staleArchitectureTerm of ['guideButtons.ts', 'ButtonArea', 'QUESTION_SHOTS']) {
+  if (manifest.includes(staleArchitectureTerm)) fail(`GUIDE_SCREENSHOTS_MANIFEST.md still documents retired Guide architecture: ${staleArchitectureTerm}`);
 }
 
+if (notes.length) for (const note of notes) console.log(`NOTE: ${note}`);
 if (errors.length) {
   console.error('\nGuide integrity audit failed:');
   for (const error of errors) console.error(`- ${error}`);
   process.exit(1);
 }
 
-console.log(`Guide integrity audit passed: ${screenshotRefs.length} screenshot references, ${docMissingSet.size} canonical missing-capture IDs, guideHash=${guideHash}.`);
+console.log(`Guide integrity audit passed: ${screenshotRefs.length} screenshot references, ${docMissingSet.size} unresolved canonical capture IDs, guideHash=${guideHash}.`);

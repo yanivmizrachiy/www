@@ -15,7 +15,6 @@
         guideIndex + guideMarker.length === location.pathname.length ||
         location.pathname[guideIndex + guideMarker.length] === '/'
       );
-
       if (isGuideRoute) {
         const siteBase = location.pathname.slice(0, guideIndex);
         const withBase = (path) => `${siteBase}${path}`;
@@ -25,7 +24,7 @@
 
         const description = document.querySelector('meta[name="description"]');
         if (description) {
-          description.setAttribute('content', 'מצגת אינטראקטיבית למורי Moodle: שאלה אחת בכל שקף, צילומים אמיתיים ורצף לחיצות ברור.');
+          description.setAttribute('content', 'מדריך למורים במערכת Moodle במחוז ירושלים והעיר ירושלים.');
         }
 
         const guideStyles = document.createElement('link');
@@ -33,6 +32,12 @@
         guideStyles.href = withBase('/guide-visual-isolation.css');
         guideStyles.dataset.guideStyles = 'true';
         document.head.appendChild(guideStyles);
+
+        const focusOverlays = document.createElement('script');
+        focusOverlays.src = withBase('/guide/focus-overlays.js');
+        focusOverlays.defer = true;
+        focusOverlays.dataset.guideFocus = 'true';
+        document.head.appendChild(focusOverlays);
 
         [
           [withBase('/guide/jerusalem-math-logo.webp'), 'image/webp'],

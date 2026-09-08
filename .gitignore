@@ -21,6 +21,7 @@ dist/
 coverage/
 Thumbs.db
 .DS_Store
+.vercel/
 
 # Moodle Teacher Hub runtime/private data
 # Never commit files that may contain real student names, emails, grades, logs, tokens, or runtime state.
