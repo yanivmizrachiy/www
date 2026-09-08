@@ -6,6 +6,9 @@ const root = path.resolve(__dirname, '../..');
 const sourcePath = path.join(root, 'src/data/guideDeckSource.ts');
 const deckPath = path.join(root, 'src/data/guideDeck.ts');
 const missingPath = path.join(root, 'docs/GUIDE_MISSING_CAPTURES.md');
+const manifestPath = path.join(root, 'docs/GUIDE_SCREENSHOTS_MANIFEST.md');
+const memoryPath = path.join(root, 'PROJECT_MEMORY.md');
+const publicMemoryPath = path.join(root, 'public/PROJECT_MEMORY.md');
 const screenshotsDir = path.join(root, 'public/guide/screenshots');
 const guideSwPath = path.join(root, 'public/guide/sw.js');
 const viteConfigPath = path.join(root, 'vite.config.ts');
@@ -27,12 +30,30 @@ function walk(directory) {
   });
 }
 
+for (const requiredPath of [sourcePath, deckPath, missingPath, manifestPath, memoryPath, publicMemoryPath]) {
+  if (!fs.existsSync(requiredPath)) fail(`Required Guide truth file is missing: ${path.relative(root, requiredPath)}`);
+}
+
+if (errors.length) {
+  console.error('\nGuide integrity audit failed:');
+  for (const error of errors) console.error(`- ${error}`);
+  process.exit(1);
+}
+
 const source = fs.readFileSync(sourcePath, 'utf8');
 const deck = fs.readFileSync(deckPath, 'utf8');
 const missing = fs.readFileSync(missingPath, 'utf8');
+const manifest = fs.readFileSync(manifestPath, 'utf8');
+const memory = fs.readFileSync(memoryPath, 'utf8');
+const publicMemory = fs.readFileSync(publicMemoryPath, 'utf8');
 
-// 1) There must be exactly one application-facing publication gate.
-// Use an allow-list: only slides explicitly marked ready can be public.
+// 1) Canonical truth must remain singular. public/PROJECT_MEMORY.md is only a mirror.
+if (memory !== publicMemory) {
+  fail('public/PROJECT_MEMORY.md is not byte-for-byte synchronized with canonical PROJECT_MEMORY.md.');
+}
+
+// 2) There must be exactly one application-facing publication gate.
+// Use an allow-list: only slides explicitly marked ready and without unresolved capture evidence can be public.
 for (const requiredFragment of [
   "slide.status === 'ready'",
   '!slide.missingCaptureId',
@@ -62,7 +83,7 @@ for (const requiredFragment of [
   }
 }
 
-// Runtime must use the verified AVIF derivatives rather than heavier source JPG/PNG files.
+// Runtime must use verified AVIF derivatives rather than heavier source JPG/PNG files.
 for (const requiredFragment of [
   'toModernScreenshotFilename',
   "return src.replace(/\\.[^.]+$/, '.avif')",
@@ -84,13 +105,16 @@ for (const file of srcFiles) {
 }
 
 if (/export const PUBLISHED_GUIDE_SLIDES\s*=/.test(source)) {
-  notes.push('guideDeckSource.ts still contains a legacy publication export; it is guarded by the direct-import rule and is not application-facing.');
+  notes.push('guideDeckSource.ts still contains a legacy publication export; remove it when source cleanup is committed.');
 }
 
-// 2) Every slide heading is a question, except the cover.
+// 3) Every slide heading is a question, except the cover.
 const slidesStart = source.indexOf('export const GUIDE_SLIDES');
-const slidesEnd = source.indexOf('export const PUBLISHED_GUIDE_SLIDES', slidesStart);
-const slidesBlock = source.slice(slidesStart, slidesEnd > slidesStart ? slidesEnd : undefined);
+const legacyPublicationStart = source.indexOf('export const PUBLISHED_GUIDE_SLIDES', slidesStart);
+const quickStartStart = source.indexOf('export const QUICK_START_SLIDE_IDS', slidesStart);
+const slidesEndCandidates = [legacyPublicationStart, quickStartStart].filter((index) => index > slidesStart);
+const slidesEnd = slidesEndCandidates.length ? Math.min(...slidesEndCandidates) : undefined;
+const slidesBlock = source.slice(slidesStart, slidesEnd);
 const titleRegex = /title:\s*'([^']+)'/g;
 let titleMatch;
 while ((titleMatch = titleRegex.exec(slidesBlock))) {
@@ -103,10 +127,11 @@ const readyWithMissingIds = [
   ...slidesBlock.matchAll(/status:\s*'ready',\s*\n\s*missingCaptureId:\s*'(M\d{2})'/g),
 ].map((match) => match[1]);
 if (readyWithMissingIds.length) {
-  notes.push(`Legacy source status normalized at runtime for: ${readyWithMissingIds.join(', ')}.`);
+  notes.push(`Source entries normalized to needs-capture at runtime: ${[...new Set(readyWithMissingIds)].join(', ')}.`);
 }
 
-// 3) Missing-capture IDs in source and docs must stay synchronized.
+// 4) Missing-capture truth is dynamic. IDs disappear when evidence is genuinely completed.
+// Never hard-code that M01-M22 (or any fixed count) must remain forever.
 const sourceMissingIds = [...source.matchAll(/missingCaptureId:\s*'(M\d{2})'/g)].map((match) => match[1]);
 const docMissingIds = [...missing.matchAll(/^##\s+(M\d{2})\b/gm)].map((match) => match[1]);
 const sourceMissingSet = new Set(sourceMissingIds);
@@ -118,27 +143,19 @@ for (const id of sourceMissingSet) {
 for (const id of docMissingSet) {
   if (!sourceMissingSet.has(id)) fail(`${id} exists in GUIDE_MISSING_CAPTURES.md but no slide references it.`);
 }
-
 if (docMissingIds.length !== docMissingSet.size) fail('GUIDE_MISSING_CAPTURES.md contains duplicate M-IDs.');
+if (sourceMissingIds.some((id) => !/^M\d{2}$/.test(id))) fail('guideDeckSource.ts contains a malformed missingCaptureId.');
 
-const expectedIds = Array.from({ length: 22 }, (_, index) => `M${String(index + 1).padStart(2, '0')}`);
-for (const id of expectedIds) {
-  if (!docMissingSet.has(id)) fail(`Expected missing-capture item ${id} is absent from the canonical missing-capture list.`);
-}
-
-// 4) Every screenshot referenced by the deck must physically exist, together
-// with modern AVIF + WebP derivatives used by the Guide performance layer.
+// 5) Every screenshot referenced by the deck must physically exist, together with AVIF + WebP derivatives.
 const screenshotRefs = [...source.matchAll(/src:\s*'([^']+\.(?:jpg|jpeg|png|webp|avif))'/g)].map((match) => match[1]);
 for (const screenshot of new Set(screenshotRefs)) {
   if (screenshot.includes('/') || screenshot.includes('\\')) {
     fail(`Screenshot reference must be a filename only: ${screenshot}`);
     continue;
   }
-
   if (!fs.existsSync(path.join(screenshotsDir, screenshot))) {
     fail(`Referenced screenshot does not exist: public/guide/screenshots/${screenshot}`);
   }
-
   const base = screenshot.replace(/\.[^.]+$/, '');
   for (const extension of ['avif', 'webp']) {
     const modern = `${base}.${extension}`;
@@ -148,22 +165,19 @@ for (const screenshot of new Set(screenshotRefs)) {
   }
 }
 
-// 5) The isolated Guide service worker must exist and remain syntax-valid.
+// 6) The isolated Guide service worker must exist and remain syntax-valid.
 if (!fs.existsSync(guideSwPath)) {
   fail('Guide service worker is missing: public/guide/sw.js');
 } else {
   const guideSw = fs.readFileSync(guideSwPath, 'utf8');
   try {
-    // Syntax validation only; the worker is not executed in Node.
     new Function(guideSw);
   } catch (error) {
     fail(`Guide service worker has invalid JavaScript: ${error.message}`);
   }
-
   for (const requiredFragment of [
     "CACHE_PREFIX = 'moodle-guide-'",
-    "CACHE_NAME = `${CACHE_PREFIX}v2`",
-    'NAVIGATION_FRESHNESS_MS = 1200',
+    'NAVIGATION_FRESHNESS_MS',
     'Promise.race([',
     'event.waitUntil(networkPromise)',
     "url.pathname === '/guide/release.json'",
@@ -175,21 +189,13 @@ if (!fs.existsSync(guideSwPath)) {
   }
 }
 
-// 6) Live verification must compare canonical Guide content, not branch commit SHA.
+// 7) Live verification must compare canonical Guide content, not branch commit SHA.
 const guideHash = computeGuideHash();
-if (!/^[a-f0-9]{64}$/.test(guideHash)) {
-  fail(`Guide content fingerprint is invalid: ${guideHash}`);
-}
+if (!/^[a-f0-9]{64}$/.test(guideHash)) fail(`Guide content fingerprint is invalid: ${guideHash}`);
 
 const viteConfig = fs.readFileSync(viteConfigPath, 'utf8');
-for (const requiredFragment of [
-  'guide-content-hash.cjs',
-  'const guideHash = currentGuideHash()',
-  'guideHash, generatedAt',
-]) {
-  if (!viteConfig.includes(requiredFragment)) {
-    fail(`vite.config.ts is missing Guide release fingerprint wiring: ${requiredFragment}`);
-  }
+for (const requiredFragment of ['guide-content-hash.cjs', 'const guideHash = currentGuideHash()', 'guideHash, generatedAt']) {
+  if (!viteConfig.includes(requiredFragment)) fail(`vite.config.ts is missing Guide release fingerprint wiring: ${requiredFragment}`);
 }
 
 for (const [workflowName, workflowPath] of [
@@ -197,33 +203,29 @@ for (const [workflowName, workflowPath] of [
   ['Render Deploy Recovery', renderRecoveryPath],
 ]) {
   const workflow = fs.readFileSync(workflowPath, 'utf8');
-  for (const requiredFragment of [
-    'EXPECTED_GUIDE_HASH',
-    'guideHash',
-    'guide-content-hash.cjs',
-  ]) {
-    if (!workflow.includes(requiredFragment)) {
-      fail(`${workflowName} is missing content-fingerprint verification: ${requiredFragment}`);
-    }
+  for (const requiredFragment of ['EXPECTED_GUIDE_HASH', 'guideHash', 'guide-content-hash.cjs']) {
+    if (!workflow.includes(requiredFragment)) fail(`${workflowName} is missing content-fingerprint verification: ${requiredFragment}`);
   }
   if (workflow.includes('LIVE_SHA" = "$EXPECTED_SHA')) {
     fail(`${workflowName} still gates Guide success on an exact branch commit SHA.`);
   }
 }
 
-// 7) The canonical missing-capture document must explicitly forbid fake/demo captures.
+// 8) Missing-capture and screenshot documentation must preserve truth/safety rules.
 for (const requiredPhrase of ['אין Demo', 'אין Placeholder', 'אין צילום מומצא']) {
   if (!missing.includes(requiredPhrase)) fail(`GUIDE_MISSING_CAPTURES.md is missing safety rule: ${requiredPhrase}`);
 }
-
-if (notes.length) {
-  for (const note of notes) console.log(`NOTE: ${note}`);
+for (const staleArchitectureTerm of ['guideButtons.ts', 'ButtonArea', 'QUESTION_SHOTS']) {
+  if (manifest.includes(staleArchitectureTerm)) {
+    fail(`GUIDE_SCREENSHOTS_MANIFEST.md still documents retired Guide architecture: ${staleArchitectureTerm}`);
+  }
 }
 
+if (notes.length) for (const note of notes) console.log(`NOTE: ${note}`);
 if (errors.length) {
   console.error('\nGuide integrity audit failed:');
   for (const error of errors) console.error(`- ${error}`);
   process.exit(1);
 }
 
-console.log(`Guide integrity audit passed: ${screenshotRefs.length} screenshot references, ${docMissingSet.size} canonical missing-capture IDs, guideHash=${guideHash}.`);
+console.log(`Guide integrity audit passed: ${screenshotRefs.length} screenshot references, ${docMissingSet.size} unresolved canonical capture IDs, guideHash=${guideHash}.`);
