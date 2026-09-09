@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'moodle-guide-';
-const CACHE_NAME = `${CACHE_PREFIX}v3-static`;
+const CACHE_NAME = `${CACHE_PREFIX}v4-live-first`;
 const NAVIGATION_FRESHNESS_MS = 1200;
 
 const scopePath = new URL(self.registration.scope).pathname.replace(/\/$/, '');
@@ -68,7 +68,7 @@ self.addEventListener('fetch', (event) => {
       const cache = await caches.open(CACHE_NAME);
       const cacheKey = `${scopePath}/`;
       const cached = await cache.match(cacheKey);
-      const networkPromise = fetch(request)
+      const networkPromise = fetch(request, { cache: 'no-store' })
         .then((response) => putIfUsable(cache, cacheKey, response))
         .catch(() => null);
 
@@ -94,16 +94,10 @@ self.addEventListener('fetch', (event) => {
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
     const cached = await cache.match(request, { ignoreSearch: true });
-    const refresh = fetch(request)
+    const network = await fetch(request, { cache: 'no-store' })
       .then((response) => putIfUsable(cache, request, response))
       .catch(() => null);
 
-    if (cached) {
-      event.waitUntil(refresh);
-      return cached;
-    }
-
-    const network = await refresh;
-    return network || Response.error();
+    return network || cached || Response.error();
   })());
 });
