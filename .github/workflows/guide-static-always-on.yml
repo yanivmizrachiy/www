@@ -9,32 +9,22 @@ on:
       - 'src/pages/Guide.tsx'
       - 'src/data/guideDeck.ts'
       - 'src/data/guideDeckSource.ts'
+      - 'src/data/guideHotspots.ts'
       - 'public/guide/**'
       - 'public/guide-visual-isolation.css'
       - 'vite.config.ts'
       - 'package.json'
       - 'package-lock.json'
+      - 'scripts/checks/guide-integrity-audit.cjs'
+      - 'scripts/checks/guide-presentation-quality-audit.cjs'
       - '.github/workflows/guide-static-always-on.yml'
+      - '.github/workflows/guide-live-smoke.yml'
   push:
     branches: [main]
-    paths:
-      - 'index.html'
-      - 'src/main.tsx'
-      - 'src/pages/Guide.tsx'
-      - 'src/data/guideDeck.ts'
-      - 'src/data/guideDeckSource.ts'
-      - 'public/guide/**'
-      - 'public/guide-visual-isolation.css'
-      - 'vite.config.ts'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/guide-static-always-on.yml'
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: guide-static-always-on-${{ github.ref }}
@@ -42,14 +32,18 @@ concurrency:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-  GUIDE_BASE_PATH: /www
+  GUIDE_ROUTE_BASE: /www/guide
+  PROJECT_PAGES_BASE: /www
 
 jobs:
-  build:
+  build-and-publish:
+    if: github.event_name != 'push' || github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -63,11 +57,15 @@ jobs:
       - name: Verify repository
         run: |
           npm run check
+          node scripts/checks/guide-integrity-audit.cjs
+          if [ -f scripts/checks/guide-presentation-quality-audit.cjs ]; then
+            node scripts/checks/guide-presentation-quality-audit.cjs
+          fi
           npm run typecheck
           npm run doctor
 
-      - name: Build static Guide
-        run: npm run build -- --base "${GUIDE_BASE_PATH}/"
+      - name: Build static Guide for repository Pages subpath
+        run: npm run build -- --base "${GUIDE_ROUTE_BASE}/"
 
       - name: Rewrite Guide public asset URLs for project Pages
         shell: bash
@@ -76,7 +74,7 @@ jobs:
           node <<'NODE'
           const fs = require('node:fs');
           const path = require('node:path');
-          const base = process.env.GUIDE_BASE_PATH;
+          const base = process.env.PROJECT_PAGES_BASE;
           const assets = path.join(process.cwd(), 'dist', 'assets');
           for (const name of fs.readdirSync(assets)) {
             if (!name.endsWith('.js')) continue;
@@ -87,63 +85,45 @@ jobs:
           }
           NODE
 
-      - name: Prepare static /guide route
+      - name: Prepare generated Guide directory
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p dist/guide
-          cp dist/index.html dist/guide/index.html
-          cp dist/guide/index.html dist/404.html
-          cat > dist/index.html <<'HTML'
-          <!doctype html>
-          <html lang="he" dir="rtl">
-            <head>
-              <meta charset="utf-8" />
-              <meta name="viewport" content="width=device-width,initial-scale=1" />
-              <meta http-equiv="refresh" content="0;url=./guide/" />
-              <title>מדריך Moodle למורים</title>
-            </head>
-            <body><a href="./guide/">פתיחת מדריך Moodle למורים</a></body>
-          </html>
-          HTML
-
-      - name: Prove static artifact is independent of Render wake-up
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f dist/guide/index.html
-          test -f dist/guide/sw.js
-          test -f dist/guide/jerusalem-math-logo.webp
-          test -f dist/guide/screenshots/01-login.avif
-          grep -q '/www/assets/' dist/guide/index.html
-          ! grep -R -F 'SERVICE WAKING UP' dist
-          ! grep -R -F 'www-tijc.onrender.com/guide' dist
-          if grep -R -E '["'"'"'`]\/guide\/(screenshots|jerusalem-math-logo)' dist/assets/*.js; then
+          rm -rf .guide-publish
+          mkdir -p .guide-publish
+          cp dist/index.html .guide-publish/index.html
+          cp -R dist/assets .guide-publish/assets
+          if [ -d dist/guide ]; then
+            cp -R dist/guide/. .guide-publish/
+          fi
+          test -f .guide-publish/index.html
+          test -f .guide-publish/release.json
+          test -f .guide-publish/sw.js
+          test -f .guide-publish/jerusalem-math-logo.webp
+          test -f .guide-publish/screenshots/01-login.avif
+          grep -q '/www/guide/assets/' .guide-publish/index.html
+          ! grep -R -F 'SERVICE WAKING UP' .guide-publish
+          ! grep -R -F 'www-tijc.onrender.com/guide' .guide-publish
+          if grep -R -E '["'"'"'`]\/guide\/(screenshots|jerusalem-math-logo)' .guide-publish/assets/*.js; then
             echo 'Root-only Guide asset URL remains in compiled JavaScript.' >&2
             exit 1
           fi
           echo 'STATIC_GUIDE_ARTIFACT_OK'
 
-      - name: Configure Pages
+      - name: Publish Guide into existing branch-based GitHub Pages tree
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-
-      - name: Upload Pages artifact
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: dist
-
-  deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy static Guide
-        id: deployment
-        uses: actions/deploy-pages@v4
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf guide
+          mkdir -p guide
+          cp -R .guide-publish/. guide/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A guide
+          if git diff --cached --quiet; then
+            echo 'Guide output already matches main; nothing to publish.'
+            exit 0
+          fi
+          git commit -m 'deploy(guide): refresh always-on static presentation [skip ci]'
+          git push origin HEAD:main
