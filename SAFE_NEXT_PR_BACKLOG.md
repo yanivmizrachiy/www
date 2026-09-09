@@ -1,8 +1,13 @@
+# HISTORICAL SNAPSHOT — backlog after PR #168
+
+> המסמך הזה נשמר לצורך היסטוריה בלבד. הוא **אינו** backlog נוכחי ואינו מקור אמת.  
+> ל-Teacher Hub יש לפעול לפי `PROJECT_RULES.md`; ל-Guide לפי `PROJECT_MEMORY.md`; גבול הריפו מוגדר ב-`RULES.md`.
+
 <!-- MTH_SAFE_NEXT_PR_BACKLOG_AFTER_PR168_START -->
 
-# Current safe next PR backlog after PR #168
+## Safe next PR backlog as recorded after PR #168
 
-Do not repeat completed work:
+Do not repeat completed work from that historical point:
 
 - PR #159: scoped dashboard overview counts to current session.
 - PR #160: teacher sidebar final workflow.
@@ -15,15 +20,15 @@ Do not repeat completed work:
 - PR #167: Smart Import sends LTI token for session-scoped imports.
 - PR #168: dashboard/grades: distinguish loading / no-source / real-zero.
 
-Current progress: **90%**.
+Historical progress at that point: **90%**.
 
-Remaining gap (not UI — real blocking items):
+Remaining gap recorded at that time:
 
 1. Live Moodle automation verified (NRPS, AGS, or Moodle WS with real token).
 2. Multi-teacher isolation proof in live environment.
 3. Release hardening gate review.
 
-Rules:
+Historical rules recorded at that point:
 
 - Teacher Release remains NO.
 - PR #127 remains untouched.
