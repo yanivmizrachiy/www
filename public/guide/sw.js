@@ -98,6 +98,10 @@ self.addEventListener('fetch', (event) => {
       .then((response) => putIfUsable(cache, request, response))
       .catch(() => null);
 
-    return network || cached || Response.error();
+    // putIfUsable hands back whatever arrived, including a 404 or a 502. Those must
+    // never beat a good cached copy, or one bad deploy blanks the Guide for readers
+    // who already have it.
+    if (network && network.ok) return network;
+    return cached || network || Response.error();
   })());
 });

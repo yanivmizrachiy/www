@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AnimatePresence,
   LazyMotion,
@@ -49,6 +49,16 @@ const MOODLE_HOME = 'https://moodlemoe.lms.education.gov.il/';
 
 function imageUrl(src: string) {
   return `/guide/screenshots/${src}`;
+}
+
+/**
+ * The deck normalizes every capture to .avif, but a WebP sibling ships for all of them
+ * and the audit enforces that. Serving AVIF alone left every screenshot blank on a
+ * browser without AVIF support, so offer the WebP as a real fallback.
+ */
+function screenshotSources(src: string) {
+  const webp = src.replace(/\.[^.]+$/, '.webp');
+  return { avif: imageUrl(src), webp: imageUrl(webp) };
 }
 
 function getSlideIndexFromUrl(): number {
@@ -109,12 +119,15 @@ function LightboxImage({ src, caption }: { src: string; caption: string }) {
 
   return (
     <>
-      <img
-        src={imageUrl(src)}
-        alt={caption}
-        onError={() => setFailed(true)}
-        className="block max-h-[80dvh] max-w-full rounded-xl bg-white object-contain shadow-lg"
-      />
+      <picture>
+        <source type="image/avif" srcSet={screenshotSources(src).avif} />
+        <img
+          src={screenshotSources(src).webp}
+          alt={caption}
+          onError={() => setFailed(true)}
+          className="block max-h-[80dvh] max-w-full rounded-xl bg-white object-contain shadow-lg"
+        />
+      </picture>
       <HotspotLayer src={src} />
     </>
   );
@@ -208,14 +221,17 @@ function ScreenshotCard({
             </span>
           ) : (
             <span className="relative block overflow-hidden bg-white">
-              <img
-                src={imageUrl(screenshot.src)}
-                alt={screenshot.caption}
-                loading="eager"
-                decoding="async"
-                onError={() => setFailed(true)}
-                className="block max-h-[53vh] w-full bg-white object-contain"
-              />
+              <picture>
+                <source type="image/avif" srcSet={screenshotSources(screenshot.src).avif} />
+                <img
+                  src={screenshotSources(screenshot.src).webp}
+                  alt={screenshot.caption}
+                  loading="eager"
+                  decoding="async"
+                  onError={() => setFailed(true)}
+                  className="block max-h-[53vh] w-full bg-white object-contain"
+                />
+              </picture>
               <HotspotLayer src={screenshot.src} />
             </span>
           )}
@@ -468,9 +484,15 @@ export default function Guide() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [direction, setDirection] = useState(1);
   const [lightbox, setLightbox] = useState<LightboxState>(null);
-  const slideRef = useRef<HTMLElement>(null);
+  const slideRef = useRef<HTMLElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const touchStartX = useRef<number | null>(null);
+  const hasMountedSlide = useRef(false);
+
+  const attachSlide = useCallback((node: HTMLElement | null) => {
+    slideRef.current = node;
+    node?.scrollTo({ top: 0 });
+  }, []);
 
   const slide = PUBLISHED_GUIDE_SLIDES[currentIndex] ?? PUBLISHED_GUIDE_SLIDES[0];
   const allSequence = useMemo(() => PUBLISHED_GUIDE_SLIDES.map((item) => item.id), []);
@@ -564,21 +586,54 @@ export default function Guide() {
     };
   }, []);
 
+  // AnimatePresence mode="wait" holds the outgoing slide until its exit finishes, so
+  // the incoming article is not in the document when this effect first runs. Focusing
+  // too early lands on nothing and keyboard focus falls back to <body> on every move.
+  // Wait for the new node to actually be connected, then move focus onto it.
+  useEffect(() => {
+    if (!hasMountedSlide.current) {
+      hasMountedSlide.current = true;
+      return;
+    }
+
+    let frame = 0;
+    let attempts = 0;
+    const focusSlide = () => {
+      // During the exit animation slideRef still points at the OUTGOING article, which
+      // is also still connected. Only the node tagged with the current slide id is the
+      // one that will survive.
+      const node = slideRef.current;
+      if (node?.isConnected && node.dataset.slideId === slide.id) {
+        node.focus({ preventScroll: true });
+        return;
+      }
+      if (attempts < 240) {
+        attempts += 1;
+        frame = requestAnimationFrame(focusSlide);
+      }
+    };
+
+    frame = requestAnimationFrame(focusSlide);
+    return () => cancelAnimationFrame(frame);
+  }, [slide.id]);
+
   useEffect(() => {
     if (safeMode !== mode) setMode(safeMode);
     document.title = `${slide.title} | מדריך Moodle למורים`;
-    slideRef.current?.scrollTo({ top: 0 });
-    slideRef.current?.focus({ preventScroll: true });
 
-    for (const nearbyIndex of [currentIndex - 1, currentIndex + 1]) {
-      const nearbySlide = PUBLISHED_GUIDE_SLIDES[nearbyIndex];
-      for (const screenshot of nearbySlide?.screenshots ?? []) {
+    // Prefetch along the sequence the reader is actually walking. In quick mode the
+    // next slide is the next quick-start entry, not the next slide in deck order.
+    for (const neighbourPosition of [safePosition - 1, safePosition + 1]) {
+      const neighbourId = safeSequence[neighbourPosition];
+      if (!neighbourId) continue;
+      const neighbour = PUBLISHED_GUIDE_SLIDES.find((item) => item.id === neighbourId);
+      for (const screenshot of neighbour?.screenshots ?? []) {
         const image = new Image();
         image.decoding = 'async';
         image.src = imageUrl(screenshot.src);
       }
     }
-  }, [currentIndex, mode, safeMode, slide.id, slide.title]);
+  }, [mode, safeMode, safePosition, safeSequence, slide.id, slide.title]);
 
   useEffect(() => {
     if (panel === 'search') window.setTimeout(() => searchInputRef.current?.focus(), 30);
@@ -641,11 +696,11 @@ export default function Guide() {
       >
         <header className="flex min-h-16 items-center justify-between gap-3 border-b border-white/10 bg-slate-950/30 px-3 text-white backdrop-blur-xl sm:px-5 lg:px-8">
           <div className="flex min-w-0 items-center gap-1 sm:gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setPanel('menu')} className="gap-2 text-white hover:bg-white/10 hover:text-white">
+            <Button variant="ghost" size="sm" aria-label="תוכן העניינים" onClick={() => setPanel('menu')} className="gap-2 text-white hover:bg-white/10 hover:text-white">
               <Menu className="h-5 w-5" />
               <span className="hidden sm:inline">תוכן</span>
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setPanel('search')} className="gap-2 text-white hover:bg-white/10 hover:text-white">
+            <Button variant="ghost" size="sm" aria-label="חיפוש במצגת" onClick={() => setPanel('search')} className="gap-2 text-white hover:bg-white/10 hover:text-white">
               <Search className="h-5 w-5" />
               <span className="hidden sm:inline">חיפוש</span>
             </Button>
@@ -701,13 +756,21 @@ export default function Guide() {
           </div>
         </header>
 
+        {/* A live region only announces when it stays mounted and its text changes.
+            The slide article is re-created on every navigation, so the announcement
+            lives here instead. */}
+        <p aria-live="polite" aria-atomic="true" className="sr-only">
+          {`${slide.title} — שקף ${safePosition + 1} מתוך ${safeSequence.length}`}
+        </p>
+
         <main className="relative flex min-h-0 items-center justify-center overflow-hidden p-0 sm:p-3 lg:p-4">
           <AnimatePresence mode="wait" custom={direction} initial={false}>
             <m.article
               key={slide.id}
-              ref={slideRef}
+              ref={attachSlide}
+              data-slide-id={slide.id}
               tabIndex={-1}
-              aria-live="polite"
+              aria-label={slide.title}
               custom={direction}
               initial={
                 reducedMotion
@@ -752,6 +815,7 @@ export default function Guide() {
             <Button
               variant="ghost"
               onClick={() => goBy(-1)}
+              aria-label="לשקף הקודם"
               disabled={!canGoPrevious}
               className="h-11 gap-2 rounded-2xl px-4 font-black text-white hover:bg-white/10 hover:text-white disabled:text-white/25"
             >
@@ -785,6 +849,7 @@ export default function Guide() {
           <div className="flex justify-end">
             <Button
               onClick={() => goBy(1)}
+              aria-label="לשקף הבא"
               disabled={!canGoNext}
               className="h-11 gap-2 rounded-2xl bg-amber-400 px-5 font-black text-slate-950 shadow-lg hover:bg-amber-300 disabled:bg-white/10 disabled:text-white/25"
             >
@@ -806,6 +871,9 @@ export default function Guide() {
               }}
             >
               <m.section
+                role="dialog"
+                aria-modal="true"
+                aria-label={panel === 'search' ? 'חיפוש במצגת' : 'תוכן העניינים'}
                 initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.985 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.99 }}
@@ -922,6 +990,9 @@ export default function Guide() {
               }}
             >
               <m.figure
+                role="dialog"
+                aria-modal="true"
+                aria-label={`צילום בגודל מלא: ${lightbox.screenshot.caption}`}
                 initial={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.94, y: 24 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 14 }}
