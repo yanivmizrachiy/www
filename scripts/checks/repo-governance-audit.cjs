@@ -92,8 +92,19 @@ requireTokens('STATE/README.md', [
   guideRuntime,
 ]);
 
-const memory = read('PROJECT_MEMORY.md');
+const memory = requireTokens('PROJECT_MEMORY.md', [
+  'RULES.md',
+  'PROJECT_RULES.md',
+  'אמת המוצר הקנונית של **Guide**',
+  teacherRuntime,
+  guideRuntime,
+]);
 const publicMemory = read('public/PROJECT_MEMORY.md');
+
+if (memory.includes('הקובץ הקנוני והמחייב היחיד בריפו הוא')) {
+  fail('PROJECT_MEMORY.md must be scoped to Guide, not presented as the only truth source for the whole repository');
+}
+
 if (memory && publicMemory && memory !== publicMemory) {
   fail('PROJECT_MEMORY.md and public/PROJECT_MEMORY.md must be byte-equivalent after BOM normalization');
 }
