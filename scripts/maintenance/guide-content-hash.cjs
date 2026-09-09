@@ -8,7 +8,6 @@ const HASH_INPUTS = [
   'public/guide-visual-isolation.css',
   'public/guide',
   'src/data/guideDeck.ts',
-  'src/data/guideDeckSource.ts',
   'src/pages/Guide.tsx',
 ];
 

@@ -94,6 +94,31 @@ function HotspotLayer({ src }: { src: string }) {
   );
 }
 
+/** Full-size capture with the same honest failure state as the card. */
+function LightboxImage({ src, caption }: { src: string; caption: string }) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      <span className="flex aspect-video w-full max-w-[900px] items-center justify-center rounded-xl bg-slate-200 px-6 text-center text-sm font-black text-slate-600">
+        הצילום לא נטען. אין מוצג תחליף.
+      </span>
+    );
+  }
+
+  return (
+    <>
+      <img
+        src={imageUrl(src)}
+        alt={caption}
+        onError={() => setFailed(true)}
+        className="block max-h-[80dvh] max-w-full rounded-xl bg-white object-contain shadow-lg"
+      />
+      <HotspotLayer src={src} />
+    </>
+  );
+}
+
 function ScreenshotCard({
   screenshot,
   slideTitle,
@@ -121,8 +146,16 @@ function ScreenshotCard({
     <div className="guide-shot-stage relative min-w-0">
       <m.button
         type="button"
-        aria-label={`פתיחת הצילום בגודל מלא: ${screenshot.caption}`}
-        onClick={() => onOpen({ screenshot, slideTitle })}
+        disabled={failed}
+        aria-label={
+          failed
+            ? `הצילום לא נטען: ${screenshot.caption}`
+            : `פתיחת הצילום בגודל מלא: ${screenshot.caption}`
+        }
+        onClick={() => {
+          if (failed) return;
+          onOpen({ screenshot, slideTitle });
+        }}
         onPointerMove={(event) => {
           if (reducedMotion || event.pointerType === 'touch') return;
           const rect = event.currentTarget.getBoundingClientRect();
@@ -160,10 +193,12 @@ function ScreenshotCard({
             <span className="h-2.5 w-2.5 rounded-full bg-rose-400 shadow-inner" />
             <span className="h-2.5 w-2.5 rounded-full bg-amber-400 shadow-inner" />
             <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-inner" />
-            <span className="mr-auto inline-flex items-center gap-1.5 text-[11px] font-black text-slate-500">
-              <Expand className="h-3.5 w-3.5" />
-              לחצו להגדלה
-            </span>
+            {!failed && (
+              <span className="mr-auto inline-flex items-center gap-1.5 text-[11px] font-black text-slate-500">
+                <Expand className="h-3.5 w-3.5" />
+                לחצו להגדלה
+              </span>
+            )}
           </span>
 
           {failed ? (
@@ -186,7 +221,9 @@ function ScreenshotCard({
 
           <span className="flex items-center justify-between gap-3 border-t border-slate-200 bg-white px-4 py-3 text-sm font-black leading-relaxed text-slate-700">
             <span>{screenshot.caption}</span>
-            <span className="shrink-0 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] text-blue-800">צילום אמיתי</span>
+            {!failed && (
+              <span className="shrink-0 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] text-blue-800">צילום אמיתי</span>
+            )}
           </span>
 
           <span
@@ -824,12 +861,11 @@ export default function Guide() {
                 </div>
                 <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-slate-100 p-2 sm:p-4">
                   <div className="relative inline-block max-w-full">
-                    <img
-                      src={imageUrl(lightbox.screenshot.src)}
-                      alt={lightbox.screenshot.caption}
-                      className="block max-h-[80dvh] max-w-full rounded-xl bg-white object-contain shadow-lg"
+                    <LightboxImage
+                      key={lightbox.screenshot.src}
+                      src={lightbox.screenshot.src}
+                      caption={lightbox.screenshot.caption}
                     />
-                    <HotspotLayer src={lightbox.screenshot.src} />
                   </div>
                 </div>
               </m.figure>

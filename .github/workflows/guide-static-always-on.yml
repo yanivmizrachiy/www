@@ -8,7 +8,6 @@ on:
       - 'src/main.tsx'
       - 'src/pages/Guide.tsx'
       - 'src/data/guideDeck.ts'
-      - 'src/data/guideDeckSource.ts'
       - 'src/data/guideHotspots.ts'
       - 'public/guide/**'
       - 'public/guide-visual-isolation.css'
