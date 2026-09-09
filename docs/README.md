@@ -1,26 +1,36 @@
-# Documentation Map — Moodle Teacher Hub
+# Documentation Map — Moodle Teacher Hub + Guide
 
-This folder is organized by purpose.
+This folder is organized by purpose. Historical documents may remain for evidence, but they are not automatically current product truth.
 
 ## Folders
 
-- `architecture/` — product architecture, data flow, Moodle/API contracts, and system design.
+- `architecture/` — product architecture, data flow, Moodle/API contracts, system design and cleanup audits.
 - `lti/` — LTI 1.0/1.1, LTI 1.3, NRPS, AGS, launch and service documentation.
 - `imports/` — Moodle Participants, Gradebook, Logs, and import contracts.
 - `persistence/` — durable storage planning, Supabase, schema, and persistence runbooks.
 - `privacy/` — runtime data safety and student-data handling rules.
-- `operations/` — runbooks, testing, repo maps, and operational instructions.
+- `operations/` — runbooks, testing, repository maps, and operational instructions.
 - `ai-handoff/` — AI handoff prompts/reports and external builder prompts.
 - `dev/` — developer notes.
-- `archive-candidates/` — old snapshots or documents that require review before archive/delete.
+- `archive-candidates/` — old snapshots/documents that require review before archive/delete.
+- Guide-specific documents at `docs/GUIDE_*` — screenshot manifest, missing captures and presentation contracts.
 
-## Source of truth
+## Truth hierarchy
 
-The source of truth remains:
+- `../RULES.md` — repository boundary.
+- `../PROJECT_RULES.md` — canonical Teacher Hub product truth.
+- `../PROJECT_MEMORY.md` — canonical Guide truth and Guide/Teacher-Hub separation contract.
+- `../public/PROJECT_MEMORY.md` — deployment mirror only, never an independent source of truth.
+- `../STATE/` — evidence, verification snapshots and history. A dated STATE document does not override newer canonical truth.
+- `../README.md` — public overview, not a separate source of truth.
 
-- `../PROJECT_RULES.md`
-- `../README.md`
-- `../STATE/project-status.md`
-- `../STATE/evidence-log.md`
+## Runtime split
 
-Do not put real student data in this folder.
+- Teacher Hub → Render: `https://www-tijc.onrender.com`
+- Guide → GitHub Pages: `https://yanivmizrachiy.github.io/www/guide/`
+
+Render must not publish or validate the Guide.
+
+## Data safety
+
+Do not put real student rows, raw Moodle exports, secrets, credentials or private runtime data in this folder.
