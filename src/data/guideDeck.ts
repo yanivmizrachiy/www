@@ -16,7 +16,7 @@ const MOODLE_HOME = 'https://moodlemoe.lms.education.gov.il/';
 const MOODLE_MY = 'https://moodlemoe.lms.education.gov.il/my/';
 const MOODLE_WIZARD = 'https://moodlemoe.lms.education.gov.il/local/auto_course_create/wizard.php';
 
-export const FIRST_GUIDE_SLIDE_ID = 'open-space-start';
+export const FIRST_GUIDE_SLIDE_ID = 'cover';
 
 export const GUIDE_SECTIONS: GuideSection[] = [
   {
@@ -446,3 +446,4 @@ const QUICK_START_CANDIDATES = [
 export const QUICK_START_SLIDE_IDS = QUICK_START_CANDIDATES.filter((slideId) =>
   PUBLISHED_SLIDE_IDS.has(slideId)
 );
+
