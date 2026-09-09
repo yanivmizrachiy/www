@@ -22,6 +22,24 @@ export type GuideHotspot = {
  */
 export const GUIDE_SCREENSHOT_HOTSPOTS: Readonly<Record<string, readonly GuideHotspot[]>> = Object.freeze({});
 
+function isValidHotspot(hotspot: GuideHotspot) {
+  return (
+    hotspot.id.trim().length > 0 &&
+    hotspot.label.trim().length > 0 &&
+    Number.isFinite(hotspot.x) &&
+    Number.isFinite(hotspot.y) &&
+    Number.isFinite(hotspot.width) &&
+    Number.isFinite(hotspot.height) &&
+    hotspot.x >= 0 &&
+    hotspot.y >= 0 &&
+    hotspot.width > 0 &&
+    hotspot.height > 0 &&
+    hotspot.x + hotspot.width <= 100 &&
+    hotspot.y + hotspot.height <= 100
+  );
+}
+
 export function getGuideScreenshotHotspots(src: string): readonly GuideHotspot[] {
-  return GUIDE_SCREENSHOT_HOTSPOTS[src.replace(/\.[^.]+$/, '')] ?? [];
+  const key = src.replace(/\.[^.]+$/, '');
+  return (GUIDE_SCREENSHOT_HOTSPOTS[key] ?? []).filter(isValidHotspot);
 }
