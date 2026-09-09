@@ -1,227 +1,152 @@
-<!-- MTH_CURRENT_STATE_20260512_START -->
-## Current state — 2026-05-12
+# Moodle Teacher Hub + Guide — `yanivmizrachiy/www`
 
-Canonical branch: `main`
-Live runtime: `https://www-tijc.onrender.com`
-Teacher release: **NO**
+עודכן: 2026-09-10
 
-Verified live:
-- `/health`
-- `/api/release/readiness`
-- `/api/persistence/validate`
+הריפו מרכז שני מוצרי Moodle נפרדים שחולקים קוד/תשתית ריפו אך **לא runtime ולא truth model**:
 
-Supabase production persistence is verified.
-Real Moodle E2E and multi-teacher isolation are still not verified.
-<!-- MTH_CURRENT_STATE_20260512_END -->
+1. **Moodle Teacher Hub** — כלי מורה עברי RTL שנפתח מתוך Moodle.
+2. **Guide** — מצגת/מדריך Moodle סטטי למורים עם צילומי מסך אמיתיים בלבד.
 
-# Moodle Teacher Hub — www
+## Runtimes קנוניים
 
-<!-- MTH_README_CURRENT_STATUS_20260510_START -->
-## סטטוס אמת עדכני — 2026-05-10
+| מוצר | Runtime | פריסה |
+|---|---|---|
+| Teacher Hub | `https://www-tijc.onrender.com` | Render |
+| Guide | `https://yanivmizrachiy.github.io/www/guide/` | GitHub Pages מתוך `deploy/guide-static`, נבנה אוטומטית מ-`main` |
 
-המערכת עברה שלב מוצרי חשוב:
+Render אינו מפרסם ואינו מאמת את Guide.
 
-- Render runtime פעיל ב־`https://www-tijc.onrender.com`.
-- LTI 1.3 עובד מול Moodle.
-- NRPS עובד ומחזיר 62 משתתפים אמיתיים: 59 תלמידים ו־3 מורים.
-- NRPS אינו מחזיר שמות/מיילים כרגע.
-- ייבוא Participants אמיתי הצליח.
-- נקלטו 62 שורות Participants.
-- עמוד תלמידים מציג שמות ומיילים אמיתיים מתוך הייבוא.
-- ציונים, לוגים, זמן תרגול ודוחות עדיין לא מסומנים כעובדים עד שייכנסו ממקור נתונים אמיתי.
+## היררכיית אמת
 
-השלב הבא אינו פיצ׳ר חדש. השלב הבא הוא סידור ריפו, גיבוי מקומי, ו־persistence קבוע לפני הרחבת יכולות.
+- `RULES.md` — גבול הריפו ומה מותר/אסור לערבב.
+- `PROJECT_RULES.md` — אמת מוצר קנונית של Teacher Hub.
+- `PROJECT_MEMORY.md` — אמת מוצר קנונית של Guide וחוזה ההפרדה בין המוצרים.
+- `public/PROJECT_MEMORY.md` — mirror פריסתי בלבד; אינו מקור אמת עצמאי.
+- `STATE/` — evidence, snapshots והיסטוריה. מסמך STATE ישן אינו גובר על truth חדש יותר.
+- `README.md` — תקציר ציבורי בלבד.
 
-Updated: 2026-05-10T05:10:58Z
-<!-- MTH_README_CURRENT_STATUS_20260510_END -->
+## Moodle Teacher Hub
 
-הריפו הרשמי והמחייב של הפרויקט הוא:
+מטרת המוצר: להציג למורה מידע אמיתי בלבד מתוך Moodle לפי context, הרשאות וקורס אמיתיים.
 
-```text
-yanivmizrachiy/www
-```
-
-הריפו הזה הוא מקור האמת היחיד להמשך העבודה על Moodle Teacher Hub.
-
-## מטרת המערכת
-
-Moodle Teacher Hub הוא כלי מורה בעברית מלאה וב־RTL שנפתח מתוך Moodle באמצעות LTI 1.0/1.1, מזהה מורה ומרחב לימודי, ובהמשך מציג נתוני Moodle אמיתיים בלבד: תלמידים, ציונים, פעילות, דוחות וייצוא.
-
-המערכת אינה מציגה דמו ואינה ממציאה נתונים. כל נתון חייב להגיע מאחד המקורות האמיתיים הבאים:
-
-1. LTI launch מאומת — לכניסה, מורה, תפקיד והקשר מרחב.
-2. ייבוא דוחות Moodle אמיתיים — Participants, Gradebook, Logs, Activity Completion.
-3. Moodle Web Services API רק בעתיד, אם יתקבל token אמיתי ומאומת.
-
-## ארכיטקטורה פעילה נכון לעכשיו
-
-המסלול הפעיל והקבוע הוא:
+### Runtime ו-LTI
 
 ```text
 Moodle External Tool
-  -> Render permanent runtime
+  -> https://www-tijc.onrender.com
   -> /api/lti/launch
   -> React Moodle Teacher Hub
 ```
 
-כתובת Render קבועה:
-
-```text
-https://www-tijc.onrender.com
-```
-
-כתובת LTI קנונית לשימוש ב־Moodle:
+LTI endpoint קנוני:
 
 ```text
 https://www-tijc.onrender.com/api/lti/launch
 ```
 
-## מה לא פעיל יותר כנתיב LTI
-
-המסלולים הבאים אינם נתיב העבודה הפעיל:
+Health:
 
 ```text
-Termux / Cloudflare temporary URLs
-Localtunnel temporary URLs
-Supabase Gateway forwarding route
-legacy /lti/launch-1p1
-legacy /dev/login
+https://www-tijc.onrender.com/health
 ```
 
-Supabase Gateway קיים ותועד, אך אינו מומלץ כרגע כנתיב LTI פעיל בגלל בעיית forwarding שהובילה ל־`MISSING_OAUTH_SIGNATURE`.
+### אמת נתונים מאומתת
 
-Supabase עדיין רלוונטי למסד נתונים, ייבוא, RPC עתידי ושמירת נתונים — לא כנתיב LTI פעיל כרגע.
+המספרים הקנוניים והגבולות המלאים נמצאים ב-`PROJECT_RULES.md`. הראיות הקיימות כוללות aggregate אמיתי של:
 
-## Render
+```text
+students = 62
+grade_items = 243
+grade_results = 1693
+log_events = 89995
+```
 
-הפריסה הקבועה מוגדרת דרך `render.yaml`.
+אין לפרש Logs כמשך זמן רשמי ללא שדה duration רשמי. Teacher Release נשאר **NO**.
 
-Build command שעבד בפועל:
+### חסמים עיקריים
+
+- Moodle Web Services auto-sync דורש token אמיתי ובדיקת API חיה.
+- multi-teacher / multi-course isolation דורש evidence live עדכני לפי שערי המוצר.
+- RLS enforcement דורש בדיקת חציית-מורה חיה מתועדת.
+- אין להציג capability כ-proven בלי evidence מתאים.
+
+## Guide
+
+ה-Guide הוא מוצר סטטי נפרד, בנוי כמצגת אינטראקטיבית למורים.
+
+עקרונות מחייבים:
+
+- צילומי Moodle אמיתיים בלבד.
+- אין Demo / Placeholder / fake capture.
+- שקף שחסר לו צילום אמיתי נשאר מוסתר דרך publication gate.
+- deck קנוני יחיד: `src/data/guideDeck.ts`.
+- screenshot assets: `public/guide/screenshots/`.
+- missing captures: `docs/GUIDE_MISSING_CAPTURES.md`.
+- screenshot provenance/manifest: `docs/GUIDE_SCREENSHOTS_MANIFEST.md`.
+- Guide נבנה ונבדק דרך `Guide Static Always-On` ו-`Guide Live Smoke`.
+
+## מבנה ריפו
+
+```text
+CLAUDE.md                  AI entrypoint / governance summary
+RULES.md                   repository boundary
+PROJECT_RULES.md           Teacher Hub truth
+PROJECT_MEMORY.md          Guide truth + split contract
+README.md                  public overview
+
+.github/workflows/         CI / Guide Pages / Render checks
+src/                       product code
+public/                    static assets + Guide deployment inputs
+docs/                      contracts, manifests, architecture, runbooks
+STATE/                     evidence and dated snapshots
+scripts/                   checks, audits and maintenance
+supabase/                  schema/migrations/plans
+luz-teddy/                 compatibility exception; not a Moodle product
+```
+
+מפת ריפו מפורטת: `docs/operations/repository-map.md`.
+
+## פיתוח מקומי
 
 ```bash
-npm ci --include=dev && npm run build
-```
-
-Start command:
-
-```bash
-npm run start
-```
-
-Health check:
-
-```text
-/health
-```
-
-משתני סביבה נדרשים ב־Render:
-
-```text
-NODE_ENV=production
-PORT=10000
-COOKIE_SECURE=true
-APP_BASE_URL=https://www-tijc.onrender.com
-LTI_CONSUMER_KEY=yaniv-lti-tool
-LTI_SHARED_SECRET=<same value as Moodle, never commit>
-VITE_SUPABASE_URL=https://ncoqanascubqkxfvucfz.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=<Supabase publishable/anon key>
-```
-
-אופציונלי ורק בצד שרת:
-
-```text
-SUPABASE_SERVICE_ROLE_KEY=<server-only key, never expose to browser>
-```
-
-## מצב נתונים אמיתי
-
-LTI 1.0/1.1 אינו מספק אוטומטית רשימת תלמידים, ציונים, לוגים או זמן פעילות.
-
-כל עוד אין Moodle Web Services token מאומת, מצב העבודה האמיתי הוא:
-
-```text
-Manual Real Data Import
-```
-
-סדר הנתונים הנכון:
-
-1. Participants / Students — ראשון, כדי להציג שמות תלמידים.
-2. Gradebook / Grades — אחרי שתלמידים עובדים.
-3. Logs — אחרי תלמידים/ציונים, לצורך פעילות וזמן תרגול מחושב.
-4. Activity Completion — לפי דוח אמיתי.
-
-## סטטוס אמת נוכחי
-
-עובד/תועד:
-
-- ריפו מקור אמת: `yanivmizrachiy/www`.
-- ענף עבודה פעיל: `gemini/ai-studio-sync-20260428-193953`.
-- Render runtime קבוע: `https://www-tijc.onrender.com`.
-- LTI endpoint קנוני: `/api/lti/launch`.
-- Build ב־Render עבר אחרי תיקון `vite: not found`.
-- Termux/Cloudflare אינם נדרשים למסלול ההפעלה הקבוע.
-
-לא מאומת עדיין:
-
-- ייבוא Participants אמיתי מקצה לקצה.
-- הצגת תלמידים אחרי ייבוא.
-- ייבוא ציונים.
-- ייבוא לוגים/זמני פעילות.
-- ייבוא Activity Completion.
-- Moodle Web Services API.
-- מוכנות רחבה לכל המורים.
-
-## מסמכי מקור אמת
-
-- `PROJECT_RULES.md` — דף הכללים העליון.
-- `STATE/project-status.md` — סטטוס אמת עדכני.
-- `STATE/evidence-log.md` — לוג הוכחות.
-- `docs/import-contract.md` — חוזה ייבוא נתוני Moodle.
-- `docs/lti-contract.md` — חוזה LTI.
-- `docs/moodle-api-contract.md` — חוזה Moodle API עתידי.
-- `STATE/readiness-audit/render-production-launch-20260506.md`.
-- `STATE/readiness-audit/error-audit-and-smarter-fixes-20260506.md`.
-- `STATE/readiness-audit/deep-repo-audit-and-next-optimization-20260506.md`.
-
-## הפעלה מקומית לפיתוח בלבד
-
-```bash
-npm install
+npm ci
 npm run check
+npm run typecheck
+npm run audit:guide
 npm run build
+npm run doctor
+```
+
+להפעלת Teacher Hub מקומית, לפי הצורך:
+
+```bash
 npm run start
 ```
 
-בדיקת health מקומית:
+אין להשתמש ב-local build כראיית production.
 
-```text
-http://127.0.0.1:3000/health
-```
+## Git
 
-אין להשתמש ב־local dev כראיה לייצור. ראיות ייצור חייבות להירשם ב־`STATE/evidence-log.md`.
+- `main` הוא הענף הקנוני והמוגן.
+- אין commit ישיר ל-`main`.
+- כל שינוי עובר branch + PR + checks.
+- `deploy/guide-static` הוא ענף פריסה נגזר ל-Guide, לא ענף authoring.
+- ענפים היסטוריים אינם מקור אמת.
 
-## השלב הבא היחיד לפני פיתוח רחב
+## פרטיות ואבטחה
 
-לפני כל פיצ׳ר נוסף, צריך לסגור נתיב נתונים אמיתי ראשון:
+אסור להכניס לריפו:
 
-```text
-Participants report אמיתי ממודל
-  -> Import page
-  -> POST /api/import או נתיב שמירה מאומת
-  -> Students page
-  -> שמות תלמידים אמיתיים מופיעים
-  -> תיעוד ב־STATE/evidence-log.md
-```
+- secrets, tokens, cookies או private headers.
+- raw student rows.
+- raw Moodle exports.
+- ציונים/לוגים גולמיים עם PII.
+- תעודות זהות או מזהים פנימיים מיותרים.
 
-אין להמשיך ל־Gradebook, Logs, Practice Time או דוחות מתקדמים לפני שזה עובד.
+## חריג `luz-teddy/`
 
-## כללי איסור קבועים
+`luz-teddy/` אינו חלק מ-Teacher Hub או Guide. מקור האמת שלו נמצא ב-`yanivmizrachiy/luz-teddy`; העותק כאן נשמר כתאימות בלבד עד מעבר בטוח של הקישור הציבורי. אין להרחיב או למחוק אותו ללא אימות ואישור מפורש.
 
-- אין דמו.
-- אין תלמידים מזויפים.
-- אין ציונים מזויפים.
-- אין זמן פעילות מומצא.
-- אין כפתורי סרק.
-- אין secrets בריפו.
-- אין קבצי תלמידים פרטיים בריפו.
-- אין סימון production-ready בלי בדיקות אמיתיות.
+## כלל עליון
+
+אין דמו, אין נתונים מומצאים, אין הודעות הצלחה מזויפות, ואין ערבוב בין Teacher Hub, Guide, יומן Google או לוז בית ספר.
