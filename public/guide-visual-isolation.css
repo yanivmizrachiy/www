@@ -51,6 +51,14 @@ div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] img[a
   filter: none !important;
 }
 
+/* Cover branding/credits belong at the TOP, never at the bottom. */
+div[class*="from-slate-950"][class*="via-blue-950"][class*="to-slate-900"] > div:last-child {
+  order: -1 !important;
+  border-top: 0 !important;
+  border-bottom: 1px solid rgba(252, 211, 77, 0.4) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18) !important;
+}
+
 /* Interior slides: lock readable dark text on the light canvas. */
 div[dir="rtl"][class*="fixed"][class*="inset-0"] article > div:not([class*="from-slate-950"]) h1.font-display {
   color: #020617 !important;
