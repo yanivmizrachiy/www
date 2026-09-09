@@ -94,10 +94,14 @@ jobs:
           mkdir -p .guide-publish
           cp dist/index.html .guide-publish/index.html
           cp -R dist/assets .guide-publish/assets
+          # index.html loads this at runtime from the Guide base, so it has to ship with
+          # the Guide subtree. Without it the visual isolation layer 404s in production.
+          cp dist/guide-visual-isolation.css .guide-publish/guide-visual-isolation.css
           if [ -d dist/guide ]; then
             cp -R dist/guide/. .guide-publish/
           fi
           test -f .guide-publish/index.html
+          test -f .guide-publish/guide-visual-isolation.css
           test -f .guide-publish/release.json
           test -f .guide-publish/sw.js
           test -f .guide-publish/jerusalem-math-logo.webp
