@@ -28,6 +28,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Repair migration template escaping
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/maintenance/apply-guide-one-click-20260909.cjs')
+          s = p.read_text(encoding='utf-8')
+          for name in ('id', 'stepCount', 'screenshotCount', 'fragment'):
+              s = s.replace('\\\\${' + name + '}', '\\${' + name + '}')
+          p.write_text(s, encoding='utf-8')
+          PY
+
       - name: Apply canonical Guide migration
         run: node scripts/maintenance/apply-guide-one-click-20260909.cjs
 
