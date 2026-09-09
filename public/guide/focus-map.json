@@ -15,6 +15,14 @@
     "label": "מרחבי-הלימוד שלי",
     "evidence": "Capture 1200x603. Crop left=700 top=7 w=143 h=48 rendered and viewed (2 iterations; the first clipped the active-tab underline). Frames the full label plus its blue underline; neighbouring nav items excluded."
   },
+  "03-topbar-edit-off.avif": {
+    "x": 5.5,
+    "y": 22,
+    "w": 34,
+    "h": 52,
+    "label": "מצב עריכה",
+    "evidence": "Capture 400x62, the off-state twin of 04. Crop left=22 top=14 w=136 h=32 rendered and viewed: frames the grey off toggle and its label, nothing else. Same geometry as the on-state capture, so the two slides mark the identical control."
+  },
   "04-topbar-edit-on.avif": {
     "x": 5.5,
     "y": 22,
@@ -30,6 +38,14 @@
     "h": 30,
     "label": "פתיחת מרחב כיתתי",
     "evidence": "Capture 1200x603. Crop left=792 top=326 w=216 h=181 rendered and viewed: frames the tile icon and its full two-line label with margin, no neighbouring tile."
+  },
+  "07-unit-menu.avif": {
+    "x": 0.5,
+    "y": 74,
+    "w": 16,
+    "h": 19,
+    "label": "תפריט ⋮ של יחידת ההוראה",
+    "evidence": "Capture 1200x603, the edit-mode-off twin of 13. Crop left=6 top=446 w=192 h=115 rendered and viewed (2 iterations; the first reached into the course banner artwork). Frames the ⋮ trigger and the whole two-item panel — עריכת יחידת הוראה, קישור קבוע — which is the point of the slide: the same menu is shorter while edit mode is off."
   },
   "08-more-options.avif": {
     "x": 29.3,
