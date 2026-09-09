@@ -32,46 +32,17 @@ const source = fs.readFileSync(sourcePath, 'utf8');
 const deck = fs.readFileSync(deckPath, 'utf8');
 const missing = fs.readFileSync(missingPath, 'utf8');
 
-// 1) There must be exactly one application-facing publication gate.
-// Use an allow-list: only slides explicitly marked ready can be public.
-for (const requiredFragment of [
-  "slide.status === 'ready'",
-  '!slide.missingCaptureId',
-]) {
-  if (!deck.includes(requiredFragment)) {
-    fail(`guideDeck.ts publication gate is missing: ${requiredFragment}`);
-  }
+for (const requiredFragment of ["slide.status === 'ready'", '!slide.missingCaptureId']) {
+  if (!deck.includes(requiredFragment)) fail(`guideDeck.ts publication gate is missing: ${requiredFragment}`);
 }
-
-for (const forbiddenFragment of [
-  "slide.status !== 'needs-capture'",
-  "slide.status !== 'needs-fact'",
-]) {
-  if (deck.includes(forbiddenFragment)) {
-    fail(`guideDeck.ts uses a deny-list publication rule instead of explicit ready status: ${forbiddenFragment}`);
-  }
+for (const forbiddenFragment of ["slide.status !== 'needs-capture'", "slide.status !== 'needs-fact'"]) {
+  if (deck.includes(forbiddenFragment)) fail(`guideDeck.ts uses a deny-list publication rule instead of explicit ready status: ${forbiddenFragment}`);
 }
-
-// Legacy source entries may still say ready while carrying missingCaptureId.
-// Runtime must normalize those entries before publication/search/quick-start.
-for (const requiredFragment of [
-  "slide.missingCaptureId && slide.status === 'ready'",
-  "'needs-capture' as const",
-]) {
-  if (!deck.includes(requiredFragment)) {
-    fail(`guideDeck.ts is missing defensive status normalization: ${requiredFragment}`);
-  }
+for (const requiredFragment of ["slide.missingCaptureId && slide.status === 'ready'", "'needs-capture' as const"]) {
+  if (!deck.includes(requiredFragment)) fail(`guideDeck.ts is missing defensive status normalization: ${requiredFragment}`);
 }
-
-// Runtime must use the verified AVIF derivatives rather than heavier source JPG/PNG files.
-for (const requiredFragment of [
-  'toModernScreenshotFilename',
-  "return src.replace(/\\.[^.]+$/, '.avif')",
-  'src: toModernScreenshotFilename(screenshot.src)',
-]) {
-  if (!deck.includes(requiredFragment)) {
-    fail(`guideDeck.ts is missing AVIF screenshot mapping: ${requiredFragment}`);
-  }
+for (const requiredFragment of ['toModernScreenshotFilename', "return src.replace(/\\.[^.]+$/, '.avif')", 'src: toModernScreenshotFilename(screenshot.src)']) {
+  if (!deck.includes(requiredFragment)) fail(`guideDeck.ts is missing AVIF screenshot mapping: ${requiredFragment}`);
 }
 
 const srcFiles = walk(path.join(root, 'src')).filter((file) => /\.[cm]?[jt]sx?$/.test(file));
@@ -79,16 +50,10 @@ for (const file of srcFiles) {
   const relative = path.relative(root, file).replaceAll('\\', '/');
   if (relative === 'src/data/guideDeck.ts' || relative === 'src/data/guideDeckSource.ts') continue;
   const text = fs.readFileSync(file, 'utf8');
-  if (text.includes('guideDeckSource')) {
-    fail(`${relative} imports/references guideDeckSource directly; use src/data/guideDeck.ts so publication rules cannot be bypassed.`);
-  }
+  if (text.includes('guideDeckSource')) fail(`${relative} imports/references guideDeckSource directly; use src/data/guideDeck.ts so publication rules cannot be bypassed.`);
 }
+if (/export const PUBLISHED_GUIDE_SLIDES\s*=/.test(source)) notes.push('guideDeckSource.ts still contains a legacy publication export; it is guarded by the direct-import rule and is not application-facing.');
 
-if (/export const PUBLISHED_GUIDE_SLIDES\s*=/.test(source)) {
-  notes.push('guideDeckSource.ts still contains a legacy publication export; it is guarded by the direct-import rule and is not application-facing.');
-}
-
-// 2) Every slide heading is a question, except the cover.
 const slidesStart = source.indexOf('export const GUIDE_SLIDES');
 const slidesEnd = source.indexOf('export const PUBLISHED_GUIDE_SLIDES', slidesStart);
 const slidesBlock = source.slice(slidesStart, slidesEnd > slidesStart ? slidesEnd : undefined);
@@ -99,171 +64,88 @@ while ((titleMatch = titleRegex.exec(slidesBlock))) {
   if (title === 'מדריך למורים במערכת Moodle') continue;
   if (!title.endsWith('?')) fail(`Slide title is not a question: ${title}`);
 }
+const readyWithMissingIds = [...slidesBlock.matchAll(/status:\s*'ready',\s*\n\s*missingCaptureId:\s*'(M\d{2})'/g)].map((match) => match[1]);
+if (readyWithMissingIds.length) notes.push(`Legacy source status normalized at runtime for: ${readyWithMissingIds.join(', ')}.`);
 
-const readyWithMissingIds = [
-  ...slidesBlock.matchAll(/status:\s*'ready',\s*\n\s*missingCaptureId:\s*'(M\d{2})'/g),
-].map((match) => match[1]);
-if (readyWithMissingIds.length) {
-  notes.push(`Legacy source status normalized at runtime for: ${readyWithMissingIds.join(', ')}.`);
-}
-
-// 3) Missing-capture IDs in source and docs must stay synchronized.
 const sourceMissingIds = [...source.matchAll(/missingCaptureId:\s*'(M\d{2})'/g)].map((match) => match[1]);
 const docMissingIds = [...missing.matchAll(/^##\s+(M\d{2})\b/gm)].map((match) => match[1]);
 const sourceMissingSet = new Set(sourceMissingIds);
 const docMissingSet = new Set(docMissingIds);
-
-for (const id of sourceMissingSet) {
-  if (!docMissingSet.has(id)) fail(`${id} is referenced by guideDeckSource.ts but missing from GUIDE_MISSING_CAPTURES.md.`);
-}
-for (const id of docMissingSet) {
-  if (!sourceMissingSet.has(id)) fail(`${id} exists in GUIDE_MISSING_CAPTURES.md but no slide references it.`);
-}
-
+for (const id of sourceMissingSet) if (!docMissingSet.has(id)) fail(`${id} is referenced by guideDeckSource.ts but missing from GUIDE_MISSING_CAPTURES.md.`);
+for (const id of docMissingSet) if (!sourceMissingSet.has(id)) fail(`${id} exists in GUIDE_MISSING_CAPTURES.md but no slide references it.`);
 if (docMissingIds.length !== docMissingSet.size) fail('GUIDE_MISSING_CAPTURES.md contains duplicate M-IDs.');
-
 const expectedIds = Array.from({ length: 22 }, (_, index) => `M${String(index + 1).padStart(2, '0')}`);
-for (const id of expectedIds) {
-  if (!docMissingSet.has(id)) fail(`Expected missing-capture item ${id} is absent from the canonical missing-capture list.`);
-}
+for (const id of expectedIds) if (!docMissingSet.has(id)) fail(`Expected missing-capture item ${id} is absent from the canonical missing-capture list.`);
 
-// 4) Every screenshot referenced by the deck must physically exist, together
-// with modern AVIF + WebP derivatives used by the Guide performance layer.
 const screenshotRefs = [...source.matchAll(/src:\s*'([^']+\.(?:jpg|jpeg|png|webp|avif))'/g)].map((match) => match[1]);
 for (const screenshot of new Set(screenshotRefs)) {
   if (screenshot.includes('/') || screenshot.includes('\\')) {
     fail(`Screenshot reference must be a filename only: ${screenshot}`);
     continue;
   }
-
-  if (!fs.existsSync(path.join(screenshotsDir, screenshot))) {
-    fail(`Referenced screenshot does not exist: public/guide/screenshots/${screenshot}`);
-  }
-
+  if (!fs.existsSync(path.join(screenshotsDir, screenshot))) fail(`Referenced screenshot does not exist: public/guide/screenshots/${screenshot}`);
   const base = screenshot.replace(/\.[^.]+$/, '');
   for (const extension of ['avif', 'webp']) {
     const modern = `${base}.${extension}`;
-    if (!fs.existsSync(path.join(screenshotsDir, modern))) {
-      fail(`Modern Guide screenshot derivative is missing: public/guide/screenshots/${modern}`);
-    }
+    if (!fs.existsSync(path.join(screenshotsDir, modern))) fail(`Modern Guide screenshot derivative is missing: public/guide/screenshots/${modern}`);
   }
 }
 
-// 5) The Guide service worker must be syntax-valid and base-path aware so the
-// presentation can run from an always-on static host instead of depending on
-// a sleeping Render backend.
 if (!fs.existsSync(guideSwPath)) {
   fail('Guide service worker is missing: public/guide/sw.js');
 } else {
   const guideSw = fs.readFileSync(guideSwPath, 'utf8');
-  try {
-    new Function(guideSw);
-  } catch (error) {
-    fail(`Guide service worker has invalid JavaScript: ${error.message}`);
+  try { new Function(guideSw); } catch (error) { fail(`Guide service worker has invalid JavaScript: ${error.message}`); }
+  for (const requiredFragment of ["CACHE_PREFIX = 'moodle-guide-'", 'NAVIGATION_FRESHNESS_MS = 1200', 'Promise.race([', 'event.waitUntil(networkPromise)', 'self.registration.scope', "scopePath.endsWith('/guide')", "`${scopePath}/release.json`", "withBase('/assets/')"]) {
+    if (!guideSw.includes(requiredFragment)) fail(`Guide service worker is missing base-aware freshness/isolation rule: ${requiredFragment}`);
   }
-
-  for (const requiredFragment of [
-    "CACHE_PREFIX = 'moodle-guide-'",
-    'NAVIGATION_FRESHNESS_MS = 1200',
-    'Promise.race([',
-    'event.waitUntil(networkPromise)',
-    'self.registration.scope',
-    "scopePath.endsWith('/guide')",
-    "`${scopePath}/release.json`",
-    "withBase('/assets/')",
-  ]) {
-    if (!guideSw.includes(requiredFragment)) {
-      fail(`Guide service worker is missing base-aware freshness/isolation rule: ${requiredFragment}`);
-    }
-  }
-
-  for (const forbiddenFragment of [
-    "url.pathname === '/guide/release.json'",
-    "url.pathname.startsWith('/assets/')",
-  ]) {
-    if (guideSw.includes(forbiddenFragment)) {
-      fail(`Guide service worker regressed to a Render/root-only path: ${forbiddenFragment}`);
-    }
+  for (const forbiddenFragment of ["url.pathname === '/guide/release.json'", "url.pathname.startsWith('/assets/')"]) {
+    if (guideSw.includes(forbiddenFragment)) fail(`Guide service worker regressed to a Render/root-only path: ${forbiddenFragment}`);
   }
 }
 
-// 6) The repository must contain a static always-on publication gate that
-// writes only the generated /guide subtree into the existing branch-based
-// GitHub Pages tree. It must not deploy a replacement Pages artifact because
-// this repository also hosts other public pages that must remain intact.
+// 6) Build the Guide statically and publish the generated /guide subtree through
+// a dedicated unprotected deployment branch. main stays protected; generated
+// binaries are merged only after CI instead of being pushed directly to main.
 if (!fs.existsSync(staticGuideWorkflowPath)) {
   fail('Missing .github/workflows/guide-static-always-on.yml required by the Guide always-on rule.');
 } else {
   const staticWorkflow = fs.readFileSync(staticGuideWorkflowPath, 'utf8');
   for (const requiredFragment of [
     'Guide Static Always-On',
-    'Publish Guide into existing branch-based GitHub Pages tree',
+    'Publish generated Guide to deployment branch',
+    'GUIDE_DEPLOY_BRANCH: deploy/guide-static',
+    'git push --force origin HEAD:"${GUIDE_DEPLOY_BRANCH}"',
     "github.event_name == 'push' && github.ref == 'refs/heads/main'",
-    'git push origin HEAD:main',
   ]) {
-    if (!staticWorkflow.includes(requiredFragment)) {
-      fail(`Static Guide workflow is missing always-on branch-pages publication rule: ${requiredFragment}`);
-    }
+    if (!staticWorkflow.includes(requiredFragment)) fail(`Static Guide workflow is missing protected deployment-branch rule: ${requiredFragment}`);
   }
-  for (const forbiddenFragment of [
-    'actions/deploy-pages@',
-    'actions/upload-pages-artifact@',
-  ]) {
-    if (staticWorkflow.includes(forbiddenFragment)) {
-      fail(`Static Guide workflow must not replace the repository Pages site: ${forbiddenFragment}`);
-    }
+  for (const forbiddenFragment of ['git push origin HEAD:main', 'actions/deploy-pages@', 'actions/upload-pages-artifact@']) {
+    if (staticWorkflow.includes(forbiddenFragment)) fail(`Static Guide workflow must not bypass protected main or replace the whole Pages site: ${forbiddenFragment}`);
   }
 }
 
-// 7) Live verification must compare canonical Guide content, not branch commit SHA.
 const guideHash = computeGuideHash();
-if (!/^[a-f0-9]{64}$/.test(guideHash)) {
-  fail(`Guide content fingerprint is invalid: ${guideHash}`);
-}
-
+if (!/^[a-f0-9]{64}$/.test(guideHash)) fail(`Guide content fingerprint is invalid: ${guideHash}`);
 const viteConfig = fs.readFileSync(viteConfigPath, 'utf8');
-for (const requiredFragment of [
-  'guide-content-hash.cjs',
-  'const guideHash = currentGuideHash()',
-  'guideHash, generatedAt',
-]) {
-  if (!viteConfig.includes(requiredFragment)) {
-    fail(`vite.config.ts is missing Guide release fingerprint wiring: ${requiredFragment}`);
-  }
+for (const requiredFragment of ['guide-content-hash.cjs', 'const guideHash = currentGuideHash()', 'guideHash, generatedAt']) {
+  if (!viteConfig.includes(requiredFragment)) fail(`vite.config.ts is missing Guide release fingerprint wiring: ${requiredFragment}`);
 }
-
-for (const [workflowName, workflowPath] of [
-  ['Guide Live Smoke', liveSmokePath],
-  ['Render Deploy Recovery', renderRecoveryPath],
-]) {
+for (const [workflowName, workflowPath] of [['Guide Live Smoke', liveSmokePath], ['Render Deploy Recovery', renderRecoveryPath]]) {
   const workflow = fs.readFileSync(workflowPath, 'utf8');
-  for (const requiredFragment of [
-    'EXPECTED_GUIDE_HASH',
-    'guideHash',
-    'guide-content-hash.cjs',
-  ]) {
-    if (!workflow.includes(requiredFragment)) {
-      fail(`${workflowName} is missing content-fingerprint verification: ${requiredFragment}`);
-    }
+  for (const requiredFragment of ['EXPECTED_GUIDE_HASH', 'guideHash', 'guide-content-hash.cjs']) {
+    if (!workflow.includes(requiredFragment)) fail(`${workflowName} is missing content-fingerprint verification: ${requiredFragment}`);
   }
-  if (workflow.includes('LIVE_SHA" = "$EXPECTED_SHA')) {
-    fail(`${workflowName} still gates Guide success on an exact branch commit SHA.`);
-  }
+  if (workflow.includes('LIVE_SHA" = "$EXPECTED_SHA')) fail(`${workflowName} still gates Guide success on an exact branch commit SHA.`);
 }
 
-// 8) The canonical missing-capture document must explicitly forbid fake/demo captures.
 for (const requiredPhrase of ['אין Demo', 'אין Placeholder', 'אין צילום מומצא']) {
   if (!missing.includes(requiredPhrase)) fail(`GUIDE_MISSING_CAPTURES.md is missing safety rule: ${requiredPhrase}`);
 }
-
-if (notes.length) {
-  for (const note of notes) console.log(`NOTE: ${note}`);
-}
-
+if (notes.length) for (const note of notes) console.log(`NOTE: ${note}`);
 if (errors.length) {
   console.error('\nGuide integrity audit failed:');
   for (const error of errors) console.error(`- ${error}`);
   process.exit(1);
 }
-
 console.log(`Guide integrity audit passed: ${screenshotRefs.length} screenshot references, ${docMissingSet.size} canonical missing-capture IDs, guideHash=${guideHash}.`);
