@@ -28,6 +28,7 @@ function requireTokens(relative, tokens) {
 
 const teacherRuntime = 'https://www-tijc.onrender.com';
 const guideRuntime = 'https://yanivmizrachiy.github.io/www/guide/';
+const guidePagesBase = 'https://yanivmizrachiy.github.io/www';
 
 const claude = requireTokens('CLAUDE.md', [
   'RULES.md',
@@ -109,7 +110,11 @@ for (const forbidden of [
   }
 }
 
-requireTokens('.github/workflows/guide-live-smoke.yml', [guideRuntime]);
+requireTokens('.github/workflows/guide-live-smoke.yml', [
+  guidePagesBase,
+  '/guide/release.json',
+  '/guide/screenshots/01-login.avif',
+]);
 requireTokens('.github/workflows/guide-static-always-on.yml', ['deploy/guide-static']);
 
 if (claude.includes('Runtime: `https://www-tijc.onrender.com`') && !claude.includes('Guide:')) {
