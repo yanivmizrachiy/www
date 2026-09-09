@@ -24,10 +24,13 @@ Thumbs.db
 
 # Moodle Teacher Hub runtime/private data
 # Never commit files that may contain real student names, emails, grades, logs, tokens, or runtime state.
-data/
+/data/
 store.json
 **/store.json
 MOODLE_TEACHER_HUB_BACKUP_TOOLS/
+
+# Local editor backups of the guide deck (the deck itself stays tracked)
+src/data/guideDeck.ts.*
 moodle-teacher-hub-students-backup-*.json
 *moodle*students*backup*.json
 *participants*.csv

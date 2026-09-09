@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
   FIRST_GUIDE_SLIDE_ID,
+  FIRST_TRAINING_SLIDE_ID,
   GUIDE_SECTIONS,
   PUBLISHED_GUIDE_SLIDES,
   QUICK_START_SLIDE_IDS,
@@ -94,6 +95,31 @@ function HotspotLayer({ src }: { src: string }) {
   );
 }
 
+/** Full-size capture with the same honest failure state as the card. */
+function LightboxImage({ src, caption }: { src: string; caption: string }) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      <span className="flex aspect-video w-full max-w-[900px] items-center justify-center rounded-xl bg-slate-200 px-6 text-center text-sm font-black text-slate-600">
+        הצילום לא נטען. אין מוצג תחליף.
+      </span>
+    );
+  }
+
+  return (
+    <>
+      <img
+        src={imageUrl(src)}
+        alt={caption}
+        onError={() => setFailed(true)}
+        className="block max-h-[80dvh] max-w-full rounded-xl bg-white object-contain shadow-lg"
+      />
+      <HotspotLayer src={src} />
+    </>
+  );
+}
+
 function ScreenshotCard({
   screenshot,
   slideTitle,
@@ -121,8 +147,16 @@ function ScreenshotCard({
     <div className="guide-shot-stage relative min-w-0">
       <m.button
         type="button"
-        aria-label={`פתיחת הצילום בגודל מלא: ${screenshot.caption}`}
-        onClick={() => onOpen({ screenshot, slideTitle })}
+        disabled={failed}
+        aria-label={
+          failed
+            ? `הצילום לא נטען: ${screenshot.caption}`
+            : `פתיחת הצילום בגודל מלא: ${screenshot.caption}`
+        }
+        onClick={() => {
+          if (failed) return;
+          onOpen({ screenshot, slideTitle });
+        }}
         onPointerMove={(event) => {
           if (reducedMotion || event.pointerType === 'touch') return;
           const rect = event.currentTarget.getBoundingClientRect();
@@ -160,10 +194,12 @@ function ScreenshotCard({
             <span className="h-2.5 w-2.5 rounded-full bg-rose-400 shadow-inner" />
             <span className="h-2.5 w-2.5 rounded-full bg-amber-400 shadow-inner" />
             <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-inner" />
-            <span className="mr-auto inline-flex items-center gap-1.5 text-[11px] font-black text-slate-500">
-              <Expand className="h-3.5 w-3.5" />
-              לחצו להגדלה
-            </span>
+            {!failed && (
+              <span className="mr-auto inline-flex items-center gap-1.5 text-[11px] font-black text-slate-500">
+                <Expand className="h-3.5 w-3.5" />
+                לחצו להגדלה
+              </span>
+            )}
           </span>
 
           {failed ? (
@@ -186,7 +222,9 @@ function ScreenshotCard({
 
           <span className="flex items-center justify-between gap-3 border-t border-slate-200 bg-white px-4 py-3 text-sm font-black leading-relaxed text-slate-700">
             <span>{screenshot.caption}</span>
-            <span className="shrink-0 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] text-blue-800">צילום אמיתי</span>
+            {!failed && (
+              <span className="shrink-0 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] text-blue-800">צילום אמיתי</span>
+            )}
           </span>
 
           <span
@@ -206,13 +244,85 @@ function ScreenshotCard({
 function SlideContent({
   slide,
   onOpenScreenshot,
+  onQuickStart,
+  onOpenMenu,
 }: {
   slide: GuideSlide;
   onOpenScreenshot: (state: LightboxState) => void;
+  onQuickStart: () => void;
+  onOpenMenu: () => void;
 }) {
+  if (slide.cover) {
+    return (
+      <div className="relative flex min-h-full flex-col overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white">
+        <div className="pointer-events-none absolute -right-32 -top-36 h-96 w-96 rounded-full bg-blue-500/25 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-32 -left-24 h-96 w-96 rounded-full bg-amber-400/15 blur-3xl" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-blue-800/25 to-transparent" />
+
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-5 py-5 text-center sm:px-10 sm:py-7 lg:px-16">
+          <div className="mb-3 flex justify-center sm:mb-4">
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-amber-300/30 blur-2xl" />
+              <picture className="relative block">
+                <source type="image/webp" srcSet="/guide/jerusalem-math-logo.webp" />
+                <img
+                  src="/guide/jerusalem-math-logo.png"
+                  alt="יחידת מתמטיקה — מחוז ירושלים והעיר ירושלים"
+                  width={512}
+                  height={512}
+                  className="h-24 w-24 animate-[spin_14s_linear_infinite] rounded-full bg-white object-contain p-2 shadow-[0_14px_45px_rgba(0,0,0,0.48)] ring-4 ring-amber-300/80 sm:h-32 sm:w-32 lg:h-36 lg:w-36"
+                />
+              </picture>
+            </div>
+          </div>
+
+          <p className="text-sm font-black text-amber-300 sm:text-base">{slide.eyebrow}</p>
+
+          <div className="mt-3 w-full max-w-5xl rounded-[28px] border border-white/20 bg-slate-950/55 px-5 py-5 shadow-[0_24px_70px_rgba(0,0,0,0.38)] backdrop-blur-sm sm:px-9 sm:py-6">
+            <h1 className="font-display text-4xl font-black leading-tight text-white drop-shadow-[0_3px_14px_rgba(0,0,0,0.72)] sm:text-5xl lg:text-6xl">
+              {slide.title}
+            </h1>
+            <p className="mx-auto mt-3 max-w-3xl text-base font-semibold leading-relaxed text-slate-50 sm:text-lg lg:text-xl">
+              {slide.summary}
+            </p>
+          </div>
+
+          <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
+            <Button
+              size="lg"
+              onClick={onQuickStart}
+              className="h-14 gap-2 rounded-2xl bg-amber-400 px-8 text-lg font-black text-slate-950 shadow-lg hover:bg-amber-300"
+            >
+              <PlayCircle className="h-5 w-5" />
+              התחלה מהירה
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={onOpenMenu}
+              className="h-14 gap-2 rounded-2xl border-white/35 bg-white/10 px-8 text-lg font-black text-white shadow-lg backdrop-blur-sm hover:bg-white/20 hover:text-white"
+            >
+              <List className="h-5 w-5" />
+              תוכן העניינים
+            </Button>
+          </div>
+        </div>
+
+        <div className="relative z-10 border-t border-amber-300/40 bg-slate-950/85 px-4 py-3 text-center shadow-[0_-8px_30px_rgba(0,0,0,0.18)] sm:px-8">
+          <p className="text-xs font-black leading-relaxed text-amber-200 sm:text-sm">
+            הדרכה במחוז ירושלים והעיר ירושלים - מנח״י, בהובלת איילת קריספין
+          </p>
+          <p className="mt-1 text-xs font-bold leading-relaxed text-white sm:text-sm">
+            האתר מנוהל ע״י יניב רז · מדריך מחוזי חט״ב בעיר ירושלים
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const hasScreenshots = Boolean(slide.screenshots?.length);
   const link = slide.link ?? { href: MOODLE_HOME, label: 'פתיחת Moodle' };
-  const isFirst = slide.id === FIRST_GUIDE_SLIDE_ID;
+  const isFirst = slide.id === FIRST_TRAINING_SLIDE_ID;
 
   return (
     <div className="relative min-h-full overflow-hidden bg-[radial-gradient(circle_at_100%_0%,rgba(59,130,246,0.14),transparent_30%),radial-gradient(circle_at_0%_100%,rgba(251,191,36,0.12),transparent_28%),linear-gradient(180deg,#ffffff,#f8fafc)] p-4 sm:p-6 lg:p-8">
@@ -627,7 +737,12 @@ export default function Guide() {
               className="h-full w-full overflow-y-auto bg-white shadow-[0_35px_110px_rgba(0,0,0,0.52)] outline-none sm:rounded-[30px] lg:h-auto lg:max-h-full lg:w-[min(96vw,calc((100dvh-148px)*16/9),1660px)] lg:aspect-video"
               style={{ transformPerspective: 1800 }}
             >
-              <SlideContent slide={slide} onOpenScreenshot={setLightbox} />
+              <SlideContent
+                slide={slide}
+                onOpenScreenshot={setLightbox}
+                onQuickStart={() => jumpToSlide(QUICK_START_SLIDE_IDS[0], 'quick')}
+                onOpenMenu={() => setPanel('menu')}
+              />
             </m.article>
           </AnimatePresence>
         </main>
@@ -824,12 +939,11 @@ export default function Guide() {
                 </div>
                 <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-slate-100 p-2 sm:p-4">
                   <div className="relative inline-block max-w-full">
-                    <img
-                      src={imageUrl(lightbox.screenshot.src)}
-                      alt={lightbox.screenshot.caption}
-                      className="block max-h-[80dvh] max-w-full rounded-xl bg-white object-contain shadow-lg"
+                    <LightboxImage
+                      key={lightbox.screenshot.src}
+                      src={lightbox.screenshot.src}
+                      caption={lightbox.screenshot.caption}
                     />
-                    <HotspotLayer src={lightbox.screenshot.src} />
                   </div>
                 </div>
               </m.figure>

@@ -2,15 +2,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '../..');
-const sourcePath = path.join(root, 'src/data/guideDeckSource.ts');
 const deckPath = path.join(root, 'src/data/guideDeck.ts');
 const guidePath = path.join(root, 'src/pages/Guide.tsx');
 const hotspotsPath = path.join(root, 'src/data/guideHotspots.ts');
 const cssPath = path.join(root, 'public/guide-visual-isolation.css');
 const screenshotsDir = path.join(root, 'public/guide/screenshots');
 
-const source = fs.readFileSync(sourcePath, 'utf8');
 const deck = fs.readFileSync(deckPath, 'utf8');
+const DECK = require(deckPath);
 const guide = fs.readFileSync(guidePath, 'utf8');
 const hotspots = fs.readFileSync(hotspotsPath, 'utf8');
 const css = fs.readFileSync(cssPath, 'utf8');
@@ -33,25 +32,35 @@ for (const fragment of [
   if (!deck.includes(fragment)) fail(`Canonical opening-flow contract is missing: ${fragment}`);
 }
 
-// 2) M01 was resolved on 2026-09-09 from a verified real frame in the official
-// Ministry of Education “new wizard” video. It must no longer be blocked as a
-// missing capture in the derived Guide deck.
-if (!deck.includes("src: '23-wizard-content-ready.jpg'")) {
-  fail('The verified M01 content-selection screenshot is missing from the Guide deck.');
-}
-if (deck.includes("missingCaptureId: 'M01'")) {
-  fail('M01 is resolved and must not remain an explicit missing-capture blocker.');
+// 2) A missing capture is resolved by a committed asset, never by an assertion.
+// Whether M01 counts as resolved is decided by the file on disk, so this gate can
+// never again certify a screenshot that the browser cannot load.
+const m01Slide = DECK.GUIDE_SLIDES.find((slide) => slide.id === 'open-space-content');
+if (!m01Slide) {
+  fail('The M01 content-selection slide (open-space-content) is missing from the Guide deck.');
+} else {
+  const m01Capture = (m01Slide.screenshots ?? [])[0];
+  const m01Exists = Boolean(m01Capture) && fs.existsSync(path.join(screenshotsDir, m01Capture.src));
+  if (m01Exists && m01Slide.missingCaptureId === 'M01') {
+    fail(`M01 is resolved on disk (${m01Capture.src}); remove its missingCaptureId so the slide can publish.`);
+  }
+  if (!m01Exists && m01Slide.missingCaptureId !== 'M01') {
+    fail('M01 has no committed screenshot; the slide must carry missingCaptureId M01 so it stays withheld.');
+  }
+  if (!m01Exists && DECK.PUBLISHED_GUIDE_SLIDES.some((slide) => slide.id === 'open-space-content')) {
+    fail('The M01 slide is published while its screenshot does not exist.');
+  }
 }
 
 // 3) Every original real Moodle screenshot in the canonical screenshot directory
-// must be referenced by either the source deck or the derived premium deck.
+// must be represented somewhere in the deck.
 const originalScreenshotFiles = fs
   .readdirSync(screenshotsDir)
   .filter((name) => /\.(?:jpg|jpeg|png)$/i.test(name));
 
-const referencedFiles = [source, deck]
-  .flatMap((text) => [...text.matchAll(/src:\s*'([^']+\.(?:jpg|jpeg|png|webp|avif))'/gi)].map((match) => match[1]));
-const referencedBases = new Set(referencedFiles.map(baseName));
+const referencedBases = new Set(
+  DECK.GUIDE_SLIDES.flatMap((slide) => (slide.screenshots ?? []).map((shot) => baseName(shot.src)))
+);
 const uncovered = originalScreenshotFiles.filter((name) => !referencedBases.has(baseName(name)));
 
 for (const filename of uncovered) {
@@ -88,7 +97,12 @@ for (const fragment of [
   "import { getGuideScreenshotHotspots } from '@/data/guideHotspots';",
   'function HotspotLayer',
   '<HotspotLayer src={screenshot.src} />',
-  '<HotspotLayer src={lightbox.screenshot.src} />',
+  // The lightbox renders the capture through LightboxImage, which owns both the
+  // hotspot overlay and the honest "capture did not load" fallback.
+  'function LightboxImage(',
+  '<LightboxImage',
+  'src={lightbox.screenshot.src}',
+  'onError={() => setFailed(true)}',
 ]) {
   if (!guide.includes(fragment)) fail(`Verified hotspot rendering contract is missing: ${fragment}`);
 }
@@ -103,22 +117,19 @@ for (const fragment of [
 }
 
 // 6) Opening-space teaching contract: one action and one screenshot at most per slide.
-const openingStartIndex = deck.indexOf('const OPENING_GUIDE_SLIDES: GuideSlide[] = [');
-const openingEndIndex = deck.indexOf('const ASSET_COVERAGE_SLIDES: GuideSlide[] = [');
-if (openingStartIndex < 0 || openingEndIndex <= openingStartIndex) {
-  fail('Opening Guide slide block could not be located.');
-} else {
-  const opening = deck.slice(openingStartIndex, openingEndIndex);
-  const slideChunks = opening.split(/\n  \{\n(?=    id:)/).slice(1);
-  for (const chunk of slideChunks) {
-    const id = chunk.match(/id:\s*'([^']+)'/)?.[1] ?? 'unknown';
-    const stepBody = chunk.match(/steps:\s*\[([\s\S]*?)\]/)?.[1] ?? '';
-    const stepCount = [...stepBody.matchAll(/'[^']*'/g)].length;
-    const screenshotBody = chunk.match(/screenshots:\s*\[([\s\S]*?)\]/)?.[1] ?? '';
-    const screenshotCount = [...screenshotBody.matchAll(/src:\s*'/g)].length;
-    if (stepCount > 1) fail(`Opening slide ${id} contains ${stepCount} actions; maximum is one.`);
-    if (screenshotCount > 1) fail(`Opening slide ${id} contains ${screenshotCount} screenshots; maximum is one.`);
-  }
+// Evaluated on the real deck, so renaming or reordering an authoring array cannot
+// silently switch this rule off.
+const openingSlides = DECK.GUIDE_SLIDES.filter(
+  (slide) => slide.section === 'opening' || slide.section === 'wizard-new'
+);
+if (!openingSlides.length) {
+  fail('No opening-space slides found in the Guide deck.');
+}
+for (const slide of openingSlides) {
+  const stepCount = (slide.steps ?? []).length;
+  const screenshotCount = (slide.screenshots ?? []).length;
+  if (stepCount > 1) fail(`Opening slide ${slide.id} contains ${stepCount} actions; maximum is one.`);
+  if (screenshotCount > 1) fail(`Opening slide ${slide.id} contains ${screenshotCount} screenshots; maximum is one.`);
 }
 
 for (const fragment of [
@@ -135,5 +146,7 @@ if (errors.length) {
 }
 
 console.log(
-  `Guide presentation quality audit passed: ${originalScreenshotFiles.length} original Moodle screenshots are represented; verified M01, premium motion/3D/reduced-motion and hotspot contracts are present.`
+  `Guide presentation quality audit passed: ${originalScreenshotFiles.length} original Moodle screenshots are represented; ` +
+    `${DECK.PUBLISHED_GUIDE_SLIDES.length}/${DECK.GUIDE_SLIDES.length} slides published; ` +
+    'premium motion/3D/reduced-motion and hotspot contracts are present.'
 );
