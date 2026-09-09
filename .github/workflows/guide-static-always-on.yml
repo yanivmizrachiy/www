@@ -21,6 +21,8 @@ on:
       - '.github/workflows/guide-live-smoke.yml'
   push:
     branches: [main]
+    paths-ignore:
+      - 'guide/**'
   workflow_dispatch:
 
 permissions:
@@ -34,7 +36,6 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   GUIDE_ROUTE_BASE: /www/guide
   PROJECT_PAGES_BASE: /www
-  GUIDE_DEPLOY_BRANCH: deploy/guide-static
 
 jobs:
   build-and-publish:
@@ -110,7 +111,7 @@ jobs:
           fi
           echo 'STATIC_GUIDE_ARTIFACT_OK'
 
-      - name: Publish generated Guide to deployment branch
+      - name: Publish generated Guide into main Pages source
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
         run: |
@@ -118,8 +119,7 @@ jobs:
           rm -rf /tmp/guide-publish
           cp -R .guide-publish /tmp/guide-publish
           git fetch origin main
-          git fetch origin "${GUIDE_DEPLOY_BRANCH}:refs/remotes/origin/${GUIDE_DEPLOY_BRANCH}" || true
-          git checkout -B "${GUIDE_DEPLOY_BRANCH}" origin/main
+          git checkout -B main origin/main
           rm -rf guide
           mkdir -p guide
           cp -R /tmp/guide-publish/. guide/
@@ -130,5 +130,5 @@ jobs:
             echo 'Guide output already matches main; nothing to publish.'
             exit 0
           fi
-          git commit -m 'deploy(guide): refresh always-on static presentation'
-          git push --force origin HEAD:"${GUIDE_DEPLOY_BRANCH}"
+          git commit -m 'deploy(guide): sync static presentation to Pages [skip ci]'
+          git push origin HEAD:main
