@@ -249,12 +249,32 @@ const viteConfig = fs.readFileSync(viteConfigPath, 'utf8');
 for (const requiredFragment of ['guide-content-hash.cjs', 'const guideHash = currentGuideHash()', 'guideHash, generatedAt']) {
   if (!viteConfig.includes(requiredFragment)) fail(`vite.config.ts is missing Guide release fingerprint wiring: ${requiredFragment}`);
 }
-for (const [workflowName, workflowPath] of [['Guide Live Smoke', liveSmokePath], ['Render Deploy Recovery', renderRecoveryPath]]) {
-  const workflow = fs.readFileSync(workflowPath, 'utf8');
+// The Guide's content fingerprint is verified against GitHub Pages, by the Guide
+// workflows only.
+{
+  const liveSmoke = fs.readFileSync(liveSmokePath, 'utf8');
   for (const requiredFragment of ['EXPECTED_GUIDE_HASH', 'guideHash', 'guide-content-hash.cjs']) {
-    if (!workflow.includes(requiredFragment)) fail(`${workflowName} is missing content-fingerprint verification: ${requiredFragment}`);
+    if (!liveSmoke.includes(requiredFragment)) fail(`Guide Live Smoke is missing content-fingerprint verification: ${requiredFragment}`);
   }
-  if (workflow.includes('LIVE_SHA" = "$EXPECTED_SHA')) fail(`${workflowName} still gates Guide success on an exact branch commit SHA.`);
+  if (!liveSmoke.includes('https://yanivmizrachiy.github.io/www')) {
+    fail('Guide Live Smoke must verify the Guide against its canonical GitHub Pages runtime.');
+  }
+  if (liveSmoke.includes('LIVE_SHA" = "$EXPECTED_SHA')) fail('Guide Live Smoke still gates Guide success on an exact branch commit SHA.');
+}
+
+// Render runs the Teacher Hub, never the Guide. Keeping Guide fingerprint logic out of
+// the Render workflow is what stops the two products from being coupled again: Render
+// serves its own Guide build from another branch, so any such check fails forever.
+{
+  const renderRecovery = fs.readFileSync(renderRecoveryPath, 'utf8');
+  for (const forbiddenFragment of ['guideHash', 'EXPECTED_GUIDE_HASH', '/guide/release.json', 'guide-content-hash.cjs']) {
+    if (renderRecovery.includes(forbiddenFragment)) {
+      fail(`Render Deploy Recovery must not verify the Guide; remove "${forbiddenFragment}". The Guide is gated by Guide Live Smoke against GitHub Pages.`);
+    }
+  }
+  if (!renderRecovery.includes('/health')) {
+    fail('Render Deploy Recovery must still verify Teacher Hub availability on /health.');
+  }
 }
 
 for (const requiredPhrase of ['אין Demo', 'אין Placeholder', 'אין צילום מומצא']) {
