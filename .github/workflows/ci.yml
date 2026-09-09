@@ -18,5 +18,6 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: node scripts/checks/guide-integrity-audit.cjs
+      - run: node scripts/checks/guide-presentation-quality-audit.cjs
       - run: npm run build
       - run: npm run doctor
