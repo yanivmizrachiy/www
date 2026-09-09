@@ -38,7 +38,11 @@ const MOODLE_HOME = 'https://moodlemoe.lms.education.gov.il/';
 const MOODLE_MY = 'https://moodlemoe.lms.education.gov.il/my/';
 const MOODLE_WIZARD = 'https://moodlemoe.lms.education.gov.il/local/auto_course_create/wizard.php';
 
-export const FIRST_GUIDE_SLIDE_ID = 'open-space-start';
+/** Slide 1: the presentation cover. */
+export const FIRST_GUIDE_SLIDE_ID = 'cover';
+
+/** Slide 2: where the training itself begins, and where Quick Start starts. */
+export const FIRST_TRAINING_SLIDE_ID = 'open-space-start';
 
 export const GUIDE_SECTIONS: GuideSection[] = [
   {
@@ -81,7 +85,17 @@ function normalizeSlide(slide: GuideSlide): GuideSlide {
 // Single source of truth: every guide slide is authored here, in presentation order.
 const AUTHORED_GUIDE_SLIDES: GuideSlide[] = [
   {
-  id: FIRST_GUIDE_SLIDE_ID,
+    id: FIRST_GUIDE_SLIDE_ID,
+    section: 'start',
+    eyebrow: 'מחוז ירושלים והעיר ירושלים — מנח״י',
+    title: 'מדריך למורים במערכת Moodle',
+    summary: 'מצגת אינטראקטיבית קצרה: שאלה אחת בכל שקף, צילום אמיתי ורצף לחיצות ברור.',
+    keywords: ['מודל', 'Moodle', 'מדריך', 'מצגת'],
+    cover: true,
+    status: 'ready',
+  },
+  {
+  id: FIRST_TRAINING_SLIDE_ID,
   section: 'opening',
   eyebrow: 'פתיחת מרחב למידה · שלב 1',
   title: 'איך פותחים מרחב למידה במודל?',
@@ -357,6 +371,21 @@ const AUTHORED_GUIDE_SLIDES: GuideSlide[] = [
   link: { href: MOODLE_HOME, label: 'פתיחת Moodle' },
   keywords: ['הרשמה הצליחה', 'תלמיד', 'שיוך עצמי'],
   status: 'ready',
+  },
+  {
+  id: 'task-link-first-enrol',
+  section: 'students',
+  eyebrow: 'קישור למשימה',
+  title: 'מה קורה אם תלמיד לא רשום ונכנס דרך קישור למשימה?',
+  summary: 'תחילה נרשמים למרחב, ואז פותחים שוב את הקישור הישיר למשימה.',
+  steps: ['לוחצים „רשום אותי”.', 'מסיימים את ההרשמה למרחב.', 'פותחים שוב את קישור המשימה.', 'המשימה נפתחת.'],
+  screenshots: [
+    { src: '28-selfenrol-student-view.jpg', caption: 'שלב 1 — „רשום אותי”.' },
+    { src: '29-selfenrol-success-studentview.jpg', caption: 'שלב 2 — ההרשמה הושלמה.' },
+  ],
+  keywords: ['קישור למשימה', 'רשום אותי', 'הרשמה'],
+  status: 'needs-capture',
+  missingCaptureId: 'M12',
   },
   {
   id: 'quick-start',
@@ -926,7 +955,7 @@ export const PUBLISHED_GUIDE_SLIDES = GUIDE_SLIDES.filter(
 const PUBLISHED_SLIDE_IDS = new Set(PUBLISHED_GUIDE_SLIDES.map((slide) => slide.id));
 
 const QUICK_START_CANDIDATES = [
-  FIRST_GUIDE_SLIDE_ID,
+  FIRST_TRAINING_SLIDE_ID,
   'open-space-my-courses',
   'open-space-wizard',
   'open-space-group-choice',

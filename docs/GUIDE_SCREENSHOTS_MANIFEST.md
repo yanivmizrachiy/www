@@ -44,17 +44,22 @@
 
 ## איך זה משולב בקוד
 
-- **טיפוס:** `Shot { src, caption, custom? }` ב-`src/data/guideButtons.ts`.
-- **ברמת אזור:** שדה `screenshots?: Shot[]` על כל `ButtonArea`; מוצג ב-`ScreenshotGallery` בעמוד האזור (`src/pages/Guide.tsx`, view `area`).
-- **ברמת שאלה:** מפה `QUESTION_SHOTS` ב-`Guide.tsx` (מפתח `topicId/questionId`); אם קיימת — מוצגת במקום ה-placeholder בעמוד התשובה.
-- **עיצוב:** `ScreenshotFrame` — מסגרת לבנה, פינות מעוגלות, צל, כותרת מעל, ותג "מותאם אישית" מתחת כשרלוונטי ("Real screenshot in premium frame").
-- **הערה קבועה:** `CUSTOM_SPACE_NOTE` (ב-guideButtons.ts) מוצגת מתחת לכל גלריה — מסבירה למורים שהשם והתכנים בצילומים הם של יניב.
+> עודכן לארכיטקטורה הנוכחית. הסימבולים הישנים `guideButtons.ts`, `ButtonArea`, `ScreenshotGallery`,
+> `ScreenshotFrame`, `QUESTION_SHOTS` ו-`CUSTOM_SPACE_NOTE` אינם קיימים עוד בקוד.
+
+- **מקור אמת יחיד:** כל השקפים והמקטעים נכתבים ב-`src/data/guideDeck.ts` בלבד. אין קובץ דק שני.
+- **טיפוס הצילום:** `GuideScreenshot { src, caption }`, כשדה `screenshots?: GuideScreenshot[]` על `GuideSlide`.
+- **שם הקובץ:** `src` הוא שם קובץ בלבד (בלי נתיב), יחסית ל-`public/guide/screenshots/`. `normalizeSlide` ממיר אותו ל-`.avif` בזמן ריצה, ולכן חייבות להתקיים גם נגזרות `.avif` ו-`.webp` וגם מקור `.jpg`/`.png`.
+- **פרסום:** שקף מתפרסם רק כאשר `status: 'ready'` ואין לו `missingCaptureId` (`PUBLISHED_GUIDE_SLIDES`). שקף שממתין לצילום אמיתי מסומן `needs-capture` ומתועד ב-`docs/GUIDE_MISSING_CAPTURES.md`.
+- **תצוגה:** `ScreenshotCard` ב-`src/pages/Guide.tsx` מציג כל צילום ככרטיס לחיץ, ו-`LightboxImage` מציג אותו בגודל מלא. אם הקובץ לא נטען — הכרטיס מושבת, תג „צילום אמיתי” נעלם, ומוצג „הצילום לא נטען. אין מוצג תחליף.”
+- **סימוני לחיצה:** `GUIDE_SCREENSHOT_HOTSPOTS` ב-`src/data/guideHotspots.ts`, לפי שם קובץ. המפה ריקה בכוונה עד שמיקום נבדק מול הצילום האמיתי; אין סימון מומצא.
+- **שערים:** `npm run audit:guide` מריץ את `guide-integrity-audit.cjs` ואת `guide-presentation-quality-audit.cjs`. שניהם טוענים את הדק האמיתי ונכשלים אם שקף מפורסם מצביע על צילום שאינו קיים בדיסק.
 
 ## החלפת שמות לשמות בדויים (2026-07-09, בהוראת יניב)
 
 בכל הצילומים שהכילו שם אמיתי בוצעה החלפה לשם בדוי **"רות לוי"** בעריכת פיקסלים (PIL + libraqm ל-RTL תקין, פונט Arial):
 - `02` הברכה "שלום רות!" · `09` שם בסרגל "רות" · `06`/`10` כותרת ופירורי לחם "המרחב של רות לוי" · `11` טקסט ההתראות · `12` איש הקשר — וכן שם המשתמש בסרגל העליון בכולם.
-- מקורות ללא עריכה נשמרו מקומית ב-`.shots-extract/` (לא ב-git). ההערה `CUSTOM_SPACE_NOTE` במדריך מציינת שהשמות בדויים.
+- מקורות ללא עריכה נשמרו מקומית ב-`.shots-extract/` (לא ב-git). השמות המוצגים בצילומים הם בדויים.
 
 ## צילומי אשף פתיחת מרחב חדש (2026-07-09)
 
