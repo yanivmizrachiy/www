@@ -1,135 +1,142 @@
-# Repository Map — www / Moodle Teacher Hub
+# Repository Map — www / Moodle products
 
-מסמך זה מגדיר את מבנה הריפו הרצוי והמחייב, כדי שהפרויקט יישאר נקי, חכם, מסודר וללא סתירות.
+מסמך זה מגדיר את מבנה הריפו הרצוי ואת חלוקת האחריות בין מקורות האמת, כדי למנוע סתירות בין Guide ל-Teacher Hub.
 
----
-
-## מקור אמת
+## היררכיית אמת
 
 ```text
-PROJECT_RULES.md        מקור אמת עליון
-README.md               תקציר ציבורי והפעלה
-docs/                   תכנון, חוזים, כללים וארכיטקטורה
-STATE/                  מצב אמת, הוכחות, בדיקות ומה חסר
-src/                    קוד המערכת
-public/                 קבצים סטטיים בלבד
-data/                   אחסון זמני/מקומי בלבד, ללא נתוני תלמידים אמיתיים
+RULES.md                 גבול הריפו
+PROJECT_RULES.md         אמת מוצר — Teacher Hub
+PROJECT_MEMORY.md        אמת מוצר — Guide + חוזה ההפרדה
+public/PROJECT_MEMORY.md mirror פריסתי בלבד
+docs/                    תכנון, חוזים, manifests ו-runbooks
+STATE/                   ראיות, snapshots והיסטוריה
+README.md                תקציר ציבורי בלבד
+src/                     קוד המוצרים
+public/                  נכסים סטטיים ו-Guide deployment inputs
+data/                    runtime/local only; לא מקור אמת
 ```
 
----
+## שני מוצרים, שני runtimes
 
-## מבנה יעד
+### Moodle Teacher Hub
+- runtime: `https://www-tijc.onrender.com`
+- קוד מוצר עיקרי: `src/`, `src/server.js`, LTI/Supabase/import flows.
+- אמת מוצר: `PROJECT_RULES.md`.
+- Teacher Release: **NO** עד מעבר השערים המחייבים.
+
+### Guide
+- runtime: `https://yanivmizrachiy.github.io/www/guide/`
+- deployment branch: `deploy/guide-static`, נבנה אוטומטית מ-`main`.
+- deck קנוני: `src/data/guideDeck.ts`.
+- screenshots: `public/guide/screenshots/`.
+- אמת מוצר: `PROJECT_MEMORY.md`.
+- Render אינו מפרסם ואינו מאמת את Guide.
+
+## מבנה קנוני
 
 ```text
 www/
-  README.md
+  CLAUDE.md
+  RULES.md
   PROJECT_RULES.md
+  PROJECT_MEMORY.md
+  README.md
   package.json
   .gitignore
   .env.example
 
+  .github/workflows/
+    ci.yml
+    guide-static-always-on.yml
+    guide-live-smoke.yml
+    render-deploy-recovery.yml
+    ...
+
   docs/
-    system-rules.md
-    requirements.md
-    repository-map.md
-    implementation-plan.md
-    moodle-api-contract.md
-    lti-contract.md
-    testing-plan.md
+    README.md
+    GUIDE_*.md
+    architecture/
+    lti/
+    imports/
+    persistence/
+    privacy/
+    operations/
+    ai-handoff/
+    dev/
+    archive-candidates/
 
   STATE/
     project-status.md
     evidence-log.md
-    lovable-intake.md
-    open-gaps.md
+    progress/
+    readiness-audit/
+    ...
 
   src/
-    server.js / main app files
-    ui/
-    routes/
-    services/
-    adapters/
-    exports/
+    data/guideDeck.ts
+    pages/Guide.tsx
+    server.js
+    ...
+
+  public/
+    PROJECT_MEMORY.md
+    guide/
+      screenshots/
+    ...
 
   data/
-    store.json        זמני בלבד; לא מקור אמת production
+    runtime/private local data only
 ```
-
----
 
 ## חלוקת אחריות
 
-### README.md
+### `CLAUDE.md`
+כניסה מהירה לעוזר AI: זהות הריפו, היררכיית truth, runtimes, Git rules ואיסורים.
 
-מיועד לקריאה מהירה:
+### `RULES.md`
+גבול הריפו. קובע מה שייך לכאן ומה אסור לערבב.
 
-- מה הפרויקט עושה.
-- איך מריצים.
-- מה עובד כרגע.
-- מה חסום.
-- איפה מקור האמת.
+### `PROJECT_RULES.md`
+אמת Teacher Hub: LTI, imports, persistence, privacy, release gates ויכולות מאומתות.
 
-### PROJECT_RULES.md
+### `PROJECT_MEMORY.md`
+אמת Guide וההפרדה בינו לבין Teacher Hub. כל שינוי דרישה של Guide נרשם כאן לפני שינוי קוד.
 
-מסמך מחייב:
+### `public/PROJECT_MEMORY.md`
+עותק deployment בלבד. חייב להיות זהה ל-`PROJECT_MEMORY.md` ואסור להתייחס אליו כמקור אמת עצמאי.
 
-- איסור דמו.
-- כללי אמת.
-- דרישות Moodle/API/LTI.
-- סטנדרט Done.
-- איסורי secrets.
+### `README.md`
+תקציר ציבורי: מה יש בריפו, runtimes, איך מריצים ואיפה לקרוא אמת. אסור להשאיר בו "current state" היסטורי שסותר את מקורות האמת.
 
-### docs/
+### `docs/`
+תכנון, contracts, manifests ו-runbooks. מסמך מתוארך יכול לתעד היסטוריה, אך חייב לסמן בבירור אם אינו current truth.
 
-מסמכי תכנון:
+### `STATE/`
+ראיות ו-snapshots. קובץ STATE ישן אינו גובר על truth עדכני. אין להשתמש ב-STATE dated snapshot כהוכחה שיכולת עדיין פעילה בלי אימות עדכני.
 
-- דרישות.
-- חוזה API.
-- חוזה LTI.
-- תכנון פיתוח.
-- תכנון בדיקות.
+## חריג קיים — `luz-teddy/`
+`luz-teddy/` אינו חלק ממוצרי Moodle. מקור האמת שלו כבר בריפו `yanivmizrachiy/luz-teddy`; העותק כאן נשמר כתאימות בלבד עד מעבר בטוח של הקישור הציבורי. אין להרחיבו כאן ואין למחוק בלי אישור ואימות חלופה.
 
-### STATE/
+## כלל אי-סתירה
 
-מצב אמת:
+במקרה של סתירה:
 
-- מה אומת.
-- מה לא אומת.
-- אילו קומיטים בוצעו.
-- מה חסר.
-- אילו בדיקות עברו/נכשלו.
-
----
-
-## כלל אי־סתירה
-
-אם יש סתירה:
-
-1. `PROJECT_RULES.md` קובע.
-2. `STATE/project-status.md` קובע מה באמת אומת.
-3. README חייב להתעדכן בהתאם.
-4. מסמכי docs חייבים להיות מסונכרנים.
-
----
+1. `RULES.md` קובע את גבול הריפו.
+2. עבור Teacher Hub — `PROJECT_RULES.md` קובע.
+3. עבור Guide — `PROJECT_MEMORY.md` קובע.
+4. STATE מספק evidence בלבד ולא גובר על truth חדש יותר.
+5. `README.md`, `docs/` ו-`CLAUDE.md` חייבים להסתנכרן עם המקורות הקנוניים.
 
 ## כלל ניקיון
 
-אסור להשאיר בריפו:
+אין להשאיר כ-current truth:
+- branch ישן שמסומן כ"ענף פעיל".
+- runtime ישן שמסומן כקנוני.
+- מסמכי status ישנים ללא תאריך/סימון snapshot.
+- קוד מת או implementation מקביל בלי owner ברור.
+- מסמכי truth כפולים עם סמכות מתחרה.
+- נתוני תלמידים אמיתיים, raw Moodle exports או secrets.
+- לוגים זמניים ותיקיות backup שאינן evidence מכוון.
 
-- קוד מת שלא מועיל.
-- מסמכים כפולים עם אותו תפקיד.
-- נתוני תלמידים אמיתיים.
-- secrets.
-- לוגים זמניים.
-- תיקיות backup לא נחוצות.
-
----
-
-## יעד ניהול עתידי
-
-כל עדכון עתידי צריך להיכנס לאחד מארבעת המקומות:
-
-- קוד — אם זו יכולת אמיתית.
-- docs — אם זו החלטה/תכנון.
-- STATE — אם זו הוכחה/סטטוס.
-- README — אם זה מידע שימושי למפתח או משתמש.
+ענפים היסטוריים אינם מקור אמת. לפני מחיקת branch חייבים להוכיח שהוא merged/superseded ושאין עליו PR או עבודה פעילה.
