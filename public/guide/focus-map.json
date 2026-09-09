@@ -1,11 +1,67 @@
 {
+  "01-login.avif": {
+    "x": 33.5,
+    "y": 65,
+    "w": 15.5,
+    "h": 7.5,
+    "label": "כניסה",
+    "evidence": "Capture 1200x569. Crop left=402 top=370 w=186 h=43 rendered and viewed: frames the whole blue כניסה submit button with even margin, no other control inside."
+  },
+  "02-my-courses-home.avif": {
+    "x": 58.3,
+    "y": 1.2,
+    "w": 11.9,
+    "h": 8,
+    "label": "מרחבי-הלימוד שלי",
+    "evidence": "Capture 1200x603. Crop left=700 top=7 w=143 h=48 rendered and viewed (2 iterations; the first clipped the active-tab underline). Frames the full label plus its blue underline; neighbouring nav items excluded."
+  },
+  "04-topbar-edit-on.avif": {
+    "x": 5.5,
+    "y": 22,
+    "w": 34,
+    "h": 52,
+    "label": "מצב עריכה",
+    "evidence": "Capture 400x62. Crop left=22 top=14 w=136 h=32 rendered and viewed (4 iterations). Frames the blue on-state toggle and its RTL label; the top-bar divider and the notification badge fall outside."
+  },
   "05-home-edit-on.avif": {
     "x": 66,
     "y": 54,
     "w": 18,
     "h": 30,
     "label": "פתיחת מרחב כיתתי",
-    "evidence": "Measured 2026-09-09 on the real capture (1200x603): crop left=792 top=326 w=216 h=181 was rendered and visually confirmed to frame the tile icon and its full two-line label, with margin and no neighbouring tile."
+    "evidence": "Capture 1200x603. Crop left=792 top=326 w=216 h=181 rendered and viewed: frames the tile icon and its full two-line label with margin, no neighbouring tile."
+  },
+  "08-more-options.avif": {
+    "x": 29.3,
+    "y": 22.2,
+    "w": 13.4,
+    "h": 11.6,
+    "label": "אפשרויות נוספות",
+    "evidence": "Capture 1200x603. Crop left=352 top=134 w=161 h=70 rendered and viewed (3 iterations; the second caught a sliver of the דוחות tab). Frames the tab, its chevron and its focus outline."
+  },
+  "09-user-menu.avif": {
+    "x": 10.8,
+    "y": 0,
+    "w": 5.5,
+    "h": 9.6,
+    "label": "תפריט המשתמש",
+    "evidence": "Capture 1200x603. Crop left=130 top=0 w=66 h=58 rendered and viewed (2 iterations; the first also caught the chat icon). Frames the user button and its chevron. Label names the control rather than the displayed account name, per the fake-name policy."
+  },
+  "13-section-menu-full.avif": {
+    "x": 0,
+    "y": 57,
+    "w": 17,
+    "h": 43,
+    "label": "תפריט ⋮ של יחידת ההוראה",
+    "evidence": "Capture 1200x603. Crop left=0 top=344 w=204 h=259 rendered and viewed: frames the ⋮ trigger plus the whole open panel with all seven items. The panel ends at the capture's own bottom edge, so no bottom margin is possible."
+  },
+  "14-hidden-items.avif": {
+    "x": 55.5,
+    "y": 28.5,
+    "w": 14,
+    "h": 6,
+    "label": "מוסתר בפני תלמידים",
+    "evidence": "Capture 1200x603. Crop left=666 top=172 w=168 h=36 rendered and viewed: frames one complete badge — crossed-eye icon, text and chevron. Three identical badges exist on the page; this marks the first."
   },
   "15-add-activity-button.avif": {
     "x": 33,
@@ -13,7 +69,23 @@
     "w": 15,
     "h": 7,
     "label": "הוספת משאב או פעילות",
-    "evidence": "Measured 2026-09-09 on the real capture (1200x603): the crop of this box was rendered and visually confirmed to contain the whole pill button including the plus sign, and nothing else."
+    "evidence": "Capture 1200x603. Crop of this box rendered and viewed: contains the whole pill button including the plus sign, and nothing else."
+  },
+  "18-reports.avif": {
+    "x": 41.8,
+    "y": 25.8,
+    "w": 6.2,
+    "h": 9,
+    "label": "דוחות",
+    "evidence": "Capture 1200x603. Crop left=502 top=156 w=74 h=54 rendered and viewed (3 iterations). Frames the דוחות tab and its full active underline; adjacent tabs excluded."
+  },
+  "26-selfenrol-methods-list.avif": {
+    "x": 12.5,
+    "y": 46,
+    "w": 82,
+    "h": 9,
+    "label": "שיוך עצמי (תלמיד)",
+    "evidence": "Capture 958x854. Crop left=120 top=393 w=786 h=77 rendered and viewed (2 iterations). Frames the whole table row including the eye icon in the עריכה column; the rows above and below are excluded."
   },
   "28-selfenrol-student-view.avif": {
     "x": 60,
@@ -21,6 +93,14 @@
     "w": 14,
     "h": 8,
     "label": "רשום אותי",
-    "evidence": "Measured 2026-09-09 on the real capture (958x910): the crop of this box was rendered and visually confirmed to contain the blue enrol button in full, with margin on all four sides."
+    "evidence": "Capture 958x910. Crop of this box rendered and viewed: contains the blue enrol button in full, with margin on all four sides."
+  },
+  "33-quiz-question-behaviour.avif": {
+    "x": 57.2,
+    "y": 13.6,
+    "w": 32.8,
+    "h": 5.8,
+    "label": "מספר ניסיונות מותרים",
+    "evidence": "Capture 958x797. Crop left=548 top=108 w=314 h=46 rendered and viewed (4 iterations). Frames the label and its select control; the rows above and below are excluded."
   }
 }
