@@ -11,6 +11,7 @@ on:
       - 'src/data/guideDeckSource.ts'
       - 'public/guide/**'
       - 'public/guide-visual-isolation.css'
+      - 'scripts/checks/guide-presentation-quality-audit.cjs'
       - 'vite.config.ts'
       - 'package.json'
       - 'package-lock.json'
@@ -25,6 +26,7 @@ on:
       - 'src/data/guideDeckSource.ts'
       - 'public/guide/**'
       - 'public/guide-visual-isolation.css'
+      - 'scripts/checks/guide-presentation-quality-audit.cjs'
       - 'vite.config.ts'
       - 'package.json'
       - 'package-lock.json'
@@ -64,6 +66,8 @@ jobs:
         run: |
           npm run check
           npm run typecheck
+          node scripts/checks/guide-integrity-audit.cjs
+          node scripts/checks/guide-presentation-quality-audit.cjs
           npm run doctor
 
       - name: Build static Guide
