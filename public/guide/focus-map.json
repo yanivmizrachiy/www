@@ -1,1 +1,26 @@
-{}
+{
+  "05-home-edit-on.avif": {
+    "x": 66,
+    "y": 54,
+    "w": 18,
+    "h": 30,
+    "label": "פתיחת מרחב כיתתי",
+    "evidence": "Measured 2026-09-09 on the real capture (1200x603): crop left=792 top=326 w=216 h=181 was rendered and visually confirmed to frame the tile icon and its full two-line label, with margin and no neighbouring tile."
+  },
+  "15-add-activity-button.avif": {
+    "x": 33,
+    "y": 78,
+    "w": 15,
+    "h": 7,
+    "label": "הוספת משאב או פעילות",
+    "evidence": "Measured 2026-09-09 on the real capture (1200x603): the crop of this box was rendered and visually confirmed to contain the whole pill button including the plus sign, and nothing else."
+  },
+  "28-selfenrol-student-view.avif": {
+    "x": 60,
+    "y": 42,
+    "w": 14,
+    "h": 8,
+    "label": "רשום אותי",
+    "evidence": "Measured 2026-09-09 on the real capture (958x910): the crop of this box was rendered and visually confirmed to contain the blue enrol button in full, with margin on all four sides."
+  }
+}

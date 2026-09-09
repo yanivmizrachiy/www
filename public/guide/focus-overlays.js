@@ -114,6 +114,21 @@
       }
     });
     observer.observe(document.getElementById('root') || document.body, { childList: true, subtree: true });
+
+    // A mutation can arrive before focus-map.json has loaded, and the map can load before React has
+    // rendered any slide. Either order alone leaves the overlay unapplied, so also re-apply whenever a
+    // screenshot finishes loading - that always happens after both the element and its anchor exist.
+    document.addEventListener(
+      'load',
+      (event) => {
+        const target = event.target;
+        if (target instanceof HTMLImageElement && target.matches('img[src*="/guide/screenshots/"]')) {
+          applyToImage(target);
+        }
+      },
+      true
+    );
+
     void loadFocusMap();
   }
 
