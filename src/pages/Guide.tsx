@@ -34,6 +34,7 @@ import {
   type GuideScreenshot,
   type GuideSlide,
 } from '@/data/guideDeck';
+import { getGuideScreenshotHotspots } from '@/data/guideHotspots';
 
 type Panel = 'menu' | 'search' | null;
 type DeckMode = 'all' | 'quick';
@@ -65,6 +66,32 @@ function getModeFromUrl(): DeckMode {
   return requestedMode === 'quick' && requestedSlide && QUICK_START_SLIDE_IDS.includes(requestedSlide)
     ? 'quick'
     : 'all';
+}
+
+function HotspotLayer({ src }: { src: string }) {
+  const hotspots = getGuideScreenshotHotspots(src);
+  if (hotspots.length === 0) return null;
+
+  return (
+    <span className="pointer-events-none absolute inset-0 z-20" aria-hidden="true">
+      {hotspots.map((hotspot) => (
+        <span
+          key={hotspot.id}
+          className="absolute rounded-xl border-[3px] border-amber-300 bg-amber-300/10 shadow-[0_0_0_4px_rgba(15,23,42,0.28),0_0_24px_rgba(251,191,36,0.55)]"
+          style={{
+            left: `${hotspot.x}%`,
+            top: `${hotspot.y}%`,
+            width: `${hotspot.width}%`,
+            height: `${hotspot.height}%`,
+          }}
+        >
+          <span className="absolute -top-8 right-0 max-w-[240px] rounded-lg bg-slate-950/92 px-2 py-1 text-[10px] font-black leading-tight text-white shadow-lg">
+            {hotspot.label}
+          </span>
+        </span>
+      ))}
+    </span>
+  );
 }
 
 function ScreenshotCard({
@@ -144,14 +171,17 @@ function ScreenshotCard({
               הצילום לא נטען. אין מוצג תחליף.
             </span>
           ) : (
-            <img
-              src={imageUrl(screenshot.src)}
-              alt={screenshot.caption}
-              loading="eager"
-              decoding="async"
-              onError={() => setFailed(true)}
-              className="block max-h-[53vh] w-full bg-white object-contain"
-            />
+            <span className="relative block overflow-hidden bg-white">
+              <img
+                src={imageUrl(screenshot.src)}
+                alt={screenshot.caption}
+                loading="eager"
+                decoding="async"
+                onError={() => setFailed(true)}
+                className="block max-h-[53vh] w-full bg-white object-contain"
+              />
+              <HotspotLayer src={screenshot.src} />
+            </span>
           )}
 
           <span className="flex items-center justify-between gap-3 border-t border-slate-200 bg-white px-4 py-3 text-sm font-black leading-relaxed text-slate-700">
@@ -794,12 +824,15 @@ export default function Guide() {
                     <X className="h-6 w-6" />
                   </Button>
                 </div>
-                <div className="min-h-0 flex-1 overflow-auto bg-slate-100 p-2 sm:p-4">
-                  <img
-                    src={imageUrl(lightbox.screenshot.src)}
-                    alt={lightbox.screenshot.caption}
-                    className="mx-auto block max-h-[80dvh] max-w-full rounded-xl bg-white object-contain shadow-lg"
-                  />
+                <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-slate-100 p-2 sm:p-4">
+                  <div className="relative inline-block max-w-full">
+                    <img
+                      src={imageUrl(lightbox.screenshot.src)}
+                      alt={lightbox.screenshot.caption}
+                      className="block max-h-[80dvh] max-w-full rounded-xl bg-white object-contain shadow-lg"
+                    />
+                    <HotspotLayer src={lightbox.screenshot.src} />
+                  </div>
                 </div>
               </m.figure>
             </m.div>
