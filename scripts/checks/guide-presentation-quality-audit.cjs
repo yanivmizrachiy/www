@@ -5,12 +5,14 @@ const root = path.resolve(__dirname, '../..');
 const sourcePath = path.join(root, 'src/data/guideDeckSource.ts');
 const deckPath = path.join(root, 'src/data/guideDeck.ts');
 const guidePath = path.join(root, 'src/pages/Guide.tsx');
+const hotspotsPath = path.join(root, 'src/data/guideHotspots.ts');
 const cssPath = path.join(root, 'public/guide-visual-isolation.css');
 const screenshotsDir = path.join(root, 'public/guide/screenshots');
 
 const source = fs.readFileSync(sourcePath, 'utf8');
 const deck = fs.readFileSync(deckPath, 'utf8');
 const guide = fs.readFileSync(guidePath, 'utf8');
+const hotspots = fs.readFileSync(hotspotsPath, 'utf8');
 const css = fs.readFileSync(cssPath, 'utf8');
 const errors = [];
 
@@ -80,6 +82,27 @@ for (const fragment of [
   if (!css.includes(fragment)) fail(`Guide visual isolation / 3D contract is missing: ${fragment}`);
 }
 
+// 5) Verified hotspots are data-driven, bounded to the real screenshot and rendered
+// in both the presentation card and the full-size lightbox. Empty hotspot data is
+// valid; invented coordinates are not.
+for (const fragment of [
+  "import { getGuideScreenshotHotspots } from '@/data/guideHotspots';",
+  'function HotspotLayer',
+  '<HotspotLayer src={screenshot.src} />',
+  '<HotspotLayer src={lightbox.screenshot.src} />',
+]) {
+  if (!guide.includes(fragment)) fail(`Verified hotspot rendering contract is missing: ${fragment}`);
+}
+
+for (const fragment of [
+  'GUIDE_SCREENSHOT_HOTSPOTS',
+  'hotspot.x + hotspot.width <= 100',
+  'hotspot.y + hotspot.height <= 100',
+  '.filter(isValidHotspot)',
+]) {
+  if (!hotspots.includes(fragment)) fail(`Verified hotspot data-safety contract is missing: ${fragment}`);
+}
+
 if (errors.length) {
   console.error('\nGuide presentation quality audit failed:');
   for (const error of errors) console.error(`- ${error}`);
@@ -87,5 +110,5 @@ if (errors.length) {
 }
 
 console.log(
-  `Guide presentation quality audit passed: ${originalScreenshotFiles.length} original Moodle screenshots are represented; premium motion/3D/reduced-motion contracts are present.`
+  `Guide presentation quality audit passed: ${originalScreenshotFiles.length} original Moodle screenshots are represented; premium motion/3D/reduced-motion and verified-hotspot contracts are present.`
 );
