@@ -1,8 +1,9 @@
 name: keep-warm
 
-# Keeps the Render free-tier service awake so the first visitor to the guide
-# (/guide) or the teacher tool never waits ~50s for a cold start. Render sleeps
-# after ~15 minutes with no traffic; this pings /health every 5 minutes.
+# Keeps the Teacher Hub Render free-tier service awake so the first Teacher Hub
+# visitor does not wait ~50s for a cold start. The Guide is a separate static
+# product deployed on GitHub Pages and is intentionally not part of this heartbeat.
+# Render sleeps after ~15 minutes with no traffic; this pings /health every 5 minutes.
 #
 # Why every 5 min (not 10): GitHub-hosted scheduled runs can be delayed several
 # minutes under load, especially at the top of the hour. Pinging every 5 min
@@ -16,8 +17,8 @@ name: keep-warm
 #
 # NOTE: This workflow lives on the DEFAULT branch (main) on purpose — GitHub only
 # runs `schedule` triggers from the default branch. It is a self-contained
-# heartbeat: it touches no product code and does not affect the production
-# deploy, which builds from rebuild/lti13-secure-teacher-hub.
+# heartbeat for the canonical Teacher Hub Render runtime: it touches no product
+# code and does not deploy or validate the Guide.
 
 on:
   schedule:
