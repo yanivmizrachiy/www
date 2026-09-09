@@ -125,5 +125,5 @@ jobs:
             echo 'Guide output already matches main; nothing to publish.'
             exit 0
           fi
-          git commit -m 'deploy(guide): refresh always-on static presentation [skip ci]'
+          git commit -m 'deploy(guide): refresh always-on static presentation'
           git push origin HEAD:main
