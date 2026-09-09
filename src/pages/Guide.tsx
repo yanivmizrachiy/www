@@ -1,8 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AnimatePresence,
+  LazyMotion,
+  domAnimation,
+  m,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+  useTransform,
+} from 'motion/react';
+import {
   ArrowLeft,
   ArrowRight,
   Check,
+  Expand,
   ExternalLink,
   Home,
   List,
@@ -16,14 +27,28 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
+  FIRST_GUIDE_SLIDE_ID,
   GUIDE_SECTIONS,
   PUBLISHED_GUIDE_SLIDES,
   QUICK_START_SLIDE_IDS,
+  type GuideScreenshot,
   type GuideSlide,
 } from '@/data/guideDeck';
+import { getGuideScreenshotHotspots } from '@/data/guideHotspots';
 
 type Panel = 'menu' | 'search' | null;
 type DeckMode = 'all' | 'quick';
+
+type LightboxState = {
+  screenshot: GuideScreenshot;
+  slideTitle: string;
+} | null;
+
+const MOODLE_HOME = 'https://moodlemoe.lms.education.gov.il/';
+
+function imageUrl(src: string) {
+  return `/guide/screenshots/${src}`;
+}
 
 function getSlideIndexFromUrl(): number {
   if (typeof window === 'undefined') return 0;
@@ -43,154 +68,210 @@ function getModeFromUrl(): DeckMode {
     : 'all';
 }
 
-function GuideScreenshot({ src, caption }: { src: string; caption: string }) {
-  const [failed, setFailed] = useState(false);
-  const imageUrl = `/guide/screenshots/${src}`;
+function HotspotLayer({ src }: { src: string }) {
+  const hotspots = getGuideScreenshotHotspots(src);
+  if (hotspots.length === 0) return null;
 
   return (
-    <figure className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.14)]">
-      <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-100 px-4 py-2">
-        <span className="h-2.5 w-2.5 rounded-full bg-rose-400" />
-        <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-        <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-        <span className="mr-auto text-[11px] font-bold text-slate-500">Moodle משרד החינוך</span>
-      </div>
+    <span className="pointer-events-none absolute inset-0 z-20" aria-hidden="true">
+      {hotspots.map((hotspot) => (
+        <span
+          key={hotspot.id}
+          className="absolute rounded-xl border-[3px] border-amber-300 bg-amber-300/10 shadow-[0_0_0_4px_rgba(15,23,42,0.28),0_0_24px_rgba(251,191,36,0.55)]"
+          style={{
+            left: `${hotspot.x}%`,
+            top: `${hotspot.y}%`,
+            width: `${hotspot.width}%`,
+            height: `${hotspot.height}%`,
+          }}
+        >
+          <span className="absolute -top-8 right-0 max-w-[240px] rounded-lg bg-slate-950/92 px-2 py-1 text-[10px] font-black leading-tight text-white shadow-lg">
+            {hotspot.label}
+          </span>
+        </span>
+      ))}
+    </span>
+  );
+}
 
-      {failed ? (
-        <div className="flex aspect-video items-center justify-center bg-slate-100 px-6 text-center text-sm font-bold text-slate-500">
-          צילום המסך לא נטען.
-        </div>
-      ) : (
-        <a href={imageUrl} target="_blank" rel="noopener noreferrer" title="פתיחת הצילום בגודל מלא">
-          <img
-            src={imageUrl}
-            alt={caption}
-            loading="eager"
-            decoding="async"
-            onError={() => setFailed(true)}
-            className="block max-h-[54vh] w-full bg-slate-50 object-contain"
+function ScreenshotCard({
+  screenshot,
+  slideTitle,
+  onOpen,
+}: {
+  screenshot: GuideScreenshot;
+  slideTitle: string;
+  onOpen: (state: LightboxState) => void;
+}) {
+  const reducedMotion = Boolean(useReducedMotion());
+  const pointerX = useMotionValue(0);
+  const pointerY = useMotionValue(0);
+  const rotateYRaw = useTransform(pointerX, [-0.5, 0.5], [-7, 7]);
+  const rotateXRaw = useTransform(pointerY, [-0.5, 0.5], [6, -6]);
+  const rotateY = useSpring(rotateYRaw, { stiffness: 210, damping: 24, mass: 0.55 });
+  const rotateX = useSpring(rotateXRaw, { stiffness: 210, damping: 24, mass: 0.55 });
+  const [failed, setFailed] = useState(false);
+
+  function resetTilt() {
+    pointerX.set(0);
+    pointerY.set(0);
+  }
+
+  return (
+    <div className="guide-shot-stage relative min-w-0">
+      <m.button
+        type="button"
+        aria-label={`פתיחת הצילום בגודל מלא: ${screenshot.caption}`}
+        onClick={() => onOpen({ screenshot, slideTitle })}
+        onPointerMove={(event) => {
+          if (reducedMotion || event.pointerType === 'touch') return;
+          const rect = event.currentTarget.getBoundingClientRect();
+          pointerX.set((event.clientX - rect.left) / rect.width - 0.5);
+          pointerY.set((event.clientY - rect.top) / rect.height - 0.5);
+        }}
+        onPointerLeave={resetTilt}
+        onPointerCancel={resetTilt}
+        whileHover={reducedMotion ? undefined : { y: -8, scale: 1.012 }}
+        whileTap={reducedMotion ? undefined : { scale: 0.988 }}
+        transition={{ type: 'spring', stiffness: 260, damping: 22, mass: 0.55 }}
+        style={
+          reducedMotion
+            ? undefined
+            : {
+                rotateX,
+                rotateY,
+                transformPerspective: 1500,
+                transformStyle: 'preserve-3d',
+              }
+        }
+        className="guide-shot-card group relative block w-full rounded-[28px] text-right outline-none focus-visible:ring-4 focus-visible:ring-amber-300/70"
+      >
+        <span
+          aria-hidden="true"
+          className="absolute inset-x-5 bottom-[-18px] h-16 rounded-[32px] bg-slate-950/35 blur-2xl transition duration-300 group-hover:bg-blue-950/45"
+          style={{ transform: 'translateZ(-36px) scale(.93)' }}
+        />
+
+        <span
+          className="guide-shot-surface relative block overflow-hidden rounded-[28px] border border-white/70 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.28),0_10px_24px_rgba(15,23,42,0.18)]"
+          style={{ transform: reducedMotion ? undefined : 'translateZ(24px)' }}
+        >
+          <span className="flex items-center gap-2 border-b border-slate-200/90 bg-gradient-to-b from-white to-slate-100 px-4 py-2.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-rose-400 shadow-inner" />
+            <span className="h-2.5 w-2.5 rounded-full bg-amber-400 shadow-inner" />
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-inner" />
+            <span className="mr-auto inline-flex items-center gap-1.5 text-[11px] font-black text-slate-500">
+              <Expand className="h-3.5 w-3.5" />
+              לחצו להגדלה
+            </span>
+          </span>
+
+          {failed ? (
+            <span className="flex aspect-video items-center justify-center bg-slate-100 px-6 text-center text-sm font-black text-slate-500">
+              הצילום לא נטען. אין מוצג תחליף.
+            </span>
+          ) : (
+            <span className="relative block overflow-hidden bg-white">
+              <img
+                src={imageUrl(screenshot.src)}
+                alt={screenshot.caption}
+                loading="eager"
+                decoding="async"
+                onError={() => setFailed(true)}
+                className="block max-h-[53vh] w-full bg-white object-contain"
+              />
+              <HotspotLayer src={screenshot.src} />
+            </span>
+          )}
+
+          <span className="flex items-center justify-between gap-3 border-t border-slate-200 bg-white px-4 py-3 text-sm font-black leading-relaxed text-slate-700">
+            <span>{screenshot.caption}</span>
+            <span className="shrink-0 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] text-blue-800">צילום אמיתי</span>
+          </span>
+
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+            style={{
+              background:
+                'linear-gradient(115deg, transparent 12%, rgba(255,255,255,.26) 35%, transparent 55%)',
+            }}
           />
-        </a>
-      )}
-
-      <figcaption className="border-t border-slate-200 px-4 py-3 text-sm font-bold leading-relaxed text-slate-700">
-        {caption}
-      </figcaption>
-    </figure>
+        </span>
+      </m.button>
+    </div>
   );
 }
 
 function SlideContent({
   slide,
-  onQuickStart,
-  onOpenMenu,
+  onOpenScreenshot,
 }: {
   slide: GuideSlide;
-  onQuickStart: () => void;
-  onOpenMenu: () => void;
+  onOpenScreenshot: (state: LightboxState) => void;
 }) {
-  if (slide.cover) {
-    return (
-      <div className="relative flex min-h-full flex-col overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white">
-        <div className="pointer-events-none absolute -right-32 -top-36 h-96 w-96 rounded-full bg-blue-500/25 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-32 -left-24 h-96 w-96 rounded-full bg-amber-400/15 blur-3xl" />
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-blue-800/25 to-transparent" />
+  const hasScreenshots = Boolean(slide.screenshots?.length);
+  const link = slide.link ?? { href: MOODLE_HOME, label: 'פתיחת Moodle' };
+  const isFirst = slide.id === FIRST_GUIDE_SLIDE_ID;
 
-        <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-5 py-5 text-center sm:px-10 sm:py-7 lg:px-16">
-          <div className="mb-3 flex justify-center sm:mb-4">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-full bg-amber-300/30 blur-2xl" />
-              <picture className="relative block">
+  return (
+    <div className="relative min-h-full overflow-hidden bg-[radial-gradient(circle_at_100%_0%,rgba(59,130,246,0.14),transparent_30%),radial-gradient(circle_at_0%_100%,rgba(251,191,36,0.12),transparent_28%),linear-gradient(180deg,#ffffff,#f8fafc)] p-4 sm:p-6 lg:p-8">
+      <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-blue-400/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-28 -left-20 h-80 w-80 rounded-full bg-amber-300/10 blur-3xl" />
+
+      <div
+        className={cn(
+          'relative z-10 mx-auto grid min-h-full max-w-[1540px] content-center gap-6 lg:gap-8',
+          hasScreenshots ? 'lg:grid-cols-[0.72fr_1.28fr]' : 'max-w-5xl'
+        )}
+      >
+        <div className="flex min-w-0 flex-col justify-center">
+          {isFirst && (
+            <div className="mb-4 flex items-center gap-3 rounded-2xl border border-blue-100 bg-white/80 p-3 shadow-sm backdrop-blur">
+              <picture className="block shrink-0">
                 <source type="image/webp" srcSet="/guide/jerusalem-math-logo.webp" />
                 <img
                   src="/guide/jerusalem-math-logo.png"
                   alt="יחידת מתמטיקה — מחוז ירושלים והעיר ירושלים"
-                  width={512}
-                  height={512}
-                  className="h-24 w-24 animate-[spin_14s_linear_infinite] rounded-full bg-white object-contain p-2 shadow-[0_14px_45px_rgba(0,0,0,0.48)] ring-4 ring-amber-300/80 sm:h-32 sm:w-32 lg:h-36 lg:w-36"
+                  width={96}
+                  height={96}
+                  className="h-14 w-14 rounded-full bg-white object-contain p-1 shadow-md ring-2 ring-amber-300"
                 />
               </picture>
+              <div className="min-w-0">
+                <p className="text-xs font-black text-blue-800">מדריך Moodle למורים</p>
+                <p className="mt-0.5 text-xs font-bold leading-relaxed text-slate-600">
+                  הדרכה במחוז ירושלים והעיר ירושלים - מנח״י, בהובלת איילת קריספין
+                </p>
+              </div>
             </div>
-          </div>
+          )}
 
-          <p className="text-sm font-black text-amber-300 sm:text-base">{slide.eyebrow}</p>
-
-          <div className="mt-3 w-full max-w-5xl rounded-[28px] border border-white/20 bg-slate-950/55 px-5 py-5 shadow-[0_24px_70px_rgba(0,0,0,0.38)] backdrop-blur-sm sm:px-9 sm:py-6">
-            <h1 className="font-display text-4xl font-black leading-tight text-white drop-shadow-[0_3px_14px_rgba(0,0,0,0.72)] sm:text-5xl lg:text-6xl">
+          <header>
+            <div className="mb-3 inline-flex w-fit items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-800 shadow-sm">
+              {slide.eyebrow}
+            </div>
+            <h1 className="font-display text-[clamp(2rem,4.3vw,4.4rem)] font-black leading-[1.02] tracking-tight text-slate-950">
               {slide.title}
             </h1>
-            <p className="mx-auto mt-3 max-w-3xl text-base font-semibold leading-relaxed text-slate-50 sm:text-lg lg:text-xl">
-              {slide.summary}
-            </p>
-          </div>
-
-          <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
-            <Button
-              size="lg"
-              onClick={onQuickStart}
-              className="h-14 gap-2 rounded-2xl bg-amber-400 px-8 text-lg font-black text-slate-950 shadow-lg hover:bg-amber-300"
-            >
-              <PlayCircle className="h-5 w-5" />
-              התחלה מהירה
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={onOpenMenu}
-              className="h-14 gap-2 rounded-2xl border-white/35 bg-white/10 px-8 text-lg font-black text-white shadow-lg backdrop-blur-sm hover:bg-white/20 hover:text-white"
-            >
-              <List className="h-5 w-5" />
-              תוכן העניינים
-            </Button>
-          </div>
-        </div>
-
-        <div className="relative z-10 border-t border-amber-300/40 bg-slate-950/85 px-4 py-3 text-center shadow-[0_-8px_30px_rgba(0,0,0,0.18)] sm:px-8">
-          <p className="text-xs font-black leading-relaxed text-amber-200 sm:text-sm">
-            הדרכה במחוז ירושלים והעיר ירושלים - מנח״י, בהובלת איילת קריספין
-          </p>
-          <p className="mt-1 text-xs font-bold leading-relaxed text-white sm:text-sm">
-            האתר מנוהל ע״י יניב רז · מדריך מחוזי חט״ב בעיר ירושלים
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const hasScreenshots = Boolean(slide.screenshots?.length);
-
-  return (
-    <div className="min-h-full bg-[radial-gradient(circle_at_100%_0%,rgba(251,191,36,0.10),transparent_28%),linear-gradient(180deg,#ffffff,#f8fafc)] p-4 sm:p-7 lg:p-8">
-      <div
-        className={cn(
-          'mx-auto grid min-h-full max-w-[1500px] gap-6',
-          hasScreenshots ? 'lg:grid-cols-[0.76fr_1.24fr]' : 'max-w-5xl'
-        )}
-      >
-        <div className="flex min-w-0 flex-col">
-          <header className="border-b border-slate-200 pb-4">
-            <p className="text-sm font-black text-blue-700">{slide.eyebrow}</p>
-            <h1 className="mt-2 font-display text-3xl font-black leading-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
-              {slide.title}
-            </h1>
-            <p className="mt-3 max-w-4xl text-base font-semibold leading-relaxed text-slate-600 sm:text-lg">
+            <p className="mt-4 max-w-3xl text-base font-bold leading-relaxed text-slate-600 sm:text-lg lg:text-xl">
               {slide.summary}
             </p>
           </header>
 
           <div className="mt-5 grid gap-4">
             {slide.steps && slide.steps.length > 0 && (
-              <section aria-labelledby={`${slide.id}-steps`}>
-                <h2 id={`${slide.id}-steps`} className="mb-2 text-sm font-black text-slate-500">
-                  כפתור אחרי כפתור
-                </h2>
-                <ol className="grid gap-2">
+              <section aria-label="שלבי הפעולה">
+                <ol className="grid gap-2.5">
                   {slide.steps.map((step, index) => (
-                    <li key={`${slide.id}-${index}`} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-800 text-sm font-black text-white">
+                    <li
+                      key={`${slide.id}-${index}`}
+                      className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white/88 px-3.5 py-3 shadow-sm backdrop-blur"
+                    >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-700 to-blue-900 text-sm font-black text-white shadow-md">
                         {index + 1}
                       </span>
-                      <span className="pt-0.5 text-sm font-bold leading-relaxed text-slate-700 sm:text-base">{step}</span>
+                      <span className="pt-1 text-sm font-black leading-relaxed text-slate-700 sm:text-base">{step}</span>
                     </li>
                   ))}
                 </ol>
@@ -198,12 +279,15 @@ function SlideContent({
             )}
 
             {slide.points && slide.points.length > 0 && (
-              <section aria-labelledby={`${slide.id}-points`}>
-                <ul className="grid gap-2 sm:grid-cols-2">
+              <section aria-label="נקודות חשובות">
+                <ul className="grid gap-2.5 sm:grid-cols-2">
                   {slide.points.map((point) => (
-                    <li key={point} className="flex items-start gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+                    <li
+                      key={point}
+                      className="flex items-start gap-2.5 rounded-2xl border border-slate-200 bg-white/88 px-3.5 py-3 shadow-sm backdrop-blur"
+                    >
                       <Check className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-                      <span className="text-sm font-bold leading-relaxed text-slate-700 sm:text-base">{point}</span>
+                      <span className="text-sm font-black leading-relaxed text-slate-700 sm:text-base">{point}</span>
                     </li>
                   ))}
                 </ul>
@@ -211,46 +295,71 @@ function SlideContent({
             )}
 
             {slide.tip && (
-              <aside className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-bold leading-relaxed text-amber-950 sm:text-base">
-                <span className="ml-2 font-black">טיפ:</span>{slide.tip}
+              <aside className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-black leading-relaxed text-amber-950 sm:text-base">
+                <span className="ml-2">טיפ:</span>
+                {slide.tip}
               </aside>
             )}
 
             {slide.warning && (
-              <aside className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold leading-relaxed text-rose-950 sm:text-base">
-                <span className="ml-2 font-black">חשוב:</span>{slide.warning}
+              <aside className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-black leading-relaxed text-rose-950 sm:text-base">
+                <span className="ml-2">חשוב:</span>
+                {slide.warning}
               </aside>
             )}
 
-            {slide.link && (
-              <div>
-                <Button asChild size="lg" className="h-12 gap-2 rounded-xl px-6 font-black shadow-sm">
-                  <a href={slide.link.href} target="_blank" rel="noopener noreferrer">
-                    {slide.link.label}
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              </div>
-            )}
+            <div className="pt-1">
+              <Button
+                asChild
+                size="lg"
+                className="h-12 gap-2 rounded-2xl bg-slate-950 px-6 font-black text-white shadow-[0_12px_28px_rgba(15,23,42,0.20)] hover:bg-blue-900"
+              >
+                <a href={link.href} target="_blank" rel="noopener noreferrer">
+                  {link.label}
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              </Button>
+            </div>
           </div>
         </div>
 
         {hasScreenshots && (
-          <div className="grid content-start gap-4 lg:pt-1">
-            {slide.screenshots?.map((screenshot) => <GuideScreenshot key={screenshot.src} {...screenshot} />)}
+          <div
+            className={cn(
+              'grid content-center gap-5 lg:py-2',
+              (slide.screenshots?.length ?? 0) > 1 ? 'md:grid-cols-2' : 'grid-cols-1'
+            )}
+          >
+            {slide.screenshots?.map((screenshot) => (
+              <ScreenshotCard
+                key={screenshot.src}
+                screenshot={screenshot}
+                slideTitle={slide.title}
+                onOpen={onOpenScreenshot}
+              />
+            ))}
           </div>
         )}
       </div>
+
+      {isFirst && (
+        <p className="relative z-10 mx-auto mt-5 max-w-5xl text-center text-[11px] font-bold text-slate-500 sm:text-xs">
+          האתר מנוהל ע״י יניב רז · מדריך מחוזי חט״ב בעיר ירושלים
+        </p>
+      )}
     </div>
   );
 }
 
 export default function Guide() {
+  const reducedMotion = Boolean(useReducedMotion());
   const [currentIndex, setCurrentIndex] = useState(getSlideIndexFromUrl);
   const [mode, setMode] = useState<DeckMode>(getModeFromUrl);
   const [panel, setPanel] = useState<Panel>(null);
   const [query, setQuery] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [direction, setDirection] = useState(1);
+  const [lightbox, setLightbox] = useState<LightboxState>(null);
   const slideRef = useRef<HTMLElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const touchStartX = useRef<number | null>(null);
@@ -268,10 +377,17 @@ export default function Guide() {
 
   const searchResults = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('he');
-    if (!normalized) return PUBLISHED_GUIDE_SLIDES.filter((item) => !item.cover).slice(0, 14);
+    if (!normalized) return PUBLISHED_GUIDE_SLIDES.slice(0, 18);
 
     return PUBLISHED_GUIDE_SLIDES.filter((item) => {
-      const searchable = [item.title, item.summary, item.eyebrow, ...(item.steps ?? []), ...(item.points ?? []), ...(item.keywords ?? [])]
+      const searchable = [
+        item.title,
+        item.summary,
+        item.eyebrow,
+        ...(item.steps ?? []),
+        ...(item.points ?? []),
+        ...(item.keywords ?? []),
+      ]
         .join(' ')
         .toLocaleLowerCase('he');
       return searchable.includes(normalized);
@@ -290,6 +406,7 @@ export default function Guide() {
     const index = PUBLISHED_GUIDE_SLIDES.findIndex((item) => item.id === slideId);
     if (index < 0) return;
 
+    setDirection(index >= currentIndex ? 1 : -1);
     const nextMode = requestedMode === 'quick' && QUICK_START_SLIDE_IDS.includes(slideId) ? 'quick' : 'all';
     setMode(nextMode);
     setCurrentIndex(index);
@@ -301,7 +418,9 @@ export default function Guide() {
   function goBy(delta: number) {
     if (safePosition < 0) return;
     const nextId = safeSequence[safePosition + delta];
-    if (nextId) jumpToSlide(nextId, safeMode);
+    if (!nextId) return;
+    setDirection(delta > 0 ? 1 : -1);
+    jumpToSlide(nextId, safeMode);
   }
 
   async function toggleFullscreen() {
@@ -312,9 +431,12 @@ export default function Guide() {
 
   useEffect(() => {
     const onPopState = () => {
-      setCurrentIndex(getSlideIndexFromUrl());
+      const nextIndex = getSlideIndexFromUrl();
+      setDirection(nextIndex >= currentIndex ? 1 : -1);
+      setCurrentIndex(nextIndex);
       setMode(getModeFromUrl());
       setPanel(null);
+      setLightbox(null);
     };
     const onFullscreenChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
 
@@ -324,7 +446,7 @@ export default function Guide() {
       window.removeEventListener('popstate', onPopState);
       document.removeEventListener('fullscreenchange', onFullscreenChange);
     };
-  }, []);
+  }, [currentIndex]);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -337,8 +459,18 @@ export default function Guide() {
   useEffect(() => {
     if (safeMode !== mode) setMode(safeMode);
     document.title = `${slide.title} | מדריך Moodle למורים`;
+    slideRef.current?.scrollTo({ top: 0 });
     slideRef.current?.focus({ preventScroll: true });
-  }, [mode, safeMode, slide.id, slide.title]);
+
+    for (const nearbyIndex of [currentIndex - 1, currentIndex + 1]) {
+      const nearbySlide = PUBLISHED_GUIDE_SLIDES[nearbyIndex];
+      for (const screenshot of nearbySlide?.screenshots ?? []) {
+        const image = new Image();
+        image.decoding = 'async';
+        image.src = imageUrl(screenshot.src);
+      }
+    }
+  }, [currentIndex, mode, safeMode, slide.id, slide.title]);
 
   useEffect(() => {
     if (panel === 'search') window.setTimeout(() => searchInputRef.current?.focus(), 30);
@@ -350,11 +482,12 @@ export default function Guide() {
       const isTyping = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA';
 
       if (event.key === 'Escape') {
-        if (panel) setPanel(null);
+        if (lightbox) setLightbox(null);
+        else if (panel) setPanel(null);
         else if (document.fullscreenElement) void document.exitFullscreen();
         return;
       }
-      if (isTyping || panel) return;
+      if (isTyping || panel || lightbox) return;
 
       if (event.key === 'ArrowLeft' || event.key === 'PageDown') {
         event.preventDefault();
@@ -366,7 +499,7 @@ export default function Guide() {
       }
       if (event.key === 'Home') {
         event.preventDefault();
-        jumpToSlide('cover', 'all');
+        jumpToSlide(FIRST_GUIDE_SLIDE_ID, 'all');
       }
       if (event.key === 'End') {
         event.preventDefault();
@@ -384,222 +517,328 @@ export default function Guide() {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [panel, safeMode, safePosition, safeSequence]);
+  }, [lightbox, panel, safeMode, safePosition, safeSequence]);
 
   const progress = safePosition >= 0 ? ((safePosition + 1) / safeSequence.length) * 100 : 0;
+  const transition = reducedMotion
+    ? { duration: 0.01 }
+    : { type: 'spring' as const, stiffness: 170, damping: 24, mass: 0.72 };
 
   return (
-    <div dir="rtl" className="fixed inset-0 z-[100] grid h-dvh grid-rows-[auto_1fr_auto] overflow-hidden bg-[radial-gradient(circle_at_50%_0%,#1e3a8a_0%,#0f172a_48%,#020617_100%)] text-slate-900">
-      <header className="flex min-h-16 items-center justify-between gap-3 border-b border-white/10 px-3 text-white sm:px-5 lg:px-8">
-        <div className="flex min-w-0 items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setPanel('menu')} className="gap-2 text-white hover:bg-white/10 hover:text-white">
-            <Menu className="h-5 w-5" />
-            <span className="hidden sm:inline">תוכן</span>
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => setPanel('search')} className="gap-2 text-white hover:bg-white/10 hover:text-white">
-            <Search className="h-5 w-5" />
-            <span className="hidden sm:inline">חיפוש</span>
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => jumpToSlide('cover', 'all')} className="hidden gap-2 text-white hover:bg-white/10 hover:text-white md:inline-flex">
-            <Home className="h-4 w-4" />
-            פתיחה
-          </Button>
-        </div>
-
-        <div className="min-w-0 text-center">
-          <p className="truncate text-xs font-black text-amber-300 sm:text-sm">{safeMode === 'quick' ? 'התחלה מהירה' : currentSection?.title ?? 'Moodle'}</p>
-          <p className="hidden max-w-[48vw] truncate text-xs font-bold text-white/70 sm:block">{slide.title}</p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {safeMode === 'quick' && (
-            <Button variant="ghost" size="sm" onClick={() => jumpToSlide(slide.id, 'all', true)} className="hidden text-white/80 hover:bg-white/10 hover:text-white sm:inline-flex">
-              כל השקופיות
+    <LazyMotion features={domAnimation} strict>
+      <div
+        dir="rtl"
+        data-guide-shell="premium-presentation"
+        className="fixed inset-0 z-[100] grid h-dvh grid-rows-[auto_1fr_auto] overflow-hidden bg-[radial-gradient(circle_at_50%_-20%,#1d4ed8_0%,#0f172a_46%,#020617_100%)] text-slate-900"
+      >
+        <header className="flex min-h-16 items-center justify-between gap-3 border-b border-white/10 bg-slate-950/30 px-3 text-white backdrop-blur-xl sm:px-5 lg:px-8">
+          <div className="flex min-w-0 items-center gap-1 sm:gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setPanel('menu')} className="gap-2 text-white hover:bg-white/10 hover:text-white">
+              <Menu className="h-5 w-5" />
+              <span className="hidden sm:inline">תוכן</span>
             </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => void toggleFullscreen()}
-            disabled={!document.fullscreenEnabled}
-            aria-label={isFullscreen ? 'יציאה ממסך מלא' : 'מעבר למסך מלא'}
-            className="text-white hover:bg-white/10 hover:text-white"
-          >
-            {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
-          </Button>
-        </div>
-      </header>
+            <Button variant="ghost" size="sm" onClick={() => setPanel('search')} className="gap-2 text-white hover:bg-white/10 hover:text-white">
+              <Search className="h-5 w-5" />
+              <span className="hidden sm:inline">חיפוש</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => jumpToSlide(FIRST_GUIDE_SLIDE_ID, 'all')}
+              className="hidden gap-2 text-white hover:bg-white/10 hover:text-white md:inline-flex"
+            >
+              <Home className="h-4 w-4" />
+              התחלה
+            </Button>
+          </div>
 
-      <main className="flex min-h-0 items-center justify-center overflow-hidden p-0 sm:p-3 lg:p-4">
-        <article
-          ref={slideRef}
-          tabIndex={-1}
-          aria-live="polite"
-          onTouchStart={(event) => {
-            touchStartX.current = event.changedTouches[0]?.clientX ?? null;
-          }}
-          onTouchEnd={(event) => {
-            const start = touchStartX.current;
-            const end = event.changedTouches[0]?.clientX;
-            touchStartX.current = null;
-            if (start == null || end == null) return;
-            const distance = end - start;
-            if (Math.abs(distance) < 70) return;
-            if (distance < 0) goBy(1);
-            else goBy(-1);
-          }}
-          className="h-full w-full overflow-y-auto bg-white shadow-[0_35px_100px_rgba(0,0,0,0.48)] outline-none sm:rounded-[26px] lg:h-auto lg:max-h-full lg:w-[min(96vw,calc((100dvh-148px)*16/9),1600px)] lg:aspect-video"
-        >
-          <SlideContent
-            key={slide.id}
-            slide={slide}
-            onQuickStart={() => jumpToSlide(QUICK_START_SLIDE_IDS[0], 'quick')}
-            onOpenMenu={() => setPanel('menu')}
-          />
-        </article>
-      </main>
+          <div className="min-w-0 text-center">
+            <p className="truncate text-xs font-black text-amber-300 sm:text-sm">
+              {safeMode === 'quick' ? 'מסלול מהיר' : currentSection?.title ?? 'Moodle'}
+            </p>
+            <p className="hidden max-w-[48vw] truncate text-xs font-bold text-white/70 sm:block">{slide.title}</p>
+          </div>
 
-      <footer className="grid min-h-[72px] grid-cols-[1fr_auto_1fr] items-center gap-3 border-t border-white/10 px-3 text-white sm:px-5 lg:px-8">
-        <div className="flex justify-start">
-          <Button
-            variant="ghost"
-            onClick={() => goBy(-1)}
-            disabled={!canGoPrevious}
-            className="h-11 gap-2 px-4 font-black text-white hover:bg-white/10 hover:text-white disabled:text-white/25"
-          >
-            <ArrowRight className="h-5 w-5" />
-            <span className="hidden sm:inline">הקודם</span>
-          </Button>
-        </div>
+          <div className="flex items-center gap-1 sm:gap-2">
+            {safeMode === 'quick' ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => jumpToSlide(slide.id, 'all', true)}
+                className="hidden text-white/80 hover:bg-white/10 hover:text-white sm:inline-flex"
+              >
+                כל השקופיות
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => jumpToSlide(QUICK_START_SLIDE_IDS[0], 'quick')}
+                className="hidden gap-2 text-white/80 hover:bg-white/10 hover:text-white sm:inline-flex"
+              >
+                <PlayCircle className="h-4 w-4" />
+                מסלול מהיר
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => void toggleFullscreen()}
+              disabled={!document.fullscreenEnabled}
+              aria-label={isFullscreen ? 'יציאה ממסך מלא' : 'מעבר למסך מלא'}
+              className="text-white hover:bg-white/10 hover:text-white"
+            >
+              {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+            </Button>
+          </div>
+        </header>
 
-        <div className="flex min-w-[150px] items-center gap-3 sm:min-w-[300px]">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setPanel('menu')}
-            className="hidden shrink-0 gap-2 font-black text-white hover:bg-white/10 hover:text-white sm:inline-flex"
-          >
-            <List className="h-4 w-4" />
-            תוכן
-          </Button>
-          <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
-            <div className="text-xs font-black text-white/90">{safePosition + 1} מתוך {safeSequence.length}</div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/15">
-              <div className="h-full rounded-full bg-amber-400 transition-[width] duration-300" style={{ width: `${progress}%` }} />
+        <main className="relative flex min-h-0 items-center justify-center overflow-hidden p-0 sm:p-3 lg:p-4">
+          <AnimatePresence mode="wait" custom={direction} initial={false}>
+            <m.article
+              key={slide.id}
+              ref={slideRef}
+              tabIndex={-1}
+              aria-live="polite"
+              custom={direction}
+              initial={
+                reducedMotion
+                  ? { opacity: 0 }
+                  : { opacity: 0, x: direction * 110, rotateY: direction * -5, scale: 0.985, filter: 'blur(8px)' }
+              }
+              animate={{ opacity: 1, x: 0, rotateY: 0, scale: 1, filter: 'blur(0px)' }}
+              exit={
+                reducedMotion
+                  ? { opacity: 0 }
+                  : { opacity: 0, x: direction * -90, rotateY: direction * 4, scale: 0.99, filter: 'blur(7px)' }
+              }
+              transition={transition}
+              onTouchStart={(event) => {
+                touchStartX.current = event.changedTouches[0]?.clientX ?? null;
+              }}
+              onTouchEnd={(event) => {
+                const start = touchStartX.current;
+                const end = event.changedTouches[0]?.clientX;
+                touchStartX.current = null;
+                if (start == null || end == null) return;
+                const distance = end - start;
+                if (Math.abs(distance) < 70) return;
+                if (distance < 0) goBy(1);
+                else goBy(-1);
+              }}
+              className="h-full w-full overflow-y-auto bg-white shadow-[0_35px_110px_rgba(0,0,0,0.52)] outline-none sm:rounded-[30px] lg:h-auto lg:max-h-full lg:w-[min(96vw,calc((100dvh-148px)*16/9),1660px)] lg:aspect-video"
+              style={{ transformPerspective: 1800 }}
+            >
+              <SlideContent slide={slide} onOpenScreenshot={setLightbox} />
+            </m.article>
+          </AnimatePresence>
+        </main>
+
+        <footer className="grid min-h-[72px] grid-cols-[1fr_auto_1fr] items-center gap-3 border-t border-white/10 bg-slate-950/30 px-3 text-white backdrop-blur-xl sm:px-5 lg:px-8">
+          <div className="flex justify-start">
+            <Button
+              variant="ghost"
+              onClick={() => goBy(-1)}
+              disabled={!canGoPrevious}
+              className="h-11 gap-2 rounded-2xl px-4 font-black text-white hover:bg-white/10 hover:text-white disabled:text-white/25"
+            >
+              <ArrowRight className="h-5 w-5" />
+              <span className="hidden sm:inline">הקודם</span>
+            </Button>
+          </div>
+
+          <div className="flex min-w-[150px] items-center gap-3 sm:min-w-[320px]">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPanel('menu')}
+              className="hidden shrink-0 gap-2 rounded-xl font-black text-white hover:bg-white/10 hover:text-white sm:inline-flex"
+            >
+              <List className="h-4 w-4" />
+              תוכן
+            </Button>
+            <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
+              <div className="text-xs font-black text-white/90">{safePosition + 1} מתוך {safeSequence.length}</div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/15">
+                <m.div
+                  className="h-full rounded-full bg-amber-400"
+                  animate={{ width: `${progress}%` }}
+                  transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 160, damping: 24 }}
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex justify-end">
-          <Button
-            onClick={() => goBy(1)}
-            disabled={!canGoNext}
-            className="h-11 gap-2 bg-amber-400 px-5 font-black text-slate-950 hover:bg-amber-300 disabled:bg-white/10 disabled:text-white/25"
-          >
-            <span className="hidden sm:inline">הבא</span>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </div>
-      </footer>
+          <div className="flex justify-end">
+            <Button
+              onClick={() => goBy(1)}
+              disabled={!canGoNext}
+              className="h-11 gap-2 rounded-2xl bg-amber-400 px-5 font-black text-slate-950 shadow-lg hover:bg-amber-300 disabled:bg-white/10 disabled:text-white/25"
+            >
+              <span className="hidden sm:inline">הבא</span>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </div>
+        </footer>
 
-      {panel && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-3 backdrop-blur-md sm:p-6">
-          <section className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/15 bg-white shadow-2xl">
-            <header className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-7">
-              <h2 className="text-2xl font-black text-slate-950">{panel === 'menu' ? 'תוכן העניינים' : 'חיפוש'}</h2>
-              <Button variant="ghost" size="icon" onClick={() => setPanel(null)} aria-label="סגירה">
-                <X className="h-6 w-6" />
-              </Button>
-            </header>
+        <AnimatePresence>
+          {panel && (
+            <m.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/78 p-3 backdrop-blur-xl sm:p-6"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget) setPanel(null);
+              }}
+            >
+              <m.section
+                initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.985 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.99 }}
+                transition={transition}
+                className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/15 bg-white shadow-2xl"
+              >
+                <header className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-7">
+                  <h2 className="text-2xl font-black text-slate-950">{panel === 'menu' ? 'תוכן העניינים' : 'חיפוש'}</h2>
+                  <Button variant="ghost" size="icon" onClick={() => setPanel(null)} aria-label="סגירה">
+                    <X className="h-6 w-6" />
+                  </Button>
+                </header>
 
-            {panel === 'menu' ? (
-              <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
-                <div className="mb-6 grid gap-3 sm:grid-cols-2">
-                  <button
-                    onClick={() => jumpToSlide(QUICK_START_SLIDE_IDS[0], 'quick')}
-                    className="flex items-center gap-4 rounded-2xl border-2 border-amber-300 bg-amber-50 p-5 text-right transition hover:-translate-y-0.5 hover:shadow-lg"
-                  >
-                    <PlayCircle className="h-9 w-9 shrink-0 text-amber-600" />
-                    <span className="text-lg font-black text-slate-950">התחלה מהירה</span>
-                  </button>
-                  <button
-                    onClick={() => jumpToSlide('cover', 'all')}
-                    className="flex items-center gap-4 rounded-2xl border-2 border-slate-200 bg-white p-5 text-right transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-lg"
-                  >
-                    <Home className="h-9 w-9 shrink-0 text-blue-700" />
-                    <span className="text-lg font-black text-slate-950">עמוד הפתיחה</span>
-                  </button>
-                </div>
+                {panel === 'menu' ? (
+                  <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
+                    <div className="mb-6 grid gap-3 sm:grid-cols-2">
+                      <button
+                        onClick={() => jumpToSlide(QUICK_START_SLIDE_IDS[0], 'quick')}
+                        className="flex items-center gap-4 rounded-2xl border-2 border-amber-300 bg-amber-50 p-5 text-right transition hover:-translate-y-0.5 hover:shadow-lg"
+                      >
+                        <PlayCircle className="h-9 w-9 shrink-0 text-amber-600" />
+                        <span className="text-lg font-black text-slate-950">מסלול מהיר</span>
+                      </button>
+                      <button
+                        onClick={() => jumpToSlide(FIRST_GUIDE_SLIDE_ID, 'all')}
+                        className="flex items-center gap-4 rounded-2xl border-2 border-slate-200 bg-white p-5 text-right transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-lg"
+                      >
+                        <Home className="h-9 w-9 shrink-0 text-blue-700" />
+                        <span className="text-lg font-black text-slate-950">השקף הראשון</span>
+                      </button>
+                    </div>
 
-                <div className="grid gap-5 lg:grid-cols-2">
-                  {GUIDE_SECTIONS.map((section) => {
-                    const sectionSlides = PUBLISHED_GUIDE_SLIDES.filter((item) => item.section === section.id && !item.cover);
-                    if (sectionSlides.length === 0) return null;
-                    return (
-                      <div key={section.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
-                        <h3 className="text-lg font-black text-slate-950">{section.title}</h3>
-                        <div className="mt-4 grid gap-2">
-                          {sectionSlides.map((item) => (
-                            <button
-                              key={item.id}
-                              onClick={() => jumpToSlide(item.id, 'all')}
-                              aria-current={item.id === slide.id ? 'page' : undefined}
-                              className={cn(
-                                'flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-right text-sm font-bold transition',
-                                item.id === slide.id ? 'bg-blue-800 text-white' : 'bg-white text-slate-700 hover:bg-blue-50 hover:text-blue-900'
-                              )}
-                            >
-                              <span>{item.title}</span>
-                              <ArrowLeft className="h-4 w-4 shrink-0" />
-                            </button>
-                          ))}
-                        </div>
+                    <div className="grid gap-5 lg:grid-cols-2">
+                      {GUIDE_SECTIONS.map((section) => {
+                        const sectionSlides = PUBLISHED_GUIDE_SLIDES.filter((item) => item.section === section.id);
+                        if (sectionSlides.length === 0) return null;
+                        return (
+                          <div key={section.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+                            <h3 className="text-lg font-black text-slate-950">{section.title}</h3>
+                            <p className="mt-1 text-xs font-bold leading-relaxed text-slate-500">{section.description}</p>
+                            <div className="mt-4 grid gap-2">
+                              {sectionSlides.map((item) => (
+                                <button
+                                  key={item.id}
+                                  onClick={() => jumpToSlide(item.id, 'all')}
+                                  aria-current={item.id === slide.id ? 'page' : undefined}
+                                  className={cn(
+                                    'flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-right text-sm font-bold transition',
+                                    item.id === slide.id
+                                      ? 'bg-blue-800 text-white shadow-md'
+                                      : 'bg-white text-slate-700 hover:bg-blue-50 hover:text-blue-900'
+                                  )}
+                                >
+                                  <span>{item.title}</span>
+                                  <ArrowLeft className="h-4 w-4 shrink-0" />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex min-h-0 flex-1 flex-col">
+                    <div className="border-b border-slate-200 p-5 sm:px-7">
+                      <div className="relative">
+                        <Search className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                        <input
+                          ref={searchInputRef}
+                          value={query}
+                          onChange={(event) => setQuery(event.target.value)}
+                          placeholder="חיפוש שאלה, פעולה או כפתור"
+                          className="h-14 w-full rounded-2xl border-2 border-slate-200 bg-slate-50 pr-12 pl-4 text-base font-bold text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
+                        />
                       </div>
-                    );
-                  })}
+                    </div>
+                    <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
+                      <div className="grid gap-2">
+                        {searchResults.map((item) => (
+                          <button
+                            key={item.id}
+                            onClick={() => jumpToSlide(item.id, 'all')}
+                            className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4 text-right transition hover:border-blue-300 hover:bg-blue-50 hover:shadow-md"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-xs font-black text-blue-700">{item.eyebrow}</p>
+                              <p className="mt-1 text-base font-black text-slate-950">{item.title}</p>
+                            </div>
+                            <ArrowLeft className="h-5 w-5 shrink-0 text-blue-700" />
+                          </button>
+                        ))}
+                        {searchResults.length === 0 && (
+                          <p className="rounded-2xl bg-slate-50 p-6 text-center font-bold text-slate-500">לא נמצאה שאלה מתאימה.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </m.section>
+            </m.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {lightbox && (
+            <m.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-[70] flex items-center justify-center bg-slate-950/92 p-3 backdrop-blur-xl sm:p-6"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget) setLightbox(null);
+              }}
+            >
+              <m.figure
+                initial={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.94, y: 24 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 14 }}
+                transition={transition}
+                className="relative flex max-h-[94dvh] w-full max-w-[1600px] flex-col overflow-hidden rounded-[30px] border border-white/20 bg-white shadow-[0_40px_140px_rgba(0,0,0,0.65)]"
+              >
+                <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-3 sm:px-6">
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-black text-blue-700">{lightbox.slideTitle}</p>
+                    <figcaption className="mt-1 text-sm font-black text-slate-800 sm:text-base">{lightbox.screenshot.caption}</figcaption>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => setLightbox(null)} aria-label="סגירת הצילום">
+                    <X className="h-6 w-6" />
+                  </Button>
                 </div>
-              </div>
-            ) : (
-              <div className="flex min-h-0 flex-1 flex-col">
-                <div className="border-b border-slate-200 p-5 sm:px-7">
-                  <div className="relative">
-                    <Search className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                    <input
-                      ref={searchInputRef}
-                      value={query}
-                      onChange={(event) => setQuery(event.target.value)}
-                      placeholder="חיפוש שאלה, פעולה או כפתור"
-                      className="h-14 w-full rounded-2xl border-2 border-slate-200 bg-slate-50 pr-12 pl-4 text-base font-bold text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white"
+                <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-slate-100 p-2 sm:p-4">
+                  <div className="relative inline-block max-w-full">
+                    <img
+                      src={imageUrl(lightbox.screenshot.src)}
+                      alt={lightbox.screenshot.caption}
+                      className="block max-h-[80dvh] max-w-full rounded-xl bg-white object-contain shadow-lg"
                     />
+                    <HotspotLayer src={lightbox.screenshot.src} />
                   </div>
                 </div>
-                <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
-                  {searchResults.length > 0 ? (
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {searchResults.map((item) => (
-                        <button
-                          key={item.id}
-                          onClick={() => jumpToSlide(item.id, 'all')}
-                          className="rounded-2xl border border-slate-200 bg-white p-4 text-right transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-lg"
-                        >
-                          <span className="text-xs font-black text-blue-700">{item.eyebrow}</span>
-                          <span className="mt-1 block text-lg font-black text-slate-950">{item.title}</span>
-                          <span className="mt-2 block text-sm font-medium leading-relaxed text-slate-500">{item.summary}</span>
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="py-16 text-center">
-                      <Search className="mx-auto h-10 w-10 text-slate-300" />
-                      <p className="mt-4 text-lg font-black text-slate-700">לא נמצאו תוצאות</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </section>
-        </div>
-      )}
-    </div>
+              </m.figure>
+            </m.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </LazyMotion>
   );
 }
