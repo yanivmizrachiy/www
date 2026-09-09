@@ -67,8 +67,23 @@ if (/export\s+const\s+QUICK_START_SLIDE_IDS\b/.test(source)) {
   notes.push('guideDeckSource.ts still carries a legacy QUICK_START_SLIDE_IDS list; application policy remains protected in guideDeck.ts and source cleanup is still pending.');
 }
 
+// The publication gate must exist as executable code, not as a comment. Matching raw text let a
+// commented-out filter satisfy every check below while the deck shipped all 54 slides.
+const deckCode = deck
+  .replace(/\/\*[\s\S]*?\*\//g, ' ')
+  .split('\n')
+  .map((line) => line.replace(/(^|[^:])\/\/.*$/, '$1'))
+  .join('\n');
+
+if (!/PUBLISHED_GUIDE_SLIDES\s*=\s*GUIDE_SLIDES\.filter\(/.test(deckCode)) {
+  fail('guideDeck.ts must publish through GUIDE_SLIDES.filter(...) in real code, not in a comment.');
+}
+if (!/QUICK_START_SLIDE_IDS\s*=\s*QUICK_START_CANDIDATES\.filter\(/.test(deckCode)) {
+  fail('guideDeck.ts must filter QUICK_START_CANDIDATES in real code, not in a comment.');
+}
+
 for (const requiredFragment of ["slide.status === 'ready'", '!slide.missingCaptureId']) {
-  if (!deck.includes(requiredFragment)) fail(`guideDeck.ts publication gate is missing: ${requiredFragment}`);
+  if (!deckCode.includes(requiredFragment)) fail(`guideDeck.ts publication gate is missing: ${requiredFragment}`);
 }
 for (const forbiddenFragment of ["slide.status !== 'needs-capture'", "slide.status !== 'needs-fact'"]) {
   if (deck.includes(forbiddenFragment)) {
@@ -267,6 +282,41 @@ if (!deck.includes('GUIDE_BRANDING_LINES')) {
 for (const line of brandingLines) {
   if (!source.includes(line)) fail(`Cover branding line missing or reworded in guideDeckSource.ts: ${line}`);
   if (!memory.includes(line)) fail(`Cover branding line missing from PROJECT_MEMORY.md rule 24: ${line}`);
+}
+
+// Locking the constant is not enough: the cover must actually render it. Deleting the two JSX lines
+// removed the branding from the teacher's screen while every other gate stayed green.
+const guidePage = fs.readFileSync(path.join(root, 'src/pages/Guide.tsx'), 'utf8');
+for (const index of [0, 1]) {
+  if (!guidePage.includes(`GUIDE_BRANDING_LINES[${index}]`)) {
+    fail(`src/pages/Guide.tsx must render GUIDE_BRANDING_LINES[${index}] on the cover (rule 24).`);
+  }
+}
+
+// The Guide route was removed from App.tsx on purpose; main.tsx mounts the presentation first.
+// Nothing verified that, which is why the removal could silently regress.
+const appEntry = fs.readFileSync(path.join(root, 'src/App.tsx'), 'utf8');
+if (/^import\s+Guide\s+from/m.test(appEntry) || appEntry.includes('path="/guide"')) {
+  fail('src/App.tsx must not import Guide or declare a /guide route; src/main.tsx owns that surface.');
+}
+const mainEntry = fs.readFileSync(path.join(root, 'src/main.tsx'), 'utf8');
+if (!mainEntry.includes('./pages/Guide.tsx')) {
+  fail('src/main.tsx must lazy-mount ./pages/Guide.tsx; otherwise /guide has no owner at all.');
+}
+
+// Orphan detection has to run disk -> references too. Checking only references -> disk means deleting
+// a slide leaves its screenshots shipped forever with every gate green.
+const screenshotBaseNames = new Set(
+  fs.readdirSync(screenshotsDir).map((file) => file.replace(/\.[^.]+$/, ''))
+);
+const referencedBaseNames = new Set(
+  [...source.matchAll(/src: '([^']+)'/g)].map((match) => match[1].replace(/\.[^.]+$/, ''))
+);
+const orphanScreenshots = [...screenshotBaseNames].filter((base) => !referencedBaseNames.has(base));
+if (orphanScreenshots.length) {
+  fail(
+    `Screenshots exist on disk that no slide references (they still ship to every teacher): ${orphanScreenshots.join(', ')}`
+  );
 }
 
 const guideHash = computeGuideHash();
