@@ -2,7 +2,11 @@
 
 עודכן: 2026-09-09  
 ריפו מקור: `yanivmizrachiy/www`  
-Runtime קנוני נוכחי: `https://www-tijc.onrender.com`  
+Runtime — שני משטחים חיים נפרדים:  
+- **Teacher Hub (נתוני המורה):** `https://www-tijc.onrender.com` — Render.  
+- **Guide (מצגת מודל):** `https://yanivmizrachiy.github.io/www/guide/` — GitHub Pages, מתוך הענף `deploy/guide-static` שנבנה אוטומטית מ-`main`.  
+  Render לעולם אינו מפרסם ואינו מאמת את ה-Guide. המצגת נבנית ונבדקת אך ורק דרך 
+  `Guide Static Always-On` ו-`Guide Live Smoke`, מול GitHub Pages.  
 Teacher Release: **NO**
 
 ## 1. מקור אמת יחיד וכלל סנכרון

@@ -16,6 +16,7 @@ on:
       - 'package-lock.json'
       - 'scripts/checks/guide-integrity-audit.cjs'
       - 'scripts/checks/guide-presentation-quality-audit.cjs'
+      - 'scripts/checks/guide-asset-integrity-audit.cjs'
       - '.github/workflows/guide-static-always-on.yml'
       - '.github/workflows/guide-live-smoke.yml'
   push:
@@ -60,6 +61,7 @@ jobs:
           if [ -f scripts/checks/guide-presentation-quality-audit.cjs ]; then
             node scripts/checks/guide-presentation-quality-audit.cjs
           fi
+          node scripts/checks/guide-asset-integrity-audit.cjs
           npm run typecheck
           npm run doctor
 
