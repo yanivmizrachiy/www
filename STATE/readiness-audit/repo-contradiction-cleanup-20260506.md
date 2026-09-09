@@ -1,5 +1,12 @@
 # Repo contradiction cleanup — 2026-05-06
 
+<!-- SUPERSEDED_TRUTH_LIST -->
+> **⚠️ מסמך היסטורי — אינו מקור אמת.** הוא מונה רשימת מקורות אמת שלישית ושונה.
+>
+> ניתוב מקורות האמת המחייב היום: מצגת `/guide` → `PROJECT_MEMORY.md` · מוצר Moodle Teacher Hub →
+> `PROJECT_RULES.md` · גבול הריפו → `RULES.md` · תקציר וניתוב → `CLAUDE.md`.
+> התוכן נשמר כראיה היסטורית ואין להסיק ממנו כללים. עודכן 2026-09-09.
+
 ## Purpose
 
 The user asked to proceed smartly and not as a demo. This file documents the real cleanup actions taken before any new product feature work.

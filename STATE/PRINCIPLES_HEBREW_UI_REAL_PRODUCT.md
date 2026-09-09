@@ -1,5 +1,12 @@
 # Addendum — Hebrew UI and Real Product Principles
 
+<!-- SUPERSEDED_TRUTH_LIST -->
+> **⚠️ מסמך היסטורי — אינו מקור אמת.** הוראות הכתיבה שהיו בו אוחדו ל-`PROJECT_MEMORY.md` פרק 3א §5 ולסעיף ה-Routes של המצגת.
+>
+> ניתוב מקורות האמת המחייב היום: מצגת `/guide` → `PROJECT_MEMORY.md` · מוצר Moodle Teacher Hub →
+> `PROJECT_RULES.md` · גבול הריפו → `RULES.md` · תקציר וניתוב → `CLAUDE.md`.
+> התוכן נשמר כראיה היסטורית ואין להסיק ממנו כללים. עודכן 2026-09-09.
+
 Date: 2026-07-06
 Repo: yanivmizrachiy/www
 

@@ -7,8 +7,7 @@ import {
   Home,
   List,
   Maximize2,
-  Menu,
-  Minimize2,
+  MoveLeft,
   PlayCircle,
   Search,
   X,
@@ -16,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
+  GUIDE_BRANDING_LINES,
   GUIDE_SECTIONS,
   PUBLISHED_GUIDE_SLIDES,
   QUICK_START_SLIDE_IDS,
@@ -46,6 +46,9 @@ function getModeFromUrl(): DeckMode {
 function GuideScreenshot({ src, caption }: { src: string; caption: string }) {
   const [failed, setFailed] = useState(false);
   const imageUrl = `/guide/screenshots/${src}`;
+  // guideDeck rewrites every screenshot to .avif; the .webp derivative is the fallback
+  // for browsers without AVIF support, so both encodings stay load-bearing.
+  const fallbackUrl = imageUrl.replace(/\.avif$/, '.webp');
 
   return (
     <figure className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.14)]">
@@ -62,14 +65,17 @@ function GuideScreenshot({ src, caption }: { src: string; caption: string }) {
         </div>
       ) : (
         <a href={imageUrl} target="_blank" rel="noopener noreferrer" title="פתיחת הצילום בגודל מלא">
-          <img
-            src={imageUrl}
-            alt={caption}
-            loading="eager"
-            decoding="async"
-            onError={() => setFailed(true)}
-            className="block max-h-[54vh] w-full bg-slate-50 object-contain"
-          />
+          <picture>
+            <source srcSet={imageUrl} type="image/avif" />
+            <img
+              src={fallbackUrl}
+              alt={caption}
+              loading="eager"
+              decoding="async"
+              onError={() => setFailed(true)}
+              className="block max-h-[54vh] w-full bg-slate-50 object-contain"
+            />
+          </picture>
         </a>
       )}
 
@@ -82,12 +88,10 @@ function GuideScreenshot({ src, caption }: { src: string; caption: string }) {
 
 function SlideContent({
   slide,
-  onQuickStart,
-  onOpenMenu,
+  onStart,
 }: {
   slide: GuideSlide;
-  onQuickStart: () => void;
-  onOpenMenu: () => void;
+  onStart: () => void;
 }) {
   if (slide.cover) {
     return (
@@ -96,8 +100,13 @@ function SlideContent({
         <div className="pointer-events-none absolute -bottom-32 -left-24 h-96 w-96 rounded-full bg-amber-400/15 blur-3xl" />
         <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-blue-800/25 to-transparent" />
 
-        <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-5 py-5 text-center sm:px-10 sm:py-7 lg:px-16">
-          <div className="mb-3 flex justify-center sm:mb-4">
+        <div className="absolute inset-x-0 top-0 z-20 border-b border-amber-300/30 bg-slate-950/70 py-2.5 pl-4 pr-16 text-center backdrop-blur-sm sm:pl-8 sm:pr-20">
+          <p className="text-[11px] font-black leading-snug text-amber-200 sm:text-sm">{GUIDE_BRANDING_LINES[0]}</p>
+          <p className="mt-0.5 text-[11px] font-bold leading-snug text-white/90 sm:text-sm">{GUIDE_BRANDING_LINES[1]}</p>
+        </div>
+
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-5 py-10 text-center sm:px-10 sm:py-8 lg:px-16">
+          <div className="mb-4 flex justify-center">
             <div className="relative">
               <div className="absolute inset-0 rounded-full bg-amber-300/30 blur-2xl" />
               <picture className="relative block">
@@ -107,51 +116,33 @@ function SlideContent({
                   alt="יחידת מתמטיקה — מחוז ירושלים והעיר ירושלים"
                   width={512}
                   height={512}
-                  className="h-24 w-24 animate-[spin_14s_linear_infinite] rounded-full bg-white object-contain p-2 shadow-[0_14px_45px_rgba(0,0,0,0.48)] ring-4 ring-amber-300/80 sm:h-32 sm:w-32 lg:h-36 lg:w-36"
+                  className="h-20 w-20 animate-[spin_16s_linear_infinite] rounded-full bg-white object-contain p-2 shadow-[0_14px_45px_rgba(0,0,0,0.48)] ring-4 ring-amber-300/80 sm:h-24 sm:w-24 lg:h-28 lg:w-28"
                 />
               </picture>
             </div>
           </div>
 
-          <p className="text-sm font-black text-amber-300 sm:text-base">{slide.eyebrow}</p>
-
-          <div className="mt-3 w-full max-w-5xl rounded-[28px] border border-white/20 bg-slate-950/55 px-5 py-5 shadow-[0_24px_70px_rgba(0,0,0,0.38)] backdrop-blur-sm sm:px-9 sm:py-6">
+          <div className="w-full max-w-5xl rounded-[28px] border border-white/20 bg-slate-950/55 px-5 py-5 shadow-[0_24px_70px_rgba(0,0,0,0.38)] backdrop-blur-sm sm:px-9 sm:py-6">
             <h1 className="font-display text-4xl font-black leading-tight text-white drop-shadow-[0_3px_14px_rgba(0,0,0,0.72)] sm:text-5xl lg:text-6xl">
               {slide.title}
             </h1>
-            <p className="mx-auto mt-3 max-w-3xl text-base font-semibold leading-relaxed text-slate-50 sm:text-lg lg:text-xl">
-              {slide.summary}
-            </p>
+            {slide.summary && (
+              <p className="mx-auto mt-4 max-w-3xl text-base font-bold tracking-wide text-amber-200/90 sm:text-lg">
+                {slide.summary}
+              </p>
+            )}
           </div>
 
-          <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
-            <Button
-              size="lg"
-              onClick={onQuickStart}
-              className="h-14 gap-2 rounded-2xl bg-amber-400 px-8 text-lg font-black text-slate-950 shadow-lg hover:bg-amber-300"
+          <div className="mt-7 flex justify-center">
+            <button
+              type="button"
+              onClick={onStart}
+              className="group relative inline-flex items-center gap-3 rounded-full border border-amber-300/50 bg-gradient-to-b from-amber-200/15 to-amber-400/5 px-12 py-4 text-lg font-black tracking-wide text-amber-50 shadow-[0_10px_40px_rgba(251,191,36,0.15)] backdrop-blur-sm transition-all duration-300 hover:border-amber-200/90 hover:from-amber-200/25 hover:to-amber-400/10 hover:text-white hover:shadow-[0_16px_55px_rgba(251,191,36,0.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
             >
-              <PlayCircle className="h-5 w-5" />
-              התחלה מהירה
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={onOpenMenu}
-              className="h-14 gap-2 rounded-2xl border-white/35 bg-white/10 px-8 text-lg font-black text-white shadow-lg backdrop-blur-sm hover:bg-white/20 hover:text-white"
-            >
-              <List className="h-5 w-5" />
-              תוכן העניינים
-            </Button>
+              <span>התחל</span>
+              <MoveLeft className="h-6 w-6 stroke-[1.4] text-amber-300 transition-transform duration-300 ease-out group-hover:-translate-x-2 group-hover:text-amber-100" />
+            </button>
           </div>
-        </div>
-
-        <div className="relative z-10 border-t border-amber-300/40 bg-slate-950/85 px-4 py-3 text-center shadow-[0_-8px_30px_rgba(0,0,0,0.18)] sm:px-8">
-          <p className="text-xs font-black leading-relaxed text-amber-200 sm:text-sm">
-            הדרכה במחוז ירושלים והעיר ירושלים - מנח״י, בהובלת איילת קריספין
-          </p>
-          <p className="mt-1 text-xs font-bold leading-relaxed text-white sm:text-sm">
-            האתר מנוהל ע״י יניב רז · מדריך מחוזי חט״ב בעיר ירושלים
-          </p>
         </div>
       </div>
     );
@@ -264,7 +255,6 @@ export default function Guide() {
   const safePosition = safeSequence.indexOf(slide.id);
   const canGoPrevious = safePosition > 0;
   const canGoNext = safePosition >= 0 && safePosition < safeSequence.length - 1;
-  const currentSection = GUIDE_SECTIONS.find((section) => section.id === slide.section);
 
   const searchResults = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('he');
@@ -334,6 +324,30 @@ export default function Guide() {
     };
   }, []);
 
+  // The guide runs as a fullscreen presentation. Try to enter fullscreen on load;
+  // browsers require a user gesture, so also enter on the first interaction.
+  useEffect(() => {
+    const requestFs = () => {
+      if (!document.fullscreenEnabled || document.fullscreenElement) return;
+      void document.documentElement.requestFullscreen?.().catch(() => {});
+    };
+    requestFs();
+    const onFirstGesture = (event: Event) => {
+      // The fullscreen toggle owns its own click; auto-entering here would invert it.
+      const target = event.target as HTMLElement | null;
+      if (target?.closest?.('[data-fs-toggle]')) return;
+      requestFs();
+      window.removeEventListener('pointerdown', onFirstGesture);
+      window.removeEventListener('keydown', onFirstGesture);
+    };
+    window.addEventListener('pointerdown', onFirstGesture);
+    window.addEventListener('keydown', onFirstGesture);
+    return () => {
+      window.removeEventListener('pointerdown', onFirstGesture);
+      window.removeEventListener('keydown', onFirstGesture);
+    };
+  }, []);
+
   useEffect(() => {
     if (safeMode !== mode) setMode(safeMode);
     document.title = `${slide.title} | מדריך Moodle למורים`;
@@ -372,11 +386,12 @@ export default function Guide() {
         event.preventDefault();
         jumpToSlide(safeSequence[safeSequence.length - 1], safeMode);
       }
-      if (event.key.toLocaleLowerCase() === 'f') {
+      // Match by physical key so the shortcuts still work on a Hebrew keyboard layout.
+      if (event.code === 'KeyF') {
         event.preventDefault();
         setPanel('search');
       }
-      if (event.key.toLocaleLowerCase() === 'm') {
+      if (event.code === 'KeyM') {
         event.preventDefault();
         setPanel('menu');
       }
@@ -389,46 +404,18 @@ export default function Guide() {
   const progress = safePosition >= 0 ? ((safePosition + 1) / safeSequence.length) * 100 : 0;
 
   return (
-    <div dir="rtl" className="fixed inset-0 z-[100] grid h-dvh grid-rows-[auto_1fr_auto] overflow-hidden bg-[radial-gradient(circle_at_50%_0%,#1e3a8a_0%,#0f172a_48%,#020617_100%)] text-slate-900">
-      <header className="flex min-h-16 items-center justify-between gap-3 border-b border-white/10 px-3 text-white sm:px-5 lg:px-8">
-        <div className="flex min-w-0 items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setPanel('menu')} className="gap-2 text-white hover:bg-white/10 hover:text-white">
-            <Menu className="h-5 w-5" />
-            <span className="hidden sm:inline">תוכן</span>
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => setPanel('search')} className="gap-2 text-white hover:bg-white/10 hover:text-white">
-            <Search className="h-5 w-5" />
-            <span className="hidden sm:inline">חיפוש</span>
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => jumpToSlide('cover', 'all')} className="hidden gap-2 text-white hover:bg-white/10 hover:text-white md:inline-flex">
-            <Home className="h-4 w-4" />
-            פתיחה
-          </Button>
-        </div>
-
-        <div className="min-w-0 text-center">
-          <p className="truncate text-xs font-black text-amber-300 sm:text-sm">{safeMode === 'quick' ? 'התחלה מהירה' : currentSection?.title ?? 'Moodle'}</p>
-          <p className="hidden max-w-[48vw] truncate text-xs font-bold text-white/70 sm:block">{slide.title}</p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {safeMode === 'quick' && (
-            <Button variant="ghost" size="sm" onClick={() => jumpToSlide(slide.id, 'all', true)} className="hidden text-white/80 hover:bg-white/10 hover:text-white sm:inline-flex">
-              כל השקופיות
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => void toggleFullscreen()}
-            disabled={!document.fullscreenEnabled}
-            aria-label={isFullscreen ? 'יציאה ממסך מלא' : 'מעבר למסך מלא'}
-            className="text-white hover:bg-white/10 hover:text-white"
-          >
-            {isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
-          </Button>
-        </div>
-      </header>
+    <div dir="rtl" className="fixed inset-0 z-[100] grid h-dvh grid-rows-[1fr_auto] overflow-hidden bg-[radial-gradient(circle_at_50%_0%,#1e3a8a_0%,#0f172a_48%,#020617_100%)] text-slate-900">
+      {!panel && (
+        <button
+          type="button"
+          data-fs-toggle
+          onClick={() => void toggleFullscreen()}
+          aria-label={isFullscreen ? 'יציאה ממסך מלא' : 'מעבר למסך מלא'}
+          className="absolute right-3 top-3 z-[60] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-slate-950/70 text-white shadow-lg backdrop-blur-sm transition hover:bg-slate-800/90 hover:text-amber-200 sm:right-5 sm:top-5"
+        >
+          {isFullscreen ? <X className="h-6 w-6" /> : <Maximize2 className="h-5 w-5" />}
+        </button>
+      )}
 
       <main className="flex min-h-0 items-center justify-center overflow-hidden p-0 sm:p-3 lg:p-4">
         <article
@@ -453,8 +440,7 @@ export default function Guide() {
           <SlideContent
             key={slide.id}
             slide={slide}
-            onQuickStart={() => jumpToSlide(QUICK_START_SLIDE_IDS[0], 'quick')}
-            onOpenMenu={() => setPanel('menu')}
+            onStart={() => goBy(1)}
           />
         </article>
       </main>

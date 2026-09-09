@@ -1,5 +1,12 @@
 # AI Studio Audit Checkpoint
 
+<!-- SUPERSEDED_TRUTH_LIST -->
+> **⚠️ מסמך היסטורי — אינו מקור אמת.** הוא מקפיא עבודה ("Do not merge / Do not redesign existing screens") בסתירה לדרישות עמוד השער מ-2026-09-08.
+>
+> ניתוב מקורות האמת המחייב היום: מצגת `/guide` → `PROJECT_MEMORY.md` · מוצר Moodle Teacher Hub →
+> `PROJECT_RULES.md` · גבול הריפו → `RULES.md` · תקציר וניתוב → `CLAUDE.md`.
+> התוכן נשמר כראיה היסטורית ואין להסיק ממנו כללים. עודכן 2026-09-09.
+
 This project is now in audit mode.
 
 Source of truth: `yanivmizrachiy/www`.

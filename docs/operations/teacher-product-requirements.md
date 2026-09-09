@@ -1,5 +1,11 @@
 # Teacher Product Requirements - Moodle Teacher Hub
 
+<!-- GUIDE_SCOPE_NOTE -->
+> **Source-of-truth scope.** This document governs **Moodle Teacher Hub only**. The `/guide` training
+> presentation is governed solely by `PROJECT_MEMORY.md`; on any guide-related conflict,
+> `PROJECT_MEMORY.md` wins. Do not treat this file as authoritative for the presentation, and exclude
+> `PROJECT_MEMORY.md` and `/guide` from conflict sweeps driven by this prompt.
+
 Status: 2026-05-13 - sourced from teacher requirements session
 Source of truth: this file + PROJECT_RULES.md
 

@@ -50,3 +50,9 @@ moodle-teacher-hub-students-backup-*.json
 !docs/**/*.example.csv
 !docs/**/*.example.json
 !STATE/**/*.example.json
+
+# Local screenshot extraction workspace - raw Moodle captures, may contain PII. Never commit.
+.shots-extract/
+
+# Local Claude Code tooling config (dev preview launcher)
+.claude/

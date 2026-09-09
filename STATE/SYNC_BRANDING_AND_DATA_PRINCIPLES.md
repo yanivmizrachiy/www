@@ -13,11 +13,16 @@ The project memory must stay synchronized between:
 
 Every meaningful requirement update must be recorded in the project memory files before code work continues.
 
-Main memory files:
+Main memory file — a single canonical source:
 
-- PROJECT_MEMORY.md
-- STATE/PRINCIPLES_HEBREW_UI_REAL_PRODUCT.md
-- STATE/SYNC_BRANDING_AND_DATA_PRINCIPLES.md
+- `PROJECT_MEMORY.md` — the one binding memory file. `public/PROJECT_MEMORY.md` is a byte-identical
+  public copy only, never an independent source.
+
+> **Corrected on 2026-09-09.** This section previously listed three "main memory files"
+> (`PROJECT_MEMORY.md`, `STATE/PRINCIPLES_HEBREW_UI_REAL_PRODUCT.md` and this file). That contradicted
+> `PROJECT_MEMORY.md`, which states it is the single canonical file and that no parallel source of truth
+> may be created. Those two STATE documents remain valid as historical journal entries and are kept,
+> but they are not sources of truth. On any conflict, `PROJECT_MEMORY.md` decides.
 
 ## Use existing WWW work first
 

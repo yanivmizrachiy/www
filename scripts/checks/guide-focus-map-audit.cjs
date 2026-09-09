@@ -108,4 +108,12 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`Guide focus map audit passed: ${Object.keys(focusMap).length} verified focus overlays.`);
+const overlayCount = Object.keys(focusMap).length;
+if (overlayCount === 0) {
+  console.log('Guide focus map audit passed: focus infrastructure is wired, but focus-map.json is EMPTY.');
+  console.log('NOTE: 0 focus overlays defined, so no button is highlighted on any slide. This gate');
+  console.log('      validates entries only when they exist - an empty map validates nothing.');
+  console.log('      PROJECT_MEMORY.md chapter 2 rule 8 (highlight the clicked button) is still open.');
+} else {
+  console.log(`Guide focus map audit passed: ${overlayCount} verified focus overlays.`);
+}

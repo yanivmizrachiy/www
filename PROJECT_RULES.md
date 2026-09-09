@@ -139,7 +139,9 @@ Teacher Release = NO
 
 ## כלל עליון
 
-PROJECT_RULES.md הוא מקור האמת המחייב של הריפו `yanivmizrachiy/www`.
+PROJECT_RULES.md הוא מקור האמת המחייב של **מוצר Moodle Teacher Hub** בריפו `yanivmizrachiy/www` — נתונים, LTI, ייבוא, API, שערי release.
+
+תיחום: מצגת ההדרכה `/guide` אינה נשלטת ע"י קובץ זה. מקור האמת היחיד שלה הוא `PROJECT_MEMORY.md`, ובכל סתירה בנושא המצגת — `PROJECT_MEMORY.md` קובע.
 
 בכל שינוי עתידי חייב להיות ברור:
 1. מה כבר בוצע.

@@ -34,10 +34,10 @@ if (!app.includes('useKeepAlive()')) {
   fail('Expected Teacher Hub keep-alive hook was not found in App.tsx; audit assumptions changed.');
 }
 
-console.log('Guide entry isolation audit passed: /guide can bootstrap without loading Teacher Hub App/session bundle.');
-
 if (errors.length) {
   console.error('\nGuide entry isolation audit failed:');
   for (const error of errors) console.error(`- ${error}`);
   process.exit(1);
 }
+
+console.log('Guide entry isolation audit passed: /guide can bootstrap without loading Teacher Hub App/session bundle.');

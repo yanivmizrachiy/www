@@ -1,5 +1,12 @@
 # Moodle Teacher Hub — Repo Organization Master Summary
 
+<!-- SUPERSEDED_TRUTH_LIST -->
+> **⚠️ מסמך היסטורי — אינו מקור אמת.** הוא מונה חמישה מקורות אמת ומשמיט את `PROJECT_MEMORY.md`.
+>
+> ניתוב מקורות האמת המחייב היום: מצגת `/guide` → `PROJECT_MEMORY.md` · מוצר Moodle Teacher Hub →
+> `PROJECT_RULES.md` · גבול הריפו → `RULES.md` · תקציר וניתוב → `CLAUDE.md`.
+> התוכן נשמר כראיה היסטורית ואין להסיק ממנו כללים. עודכן 2026-09-09.
+
 ## Purpose
 
 This file summarizes the repository organization work after the verified Moodle Teacher Hub milestone.

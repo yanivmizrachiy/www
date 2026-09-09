@@ -7,7 +7,7 @@
 
 - מקור הצילומים: session חי ומאומת ב-Moodle של משרד החינוך (`moodlemoe.lms.education.gov.il`).
 - הצילומים נוצרו מניווט ולחיצות אמיתיות במערכת; אין תמונות סטוק, UI מומצא או צילום AI.
-- צילומים עם מידע אישי אינם מתפרסמים ללא טשטוש/החלפה בטוחה.
+- צילומים עם מידע אישי אינם מתפרסמים לפני החלפת המידע בערכים בדויים. טשטוש/פיקסול אינו שיטה מקובלת בפרויקט — ראה `PROJECT_MEMORY.md` פרק 3א §3.
 - מקורות גולמיים/תיקיות extraction מקומיות אינם נשמרים ב-Git כאשר אינם נדרשים למוצר.
 
 ## פרטיות
@@ -67,7 +67,7 @@ public/guide/focus-overlays.js
 - כל entry חייב לכלול `label` ברור ו-`evidence` שמסביר מאיפה הגיע האימות.
 - overlay הוא שכבת הדגשה בלבד; אין לערוך את UI של Moodle או ליצור כפתור שאינו קיים.
 - אם המפה חסרה/לא תקינה, המדריך עובד כרגיל ללא overlay (fail-open).
-- `scripts/checks/guide-focus-map-audit.cjs` מוודא שהצילום קיים, משמש את המצגת וה-coordinates תקינים.
+- `scripts/checks/guide-focus-map-audit.cjs` מוודא שהצילום קיים, משמש את המצגת וה-coordinates תקינים — **אך רק עבור entries שקיימים בפועל**. כאשר `focus-map.json` ריק, הבדיקה עוברת מבלי לאמת דבר, והיא מדפיסה על כך הודעה מפורשת. מצב נוכחי: 0 overlays.
 
 ## קבצי צילום קיימים
 
@@ -106,7 +106,20 @@ public/guide/focus-overlays.js
 | `32-updates-list-expanded.jpg` | רשימת עדכונים וידית גרירה |
 | `33-quiz-question-behaviour.jpg` | הגדרות ניסיונות/התנהגות שאלה |
 
-לכל צילום מקור קיימות נגזרות AVIF ו-WebP לפי בדיקות ה-integrity. ה-runtime משתמש ב-AVIF.
+לכל צילום מקור קיימות נגזרות AVIF ו-WebP לפי בדיקות ה-integrity. ה-runtime מגיש AVIF דרך `<picture>`, עם WebP כגיבוי לדפדפנים ללא תמיכת AVIF, ולכן שתי הנגזרות נדרשות בפועל.
+
+## צינור העיבוד
+
+```bash
+npm run guide:optimize        # יוצר נגזרות חסרות בלבד
+npm run guide:optimize:check  # מדווח מה חסר, לא כותב דבר (יוצא 1 אם חסר)
+```
+
+`scripts/guide/optimize-screenshots.mjs` (מבוסס `sharp`) מקטין רוחב ל-1200px ומייצר `.webp` + `.avif` לכל `.jpg`/`.png` תחת `public/guide/screenshots/`.
+
+הצינור **אינו הרסני**: נגזרת קיימת לא נכתבת מחדש אלא עם `--force`. הסיבה מחייבת — כל בייט תחת `public/guide/` נכנס ל-`computeGuideHash()`, ולכן re-encode מיותר משנה את טביעת האצבע של הגרסה ש-`guide-live-smoke.yml` מאמת מול הפריסה.
+
+הלוגו ב-`public/guide/` נשאר `.png` + `.webp` בכוונה: `Guide.tsx` אינו מבקש עבורו AVIF, ויצירת נגזרת שלישית הייתה מוסיפה קובץ שאיש אינו טוען.
 
 ## רשימת החוסרים
 
@@ -120,8 +133,8 @@ public/guide/focus-overlays.js
 2. אם צילום מתאים כבר קיים — להשתמש בו.
 3. אם לא קיים — להשאיר/להוסיף M מפורש בלבד; אין Placeholder.
 4. לצלם רק בסביבה מורשית.
-5. לטשטש/להחליף PII לפני commit.
-6. לשמור מקור + AVIF + WebP לפי הצינור הקיים.
+5. להחליף PII בערכים בדויים לפני commit (לא לטשטש).
+6. לשמור מקור + AVIF + WebP על ידי הרצת `npm run guide:optimize`.
 7. לשייך את הצילום לשקף המתאים ב-`guideDeckSource.ts`.
 8. אם נדרש focus, לאמת את אזור הלחיצה ולהוסיף entry ל-`focus-map.json` עם evidence.
 9. להסיר `missingCaptureId` ולסמן `ready` רק כשהרצף באמת שלם.

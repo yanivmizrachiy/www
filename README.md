@@ -173,7 +173,8 @@ Manual Real Data Import
 
 ## מסמכי מקור אמת
 
-- `PROJECT_RULES.md` — דף הכללים העליון.
+- `PROJECT_MEMORY.md` — **מקור האמת היחיד של מצגת ההדרכה `/guide`** (מבנה, שער, מיתוג, ניווט, צילומים). `public/PROJECT_MEMORY.md` הוא עותק ציבורי זהה בייט-לבייט בלבד.
+- `PROJECT_RULES.md` — דף הכללים העליון של מוצר Moodle Teacher Hub (נתונים, LTI, ייבוא, API).
 - `STATE/project-status.md` — סטטוס אמת עדכני.
 - `STATE/evidence-log.md` — לוג הוכחות.
 - `docs/import-contract.md` — חוזה ייבוא נתוני Moodle.

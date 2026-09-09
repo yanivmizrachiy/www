@@ -1,5 +1,10 @@
 # System Rules — www / Moodle Teacher Hub
 
+<!-- GUIDE_SCOPE_NOTE -->
+> **תיחום מקור אמת.** מסמך זה חל על **Moodle Teacher Hub בלבד**. מצגת ההדרכה `/guide` נשלטת אך ורק
+> על ידי `PROJECT_MEMORY.md`, ובכל סתירה בנושא המצגת — `PROJECT_MEMORY.md` קובע. אין להסיק מכאן
+> כללי כתיבה, עיצוב או ניווט עבור המצגת.
+
 מסמך זה מפרט את כללי העבודה המעשיים לריפו `yanivmizrachiy/www`.
 
 `PROJECT_RULES.md` הוא מקור האמת העליון. המסמך הזה מתרגם את הכללים לעבודה יומיומית בקוד, בתיעוד ובבדיקות.

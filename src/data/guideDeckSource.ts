@@ -34,6 +34,14 @@ export type GuideSection = {
   description: string;
 };
 
+// Fixed cover branding, verbatim per PROJECT_MEMORY.md chapter 2 rule 24.
+// Same wording as the misparim and zaviyot-digital-workbook projects.
+// Never reword, and never drop the '·' separator on the second line.
+export const GUIDE_BRANDING_LINES = [
+  'הדרכה במחוז ירושלים והעיר ירושלים - מנח״י, בהובלת איילת קריספין',
+  'האתר מנוהל ע״י יניב רז · מדריך מחוזי חט״ב בעיר ירושלים',
+] as const;
+
 export const GUIDE_SECTIONS: GuideSection[] = [
   { id: 'start', title: 'התחלה', description: 'איך משתמשים במצגת ואיך מתחילים לעבוד.' },
   { id: 'space', title: 'המרחב', description: 'כניסה, פתיחה, הגדרות והמרחבים שלי.' },
@@ -50,7 +58,7 @@ export const GUIDE_SLIDES: GuideSlide[] = [
     section: 'start',
     eyebrow: 'מחוז ירושלים והעיר ירושלים — מנח״י',
     title: 'מדריך למורים במערכת Moodle',
-    summary: '',
+    summary: 'שנה״ל התשפ״ז, ספטמבר 2026',
     keywords: ['מודל', 'Moodle', 'מדריך', 'מצגת'],
     cover: true,
     status: 'ready',
@@ -112,6 +120,18 @@ export const GUIDE_SLIDES: GuideSlide[] = [
     status: 'ready',
   },
   {
+    id: 'open-space-entry',
+    section: 'space',
+    eyebrow: 'פתיחת מרחב',
+    title: 'איפה לוחצים כדי לפתוח מרחב חדש?',
+    summary: 'הכפתור נמצא ב„מרחבי־הלימוד שלי”, במשבצת „פתיחת מרחב כיתתי”.',
+    steps: ['פותחים „מרחבי־הלימוד שלי”.', 'מאתרים את המשבצת עם ארבע האפשרויות.', 'לוחצים „פתיחת מרחב כיתתי”.', 'נפתח אשף פתיחת המרחב.'],
+    screenshots: [{ src: '05-home-edit-on.jpg', caption: '„מרחבי־הלימוד שלי” — „פתיחת מרחב כיתתי” היא המשבצת שפותחת את האשף.' }],
+    link: { href: 'https://moodlemoe.lms.education.gov.il/my/', label: 'פתיחת המרחבים שלי' },
+    keywords: ['פתיחת מרחב', 'מרחב כיתתי', 'איפה לוחצים', 'משבצת'],
+    status: 'ready',
+  },
+  {
     id: 'create-space',
     section: 'space',
     eyebrow: 'פתיחת מרחב',
@@ -119,14 +139,16 @@ export const GUIDE_SLIDES: GuideSlide[] = [
     summary: 'עוברים באשף לפי הסדר: כיתה, סוג מרחב, בחירת תוכן ואישור.',
     steps: ['בוחרים בית ספר, מקצוע, שכבה וכיתה.', 'בוחרים סוג מרחב.', 'בוחרים את התוכן הרצוי.', 'בודקים ומאשרים.'],
     screenshots: [
+      { src: '20-wizard-step1-selected.jpg', caption: 'ארבעת שלבי האשף למעלה: בחירת כיתה, סוג מרחב, תוכן, אישור וסיום.' },
       { src: '19-wizard-step1.jpg', caption: 'שלב 1 — בחירת מסלול וכיתה.' },
+      { src: '21-wizard-step1-form.jpg', caption: 'שלב 1 — שדות בית ספר, מקצוע, שכבת גיל וכיתה, ואז „הבא”.' },
       { src: '25-wizard-step1-filled.jpg', caption: 'שלב 1 אחרי מילוי הפרטים.' },
       { src: '22-wizard-step2.jpg', caption: 'שלב 2 — בחירת סוג המרחב.' },
       { src: '24-wizard-step4.jpg', caption: 'שלב 4 — אישור וסיום.' },
     ],
     link: { href: 'https://moodlemoe.lms.education.gov.il/local/auto_course_create/wizard.php', label: 'פתיחת אשף יצירת מרחב' },
     keywords: ['מרחב חדש', 'אשף', 'כיתה', 'תוכן'],
-    status: 'ready',
+    status: 'needs-capture',
     missingCaptureId: 'M01',
   },
   {
@@ -160,7 +182,7 @@ export const GUIDE_SLIDES: GuideSlide[] = [
     steps: ['לוחצים „הגדרות”.', 'משנים את שדה השם.', 'לוחצים „שמירת שינויים”.'],
     screenshots: [{ src: '10-course-page.jpg', caption: 'כפתור „הגדרות” בתפריט המרחב.' }],
     keywords: ['שם', 'שינוי שם', 'הגדרות'],
-    status: 'ready',
+    status: 'needs-capture',
     missingCaptureId: 'M03',
   },
   {
@@ -223,7 +245,7 @@ export const GUIDE_SLIDES: GuideSlide[] = [
     steps: ['לוחצים „משתתפים”.', 'מחפשים תלמיד או משתמשים במסנן.', 'בודקים תפקיד וקבוצה.'],
     warning: 'גישה אחרונה אינה מוכיחה למידה או השלמת פעילות.',
     keywords: ['משתתפים', 'תלמיד', 'גישה אחרונה', 'קבוצה'],
-    status: 'ready',
+    status: 'needs-capture',
     missingCaptureId: 'M06',
   },
   {
@@ -320,7 +342,7 @@ export const GUIDE_SLIDES: GuideSlide[] = [
     steps: ['פותחים מטלה.', 'לוחצים „הצג/דרג הגשות”.', 'מסננים או מחפשים תלמיד.', 'פותחים את ההגשה.'],
     warning: 'ללא ציון אינו בהכרח „לא הוגש”; ייתכן שההגשה טרם נבדקה.',
     keywords: ['מטלה', 'הגשה', 'דרג הגשות'],
-    status: 'ready',
+    status: 'needs-capture',
     missingCaptureId: 'M13',
   },
   {
@@ -358,6 +380,20 @@ export const GUIDE_SLIDES: GuideSlide[] = [
     status: 'ready',
   },
   {
+    id: 'unit-menu-edit-gate',
+    section: 'content',
+    eyebrow: 'עריכה',
+    title: 'למה חסרות לי אפשרויות בתפריט היחידה?',
+    summary: 'תפריט היחידה מציג אפשרויות עריכה רק כאשר „מצב עריכה” דלוק.',
+    steps: ['פותחים את תפריט ⋮ של היחידה.', 'אם מופיעות שתי אפשרויות בלבד — „מצב עריכה” כבוי.', 'מדליקים „מצב עריכה” בסרגל העליון.', 'פותחים שוב את ⋮ ורואים את כל האפשרויות.'],
+    screenshots: [
+      { src: '07-unit-menu.jpg', caption: 'מצב עריכה כבוי — התפריט מציג „עריכת יחידת הוראה” ו„קישור קבוע” בלבד.' },
+      { src: '13-section-menu-full.jpg', caption: 'מצב עריכה דלוק — נוספות הסתרה, הזזה ומחיקת יחידת הוראה.' },
+    ],
+    keywords: ['תפריט יחידה', 'מצב עריכה', 'אפשרויות חסרות', 'עריכת יחידת הוראה'],
+    status: 'ready',
+  },
+  {
     id: 'add-content',
     section: 'content',
     eyebrow: 'תוכן',
@@ -381,6 +417,17 @@ export const GUIDE_SLIDES: GuideSlide[] = [
     points: ['יחידה לכל נושא או פרק.', 'שם פעולה ברור.', 'תאריך יעד כשצריך.', 'רק תוכן רלוונטי נשאר גלוי.'],
     screenshots: [{ src: '06-course-edit-on.jpg', caption: 'מרחב במצב עריכה עם יחידות ופעילויות.' }],
     keywords: ['ארגון', 'יחידות', 'שמות'],
+    status: 'ready',
+  },
+  {
+    id: 'hidden-item-look',
+    section: 'content',
+    eyebrow: 'ניהול משימות',
+    title: 'איך יודעים שמשימה מוסתרת מהתלמידים?',
+    summary: 'ליד כל פריט מוסתר מופיע הסימון „מוסתר בפני תלמידים”. המורה ממשיך לראות אותו, התלמיד לא.',
+    points: ['הסימון „מוסתר בפני תלמידים” מופיע מתחת לשם הפריט.', 'לצד הסימון מופיע סמל עין חצויה.', 'הפריט נשאר גלוי למורה במצב עריכה.', 'פריט בלי הסימון גלוי לתלמידים.'],
+    screenshots: [{ src: '14-hidden-items.jpg', caption: 'מצבי הסתרה/זמינות — כל פריט מוסתר נושא את הסימון „מוסתר בפני תלמידים”.' }],
+    keywords: ['מוסתר בפני תלמידים', 'הסתרה', 'עין חצויה', 'זמינות'],
     status: 'ready',
   },
   {
@@ -458,7 +505,7 @@ export const GUIDE_SLIDES: GuideSlide[] = [
       { src: '32-updates-list-expanded.jpg', caption: 'רשימת העדכונים וידית הגרירה.' },
     ],
     keywords: ['עדכונים', 'גרירה', 'תוכן ארצי'],
-    status: 'ready',
+    status: 'needs-capture',
     missingCaptureId: 'M19',
   },
   {
@@ -505,7 +552,7 @@ export const GUIDE_SLIDES: GuideSlide[] = [
     screenshots: [{ src: '18-reports.jpg', caption: 'עמוד הדוחות — מכאן נכנסים ל„יומני מעקב”.' }],
     warning: 'יומן המעקב מציג אירועים; הוא אינו מודד זמן קשב או איכות למידה.',
     keywords: ['מתי תרגל', 'יומני מעקב', 'פעילות תלמיד', 'לוגים'],
-    status: 'ready',
+    status: 'needs-capture',
     missingCaptureId: 'M20',
   },
   {
@@ -537,7 +584,7 @@ export const GUIDE_SLIDES: GuideSlide[] = [
     points: ['מאתרים תלמיד.', 'מאתרים משימה.', 'בודקים ציון או מצב.', 'בודקים סיכום רק אחרי בדיקת המשקלים.'],
     warning: 'תא ריק אינו הוכחה לאי־הגשה.',
     keywords: ['יומן ציונים', 'ציון', 'תא ריק'],
-    status: 'ready',
+    status: 'needs-capture',
     missingCaptureId: 'M22',
   },
   {
@@ -549,7 +596,7 @@ export const GUIDE_SLIDES: GuideSlide[] = [
     steps: ['פותחים „ציונים” ובוחרים „יצוא”.', 'בוחרים Excel או CSV.', 'מסמנים את הפריטים הנחוצים.', 'מורידים ובודקים את הקובץ.'],
     warning: 'קובץ ציונים עשוי להכיל מידע אישי ויש לשמור אותו במקום מאובטח.',
     keywords: ['ייצוא ציונים', 'Excel', 'CSV'],
-    status: 'ready',
+    status: 'needs-capture',
     missingCaptureId: 'M22',
   },
   {

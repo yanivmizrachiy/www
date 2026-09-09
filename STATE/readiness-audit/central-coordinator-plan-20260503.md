@@ -1,5 +1,12 @@
 # Central Coordinator Plan — 2026-05-03
 
+<!-- SUPERSEDED_TRUTH_LIST -->
+> **⚠️ מסמך היסטורי — אינו מקור אמת.** הוא מכיל "Current truth" ו-"Stop rule" שאינם תקפים עוד.
+>
+> ניתוב מקורות האמת המחייב היום: מצגת `/guide` → `PROJECT_MEMORY.md` · מוצר Moodle Teacher Hub →
+> `PROJECT_RULES.md` · גבול הריפו → `RULES.md` · תקציר וניתוב → `CLAUDE.md`.
+> התוכן נשמר כראיה היסטורית ואין להסיק ממנו כללים. עודכן 2026-09-09.
+
 Repository: `yanivmizrachiy/www`
 Active PR branch: `gemini/ai-studio-sync-20260428-193953`
 PR: #1, still Draft / not merged

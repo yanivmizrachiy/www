@@ -11,6 +11,8 @@ export type {
   GuideSlideStatus,
 } from './guideDeckSource';
 
+export { GUIDE_BRANDING_LINES } from './guideDeckSource';
+
 export const GUIDE_SECTIONS = SOURCE_GUIDE_SECTIONS;
 
 function toModernScreenshotFilename(src: string) {
@@ -44,6 +46,10 @@ const QUICK_START_CANDIDATES = [
   'quick-start',
   'login',
   'my-courses',
+  // open-space-entry is published and answers "where do I click to open a space"; create-space is the
+  // full wizard sequence and is still blocked on a capture. Listing both keeps the topic present in
+  // Quick Start today and preserves the real order once the wizard slide unblocks.
+  'open-space-entry',
   'create-space',
   'self-learning-space',
   'edit-mode',

@@ -12,6 +12,8 @@
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc -b --pretty false",
     "doctor": "node scripts/checks/repo-doctor.cjs",
+    "guide:optimize": "node scripts/guide/optimize-screenshots.mjs",
+    "guide:optimize:check": "node scripts/guide/optimize-screenshots.mjs --check",
     "audit:guide": "node scripts/checks/guide-integrity-audit.cjs",
     "audit:guide-surface": "node scripts/checks/guide-surface-isolation-audit.cjs",
     "audit:guide-entry": "node scripts/checks/guide-entry-isolation-audit.cjs",
@@ -76,6 +78,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.6",
+    "sharp": "^0.35.4",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
     "vite": "^5.4.19"

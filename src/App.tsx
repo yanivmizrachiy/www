@@ -37,7 +37,6 @@ import Automation from "./pages/Automation";
 import Setup from "./pages/Setup";
 import LtiBootstrap from "./pages/LtiBootstrap";
 import NotFound from "./pages/NotFound";
-import Guide from "./pages/Guide";
 
 const queryClient = new QueryClient();
 
@@ -53,8 +52,8 @@ const App = () => {
           {/* /install kept as a public alias for printed Moodle docs; redirects to in-app /setup */}
           <Route path="/install" element={<Navigate to="/setup" replace />} />
           <Route path="/lti" element={<LtiBootstrap />} />
-          {/* Standalone teacher presentation: no Teacher Hub chrome and no teacher/student data. */}
-          <Route path="/guide" element={<Guide />} />
+          {/* /guide is intentionally absent here: src/main.tsx short-circuits the Guide route and
+              mounts the presentation standalone, so Teacher Hub never bundles or renders it. */}
           {/* Rescue route: if a Moodle iframe/browser lands on the backend launch URL as a page, keep the teacher inside the app instead of showing NotFound. */}
           <Route path="/api/lti/launch" element={<Navigate to="/" replace />} />
           {/* No teacher login exists — any old /auth /login /signup link goes to setup. */}

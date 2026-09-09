@@ -1,5 +1,10 @@
 # Moodle Teacher Hub / המודל החכם — Current Status After PR #161
 
+<!-- GUIDE_SCOPE_NOTE -->
+> **תיחום מקור אמת.** מסמך זה חל על **Moodle Teacher Hub בלבד**. מצגת ההדרכה `/guide` נשלטת אך ורק
+> על ידי `PROJECT_MEMORY.md`, ובכל סתירה בנושא המצגת — `PROJECT_MEMORY.md` קובע. אין להסיק מכאן
+> כללי כתיבה, עיצוב או ניווט עבור המצגת.
+
 ## Purpose
 
 This document is the current continuation snapshot after PR #159, PR #160, and PR #161.

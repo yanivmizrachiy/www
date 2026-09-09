@@ -1,5 +1,12 @@
 # Progress — Project Memory and Public Principles
 
+<!-- SUPERSEDED_TRUTH_LIST -->
+> **⚠️ מסמך היסטורי — אינו מקור אמת.** הוא מורה לבנות עץ מסלולי `/guide/*` שמעולם לא נבנה; המצגת היא deck יחיד תחת `/guide`.
+>
+> ניתוב מקורות האמת המחייב היום: מצגת `/guide` → `PROJECT_MEMORY.md` · מוצר Moodle Teacher Hub →
+> `PROJECT_RULES.md` · גבול הריפו → `RULES.md` · תקציר וניתוב → `CLAUDE.md`.
+> התוכן נשמר כראיה היסטורית ואין להסיק ממנו כללים. עודכן 2026-09-09.
+
 Date: 2026-07-06  
 Repo: `yanivmizrachiy/www`  
 Teacher Release: **NO**

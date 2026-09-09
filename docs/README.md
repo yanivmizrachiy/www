@@ -18,7 +18,8 @@ This folder is organized by purpose.
 
 The source of truth remains:
 
-- `../PROJECT_RULES.md`
+- `../PROJECT_MEMORY.md` — the single source of truth for the `/guide` training presentation.
+- `../PROJECT_RULES.md` — the Moodle Teacher Hub product rules.
 - `../README.md`
 - `../STATE/project-status.md`
 - `../STATE/evidence-log.md`

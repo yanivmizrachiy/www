@@ -1,5 +1,12 @@
 # 2026-05-25 - Teacher Onboarding Guide V1
 
+<!-- SUPERSEDED_TRUTH_LIST -->
+> **⚠️ מסמך היסטורי — אינו מקור אמת.** הוא מתאר את `TeacherOnboarding.tsx`, שאינו מיובא באף קובץ ואינו המצגת.
+>
+> ניתוב מקורות האמת המחייב היום: מצגת `/guide` → `PROJECT_MEMORY.md` · מוצר Moodle Teacher Hub →
+> `PROJECT_RULES.md` · גבול הריפו → `RULES.md` · תקציר וניתוב → `CLAUDE.md`.
+> התוכן נשמר כראיה היסטורית ואין להסיק ממנו כללים. עודכן 2026-09-09.
+
 **Branch:** feat/teacher-onboarding-guide-v1
 **Teacher Release:** NO (unchanged)
 **Scope:** UI only - new TeacherOnboarding component + Dashboard wiring

@@ -4,9 +4,22 @@
 ## זהות הריפו
 - ריפו: `yanivmizrachiy/www`
 - מוצר: Moodle Teacher Hub — כלי מורה עברי RTL
-- מקור אמת עליון: `PROJECT_RULES.md`
 - Runtime: `https://www-tijc.onrender.com`
 - Teacher Release: **NO**
+
+## מקור אמת — ניתוב מחייב
+בריפו הזה שני מוצרים נפרדים, ולכל אחד מקור אמת אחד ויחיד. אין מקור אמת שלישי.
+
+| נושא | מקור האמת היחיד |
+|---|---|
+| **מצגת/מדריך ההדרכה — `/guide`** | **`PROJECT_MEMORY.md`** |
+| Moodle Teacher Hub (נתונים, LTI, ייבוא, API) | `PROJECT_RULES.md` |
+| גבול הריפו ומה לא מוחקים | `RULES.md` |
+
+- תוכן השקפים עצמו חי **רק** ב-`src/data/guideDeckSource.ts`. `guideDeck.ts` נגזר ממנו ו-`Guide.tsx` מרנדר. שינוי תוכן = עריכת קובץ אחד.
+- `public/PROJECT_MEMORY.md` הוא **עותק ציבורי בלבד** וחייב להישאר זהה בייט-לבייט ל-`PROJECT_MEMORY.md` (נאכף ב-CI).
+- דרישה חדשה למצגת: קודם מעדכנים את `PROJECT_MEMORY.md`, אחר כך מסנכרנים את העותק הציבורי, ורק אז נוגעים בקוד.
+- בסתירה בין מסמכים על נושא המצגת — `PROJECT_MEMORY.md` קובע.
 
 ## שפה
 - קוד / comments / commits → אנגלית

@@ -190,6 +190,85 @@ if (!fs.existsSync(guideSwPath)) {
 }
 
 // 8) Live verification must compare canonical Guide content, not branch commit SHA.
+// Single-source routing: PROJECT_MEMORY.md owns every /guide authoring rule, so the governance
+// documents must actually say so. Without this gate the routing silently rots and an agent reading
+// only CLAUDE.md or docs/ decides guide questions against the wrong file.
+const routingTargets = [
+  ['CLAUDE.md', 'PROJECT_MEMORY.md'],
+  ['README.md', 'PROJECT_MEMORY.md'],
+  ['RULES.md', 'PROJECT_MEMORY.md'],
+  ['PROJECT_RULES.md', 'PROJECT_MEMORY.md'],
+];
+for (const [file, needle] of routingTargets) {
+  const routingPath = path.join(root, file);
+  if (!fs.existsSync(routingPath)) {
+    fail(`Governance document is missing: ${file}`);
+    continue;
+  }
+  if (!fs.readFileSync(routingPath, 'utf8').includes(needle)) {
+    fail(`${file} must name ${needle} as the source of truth for the /guide presentation.`);
+  }
+}
+
+// Slide ids are the navigation primitive: jumpToSlide/?slide= resolve by findIndex, so a duplicate
+// id silently makes the second slide unreachable. Nothing else in the repo guards this.
+const slideIds = [...slidesBlock.matchAll(/(?:^|\n)\s{4}id: '([^']+)',/g)].map((match) => match[1]);
+if (slideIds.length === 0) {
+  fail('Could not parse any slide ids from guideDeckSource.ts; this audit would otherwise pass while checking nothing.');
+}
+const duplicateSlideIds = [...new Set(slideIds.filter((id, index) => slideIds.indexOf(id) !== index))];
+if (duplicateSlideIds.length) {
+  fail(`Duplicate slide ids in guideDeckSource.ts (navigation only ever reaches the first): ${duplicateSlideIds.join(', ')}`);
+}
+
+// Quick Start is a hand-maintained id list in guideDeck.ts; a typo there silently drops a step.
+const quickStartBlock = deck.match(/const QUICK_START_CANDIDATES = \[([\s\S]*?)\];/);
+if (!quickStartBlock) {
+  fail('Could not locate QUICK_START_CANDIDATES in src/data/guideDeck.ts.');
+} else {
+  const quickStartIds = [...quickStartBlock[1].matchAll(/'([^']+)'/g)].map((match) => match[1]);
+  const unknownQuickStart = quickStartIds.filter((id) => !slideIds.includes(id));
+  if (unknownQuickStart.length) {
+    fail(`QUICK_START_CANDIDATES references slide ids that do not exist: ${unknownQuickStart.join(', ')}`);
+  }
+
+  // A candidate that is blocked on a capture is filtered out at runtime, so the teacher's Quick Start
+  // path silently loses that step. That is legitimate, but it must never be invisible.
+  const publishedIds = new Set(
+    slidesBlock
+      .split(/\n  \{\r?\n/)
+      .slice(1)
+      .filter((block) => /status: 'ready'/.test(block) && !/missingCaptureId/.test(block))
+      .map((block) => (block.match(/id: '([^']+)'/) || [])[1])
+      .filter(Boolean)
+  );
+  const droppedQuickStart = quickStartIds.filter((id) => slideIds.includes(id) && !publishedIds.has(id));
+  if (droppedQuickStart.length) {
+    notes.push(
+      `Quick Start shows ${quickStartIds.length - droppedQuickStart.length}/${quickStartIds.length} steps; ` +
+        `blocked on a capture and hidden from the teacher: ${droppedQuickStart.join(', ')}`
+    );
+  }
+}
+
+// Rule 24 (PROJECT_MEMORY.md, chapter 2): the two cover branding lines are fixed verbatim,
+// matching the misparim / zaviyot-digital-workbook projects. They must live in the deck source
+// (single source of truth) and stay byte-identical to the truth document.
+const brandingLines = [
+  'הדרכה במחוז ירושלים והעיר ירושלים - מנח״י, בהובלת איילת קריספין',
+  'האתר מנוהל ע״י יניב רז · מדריך מחוזי חט״ב בעיר ירושלים',
+];
+if (!/export const GUIDE_BRANDING_LINES/.test(source)) {
+  fail('GUIDE_BRANDING_LINES must be declared in src/data/guideDeckSource.ts (single source of truth for cover branding).');
+}
+if (!deck.includes('GUIDE_BRANDING_LINES')) {
+  fail('src/data/guideDeck.ts must re-export GUIDE_BRANDING_LINES so pages never import guideDeckSource directly.');
+}
+for (const line of brandingLines) {
+  if (!source.includes(line)) fail(`Cover branding line missing or reworded in guideDeckSource.ts: ${line}`);
+  if (!memory.includes(line)) fail(`Cover branding line missing from PROJECT_MEMORY.md rule 24: ${line}`);
+}
+
 const guideHash = computeGuideHash();
 if (!/^[a-f0-9]{64}$/.test(guideHash)) fail(`Guide content fingerprint is invalid: ${guideHash}`);
 
