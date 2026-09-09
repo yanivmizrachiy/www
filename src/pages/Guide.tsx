@@ -243,6 +243,9 @@ function SlideContent({
                 <p className="mt-0.5 text-xs font-bold leading-relaxed text-slate-600">
                   הדרכה במחוז ירושלים והעיר ירושלים - מנח״י, בהובלת איילת קריספין
                 </p>
+                <p className="mt-0.5 text-xs font-bold leading-relaxed text-slate-600">
+                  האתר מנוהל ע״י יניב רז · מדריך מחוזי חט״ב בעיר ירושלים
+                </p>
               </div>
             </div>
           )}
@@ -342,11 +345,6 @@ function SlideContent({
         )}
       </div>
 
-      {isFirst && (
-        <p className="relative z-10 mx-auto mt-5 max-w-5xl text-center text-[11px] font-bold text-slate-500 sm:text-xs">
-          האתר מנוהל ע״י יניב רז · מדריך מחוזי חט״ב בעיר ירושלים
-        </p>
-      )}
     </div>
   );
 }

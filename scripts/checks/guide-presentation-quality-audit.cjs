@@ -103,6 +103,32 @@ for (const fragment of [
   if (!hotspots.includes(fragment)) fail(`Verified hotspot data-safety contract is missing: ${fragment}`);
 }
 
+// 6) Opening-space teaching contract: one action and one screenshot at most per slide.
+const openingStartIndex = deck.indexOf('const OPENING_GUIDE_SLIDES: GuideSlide[] = [');
+const openingEndIndex = deck.indexOf('const ASSET_COVERAGE_SLIDES: GuideSlide[] = [');
+if (openingStartIndex < 0 || openingEndIndex <= openingStartIndex) {
+  fail('Opening Guide slide block could not be located.');
+} else {
+  const opening = deck.slice(openingStartIndex, openingEndIndex);
+  const slideChunks = opening.split(/\n  \{\n(?=    id:)/).slice(1);
+  for (const chunk of slideChunks) {
+    const id = chunk.match(/id:\s*'([^']+)'/)?.[1] ?? 'unknown';
+    const stepBody = chunk.match(/steps:\s*\[([\s\S]*?)\]/)?.[1] ?? '';
+    const stepCount = [...stepBody.matchAll(/'[^']*'/g)].length;
+    const screenshotBody = chunk.match(/screenshots:\s*\[([\s\S]*?)\]/)?.[1] ?? '';
+    const screenshotCount = [...screenshotBody.matchAll(/src:\s*'/g)].length;
+    if (stepCount > 1) fail(`Opening slide ${id} contains ${stepCount} actions; maximum is one.`);
+    if (screenshotCount > 1) fail(`Opening slide ${id} contains ${screenshotCount} screenshots; maximum is one.`);
+  }
+}
+
+for (const fragment of [
+  'הדרכה במחוז ירושלים והעיר ירושלים - מנח״י, בהובלת איילת קריספין',
+  'האתר מנוהל ע״י יניב רז · מדריך מחוזי חט״ב בעיר ירושלים',
+]) {
+  if (!guide.includes(fragment)) fail(`First-slide branding contract is missing: ${fragment}`);
+}
+
 if (errors.length) {
   console.error('\nGuide presentation quality audit failed:');
   for (const error of errors) console.error(`- ${error}`);
