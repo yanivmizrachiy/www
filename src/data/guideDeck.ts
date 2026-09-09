@@ -16,7 +16,7 @@ const MOODLE_HOME = 'https://moodlemoe.lms.education.gov.il/';
 const MOODLE_MY = 'https://moodlemoe.lms.education.gov.il/my/';
 const MOODLE_WIZARD = 'https://moodlemoe.lms.education.gov.il/local/auto_course_create/wizard.php';
 
-export const FIRST_GUIDE_SLIDE_ID = 'open-space-start';
+export const FIRST_GUIDE_SLIDE_ID = 'cover';
 
 export const GUIDE_SECTIONS: GuideSection[] = [
   {
@@ -52,7 +52,7 @@ function normalizeSlide(slide: GuideSlide): GuideSlide {
 
 const OPENING_GUIDE_SLIDES: GuideSlide[] = [
   {
-    id: FIRST_GUIDE_SLIDE_ID,
+    id: 'open-space-start',
     section: 'opening',
     eyebrow: 'פתיחת מרחב למידה · שלב 1',
     title: 'איך פותחים מרחב למידה במודל?',
@@ -400,6 +400,7 @@ const REMAINING_SOURCE_SLIDES = SOURCE_GUIDE_SLIDES.filter(
 );
 
 export const GUIDE_SLIDES = [
+  ...SOURCE_GUIDE_SLIDES.filter((slide) => slide.id === 'cover'),
   ...OPENING_GUIDE_SLIDES,
   ...WIZARD_NEW_FEATURE_SLIDES,
   ...STUDENT_ENROLMENT_SLIDES,
