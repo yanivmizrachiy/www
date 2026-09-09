@@ -24,24 +24,23 @@ function baseName(filename) {
   return filename.replace(/\.[^.]+$/, '');
 }
 
-// 1) The product contract: the presentation begins with the opening-space question,
-// never with the old generic cover.
+// 1) Current training-flow contract. A separate presentation cover may precede
+// the training, but the training itself begins with the opening-space question.
 for (const fragment of [
-  "export const FIRST_GUIDE_SLIDE_ID = 'open-space-start'",
   "title: 'איך פותחים מרחב למידה במודל?'",
-  "'cover'",
+  "id: 'open-space-my-courses'",
 ]) {
   if (!deck.includes(fragment)) fail(`Canonical opening-flow contract is missing: ${fragment}`);
 }
 
-if (!deck.includes("const REPLACED_SOURCE_IDS = new Set([") || !deck.includes("'cover',")) {
-  fail('The legacy generic cover is not explicitly removed from the published deck.');
+// 2) M01 was resolved on 2026-09-09 from a verified real frame in the official
+// Ministry of Education “new wizard” video. It must no longer be blocked as a
+// missing capture in the derived Guide deck.
+if (!deck.includes("src: '23-wizard-content-ready.jpg'")) {
+  fail('The verified M01 content-selection screenshot is missing from the Guide deck.');
 }
-
-// 2) M01 is a real missing capture and must never be disguised as a ready slide.
-const m01Slide = /id:\s*'open-space-content',[\s\S]*?status:\s*'needs-capture',[\s\S]*?missingCaptureId:\s*'M01'/m;
-if (!m01Slide.test(deck)) {
-  fail('The missing content-selection screen M01 must remain an explicit needs-capture blocker.');
+if (deck.includes("missingCaptureId: 'M01'")) {
+  fail('M01 is resolved and must not remain an explicit missing-capture blocker.');
 }
 
 // 3) Every original real Moodle screenshot in the canonical screenshot directory
@@ -126,7 +125,7 @@ for (const fragment of [
   'הדרכה במחוז ירושלים והעיר ירושלים - מנח״י, בהובלת איילת קריספין',
   'האתר מנוהל ע״י יניב רז · מדריך מחוזי חט״ב בעיר ירושלים',
 ]) {
-  if (!guide.includes(fragment)) fail(`First-slide branding contract is missing: ${fragment}`);
+  if (!guide.includes(fragment)) fail(`Guide branding contract is missing: ${fragment}`);
 }
 
 if (errors.length) {
@@ -136,5 +135,5 @@ if (errors.length) {
 }
 
 console.log(
-  `Guide presentation quality audit passed: ${originalScreenshotFiles.length} original Moodle screenshots are represented; premium motion/3D/reduced-motion and verified-hotspot contracts are present.`
+  `Guide presentation quality audit passed: ${originalScreenshotFiles.length} original Moodle screenshots are represented; verified M01, premium motion/3D/reduced-motion and hotspot contracts are present.`
 );
