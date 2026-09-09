@@ -187,20 +187,30 @@ if (!fs.existsSync(guideSwPath)) {
   }
 }
 
-// 6) The repository must contain a static always-on deployment gate. PRs build
-// and prove the artifact; only main is allowed to deploy it to GitHub Pages.
+// 6) The repository must contain a static always-on publication gate that
+// writes only the generated /guide subtree into the existing branch-based
+// GitHub Pages tree. It must not deploy a replacement Pages artifact because
+// this repository also hosts other public pages that must remain intact.
 if (!fs.existsSync(staticGuideWorkflowPath)) {
   fail('Missing .github/workflows/guide-static-always-on.yml required by the Guide always-on rule.');
 } else {
   const staticWorkflow = fs.readFileSync(staticGuideWorkflowPath, 'utf8');
   for (const requiredFragment of [
     'Guide Static Always-On',
-    'Prove static artifact is independent of Render wake-up',
+    'Publish Guide into existing branch-based GitHub Pages tree',
     "github.event_name == 'push' && github.ref == 'refs/heads/main'",
-    'actions/deploy-pages@v4',
+    'git push origin HEAD:main',
   ]) {
     if (!staticWorkflow.includes(requiredFragment)) {
-      fail(`Static Guide workflow is missing always-on deployment rule: ${requiredFragment}`);
+      fail(`Static Guide workflow is missing always-on branch-pages publication rule: ${requiredFragment}`);
+    }
+  }
+  for (const forbiddenFragment of [
+    'actions/deploy-pages@',
+    'actions/upload-pages-artifact@',
+  ]) {
+    if (staticWorkflow.includes(forbiddenFragment)) {
+      fail(`Static Guide workflow must not replace the repository Pages site: ${forbiddenFragment}`);
     }
   }
 }
