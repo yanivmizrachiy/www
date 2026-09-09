@@ -34,10 +34,10 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   GUIDE_ROUTE_BASE: /www/guide
   PROJECT_PAGES_BASE: /www
+  GUIDE_DEPLOY_BRANCH: deploy/guide-static
 
 jobs:
   build-and-publish:
-    if: github.event_name != 'push' || github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -110,14 +110,19 @@ jobs:
           fi
           echo 'STATIC_GUIDE_ARTIFACT_OK'
 
-      - name: Publish Guide into existing branch-based GitHub Pages tree
+      - name: Publish generated Guide to deployment branch
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
         run: |
           set -euo pipefail
+          rm -rf /tmp/guide-publish
+          cp -R .guide-publish /tmp/guide-publish
+          git fetch origin main
+          git fetch origin "${GUIDE_DEPLOY_BRANCH}:refs/remotes/origin/${GUIDE_DEPLOY_BRANCH}" || true
+          git checkout -B "${GUIDE_DEPLOY_BRANCH}" origin/main
           rm -rf guide
           mkdir -p guide
-          cp -R .guide-publish/. guide/
+          cp -R /tmp/guide-publish/. guide/
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A guide
@@ -126,4 +131,4 @@ jobs:
             exit 0
           fi
           git commit -m 'deploy(guide): refresh always-on static presentation'
-          git push origin HEAD:main
+          git push --force origin HEAD:"${GUIDE_DEPLOY_BRANCH}"
