@@ -3,7 +3,7 @@ name: One-off Guide Closeout 2026-09-10
 on:
   push:
     branches:
-      - main
+      - fix/guide-source-native-cover-20260910
     paths:
       - '.github/workflows/one-off-guide-closeout-20260910.yml'
 
@@ -14,10 +14,10 @@ jobs:
   closeout:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout main
+      - name: Checkout working branch
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: fix/guide-source-native-cover-20260910
           fetch-depth: 0
 
       - name: Setup Node
@@ -51,4 +51,4 @@ jobs:
           git add src/pages/Guide.tsx public/guide-visual-isolation.css PROJECT_MEMORY.md public/PROJECT_MEMORY.md STATE/CURRENT.md scripts/checks/guide-presentation-quality-audit.cjs
           git diff --cached --check
           git commit -m 'fix(guide): make final cover contract source-native'
-          git push origin HEAD:main
+          git push origin HEAD:fix/guide-source-native-cover-20260910
