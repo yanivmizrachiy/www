@@ -26,6 +26,7 @@ const publicMemory = read('public/PROJECT_MEMORY.md');
 const current = read('STATE/CURRENT.md');
 const readme = read('README.md');
 const missing = read('docs/GUIDE_MISSING_CAPTURES.md');
+const manifest = read('docs/GUIDE_SCREENSHOTS_MANIFEST.md');
 const guideSource = read('src/pages/Guide.tsx');
 const deckPath = path.join(root, 'src/data/guideDeck.ts');
 
@@ -42,9 +43,15 @@ requireText('STATE/CURRENT.md', current, guideUrl);
 requireText('STATE/CURRENT.md', current, 'Cover contract: branding is at the top and the cover has exactly one CTA, `התחל`');
 requireText('README.md', readme.split('<details>')[0], guideUrl);
 requireText('README.md', readme.split('<details>')[0], deckSource);
+
 requireText('docs/GUIDE_MISSING_CAPTURES.md', missing, `מקור השקפים היחיד: \`${deckSource}\``);
 requireText('docs/GUIDE_MISSING_CAPTURES.md', missing, 'מסמך תפעולי בלבד');
 forbidText('docs/GUIDE_MISSING_CAPTURES.md', missing, 'guideDeckSource.ts');
+
+requireText('docs/GUIDE_SCREENSHOTS_MANIFEST.md', manifest, 'תיעוד נכסים תפעולי');
+requireText('docs/GUIDE_SCREENSHOTS_MANIFEST.md', manifest, deckSource);
+forbidText('docs/GUIDE_SCREENSHOTS_MANIFEST.md', manifest, 'מניפסט צילומי המדריך — מקור אמת מלא');
+forbidText('docs/GUIDE_SCREENSHOTS_MANIFEST.md', manifest, 'GUIDE_BUTTON_BEHAVIOR.md');
 
 if (memory !== publicMemory) {
   failures.push('public/PROJECT_MEMORY.md: deployment mirror differs from canonical PROJECT_MEMORY.md');
