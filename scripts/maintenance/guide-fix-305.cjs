@@ -55,7 +55,17 @@ replaceExact('public/PROJECT_MEMORY.md', oldTruth, newTruth, 1);
 let audit = read('scripts/checks/guide-truth-consistency-audit.cjs');
 const anchor = "if (failures.length) {\n";
 if (!audit.includes(anchor)) throw new Error('guide truth audit anchor missing');
-const block = `// Cover Start must enter the complete published presentation, never Quick mode.\nrequireText('PROJECT_MEMORY.md', memory, 'במצב המצגת המלא (\\`all\\`)');\nrequireText('src/pages/Guide.tsx', guideSource, 'onClick={onStart}');\nrequireText('src/pages/Guide.tsx', guideSource, \"onStart={() => jumpToSlide(FIRST_TRAINING_SLIDE_ID, 'all')}\");\nforbidText('src/pages/Guide.tsx', guideSource, 'onQuickStart');\nforbidText('src/pages/Guide.tsx', guideSource, \"onStart={() => jumpToSlide(QUICK_START_SLIDE_IDS[0], 'quick')}\");\nconst deckSourceText = read('src/data/guideDeck.ts');\nforbidText('src/data/guideDeck.ts', deckSourceText, 'מייל אישור על יצירת המרחב וגם עדכון בתפריט ההודעות');\n\n`;
+const block = [
+  '// Cover Start must enter the complete published presentation, never Quick mode.',
+  "requireText('PROJECT_MEMORY.md', memory, 'במצב המצגת המלא (`all`)');",
+  "requireText('src/pages/Guide.tsx', guideSource, 'onClick={onStart}');",
+  "requireText('src/pages/Guide.tsx', guideSource, \"onStart={() => jumpToSlide(FIRST_TRAINING_SLIDE_ID, 'all')}\");",
+  "forbidText('src/pages/Guide.tsx', guideSource, 'onQuickStart');",
+  "forbidText('src/pages/Guide.tsx', guideSource, \"onStart={() => jumpToSlide(QUICK_START_SLIDE_IDS[0], 'quick')}\");",
+  "const deckSourceText = read('src/data/guideDeck.ts');",
+  "forbidText('src/data/guideDeck.ts', deckSourceText, 'מייל אישור על יצירת המרחב וגם עדכון בתפריט ההודעות');",
+  '',
+].join('\n');
 if (!audit.includes("onStart={() => jumpToSlide(FIRST_TRAINING_SLIDE_ID, 'all')}")) {
   audit = audit.replace(anchor, block + anchor);
   write('scripts/checks/guide-truth-consistency-audit.cjs', audit);
