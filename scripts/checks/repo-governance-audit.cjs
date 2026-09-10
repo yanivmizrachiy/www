@@ -41,6 +41,7 @@ const todoNext = read('STATE/TODO-NEXT.md');
 const sessionHistory = read('SESSION_HISTORY.md');
 const ltiSetupLog = read('AI_LTI_SETUP_LOG.md');
 const automationStatus = read('STATE/automation/AUTOMATION_STATUS.md');
+const currentLtiNrps = read('STATE/progress/current-lti13-nrps-status.md');
 const implementationPlan = read('docs/architecture/implementation-plan.md');
 const productRoadmap = read('docs/product/MOODLE_TEACHER_HUB_FINAL_PRODUCT_RULES_AND_ROADMAP_V1.md');
 const moodleSetupGuide = read('MOODLE_SETUP_GUIDE.md');
@@ -113,6 +114,7 @@ for (const [rel, text] of [
   ['STATE/TODO-NEXT.md', todoNext],
   ['AI_LTI_SETUP_LOG.md', ltiSetupLog],
   ['STATE/automation/AUTOMATION_STATUS.md', automationStatus],
+  ['STATE/progress/current-lti13-nrps-status.md', currentLtiNrps],
   ['docs/architecture/implementation-plan.md', implementationPlan],
   ['docs/product/MOODLE_TEACHER_HUB_FINAL_PRODUCT_RULES_AND_ROADMAP_V1.md', productRoadmap],
 ]) {
