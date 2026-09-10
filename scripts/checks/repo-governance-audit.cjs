@@ -114,7 +114,7 @@ if (!ltiSetupLog.startsWith('# HISTORICAL SNAPSHOT')) {
 requireText('MOODLE_SETUP_GUIDE.md', moodleSetupGuide, teacherHubUrl);
 requireText('MOODLE_SETUP_GUIDE.md', moodleSetupGuide, `${teacherHubUrl}/api/lti/launch`);
 requireText('MOODLE_SETUP_GUIDE.md', moodleSetupGuide, 'Teacher Release: **NO**');
-requireText('MOODLE_SETUP_GUIDE.md', moodleSetupGuide, 'אינו runtime קנוני');
+requireText('MOODLE_SETUP_GUIDE.md', moodleSetupGuide, 'אין להשתמש ב-LocalTunnel, trycloudflare, Termux או URL זמני ככתובת production');
 
 // Legacy Termux packaging is retained only as an explicit manual fallback.
 requireText('.github/workflows/build-termux-runtime.yml', termuxWorkflow, 'workflow_dispatch');
