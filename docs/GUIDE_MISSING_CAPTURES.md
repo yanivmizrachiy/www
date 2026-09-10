@@ -1,8 +1,8 @@
 # מצגת Moodle — צילומים חסרים בלבד
 
-עודכן: 2026-09-02  
-מקור הדרישות: `PROJECT_MEMORY.md`, שסונכרן מתיקיית `מודל` ב-Google Drive.  
-בסיס הנכסים שנבדק בעת המיפוי: `public/guide/screenshots/`, `src/data/guideDeckSource.ts` ו-`docs/GUIDE_SCREENSHOTS_MANIFEST.md`. ענף `rebuild/lti13-secure-teacher-hub` שימש כמקור היסטורי לנכסי המצגת; המקור הקנוני וענף הפריסה הנוכחי הם `main`.
+עודכן: 2026-09-10  
+מקור הדרישות הקנוני: `PROJECT_MEMORY.md`. מקור השקפים היחיד: `src/data/guideDeck.ts`.  
+זהו **מסמך תפעולי בלבד** לרשימת חוסרי צילום; הוא אינו מקור אמת עצמאי ואינו מגדיר מבנה שקפים מתחרה. בסיס הנכסים שנבדק בעת המיפוי: `public/guide/screenshots/` ו-`docs/GUIDE_SCREENSHOTS_MANIFEST.md`. ענפים היסטוריים יכולים לשמש לאיתור נכסים בלבד; המקור הקנוני וענף הפריסה הנוכחי הם `main`.
 
 ## כלל מחייב
 
