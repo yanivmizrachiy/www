@@ -1,12 +1,17 @@
+# HISTORICAL SNAPSHOT — LTI 1.3 / NRPS (V1)
+
+> Snapshot dated **1/6/26**, retained as evidence of the state after PRs #232–#239. Despite the historical filename containing `current`, this file is **not current truth** for later HEADs.  
+> Current authority: `PROJECT_MEMORY.md` → `PROJECT_RULES.md` → `STATE/CURRENT.md` + newer evidence.
+
 # מצב אמת נוכחי — LTI 1.3 / NRPS (V1)
 
 עודכן: 1/6/26
 Teacher Release: **NO** (ללא שינוי)
-מקור אמת עליון: `PROJECT_RULES.md`
+מקור אמת עליון באותו snapshot: `PROJECT_RULES.md`
 
-מסמך זה מסכם את מצב האמת הנוכחי של חיבור LTI 1.3 ושל קריאת
+מסמך זה מסכם את מצב האמת שנרשם אז של חיבור LTI 1.3 ושל קריאת
 המשתתפים (NRPS) במרחב הפעיל, נכון לסיום סדרת ה-PRs ‎#232–#239.
-הוא מתעד מה הושלם בקוד ומה עדיין דורש אימות חי (live) מתוך Moodle.
+הוא מתעד מה הושלם בקוד ומה עדיין דרש אימות חי (live) מתוך Moodle.
 מצב שלא אומת מסומן במפורש `לא אומת` ולא `עובד`.
 
 ## הקשר קודם (הושלם)
@@ -50,9 +55,9 @@ Teacher Release: **NO** (ללא שינוי)
   ריקון רגוע של טאבים ריקים.
 - **PR #239 — בוצע.** עמוד אבחון בידוד מרחב בטוח (space isolation) חי.
 
-## בדיקות חיות לכל PR / הבדיקות הבאות הנדרשות עכשיו
+## בדיקות חיות שנדרשו באותו snapshot
 
-יש לפתוח את הכלי מתוך Moodle בהשקה (launch) אמיתית ולאמת חי:
+היה צורך לפתוח את הכלי מתוך Moodle בהשקה (launch) אמיתית ולאמת חי:
 
 - LTI 1.3: launch אמיתי שמחזיר claim של NRPS תקף לסשן הנוכחי. `לא אומת`
 - ספירת לומדים: `learners_inserted + learners_updated` שווה למספר
@@ -67,14 +72,14 @@ Teacher Release: **NO** (ללא שינוי)
   שמות שונים (כינויים/סדר) יוצגו ללא קישור ולא יקשרו לפרופיל שגוי. `לא אומת`
 - בידוד רב-מורים / רב-קורסים — לא אומת חי. `לא אומת`
 
-הבדיקה הבאה כעת: השלמת בדיקות ה-PR החיות מתוך Moodle כדי לאמת
+הבדיקה הבאה שנרשמה אז הייתה השלמת בדיקות ה-PR החיות מתוך Moodle כדי לאמת
 את תצוגת/סיווג המורים ואת הספירות (216 / 222), ולאשר שה-fallback
-אינו פעיל בפרודקשן.
+אינו פעיל בפרודקשן. אין לבצע רשימה זו אוטומטית כיום בלי בדיקת truth/evidence עדכניים.
 
 ## כללי אמת ובטיחות שנשמרו
 
 - **PR #127 לא ימוזג ולא ייגע בו** — נשאר draft-only ולא נגוע
-  (לפי `PROJECT_RULES.md`).
+  (לפי `PROJECT_RULES.md` באותו snapshot).
 - **Manual import fallback נשמר** — נתיב הייבוא הידני
   (`/api/imports/*` participants / gradebook / logs) הוא נתיב נפרד
   ולא שונה.
@@ -85,7 +90,7 @@ Teacher Release: **NO** (ללא שינוי)
   זרימת ה-LTI launch, או evidence logs.
 - **Teacher Release נשאר NO.**
 
-## הערכת התקדמות
+## הערכת התקדמות שנרשמה באותו snapshot
 
 - קוד תצוגת/סנכרון NRPS לסשן הנוכחי (#232–#239): מוזג — ~90%.
 - אימות חי מ-Moodle (ספירות 216/222, שמות/סיווג מורים, אי-שכפול
