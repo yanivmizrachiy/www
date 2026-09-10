@@ -31,7 +31,10 @@ const docsReadme = read('docs/README.md');
 const repoMap = read('docs/operations/repository-map.md');
 const current = read('STATE/CURRENT.md');
 const stateReadme = read('STATE/README.md');
+const todoNext = read('STATE/TODO-NEXT.md');
 const sessionHistory = read('SESSION_HISTORY.md');
+const ltiSetupLog = read('AI_LTI_SETUP_LOG.md');
+const moodleSetupGuide = read('MOODLE_SETUP_GUIDE.md');
 const termuxWorkflow = read('.github/workflows/build-termux-runtime.yml');
 
 const teacherHubUrl = 'https://www-tijc.onrender.com';
@@ -94,9 +97,24 @@ requireText('README.md current section', readmeCurrent, guideUrl);
 requireText('README.md current section', readmeCurrent, 'PROJECT_MEMORY.md');
 forbidText('README.md current section', readmeCurrent, staleGeminiBranch);
 
+// Files whose names look current/actionable must carry an explicit historical marker
+// when their payload is a dated snapshot rather than an instruction for current HEAD.
 if (!sessionHistory.startsWith('# HISTORICAL SNAPSHOT')) {
   failures.push('SESSION_HISTORY.md must identify itself as a historical snapshot before dated claims');
 }
+if (!todoNext.startsWith('# HISTORICAL SNAPSHOT')) {
+  failures.push('STATE/TODO-NEXT.md must identify obsolete TODOs as historical before listing actions');
+}
+if (!ltiSetupLog.startsWith('# HISTORICAL SNAPSHOT')) {
+  failures.push('AI_LTI_SETUP_LOG.md must identify its 2026-05 setup state as historical');
+}
+
+// Active setup guide must point to the actual canonical Teacher Hub runtime and
+// must not advertise temporary tunnels as production setup.
+requireText('MOODLE_SETUP_GUIDE.md', moodleSetupGuide, teacherHubUrl);
+requireText('MOODLE_SETUP_GUIDE.md', moodleSetupGuide, `${teacherHubUrl}/api/lti/launch`);
+requireText('MOODLE_SETUP_GUIDE.md', moodleSetupGuide, 'Teacher Release: **NO**');
+requireText('MOODLE_SETUP_GUIDE.md', moodleSetupGuide, 'אינו runtime קנוני');
 
 // Legacy Termux packaging is retained only as an explicit manual fallback.
 requireText('.github/workflows/build-termux-runtime.yml', termuxWorkflow, 'workflow_dispatch');
