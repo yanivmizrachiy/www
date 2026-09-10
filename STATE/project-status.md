@@ -1,3 +1,26 @@
+# Historical Teacher Hub status snapshot — superseded
+
+Routing notice updated: 2026-09-11
+
+הקובץ הזה נשמר כראיה היסטורית מפורטת מ-2026-05-20. הוא **אינו** מקור הסטטוס הנוכחי של הריפו ואסור לתת לכותרות כמו “Current product truth”, “Next action” או אחוזי מוכנות שמופיעים בהמשך לגבור על המקורות הקנוניים העדכניים.
+
+למצב נוכחי השתמשו לפי הסדר:
+
+1. `PROJECT_MEMORY.md` — מקור האמת הקנוני ברמת הריפו, כולל Guide לעומת Teacher Hub וה-Runtimes.
+2. `STATE/CURRENT.md` — snapshot תמציתי ועדכני.
+3. `PROJECT_RULES.md` — אמת מפורטת של Moodle Teacher Hub בלבד.
+4. `STATE/evidence-log.md` — ראיות מתוארכות.
+
+Canonical branch: `main`  
+Teacher Hub runtime: `https://www-tijc.onrender.com`  
+Guide runtime: `https://yanivmizrachiy.github.io/www/guide/`  
+Teacher Release: **NO**
+
+---
+
+<details>
+<summary>הצג את snapshot הסטטוס המקורי מ-2026-05-20</summary>
+
 # Project Status — Moodle Teacher Hub
 
 Updated: 2026-05-20
@@ -179,3 +202,5 @@ Next work must focus only on:
 7. Final release gate after isolation evidence exists.
 
 Teacher Release must remain **NO** until these gates pass.
+
+</details>
