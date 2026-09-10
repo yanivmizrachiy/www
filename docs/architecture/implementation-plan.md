@@ -1,3 +1,8 @@
+# HISTORICAL SNAPSHOT — Implementation Plan — www / Moodle Teacher Hub
+
+> התכנית למטה נשמרת כהיסטוריה של שלב מוקדם. היא **אינה** תכנית העבודה הנוכחית ואינה מקור אמת.  
+> למצב הקנוני: `PROJECT_MEMORY.md` → `PROJECT_RULES.md` → `STATE/CURRENT.md`. אין להריץ מחדש שלבים או endpoints legacy רק מפני שהם מופיעים כאן.
+
 # Implementation Plan — www / Moodle Teacher Hub
 
 תוכנית עבודה חכמה להמשך סידור, אימות ושדרוג הריפו `yanivmizrachiy/www`.
