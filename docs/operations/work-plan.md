@@ -260,4 +260,25 @@ npm run check
 npm run build
 ```
 
+אם פקודה חסרה או נכשלת — לתעד, לא להמציא הצלחה.
+
+## מדד מוכנות נוכחי
+
+```text
+Permanent Render runtime: high confidence
+Direct LTI connection: user reported connected
+Repo documentation: improving, still must stay aligned
+Participants import: not verified
+Grades/logs/completion: not verified
+Overall product: not production-ready
+```
+
+## next action allowed
+
+רק אחרי סיום ניקוי הסתירות:
+
+```text
+Implement Render-first Participants import path.
+```
+
 </details>
