@@ -1,3 +1,24 @@
+# Work Plan — current routing notice
+
+עודכן: 2026-09-10
+
+המסמך המקורי למטה הוא **תכנית עבודה היסטורית מ-2026-05-06**. הוא אינו backlog נוכחי ואסור להשתמש בענף `gemini/ai-studio-sync-20260428-193953` כענף עבודה פעיל.
+
+מצב קנוני כיום:
+- branch: `main`.
+- מקור אמת ריפו: `PROJECT_MEMORY.md`.
+- Teacher Hub: `https://www-tijc.onrender.com` (Render).
+- Guide: `https://yanivmizrachiy.github.io/www/guide/` (GitHub Pages).
+- Teacher Release: **NO**.
+- Termux/Cloudflare אינם production; Termux package הוא fallback ידני בלבד.
+
+למשימות Guide חסרות צילום משתמשים ב-`docs/GUIDE_MISSING_CAPTURES.md`. למצב Teacher Hub משתמשים ב-`PROJECT_RULES.md` וב-evidence עדכני; אין לבצע מחדש שלבים שהושלמו רק מפני שהם מופיעים בתכנית ההיסטורית למטה.
+
+---
+
+<details>
+<summary>תכנית העבודה המקורית מ-2026-05-06 — היסטוריה בלבד</summary>
+
 # Work Plan — www / Moodle Teacher Hub
 
 Updated: 2026-05-06
@@ -239,23 +260,4 @@ npm run check
 npm run build
 ```
 
-אם פקודה חסרה או נכשלת — לתעד, לא להמציא הצלחה.
-
-## מדד מוכנות נוכחי
-
-```text
-Permanent Render runtime: high confidence
-Direct LTI connection: user reported connected
-Repo documentation: improving, still must stay aligned
-Participants import: not verified
-Grades/logs/completion: not verified
-Overall product: not production-ready
-```
-
-## next action allowed
-
-רק אחרי סיום ניקוי הסתירות:
-
-```text
-Implement Render-first Participants import path.
-```
+</details>
