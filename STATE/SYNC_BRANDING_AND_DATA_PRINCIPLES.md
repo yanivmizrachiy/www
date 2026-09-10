@@ -1,23 +1,20 @@
-# Addendum — Sync, Branding, and Data Usage Principles
+# Historical addendum — Sync, Branding, and Data Usage Principles
 
-Date: 2026-07-06
-Repo: yanivmizrachiy/www
+Original date: 2026-07-06  
+Routing clarified: 2026-09-11  
+Repo: `yanivmizrachiy/www`
 
-## Always-synced memory principle
+## Status of this file
 
-The project memory must stay synchronized between:
+This file is retained as a historical principles snapshot. It is **not** an independent memory/source-of-truth file.
 
-- The local project folder on Yaniv's computer
-- GitHub main branch
-- The connected deployment service, such as Vercel or the active runtime
+`PROJECT_MEMORY.md` is the only repository-wide canonical source of truth. `STATE/**` files provide dated evidence, principles, snapshots and operational context only. If anything below conflicts with `PROJECT_MEMORY.md`, `PROJECT_RULES.md`, `RULES.md` or `STATE/CURRENT.md`, the current canonical files win.
 
-Every meaningful requirement update must be recorded in the project memory files before code work continues.
+## Synchronization principle
 
-Main memory files:
+Meaningful requirement changes must be recorded first in `PROJECT_MEMORY.md` before code work continues. The public mirror `public/PROJECT_MEMORY.md` must remain synchronized with it, but it is not an independent source of truth.
 
-- PROJECT_MEMORY.md
-- STATE/PRINCIPLES_HEBREW_UI_REAL_PRODUCT.md
-- STATE/SYNC_BRANDING_AND_DATA_PRINCIPLES.md
+Runtime/deployment state is evidence of what is deployed; it is not a separate place to define product requirements.
 
 ## Use existing WWW work first
 
@@ -25,9 +22,9 @@ Claude Code must use the existing data, code, architecture, routes, components, 
 
 The correct order is:
 
-1. Read the repo truth files.
+1. Read `PROJECT_MEMORY.md` and the relevant canonical rules.
 2. Understand what already exists.
-3. Reuse and improve the existing WWW implementation.
+3. Reuse and improve the existing implementation.
 4. Add only what is missing.
 5. Remove duplication safely.
 
@@ -41,11 +38,11 @@ It must:
 - Use the Moodle context and available permissions.
 - Show information only for the relevant teacher space.
 - Improve automatic data extraction as much as possible.
-- Stay separate from the guide presentation product.
+- Stay separate from the Guide presentation product.
 
 ## Guide presentation product
 
-The guide presentation is a different product.
+The Guide presentation is a different product.
 
 It is a real web guide for teachers about Moodle learning spaces.
 
@@ -58,31 +55,19 @@ It must:
 - Include real approved screenshots from Moodle learning spaces when available.
 - Include real working buttons and navigation.
 
-## Branding on every page
+## Branding principle retained from the original snapshot
 
-Every page in the site must include clear branding text:
-
-Managed by Yaniv Raz
-
-Hebrew display text:
-
-מנוהל ע״י יניב רז
-
-The site should also include a link to Yaniv's personal Instagram profile when appropriate in the footer or branding area.
-
-Instagram:
-
-https://www.instagram.com/yani__raz
+The original July 2026 addendum requested clear Yaniv Raz branding and, where appropriate, a link to the documented Instagram profile. This is a retained historical product preference, not a separate authority over current Guide/Teacher Hub requirements in `PROJECT_MEMORY.md`.
 
 ## Separation rule
 
-Do not confuse the two links:
+Do not confuse the two products or links:
 
 1. Guide presentation link — for viewing the Moodle teacher guide.
 2. Teacher Hub / WWW link — for using the data app from a Moodle learning space.
 
-These are different products, different routes, different user goals, and different UX flows.
+They are different products, routes, runtimes, user goals and UX flows.
 
 ## Final rule
 
-The repo must stay synchronized, clean, Hebrew-first, real, and focused on improving the existing WWW product while also managing the separate guide presentation product.
+Keep the repo synchronized, clean, Hebrew-first and real. Never create parallel truth files to preserve a requirement; update `PROJECT_MEMORY.md` instead.
