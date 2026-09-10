@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'moodle-guide-';
-const CACHE_NAME = `${CACHE_PREFIX}v4-live-first`;
+const CACHE_NAME = `${CACHE_PREFIX}v5-cover-css-path`;
 const NAVIGATION_FRESHNESS_MS = 1200;
 
 const scopePath = new URL(self.registration.scope).pathname.replace(/\/$/, '');
@@ -8,7 +8,7 @@ const withBase = (path) => `${siteBase}${path}`;
 
 const GUIDE_SHELL = [
   `${scopePath}/`,
-  withBase('/guide-visual-isolation.css'),
+  withBase('/guide/guide-visual-isolation.css'),
   withBase('/guide/jerusalem-math-logo.webp'),
   withBase('/guide/screenshots/01-login.avif'),
   withBase('/guide/screenshots/02-my-courses-home.avif'),
@@ -85,7 +85,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   const isGuideAsset =
-    url.pathname === withBase('/guide-visual-isolation.css') ||
+    url.pathname === withBase('/guide/guide-visual-isolation.css') ||
     url.pathname.startsWith(`${scopePath}/`) ||
     url.pathname.startsWith(withBase('/assets/'));
 
