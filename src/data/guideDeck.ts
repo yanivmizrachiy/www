@@ -69,8 +69,14 @@ function toModernScreenshotFilename(src: string) {
 }
 
 function normalizeSlide(slide: GuideSlide): GuideSlide {
+  const eyebrow =
+    slide.section === 'opening'
+      ? slide.eyebrow.replace(/ · שלב \d+$/, '')
+      : slide.eyebrow;
+
   return {
     ...slide,
+    eyebrow,
     status:
       slide.missingCaptureId && slide.status === 'ready'
         ? ('needs-capture' as const)
@@ -208,10 +214,10 @@ const AUTHORED_GUIDE_SLIDES: GuideSlide[] = [
   section: 'opening',
   eyebrow: 'פתיחת מרחב למידה · שלב 10',
   title: 'צריך להמתין מול המסך בזמן יצירת המרחב?',
-  summary: 'לא. באשף החדש יצירת המרחב יכולה להמשיך ברקע, ואין צורך להישאר מול המסך עד לסיום.',
+  summary: 'השקף יתפרסם רק לאחר צילום אמיתי של הודעת האשף אחרי שליחת בקשת היצירה.',
   screenshots: [{ src: '39-wizard-background-create.jpg', caption: 'הודעת האשף לאחר שליחת בקשת יצירת המרחב.' }],
   link: { href: MOODLE_WIZARD, label: 'פתיחת אשף יצירת מרחב' },
-  keywords: ['יצירה ברקע', 'אין צורך להמתין', 'פתיחת מרחב כיתתי'],
+  keywords: ['יצירת מרחב', 'הודעת אשף'],
   status: 'needs-capture',
   missingCaptureId: 'M28',
   },
@@ -220,10 +226,10 @@ const AUTHORED_GUIDE_SLIDES: GuideSlide[] = [
   section: 'opening',
   eyebrow: 'פתיחת מרחב למידה · שלב 11',
   title: 'איך יודעים שהמרחב נוצר?',
-  summary: 'בסיום התהליך מתקבל מייל אישור על יצירת המרחב וגם עדכון בתפריט ההודעות.',
+  summary: 'השקף יתפרסם רק לאחר צילום אמיתי של הודעת סיום יצירת המרחב; עד אז לא נקבעים ערוצי ההודעה.',
   screenshots: [{ src: '40-wizard-notification-update.jpg', caption: 'עדכון מתוך רצף האשף החדש לאחר שליחת הבקשה.' }],
   link: { href: MOODLE_HOME, label: 'פתיחת Moodle' },
-  keywords: ['מייל אישור', 'הודעות', 'יצירת מרחב'],
+  keywords: ['הודעת יצירה', 'יצירת מרחב'],
   status: 'needs-capture',
   missingCaptureId: 'M29',
   },
@@ -307,10 +313,10 @@ const AUTHORED_GUIDE_SLIDES: GuideSlide[] = [
   section: 'wizard-new',
   eyebrow: 'האשף החדש · שכפול',
   title: 'אפשר לשכפל מרחב משנה קודמת לבד?',
-  summary: 'כן. באשף החדש ניתן לשכפל באופן עצמאי מרחב למידה משנה קודמת, ללא צורך בהגשת טופס בקשה למשרד החינוך.',
+  summary: 'השקף יתפרסם רק לאחר צילום אמיתי שמראה את אפשרויות השכפול של מרחב משנה קודמת.',
   screenshots: [{ src: '38-wizard-clone-previous-year.jpg', caption: 'מסך האשף במהלך בחירת מרחב לשכפול משנה קודמת.' }],
   link: { href: MOODLE_WIZARD, label: 'פתיחת אשף יצירת מרחב' },
-  keywords: ['שנה קודמת', 'שכפול עצמאי', 'ללא טופס'],
+  keywords: ['שנה קודמת', 'שכפול'],
   status: 'needs-capture',
   missingCaptureId: 'M27',
   },
