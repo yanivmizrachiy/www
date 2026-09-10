@@ -261,12 +261,10 @@ function SlideContent({
   slide,
   onOpenScreenshot,
   onQuickStart,
-  onOpenMenu,
 }: {
   slide: GuideSlide;
   onOpenScreenshot: (state: LightboxState) => void;
   onQuickStart: () => void;
-  onOpenMenu: () => void;
 }) {
   if (slide.cover) {
     return (
@@ -274,6 +272,15 @@ function SlideContent({
         <div className="pointer-events-none absolute -right-32 -top-36 h-96 w-96 rounded-full bg-blue-500/25 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-32 -left-24 h-96 w-96 rounded-full bg-amber-400/15 blur-3xl" />
         <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-blue-800/25 to-transparent" />
+
+        <div className="relative z-10 w-full border-b border-amber-300/50 bg-slate-950/88 px-4 py-4 text-center shadow-[0_12px_36px_rgba(0,0,0,0.24)] sm:px-8 sm:py-5">
+          <p className="text-[clamp(1.05rem,2vw,1.65rem)] font-black leading-tight text-amber-200">
+            הדרכה במחוז ירושלים והעיר ירושלים - מנח״י, בהובלת איילת קריספין
+          </p>
+          <p className="mt-1.5 text-[clamp(.95rem,1.5vw,1.25rem)] font-bold leading-relaxed text-white">
+            האתר מנוהל ע״י יניב רז · מדריך מחוזי חט״ב בעיר ירושלים
+          </p>
+        </div>
 
         <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-5 py-5 text-center sm:px-10 sm:py-7 lg:px-16">
           <div className="mb-3 flex justify-center sm:mb-4">
@@ -303,34 +310,15 @@ function SlideContent({
             </p>
           </div>
 
-          <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
+          <div className="mt-5 flex justify-center">
             <Button
               size="lg"
               onClick={onQuickStart}
-              className="h-14 gap-2 rounded-2xl bg-amber-400 px-8 text-lg font-black text-slate-950 shadow-lg hover:bg-amber-300"
+              className="h-16 min-w-44 rounded-2xl bg-amber-400 px-10 text-xl font-black text-slate-950 shadow-[0_16px_38px_rgba(251,191,36,0.22),0_8px_22px_rgba(0,0,0,0.28)] hover:bg-amber-300"
             >
-              <PlayCircle className="h-5 w-5" />
-              התחלה מהירה
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={onOpenMenu}
-              className="h-14 gap-2 rounded-2xl border-white/35 bg-white/10 px-8 text-lg font-black text-white shadow-lg backdrop-blur-sm hover:bg-white/20 hover:text-white"
-            >
-              <List className="h-5 w-5" />
-              תוכן העניינים
+              התחל
             </Button>
           </div>
-        </div>
-
-        <div className="relative z-10 border-t border-amber-300/40 bg-slate-950/85 px-4 py-3 text-center shadow-[0_-8px_30px_rgba(0,0,0,0.18)] sm:px-8">
-          <p className="text-xs font-black leading-relaxed text-amber-200 sm:text-sm">
-            הדרכה במחוז ירושלים והעיר ירושלים - מנח״י, בהובלת איילת קריספין
-          </p>
-          <p className="mt-1 text-xs font-bold leading-relaxed text-white sm:text-sm">
-            האתר מנוהל ע״י יניב רז · מדריך מחוזי חט״ב בעיר ירושלים
-          </p>
         </div>
       </div>
     );
@@ -804,7 +792,6 @@ export default function Guide() {
                 slide={slide}
                 onOpenScreenshot={setLightbox}
                 onQuickStart={() => jumpToSlide(QUICK_START_SLIDE_IDS[0], 'quick')}
-                onOpenMenu={() => setPanel('menu')}
               />
             </m.article>
           </AnimatePresence>
