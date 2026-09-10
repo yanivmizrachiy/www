@@ -139,6 +139,27 @@ for (const fragment of [
   if (!guide.includes(fragment)) fail(`Guide branding contract is missing: ${fragment}`);
 }
 
+// 7) Cover CTA contract: the cover is source-authored, has one visible action only,
+// and must never rely on DOM-position CSS to hide or relabel duplicate buttons.
+const coverStart = guide.indexOf('if (slide.cover) {');
+const coverEnd = guide.indexOf('const hasScreenshots = Boolean(slide.screenshots?.length);', coverStart);
+const coverSource = coverStart >= 0 && coverEnd > coverStart ? guide.slice(coverStart, coverEnd) : '';
+const coverButtonCount = (coverSource.match(/<Button\b/g) ?? []).length;
+if (!coverSource) fail('Guide cover source block could not be located.');
+if (coverButtonCount !== 1) fail(`Guide cover must contain exactly one Button; found ${coverButtonCount}.`);
+if (!coverSource.includes('              התחל\n')) fail('Guide cover CTA must be labeled exactly התחל.');
+for (const forbidden of ['התחלה מהירה', 'תוכן העניינים']) {
+  if (coverSource.includes(forbidden)) fail(`Guide cover contains forbidden legacy action: ${forbidden}`);
+}
+if (css.includes('.from-slate-950.via-blue-950.to-slate-900.text-white')) {
+  fail('Guide cover must not rely on brittle DOM-position CSS overrides.');
+}
+const coverBrandingIndex = coverSource.indexOf('הדרכה במחוז ירושלים והעיר ירושלים - מנח״י, בהובלת איילת קריספין');
+const coverEyebrowIndex = coverSource.indexOf('{slide.eyebrow}');
+if (coverBrandingIndex < 0 || coverEyebrowIndex < 0 || coverBrandingIndex > coverEyebrowIndex) {
+  fail('Guide cover branding must be source-authored above the main cover content.');
+}
+
 if (errors.length) {
   console.error('\nGuide presentation quality audit failed:');
   for (const error of errors) console.error(`- ${error}`);

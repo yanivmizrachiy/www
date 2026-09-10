@@ -18,6 +18,7 @@ Teacher release: **NO**
 - Guide publication gates reject unpublished/missing-capture slides and invalid screenshot derivatives.
 - Missing real screenshots remain `needs-capture`; no demo/placeholder substitution is allowed.
 - Current missing-capture queue is documented in `docs/GUIDE_MISSING_CAPTURES.md`.
+- Cover contract: branding is at the top and the cover has exactly one CTA, `התחל`; contents/search navigation remains in the persistent presentation chrome.
 
 ## Teacher Hub verified evidence snapshot
 
