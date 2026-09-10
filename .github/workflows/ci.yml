@@ -17,7 +17,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
-      - run: node scripts/checks/guide-integrity-audit.cjs
-      - run: node scripts/checks/guide-asset-integrity-audit.cjs
+      - run: npm run audit:repo-governance
+      - run: npm run audit:guide
+      - run: npm run typecheck
       - run: npm run build
       - run: npm run doctor

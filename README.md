@@ -1,3 +1,50 @@
+# `yanivmizrachiy/www` — Moodle Teacher Hub + Guide
+
+עודכן: 2026-09-10
+
+הריפו מכיל **שני מוצרי Moodle נפרדים**:
+
+| מוצר | Runtime קנוני | תפקיד |
+|---|---|---|
+| Moodle Teacher Hub | `https://www-tijc.onrender.com` | כלי מורה RTL מתוך Moodle |
+| Guide | `https://yanivmizrachiy.github.io/www/guide/` | מצגת/מדריך Moodle סטטי למורים |
+
+ה-Guide נבנה מ-`main` ומפורסם אוטומטית לענף `deploy/guide-static`. Render אינו מפרסם ואינו מאמת את ה-Guide.
+
+## מקור אמת
+
+1. `PROJECT_MEMORY.md` — מקור האמת הקנוני ברמת הריפו, כולל חלוקת המוצרים וה-Runtimes.
+2. `PROJECT_RULES.md` — אמת מפורטת של Moodle Teacher Hub בלבד.
+3. `RULES.md` — גבולות ריפו, פרטיות וכללי עבודה.
+4. `STATE/**` — ראיות ו-snapshots מתוארכים; קובץ ישן אינו הופך לענף/Runtime פעיל.
+5. `docs/**` — חוזים, runbooks, ארכיטקטורה והיסטוריה.
+
+## מצב תפעולי נוכחי
+
+- Teacher Hub: Render, `https://www-tijc.onrender.com`, Teacher Release = **NO**.
+- Guide: GitHub Pages, `https://yanivmizrachiy.github.io/www/guide/`.
+- מקור השקפים היחיד: `src/data/guideDeck.ts`.
+- שקף ללא צילום Moodle אמיתי נשאר `needs-capture`.
+- Termux/Cloudflare/Localtunnel אינם runtime קנוני; Termux נשמר כ-fallback ידני בלבד.
+- `luz-teddy/` הוא חריג זמני היסטורי; אין להרחיב או למחוק בלי העברה מאומתת.
+
+## פיתוח מקומי
+
+```bash
+npm install
+npm run check
+npm run typecheck
+npm run audit:repo-governance
+npm run audit:guide
+npm run build
+npm run doctor
+```
+
+---
+
+<details>
+<summary>README היסטורי ממאי 2026 — נשמר במלואו כראיה בלבד, לא כמצב נוכחי</summary>
+
 <!-- MTH_CURRENT_STATE_20260512_START -->
 ## Current state — 2026-05-12
 
@@ -225,3 +272,5 @@ Participants report אמיתי ממודל
 - אין secrets בריפו.
 - אין קבצי תלמידים פרטיים בריפו.
 - אין סימון production-ready בלי בדיקות אמיתיות.
+
+</details>

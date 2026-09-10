@@ -12,6 +12,7 @@
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc -b --pretty false",
     "doctor": "node scripts/checks/repo-doctor.cjs",
+    "audit:repo-governance": "node scripts/checks/repo-governance-audit.cjs",
     "audit:guide": "node scripts/checks/guide-integrity-audit.cjs && node scripts/checks/guide-presentation-quality-audit.cjs && node scripts/checks/guide-asset-integrity-audit.cjs",
     "audit:moodle-automation": "node scripts/checks/moodle-automation-readiness-audit.cjs",
     "validate:lti:live": "node scripts/checks/validate-lti-live.cjs",

@@ -1,6 +1,22 @@
+# Safe Next PR Backlog — status index
+
+עודכן: 2026-09-10
+
+הקובץ הזה **אינו מקור אמת קנוני** ואינו רשימת המשימות הנוכחית של כל הריפו. הוא snapshot היסטורי של Teacher Hub לאחר PR #168.
+
+למצב הנוכחי:
+- מקור אמת ריפו: `PROJECT_MEMORY.md`.
+- אמת Teacher Hub מפורטת: `PROJECT_RULES.md`.
+- מצב תמציתי: `STATE/CURRENT.md`.
+- חוסרי Guide אמיתיים: `docs/GUIDE_MISSING_CAPTURES.md`.
+
+אין להסיק מהמספר "90%" למטה את מוכנות המוצר כיום, ואין להשתמש ב-PR #168 כנקודת HEAD פעילה.
+
+---
+
 <!-- MTH_SAFE_NEXT_PR_BACKLOG_AFTER_PR168_START -->
 
-# Current safe next PR backlog after PR #168
+## Historical snapshot — after PR #168
 
 Do not repeat completed work:
 
@@ -15,15 +31,15 @@ Do not repeat completed work:
 - PR #167: Smart Import sends LTI token for session-scoped imports.
 - PR #168: dashboard/grades: distinguish loading / no-source / real-zero.
 
-Current progress: **90%**.
+Historical progress at that time: **90%**.
 
-Remaining gap (not UI — real blocking items):
+Remaining gap recorded at that time (not UI — real blocking items):
 
 1. Live Moodle automation verified (NRPS, AGS, or Moodle WS with real token).
 2. Multi-teacher isolation proof in live environment.
 3. Release hardening gate review.
 
-Rules:
+Rules recorded with that snapshot:
 
 - Teacher Release remains NO.
 - PR #127 remains untouched.
