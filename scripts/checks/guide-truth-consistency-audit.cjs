@@ -92,6 +92,14 @@ if (!coverBlock) {
   forbidText('src/pages/Guide.tsx cover', coverBlock, 'תוכן העניינים');
 }
 
+// Cover Start must enter the complete published presentation, never Quick mode.
+requireText('PROJECT_MEMORY.md', memory, 'במצב המצגת המלא (`all`)');
+requireText('src/pages/Guide.tsx', guideSource, 'onClick={onStart}');
+requireText('src/pages/Guide.tsx', guideSource, "onStart={() => jumpToSlide(FIRST_TRAINING_SLIDE_ID, 'all')}");
+forbidText('src/pages/Guide.tsx', guideSource, 'onQuickStart');
+forbidText('src/pages/Guide.tsx', guideSource, "onStart={() => jumpToSlide(QUICK_START_SLIDE_IDS[0], 'quick')}");
+const deckSourceText = read('src/data/guideDeck.ts');
+forbidText('src/data/guideDeck.ts', deckSourceText, 'מייל אישור על יצירת המרחב וגם עדכון בתפריט ההודעות');
 if (failures.length) {
   console.error('GUIDE_TRUTH_CONSISTENCY_AUDIT_FAILED');
   for (const failure of failures) console.error(`- ${failure}`);

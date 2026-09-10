@@ -260,11 +260,11 @@ function ScreenshotCard({
 function SlideContent({
   slide,
   onOpenScreenshot,
-  onQuickStart,
+  onStart,
 }: {
   slide: GuideSlide;
   onOpenScreenshot: (state: LightboxState) => void;
-  onQuickStart: () => void;
+  onStart: () => void;
 }) {
   if (slide.cover) {
     return (
@@ -313,7 +313,7 @@ function SlideContent({
           <div className="mt-5 flex justify-center">
             <Button
               size="lg"
-              onClick={onQuickStart}
+              onClick={onStart}
               className="h-16 min-w-44 rounded-2xl bg-amber-400 px-10 text-xl font-black text-slate-950 shadow-[0_16px_38px_rgba(251,191,36,0.22),0_8px_22px_rgba(0,0,0,0.28)] hover:bg-amber-300"
             >
               התחל
@@ -791,7 +791,7 @@ export default function Guide() {
               <SlideContent
                 slide={slide}
                 onOpenScreenshot={setLightbox}
-                onQuickStart={() => jumpToSlide(QUICK_START_SLIDE_IDS[0], 'quick')}
+                onStart={() => jumpToSlide(FIRST_TRAINING_SLIDE_ID, 'all')}
               />
             </m.article>
           </AnimatePresence>
