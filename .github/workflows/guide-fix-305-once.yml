@@ -1,0 +1,65 @@
+name: Guide Fix 305 Once
+
+on:
+  push:
+    branches:
+      - fix/guide-start-full-flow-305
+    paths:
+      - scripts/maintenance/guide-fix-305.cjs
+      - .github/workflows/guide-fix-305-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: fix/guide-start-full-flow-305
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply focused Guide patch
+        run: node scripts/maintenance/guide-fix-305.cjs
+
+      - name: Verify Guide and build
+        run: |
+          npm run check
+          npm run typecheck
+          npm run audit:guide
+          npm run build
+
+      - name: Enforce Guide-only file scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          allowed='^(PROJECT_MEMORY\.md|public/PROJECT_MEMORY\.md|src/pages/Guide\.tsx|src/data/guideDeck\.ts|scripts/checks/guide-truth-consistency-audit\.cjs)$'
+          bad="$(git diff --name-only | grep -Ev "$allowed" || true)"
+          if [ -n "$bad" ]; then
+            echo 'Unexpected non-Guide changes:'
+            echo "$bad"
+            exit 1
+          fi
+
+      - name: Remove one-off runner and commit verified fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm scripts/maintenance/guide-fix-305.cjs
+          rm .github/workflows/guide-fix-305-once.yml
+          git config user.name 'Yaniv Guide Automation'
+          git config user.email 'yaniv-guide-automation@users.noreply.github.com'
+          git add PROJECT_MEMORY.md public/PROJECT_MEMORY.md src/pages/Guide.tsx src/data/guideDeck.ts scripts/checks/guide-truth-consistency-audit.cjs scripts/maintenance/guide-fix-305.cjs .github/workflows/guide-fix-305-once.yml
+          git commit -m 'fix(guide): make Start open the full presentation'
+          git push origin HEAD:fix/guide-start-full-flow-305
