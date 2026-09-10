@@ -1,7 +1,7 @@
 {
   "product": "moodle-guide",
-  "commit": "165b6946c3f5435c583e0b0214cfd6dab2aa4cbb",
+  "commit": "112ecaf0b25b4fdd72e1b8aac0e4dbf0b4018ce6",
   "branch": "main",
-  "guideHash": "8abab3cce689f7339d09178ee77ce176968f5266fdad4c9562eb95cb095e570c",
-  "generatedAt": "2026-09-09T10:17:24.723Z"
+  "guideHash": "1e91fc21f15a63b9bd037646ce8e8cf4cf127fadb58daaddedcc362190aa4816",
+  "generatedAt": "2026-09-10T14:58:22.369Z"
 }
