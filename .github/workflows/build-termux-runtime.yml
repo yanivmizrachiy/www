@@ -1,17 +1,11 @@
-name: Build Termux Runtime Package
+name: Build Legacy Termux Runtime Package (manual)
+
+# Manual fallback only. The canonical Teacher Hub runtime is Render and the
+# canonical Guide runtime is GitHub Pages. This workflow must never become a
+# deployment path for either product and must not run from stale feature branches.
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - gemini/ai-studio-sync-20260428-193953
-    paths:
-      - "src/**"
-      - "package.json"
-      - "package-lock.json"
-      - "vite.config.*"
-      - "index.html"
-      - ".github/workflows/build-termux-runtime.yml"
 
 permissions:
   contents: write
@@ -36,9 +30,16 @@ jobs:
 
       - name: Build frontend
         env:
-          VITE_SUPABASE_URL: https://ncoqanascubqkxxfvucfz.supabase.co
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY || 'termux-runtime-public-placeholder' }}
-        run: npm run build
+          VITE_SUPABASE_URL: https://ncoqanascubqkxfvucfz.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${VITE_SUPABASE_PUBLISHABLE_KEY:-}" || {
+            echo "VITE_SUPABASE_PUBLISHABLE_KEY is required; refusing to build a placeholder runtime."
+            exit 1
+          }
+          npm run build
 
       - name: Verify runtime bridge
         shell: bash
@@ -71,6 +72,8 @@ jobs:
             "source_branch": "${GITHUB_REF_NAME}",
             "source_commit": "${GITHUB_SHA}",
             "package": "moodle-teacher-hub-termux-runtime.tar.gz",
+            "canonical_runtime": false,
+            "manual_fallback_only": true,
             "contains_dist": true,
             "contains_server": true,
             "contains_no_secrets": true,
@@ -80,7 +83,7 @@ jobs:
 
           tar -czf /tmp/moodle-teacher-hub-termux-runtime.tar.gz -C /tmp/moodle-runtime-package .
 
-      - name: Publish runtime branch
+      - name: Publish legacy runtime branch
         shell: bash
         run: |
           set -euo pipefail
@@ -98,11 +101,11 @@ jobs:
           tar -xOf moodle-teacher-hub-termux-runtime.tar.gz ./STATE/runtime-package/manifest.json > STATE/runtime-package/manifest.json
 
           cat > README.md <<EOF
-          # Moodle Teacher Hub — Termux Runtime
+          # Moodle Teacher Hub — Legacy Termux Runtime
 
-          This branch is generated automatically by GitHub Actions.
-
-          It contains a prebuilt runtime package for Termux:
+          This branch is generated only by an explicit manual workflow run.
+          The canonical Teacher Hub runtime is Render; this package is a
+          non-canonical fallback artifact and must not be reported as production.
 
           \`\`\`text
           moodle-teacher-hub-termux-runtime.tar.gz
@@ -112,5 +115,5 @@ jobs:
           EOF
 
           git add README.md moodle-teacher-hub-termux-runtime.tar.gz STATE/runtime-package/manifest.json
-          git commit -m "Publish Termux runtime package"
+          git commit -m "Publish manual legacy Termux runtime package"
           git push -f origin termux-runtime
