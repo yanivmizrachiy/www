@@ -1,3 +1,12 @@
+<!-- BACKLOG_STATUS_20260911_START -->
+> **Historical Teacher Hub backlog snapshot.**
+>
+> הקובץ מתעד backlog מתקופת PR #168 ואינו מקור האמת הנוכחי לריפו.
+> לפני ביצוע משימה יש לבדוק את \PROJECT_MEMORY.md\, \PROJECT_RULES.md\,
+> \RULES.md\ ואת \STATE/CURRENT.md\.
+
+<!-- BACKLOG_STATUS_20260911_END -->
+
 # Safe Next PR Backlog — status index
 
 עודכן: 2026-09-10

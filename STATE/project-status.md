@@ -1,3 +1,16 @@
+<!-- CURRENT_REPO_STATUS_20260911_START -->
+# Current repository snapshot — 2026-09-11
+
+- Canonical branch: \main\
+- Teacher Hub runtime: \https://www-tijc.onrender.com\
+- Guide runtime: \https://yanivmizrachiy.github.io/www/guide/\
+- Teacher Release: **NO**
+- Render and Guide are separated.
+- Guide publication is gated by real screenshot evidence.
+- Older dated sections below are retained as historical evidence, not as current deployment/branch instructions.
+
+<!-- CURRENT_REPO_STATUS_20260911_END -->
+
 # Project Status — Moodle Teacher Hub
 
 Updated: 2026-05-20

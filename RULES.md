@@ -23,6 +23,7 @@ Runtime קנוני:
 
 ### מותר בריפו זה
 - קוד ותיעוד של Moodle Teacher Hub.
+- קוד ותיעוד של Guide / מצגת Moodle למורים.
 - קוד, תיעוד ונכסים של Guide.
 - LTI / Moodle / Render / Supabase הקשורים ישירות ל-Teacher Hub.
 - GitHub Pages, צילומי Moodle ומנגנוני בדיקה הקשורים ישירות ל-Guide.

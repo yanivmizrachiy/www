@@ -1,4 +1,4 @@
-﻿<!-- MTH_DEEP_TRUTH_SYNC_20260612_START -->
+<!-- MTH_DEEP_TRUTH_SYNC_20260612_START -->
 # אמת מוצר נוכחית — Moodle Teacher Hub / Deep Truth Sync
 
 עודכן: 2026-06-12
@@ -377,7 +377,7 @@ Teacher Release: NO
 ### מה כבר עובד ומאומת
 
 - ריפו פעיל: `yanivmizrachiy/www`.
-- ענף עבודה פעיל: `gemini/ai-studio-sync-20260428-193953`.
+- ענף קנוני פעיל: `main`.
 - Runtime קבוע: `https://www-tijc.onrender.com`.
 - LTI 1.3 עובד מתוך Moodle.
 - NRPS עובד ומחזיר משתתפים אמיתיים מהקורס.

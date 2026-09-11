@@ -1,3 +1,21 @@
+<!-- REPO_CURRENT_STATUS_20260911_START -->
+## סטטוס ריפו קנוני — 2026-09-11
+
+- ענף קנוני: \main\.
+- Moodle Teacher Hub: \https://www-tijc.onrender.com\ (Render).
+- Guide / מצגת Moodle: \https://yanivmizrachiy.github.io/www/guide/\ (GitHub Pages).
+- Guide ו־Teacher Hub הם מוצרים נפרדים ואינם חולקים runtime.
+- Teacher Release: **NO**.
+- Guide משתמש רק בצילומי Moodle אמיתיים; שקף ללא צילום נשאר מוסתר / \
+eeds-capture\.
+- \PROJECT_MEMORY.md\ מנהל החלטות Guide וחוצות־מוצר.
+- \PROJECT_RULES.md\ מנהל את אמת Teacher Hub.
+- \RULES.md\ מנהל את גבולות הריפו.
+
+בלוקים ישנים יותר בהמשך README נשמרים כהיסטוריה. במקרה של סתירה, הבלוק הזה ומקורות האמת הקנוניים לעיל קובעים.
+
+<!-- REPO_CURRENT_STATUS_20260911_END -->
+
 # `yanivmizrachiy/www` — Moodle Teacher Hub + Guide
 
 עודכן: 2026-09-10
@@ -202,7 +220,7 @@ Manual Real Data Import
 עובד/תועד:
 
 - ריפו מקור אמת: `yanivmizrachiy/www`.
-- ענף עבודה פעיל: `gemini/ai-studio-sync-20260428-193953`.
+- ענף קנוני פעיל: `main`.
 - Render runtime קבוע: `https://www-tijc.onrender.com`.
 - LTI endpoint קנוני: `/api/lti/launch`.
 - Build ב־Render עבר אחרי תיקון `vite: not found`.
