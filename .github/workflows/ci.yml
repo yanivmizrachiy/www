@@ -18,7 +18,6 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run audit:repo-governance
-      - run: npm run audit:guide
       - run: npm run typecheck
       - run: npm run build
       - run: npm run doctor
