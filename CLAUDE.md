@@ -3,40 +3,39 @@
 
 ## זהות הריפו
 - ריפו: `yanivmizrachiy/www`
-- שני מוצרים נפרדים באותו ריפו:
-  - **Moodle Teacher Hub** — כלי מורה עברי RTL.
-  - **Guide** — מצגת/מדריך Moodle סטטי למורים.
-- חריג היסטורי זמני: `luz-teddy/`; אין להרחיב אותו ואין למחוק בלי העברה מאומתת ואישור.
+- מוצר פעיל יחיד: **Moodle Teacher Hub** — כלי מורה עברי RTL מתוך Moodle.
+- המצגת/Guide הופרדה ואינה מפותחת כאן יותר.
+- מקור האמת היחיד למצגת: `yanivmizrachiy/moodle-guide-presentation`.
 
 ## מקור אמת וסדר קדימות
-1. `PROJECT_MEMORY.md` — מקור האמת הקנוני ברמת הריפו, כולל ההפרדה בין Guide ל-Teacher Hub וה-Runtimes שלהם.
-2. `PROJECT_RULES.md` — אמת מפורטת של Moodle Teacher Hub בלבד, בכפוף ל-`PROJECT_MEMORY.md`.
-3. `RULES.md` — גבולות ריפו וכללי פרטיות/עבודה, בכפוף לשני הקבצים לעיל.
-4. `STATE/**` ו-`docs/**` — ראיות, snapshots, runbooks והיסטוריה; אינם רשאים לגבור על מקור האמת הקנוני.
+1. `SSOT.md` — הגבול המחייב והעדכני ביותר של הריפו.
+2. `PROJECT_RULES.md` — אמת מפורטת של Moodle Teacher Hub.
+3. `RULES.md` — גבולות ריפו, פרטיות וכללי עבודה.
+4. `PROJECT_MEMORY.md`, `STATE/**`, `docs/**` — ידע, ראיות והיסטוריה בלבד. כל אזכור ישן של Guide כמוצר פעיל בתוך `www` הוא legacy ואינו גובר על `SSOT.md`.
+
+## גבול המצגת — חובה
+- אין לערוך כאן `guideDeck`, Guide UI, סדר שקפים, תוכן שקפים, hotspots, screenshots או עיצוב המצגת.
+- כל קובץ Guide/Presentation ישן שנותר בריפו הוא read-only legacy עד ניקוי מאומת.
+- כל בקשה לשינוי המצגת חייבת לעבור לריפו `yanivmizrachiy/moodle-guide-presentation`.
+- אין ליצור מקור שני למצגת בתוך `www`.
 
 ## Runtime קנוני
 - Teacher Hub: `https://www-tijc.onrender.com` — Render.
-- Guide: `https://yanivmizrachiy.github.io/www/guide/` — GitHub Pages, נבנה אוטומטית מ-`main` אל `deploy/guide-static`.
-- Render אינו מפרסם ואינו מאמת את ה-Guide.
-- Teacher Release: **NO**.
+- Teacher Release: **NO** עד מעבר כל השערים.
 
 ## שפה
 - קוד / comments / commits → אנגלית.
 - תשובות / README / תיעוד → עברית.
 - תאריך ב-UI של Teacher Hub: `D/M/YY`.
 
-## Git — חובה
-- אין commit ישיר ל-`main`.
-- branch: `feat/<name>` / `fix/<name>` / `chore/<name>`.
-- חובה PR לפני merge.
-- אין מחיקת קבצים בלי אישור.
+## Git
 - לפני כתיבה יש לקרוא מחדש את HEAD העדכני כדי לא לדרוס שינוי מקביל.
+- אין מחיקת קבצים בלי אישור מפורש.
 
 ## אבטחה ואמת
 - אין secrets בקוד לעולם; secrets רק דרך GitHub Secrets / Render Environment.
 - אין דמו, נתונים מזויפים, כפתורים מזויפים או PASS מזויף.
-- בצילומי Guide משתמשים רק בצילום Moodle אמיתי; חוסר צילום נשאר `needs-capture`.
-- Teacher Release נשאר NO עד מעבר כל השערים.
+- נתוני Teacher Hub חייבים להגיע ממקורות Moodle אמיתיים ומאומתים.
 
 ## לא לגעת בלי הוראה מפורשת
 - LTI launch flow.
