@@ -18,6 +18,12 @@ Runtime קנוני:
 מקור האמת היחיד למצגת:
 https://github.com/yanivmizrachiy/moodle-guide-presentation
 
+כתובת המצגת הפעילה:
+https://yanivmizrachiy.github.io/moodle-guide-presentation/
+
+כתובת Legacy היסטורית בלבד — **אסור לפתח, לערוך או לפרסם ממנה**:
+https://yanivmizrachiy.github.io/www/guide/
+
 כל קובץ Guide/Presentation ישן שנותר כאן הוא legacy/היסטורי בלבד עד ניקוי מאומת. אין להשתמש בו כמקור תוכן, סדר, עיצוב או screenshots של המצגת.
 
 ## סדר קדימות
