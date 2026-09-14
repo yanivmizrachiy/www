@@ -4,20 +4,18 @@
 ## זהות הריפו
 - ריפו: `yanivmizrachiy/www`
 - מוצר פעיל יחיד: **Moodle Teacher Hub** — כלי מורה עברי RTL מתוך Moodle.
-- המצגת/Guide הופרדה ואינה מפותחת כאן יותר.
+- המצגת/Guide אינה חלק מהריפו הזה.
 - מקור האמת היחיד למצגת: `yanivmizrachiy/moodle-guide-presentation`.
 - כתובת המצגת הפעילה: `https://yanivmizrachiy.github.io/moodle-guide-presentation/`.
-- כתובת Legacy היסטורית בלבד, אסור לערוך או לפתח ממנה: `https://yanivmizrachiy.github.io/www/guide/`.
 
 ## מקור אמת וסדר קדימות
 1. `SSOT.md` — הגבול המחייב והעדכני ביותר של הריפו.
 2. `PROJECT_RULES.md` — אמת מפורטת של Moodle Teacher Hub.
 3. `RULES.md` — גבולות ריפו, פרטיות וכללי עבודה.
-4. `PROJECT_MEMORY.md`, `STATE/**`, `docs/**` — ידע, ראיות והיסטוריה בלבד. כל אזכור ישן של Guide כמוצר פעיל בתוך `www` הוא legacy ואינו גובר על `SSOT.md`.
+4. `PROJECT_MEMORY.md`, `STATE/**`, `docs/**` — ידע, ראיות והיסטוריה בלבד; הם אינם רשאים להפוך את המצגת שוב לחלק פעיל מ־`www`.
 
 ## גבול המצגת — חובה
-- אין לערוך כאן `guideDeck`, Guide UI, סדר שקפים, תוכן שקפים, hotspots, screenshots או עיצוב המצגת.
-- כל קובץ Guide/Presentation ישן שנותר בריפו הוא read-only legacy עד ניקוי מאומת.
+- אין ליצור או לערוך כאן `guideDeck`, Guide UI, סדר שקפים, תוכן שקפים, hotspots, screenshots, assets, עיצוב, tests, CI או deployment של המצגת.
 - כל בקשה לשינוי המצגת חייבת לעבור לריפו `yanivmizrachiy/moodle-guide-presentation`.
 - אין ליצור מקור שני למצגת בתוך `www`.
 
