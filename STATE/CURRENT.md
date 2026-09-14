@@ -1,28 +1,18 @@
 # Current State — `yanivmizrachiy/www`
 
-Last synchronized: 2026-09-10
+Last synchronized: 2026-09-14
 Canonical branch: `main`
 Teacher release: **NO**
 
-## Canonical product split
+## Current product
 
 - **Moodle Teacher Hub** → `https://www-tijc.onrender.com` (Render).
-- **Guide** → `https://yanivmizrachiy.github.io/www/guide/` (GitHub Pages; generated from `main` to `deploy/guide-static`).
-- Render does not publish or verify the Guide.
-- `PROJECT_MEMORY.md` is the repository-wide canonical source of truth.
-- `PROJECT_RULES.md` is the detailed Teacher Hub truth under that repository-wide contract.
-
-## Guide current state
-
-- Canonical deck: `src/data/guideDeck.ts`.
-- Guide publication gates reject unpublished/missing-capture slides and invalid screenshot derivatives.
-- Missing real screenshots remain `needs-capture`; no demo/placeholder substitution is allowed.
-- Current missing-capture queue is documented in `docs/GUIDE_MISSING_CAPTURES.md`.
-- Cover contract: branding is at the top and the cover has exactly one CTA, `התחל`; contents/search navigation remains in the persistent presentation chrome.
+- `www` no longer owns, builds, tests or publishes the Moodle training presentation.
+- The presentation has one external canonical repository only: `yanivmizrachiy/moodle-guide-presentation`.
 
 ## Teacher Hub verified evidence snapshot
 
-The following real-import evidence is retained from the last documented verification. It is historical evidence, not a claim that a new live validation was run on 2026-09-10:
+The following real-import evidence is retained from the last documented verification. It is historical evidence, not a claim that a new live validation was run on 2026-09-14:
 
 ```text
 students = 62
@@ -58,4 +48,4 @@ multi_teacher_or_multi_course_isolation = not validated
 teacher_release_ready = false
 ```
 
-For dated proof and historical execution details, use `STATE/evidence-log.md` and the dated files under `STATE/`. Do not treat an old branch name or dated snapshot as the active branch/runtime unless `PROJECT_MEMORY.md` says so.
+For dated proof and historical execution details, use `STATE/evidence-log.md` and the dated files under `STATE/`. Do not treat an old branch name or dated snapshot as the active branch/runtime unless the current SSOT says so.
