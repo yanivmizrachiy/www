@@ -1,21 +1,24 @@
 # Documentation Map — `yanivmizrachiy/www`
 
-התיקייה `docs/` מכילה תיעוד משלים, חוזים, runbooks וראיות לשני מוצרי Moodle הנפרדים בריפו: **Moodle Teacher Hub** ו-**Guide**. היא אינה מקור אמת מקביל.
+התיקייה `docs/` מכילה תיעוד משלים, חוזים, runbooks וראיות של **Moodle Teacher Hub בלבד**. היא אינה מקור אמת מקביל.
 
 ## סדר אמת קנוני
 
-1. `../PROJECT_MEMORY.md` — מקור האמת הקנוני ברמת הריפו: הפרדת המוצרים, Runtimes, Guide ודרישות עדכניות.
-2. `../PROJECT_RULES.md` — אמת מפורטת של Moodle Teacher Hub בלבד.
+1. `../SSOT.md` — גבול המוצר המחייב והעדכני ביותר.
+2. `../PROJECT_RULES.md` — אמת מפורטת של Moodle Teacher Hub.
 3. `../RULES.md` — גבולות הריפו וכללי פרטיות/עבודה.
-4. `../STATE/evidence-log.md` ושאר `STATE/**` — ראיות ו-snapshots היסטוריים; תאריך ישן אינו "מצב נוכחי".
-5. `docs/**` — חוזים, ארכיטקטורה, runbooks והיסטוריה; במקרה סתירה יש ליישר אותם למקורות לעיל.
+4. `../PROJECT_MEMORY.md`, `../STATE/**` ו-`docs/**` — ידע, ראיות והיסטוריה של Teacher Hub; במקרה סתירה יש ליישר אותם למקורות לעיל.
 
-## Guide — מסמכים פעילים
+## מצגת Moodle
 
-- `GUIDE_MISSING_CAPTURES.md` — רשימת הצילומים האמיתיים החסרים לפרסום שקפים.
-- `GUIDE_SCREENSHOTS_MANIFEST.md` — מניפסט נכסי הצילום.
+המצגת/Guide אינה מתועדת, מפותחת, נבדקת או מפורסמת מתוך הריפו הזה.
+מקור האמת היחיד שלה הוא:
 
-מקור השקפים הקנוני עצמו נמצא ב-`../src/data/guideDeck.ts`. ה-Guide החי מוגש מ-GitHub Pages; Render אינו runtime של המצגת.
+`yanivmizrachiy/moodle-guide-presentation`
+
+https://github.com/yanivmizrachiy/moodle-guide-presentation
+
+אין ליצור כאן מסמכי Guide חדשים או מקור תוכן מקביל.
 
 ## Teacher Hub — תיקיות תיעוד
 
