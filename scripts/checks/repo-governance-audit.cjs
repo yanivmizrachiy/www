@@ -21,7 +21,13 @@ function forbidText(rel, text, forbidden) {
   if (text.includes(forbidden)) failures.push(`${rel}: forbidden stale text: ${forbidden}`);
 }
 
-const memory = read('PROJECT_MEMORY.md');
+function forbidPath(rel) {
+  if (fs.existsSync(path.join(root, rel))) {
+    failures.push(`${rel}: presentation artifact must live only in yanivmizrachiy/moodle-guide-presentation`);
+  }
+}
+
+const ssot = read('SSOT.md');
 const claude = read('CLAUDE.md');
 const rules = read('RULES.md');
 const readme = read('README.md');
@@ -30,46 +36,63 @@ const current = read('STATE/CURRENT.md');
 const termuxWorkflow = read('.github/workflows/build-termux-runtime.yml');
 
 const teacherHubUrl = 'https://www-tijc.onrender.com';
-const guideUrl = 'https://yanivmizrachiy.github.io/www/guide/';
+const presentationRepo = 'yanivmizrachiy/moodle-guide-presentation';
+const presentationUrl = 'https://yanivmizrachiy.github.io/moodle-guide-presentation/';
+const oldGuideUrl = 'https://yanivmizrachiy.github.io/www/guide/';
 const staleGeminiBranch = 'gemini/ai-studio-sync-20260428-193953';
 
-// Repository-wide canonical truth must describe both products and both runtimes.
-requireText('PROJECT_MEMORY.md', memory, 'PROJECT_MEMORY.md');
-requireText('PROJECT_MEMORY.md', memory, teacherHubUrl);
-requireText('PROJECT_MEMORY.md', memory, guideUrl);
-requireText('PROJECT_MEMORY.md', memory, 'Render לעולם אינו מפרסם ואינו מאמת את ה-Guide');
-
-// AI entrypoint must not silently collapse the repository back to Teacher Hub only.
+// Current repository boundary: www is Teacher Hub only; the presentation has one external SSOT.
+requireText('SSOT.md', ssot, 'Moodle Teacher Hub');
+requireText('SSOT.md', ssot, teacherHubUrl);
+requireText('SSOT.md', ssot, presentationRepo);
 requireText('CLAUDE.md', claude, 'Moodle Teacher Hub');
-requireText('CLAUDE.md', claude, 'Guide');
-requireText('CLAUDE.md', claude, 'PROJECT_MEMORY.md');
 requireText('CLAUDE.md', claude, teacherHubUrl);
-requireText('CLAUDE.md', claude, guideUrl);
-forbidText('CLAUDE.md', claude, 'מקור אמת עליון: `PROJECT_RULES.md`');
-
-// Repository boundaries must explicitly allow the two canonical Moodle products.
+requireText('CLAUDE.md', claude, presentationRepo);
 requireText('RULES.md', rules, 'Moodle Teacher Hub');
-requireText('RULES.md', rules, 'Guide');
-requireText('RULES.md', rules, teacherHubUrl);
-requireText('RULES.md', rules, guideUrl);
-requireText('RULES.md', rules, 'luz-teddy/');
-requireText('RULES.md', rules, 'smartcalendar-titan');
-forbidText('RULES.md', rules, 'מיועד ל־Moodle Teacher Hub בלבד');
-
-// Current-facing docs must resolve to the canonical hierarchy.
-requireText('docs/README.md', docsReadme, '../PROJECT_MEMORY.md');
+requireText('RULES.md', rules, presentationRepo);
+requireText('README.md', readme, teacherHubUrl);
+requireText('README.md', readme, presentationRepo);
+requireText('README.md', readme, presentationUrl);
+requireText('docs/README.md', docsReadme, '../SSOT.md');
 requireText('docs/README.md', docsReadme, '../PROJECT_RULES.md');
+requireText('docs/README.md', docsReadme, presentationRepo);
 requireText('STATE/CURRENT.md', current, teacherHubUrl);
-requireText('STATE/CURRENT.md', current, guideUrl);
-requireText('STATE/CURRENT.md', current, 'PROJECT_MEMORY.md');
+requireText('STATE/CURRENT.md', current, presentationRepo);
 
-const readmeCurrent = readme.split('<details>')[0];
-requireText('README.md', readmeCurrent, teacherHubUrl);
-requireText('README.md', readmeCurrent, guideUrl);
-requireText('README.md', readmeCurrent, 'PROJECT_MEMORY.md');
-forbidText('README.md current section', readmeCurrent, staleGeminiBranch);
+for (const [rel, text] of [
+  ['SSOT.md', ssot],
+  ['CLAUDE.md', claude],
+  ['RULES.md', rules],
+  ['README.md', readme],
+  ['docs/README.md', docsReadme],
+  ['STATE/CURRENT.md', current],
+]) {
+  forbidText(rel, text, oldGuideUrl);
+}
 
-// Legacy Termux packaging is retained only as an explicit manual fallback.
+// Presentation implementation must not exist in www anymore.
+for (const rel of [
+  'src/pages/Guide.tsx',
+  'src/data/guideDeck.ts',
+  'src/data/guideHotspots.ts',
+  'public/guide',
+  'public/guide-visual-isolation.css',
+  'guide',
+  'docs/GUIDE_MISSING_CAPTURES.md',
+  'docs/GUIDE_SCREENSHOTS_MANIFEST.md',
+  'scripts/checks/guide-integrity-audit.cjs',
+  'scripts/checks/guide-truth-consistency-audit.cjs',
+  'scripts/checks/guide-presentation-quality-audit.cjs',
+  'scripts/checks/guide-asset-integrity-audit.cjs',
+  'scripts/maintenance/guide-content-hash.cjs',
+  'scripts/maintenance/write-guide-release.cjs',
+  '.github/workflows/guide-static-always-on.yml',
+  '.github/workflows/guide-live-smoke.yml',
+]) {
+  forbidPath(rel);
+}
+
+// Legacy Termux packaging remains an explicit manual fallback only.
 requireText('.github/workflows/build-termux-runtime.yml', termuxWorkflow, 'workflow_dispatch');
 requireText('.github/workflows/build-termux-runtime.yml', termuxWorkflow, 'manual_fallback_only');
 forbidText('.github/workflows/build-termux-runtime.yml', termuxWorkflow, staleGeminiBranch);
