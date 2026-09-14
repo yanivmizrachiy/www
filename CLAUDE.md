@@ -6,6 +6,8 @@
 - מוצר פעיל יחיד: **Moodle Teacher Hub** — כלי מורה עברי RTL מתוך Moodle.
 - המצגת/Guide הופרדה ואינה מפותחת כאן יותר.
 - מקור האמת היחיד למצגת: `yanivmizrachiy/moodle-guide-presentation`.
+- כתובת המצגת הפעילה: `https://yanivmizrachiy.github.io/moodle-guide-presentation/`.
+- כתובת Legacy היסטורית בלבד, אסור לערוך או לפתח ממנה: `https://yanivmizrachiy.github.io/www/guide/`.
 
 ## מקור אמת וסדר קדימות
 1. `SSOT.md` — הגבול המחייב והעדכני ביותר של הריפו.

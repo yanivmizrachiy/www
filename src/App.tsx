@@ -26,18 +26,12 @@ import DayReport from "./pages/reports/DayReport";
 import GapReport from "./pages/reports/GapReport";
 import Export from "./pages/Export";
 import SettingsPage from "./pages/SettingsPage";
-import Import from "./pages/Import";
 import SmartImport from "./pages/SmartImport";
-import GradebookImport from "./pages/GradebookImport";
-import LogsImport from "./pages/LogsImport";
-import CourseStructureImport from "./pages/CourseStructureImport";
-
 import TimeRangeReport from "./pages/TimeRangeReport";
 import Automation from "./pages/Automation";
 import Setup from "./pages/Setup";
 import LtiBootstrap from "./pages/LtiBootstrap";
 import NotFound from "./pages/NotFound";
-import Guide from "./pages/Guide";
 
 const queryClient = new QueryClient();
 
@@ -53,8 +47,6 @@ const App = () => {
           {/* /install kept as a public alias for printed Moodle docs; redirects to in-app /setup */}
           <Route path="/install" element={<Navigate to="/setup" replace />} />
           <Route path="/lti" element={<LtiBootstrap />} />
-          {/* Standalone teacher presentation: no Teacher Hub chrome and no teacher/student data. */}
-          <Route path="/guide" element={<Guide />} />
           {/* Rescue route: if a Moodle iframe/browser lands on the backend launch URL as a page, keep the teacher inside the app instead of showing NotFound. */}
           <Route path="/api/lti/launch" element={<Navigate to="/" replace />} />
           {/* No teacher login exists — any old /auth /login /signup link goes to setup. */}
@@ -101,5 +93,3 @@ const App = () => {
 );
 };
 export default App;
-
-
