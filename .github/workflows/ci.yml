@@ -20,4 +20,6 @@ jobs:
       - run: npm run audit:repo-governance
       - run: npm run typecheck
       - run: npm run build
+      - name: Ensure check/build did not mutate tracked source
+        run: git diff --exit-code
       - run: npm run doctor
