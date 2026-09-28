@@ -41,3 +41,19 @@
 
 ## כלל סופי
 פיתוח Teacher Hub חדש מתבצע רק ב-`yanivmizrachiy/www`. אין לפתוח ריפו Moodle Teacher Hub פעיל נוסף.
+
+## GitHub Pages legacy — compatibility shell בלבד
+
+ב־2026-09-28 ענף `deploy/guide-static` צומצם מעותק סטטי ישן של המוצר ל־compatibility shell בלבד.
+
+המצב המחייב:
+- `/` מפנה ל־Teacher Hub הקנוני ב־`https://www-tijc.onrender.com/`.
+- `/guide/` מפנה למצגת הקנונית ב־`https://yanivmizrachiy.github.io/moodle-guide-presentation/`.
+- `guide/sw.js` הוא worker פרישה בלבד: מוחק caches ישנים מסוג `moodle-guide-*`, מבטל את רישום ה־Service Worker ומפנה navigation למצגת הקנונית.
+- אין בענף הזה source, runtime, deck, assets או workflows פעילים של Teacher Hub או של המצגת.
+- snapshot מלא לפני ה־redirect נשמר ב־`archive/guide-static-pre-redirect-20260928`.
+- snapshot נוסף לפני צמצום הענף ל־6 קבצי תאימות נשמר ב־`archive/guide-static-retired-shell-pre-prune-20260928`.
+- GitHub Pages build/deployment על גרסת ה־redirect-only הסתיים בהצלחה.
+
+אסור להשתמש ב־`deploy/guide-static` כמקור אמת או כיעד פיתוח. הוא קיים רק לשמירת תאימות לקישורים היסטוריים.
+
