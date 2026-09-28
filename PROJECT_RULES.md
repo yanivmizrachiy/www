@@ -11,7 +11,6 @@ Teacher Release: **NO**
 
 - `RULES.md` הוא גבול הריפו: מה שייך ל־`yanivmizrachiy/www`, מה אסור לערבב, ומה לא מוחקים.
 - `PROJECT_RULES.md` הוא אמת המוצר של Moodle Teacher Hub: מה מאומת, מה קיים בקוד, מה חסום, ומה מותר להציג למורה.
-- `luz-teddy/` הוא חריג זמני קיים, לא חלק מ־Moodle Teacher Hub, ואסור למחוק אותו בלי העברה מאומתת ואישור מפורש.
 
 ## מה מאומת בפועל
 
@@ -57,7 +56,6 @@ Teacher Release = NO
 - אין direct commit ל־`main`; עובדים בענף PR בלבד.
 - אין Teacher Release YES.
 - אין fake data, demo data, fake sync או כפתורי דמה.
-- אין מחיקת `luz-teddy/`.
 - אין מחיקת קבצים בלי אישור.
 - אין שינוי LTI launch flow, Participants/Gradebook/Logs import, Supabase migrations, Teacher Release gate, deploy או `render.yaml` בלי הוראה מפורשת ובעיה מוכחת.
 - אין secrets בקוד, docs, STATE, logs או outputs.
@@ -110,7 +108,6 @@ Teacher Release = NO
 - `npm run doctor` סורק קבצים מסוכנים/secrets ומוודא מקורות אמת בסיסיים.
 - audits סטטיים קיימים ל־automation, launch context, Moodle WS readiness, date format, auto extraction, multi-teacher isolation evidence, Supabase RLS readiness.
 - live scripts קיימים, אך אין להריץ אותם בלי סביבת live מוכנה: `validate:lti:live`, `validate:teacher-release:live`, `validate:imports:live`, `validate:finish:live`, gradebook/logs/capability live checks.
-- workflows של `luz-teddy` נפרדים לפי paths ואינם שער release של Moodle Teacher Hub.
 
 ## Design System
 
@@ -127,7 +124,6 @@ Teacher Release = NO
 - `docs/API_CANONICAL_MAP.md`
 - `docs/DATA_MODEL_TRUTH.md`
 - `docs/CI_TRUTH_MAP.md`
-- `docs/REPO_BOUNDARY_AND_LUZ_TEDDY.md`
 - `docs/PR_RISK_MAP.md`
 
 <!-- MTH_DEEP_TRUTH_SYNC_20260612_END -->
