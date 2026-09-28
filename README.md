@@ -31,3 +31,12 @@ https://yanivmizrachiy.github.io/moodle-guide-presentation/
 
 ## כלל עבודה
 כל שינוי במצגת מתבצע רק ב־`yanivmizrachiy/moodle-guide-presentation`.
+
+
+## איחוד Teacher Hub
+
+מאז 2026-09-28, `yanivmizrachiy/www` הוא הריפו הפעיל היחיד של Moodle Teacher Hub.
+הריפו `yanivmizrachiy/moodle-teacher-hub` נשמר כהיסטוריה בלבד, ללא runtime פעיל ב-main.
+
+מיפוי מלא ושחזור:
+`docs/operations/MOODLE_REPOSITORY_UNIFICATION.md`
