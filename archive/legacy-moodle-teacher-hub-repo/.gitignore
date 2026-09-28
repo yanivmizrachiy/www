@@ -1,0 +1,17 @@
+node_modules/
+.env
+.env.*
+keys/
+*.log
+_audit_*/
+_backup_*/
+node_modules/
+.env
+.env.local
+.env.*.local
+keys/
+*.log
+_audit_*/
+_backup_*/
+data/store.json
+tmp/

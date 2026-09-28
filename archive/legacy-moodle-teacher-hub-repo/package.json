@@ -1,0 +1,21 @@
+{
+  "name": "moodle-lti-production-skeleton",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node src/server.js",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "jose": "^6.2.2",
+    "oauth-signature": "^1.5.0",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "localtunnel": "^2.0.2"
+  }
+}
