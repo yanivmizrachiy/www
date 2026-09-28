@@ -1,7 +1,8 @@
 {
-  "product": "moodle-guide",
-  "commit": "cfc2fe598531fed1a52d3e0ef40a1bcf169124ee",
-  "branch": "main",
-  "guideHash": "1e91fc21f15a63b9bd037646ce8e8cf4cf127fadb58daaddedcc362190aa4816",
-  "generatedAt": "2026-09-14T07:18:53.267Z"
+  "product": "moodle-guide-legacy-redirect",
+  "status": "retired",
+  "canonicalUrl": "https://yanivmizrachiy.github.io/moodle-guide-presentation/",
+  "legacyPath": "https://yanivmizrachiy.github.io/www/guide/",
+  "retiredAt": "2026-09-28",
+  "backupBranch": "archive/guide-static-pre-redirect-20260928"
 }
