@@ -10,6 +10,13 @@ name: Render Deploy Recovery
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'STATE/**'
+      - 'WORK_ORDERS/**'
+      - 'archive/**'
+      - '.github/**'
   workflow_dispatch:
 
 permissions:
