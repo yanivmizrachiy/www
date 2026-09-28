@@ -1,71 +1,47 @@
 # Repo Consolidation — Moodle Teacher Hub
 
-תיעוד איחוד חכם של שני הריפואים שנוצרו סביב פרויקט Moodle Teacher Hub.
+> Historical record. Superseded on 2026-09-28 by `SSOT.md` and `docs/operations/MOODLE_REPOSITORY_UNIFICATION.md`.
 
----
+## מצב סופי מאומת
 
-## ריפואים שנמצאו
+- מקור האמת היחיד של Moodle Teacher Hub הוא `yanivmizrachiy/www`.
+- הריפו הישן `yanivmizrachiy/moodle-teacher-hub` רוקן, אומת ונמחק ב־2026-09-28.
+- snapshot מלא של הריפו הישן נשמר בתוך `www` בענף:
+  `archive/legacy-moodle-teacher-hub-pre-unification-20260928`.
+- snapshot של `www` לפני האיחוד נשמר בענף:
+  `backup/pre-moodle-unification-2026-09-28`.
+- לא נמצאה יכולת production ייחודית בריפו הישן שחסרה ב־`www`.
+- המצגת אינה חלק מ־`www`; מקור האמת היחיד שלה הוא:
+  `yanivmizrachiy/moodle-guide-presentation`.
+- הנתיב ההיסטורי `/www/guide/` אינו מקור אמת ואינו יעד פיתוח; ענף הפרסום הישן נשמר עם snapshot והכניסה הישנה מפנה למצגת הקנונית.
 
-1. `yanivmizrachiy/www`
-2. `yanivmizrachiy/moodle-teacher-hub`
+## מה בוצע
 
----
+1. בוצעה השוואה מלאה בין שני ריפואי Teacher Hub.
+2. נשמרו גיבויים לפני כל מחיקה.
+3. הוסר runtime/package/UI/workflow מה־legacy.
+4. ה־legacy רוקן ולאחר אימות נמחק.
+5. `www` נוקה ממוצרי חוץ ומקורות אמת כפולים.
+6. מסמכי SSOT/governance יושרו למבנה הסופי.
+7. workflows ישנים ושבורים הוסרו.
+8. CI כולל guard שמכשיל build אם check/build משנים tracked source.
+9. PRים ישנים וקונפליקטואליים נסגרו כדי שלא יחזירו מצב מיושן.
 
-## החלטה מחייבת
+## כלל עבודה נוכחי
 
-הריפו הרשמי והמחייב להמשך הוא:
+- Teacher Hub חדש: רק `yanivmizrachiy/www`.
+- מצגת Moodle: רק `yanivmizrachiy/moodle-guide-presentation`.
+- אין להחיות ריפו Teacher Hub נוסף.
+- אין להחזיר Guide פעיל לתוך `www`.
+- מסמך זה הוא ראיה היסטורית בלבד; במקרה של סתירה `SSOT.md` גובר.
 
-```text
-yanivmizrachiy/www
-```
-
-הריפו `yanivmizrachiy/moodle-teacher-hub` מסומן כ־legacy / מקור ידע ישן בלבד.
-
----
-
-## פעולות שבוצעו בפועל
-
-- README של `www` עודכן כך שיצהיר ש־`www` הוא מקור האמת היחיד.
-- נוצר `docs/legacy-moodle-teacher-hub-snapshot.md` בתוך `www` כדי לשמר ידע חשוב מהריפו הישן.
-- נוצרו/עודכנו מסמכי governance ב־`www`:
-  - `PROJECT_RULES.md`
-  - `docs/system-rules.md`
-  - `docs/requirements.md`
-  - `STATE/project-status.md`
-- הוחלט שאין למחוק את הריפו הישן בשלב זה כדי לא לאבד היסטוריה או קוד.
-
----
-
-## מה לא בוצע עדיין
-
-לא בוצע מיזוג קוד מלא ברמת git history או tree מלא, כי לא בוצע עדיין audit מלא של כל הקבצים בשני הריפואים.
-
-לפני מיזוג קוד פיזי חובה לבצע:
-
-1. רשימת קבצים מלאה לשני הריפואים.
-2. השוואת קבצים כפולים.
-3. זיהוי secrets או data פרטי.
-4. בדיקת build.
-5. בדיקת endpoints.
-6. החלטה מה להעתיק ומה להשאיר legacy.
-
----
-
-## מדיניות עבודה מעכשיו
-
-- כל עבודה חדשה תתבצע רק ב־`yanivmizrachiy/www`.
-- אין לפתוח PR/commit חדש ל־`moodle-teacher-hub` אלא אם המשתמש מבקש במפורש.
-- כל ידע שימושי מהריפו הישן יועבר ל־docs/STATE בתוך `www` לפני מחיקה או נטישה.
-- אין למחוק את הריפו הישן בלי אישור מפורש מהמשתמש.
-
----
-
-## סטטוס איחוד
+## סטטוס
 
 ```text
-Canonical repo: yanivmizrachiy/www
-Legacy repo: yanivmizrachiy/moodle-teacher-hub
-Documentation consolidation: done
-Physical code merge: not yet done
-Risk of losing data: avoided
+Canonical Teacher Hub repo: yanivmizrachiy/www
+Legacy Teacher Hub repo: deleted
+Presentation repo: yanivmizrachiy/moodle-guide-presentation
+Teacher Hub duplicate active repo: none
+Presentation duplicate active repo: none
+Historical recovery: preserved
 ```
