@@ -13,10 +13,7 @@
 ## גבולות
 שייך לכאן: Teacher Hub, LTI, NRPS/AGS, Moodle Web Services, imports, תלמידים, ציונים, לוגים, דוחות, Render ו-Supabase.
 
-לא שייך לכאן: מצגת Moodle, לוז טדי, מערכת רכב או מערכות כלליות אחרות.
-
-## ריפו legacy
-`yanivmizrachiy/moodle-teacher-hub` אינו יעד פיתוח. snapshot מלא נשמר ב-`backup/pre-unification-2026-09-28`.
+לא שייך לכאן: מצגת Moodle או כל מערכת שאינה Moodle Teacher Hub.
 
 ## סדר עבודה
 1. לקרוא `SSOT.md`, `PROJECT_RULES.md`, `STATE/CURRENT.md`.

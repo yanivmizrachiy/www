@@ -10,9 +10,8 @@
   - `docs/API_CANONICAL_MAP.md`
   - `docs/DATA_MODEL_TRUTH.md`
   - `docs/CI_TRUTH_MAP.md`
-  - `docs/REPO_BOUNDARY_AND_LUZ_TEDDY.md`
   - `docs/PR_RISK_MAP.md`
-- תועדו גבולות schema כפול, `course_id` לא אחיד, student identity לא אחיד, RPC legacy/fallback, ו־luz-teddy כחריג זמני.
+- תועדו גבולות schema כפול, `course_id` לא אחיד, student identity לא אחיד ו־RPC legacy/fallback.
 - תוקנו ניסוחי UI/scripts כך ש־Logs לא מוצגים כזמן תרגול רשמי ללא duration מאומת.
 - נוסף token ל־`status-pending`.
 - נוסף import חסר ב־`GradebookImport.tsx` בלי שינוי לוגיקת Gradebook.
@@ -21,7 +20,6 @@
 ## גבולות
 
 - לא שונו LTI launch flow, Participants import, Gradebook import logic, Logs import logic, Supabase migrations, Teacher Release gate, deploy או `render.yaml`.
-- לא נמחק `luz-teddy/`.
 - לא נוצר fake data.
 - לא הורצו live validation scripts.
 - RLS לא מסומן כעובד live; רק policy presence מתועד כראיה היסטורית.

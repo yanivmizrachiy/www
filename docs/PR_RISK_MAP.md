@@ -13,7 +13,6 @@ Teacher Release: **NO**
 - Teacher Release gate.
 - deploy / `render.yaml`.
 - secrets/env handling.
-- מחיקה או העברה של `luz-teddy/`.
 
 ## סיכון בינוני
 

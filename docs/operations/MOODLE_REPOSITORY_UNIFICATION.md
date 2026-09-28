@@ -3,7 +3,7 @@
 ## החלטה
 `yanivmizrachiy/www` הוא מקור האמת היחיד והפעיל של Moodle Teacher Hub.
 
-`yanivmizrachiy/moodle-teacher-hub` נשמר כהיסטוריה בלבד ואינו runtime, source tree או יעד פיתוח.
+הריפו הישן `yanivmizrachiy/moodle-teacher-hub` אינו מקור אמת ואינו יעד פיתוח; התוכן ההיסטורי שלו נשמר בגיבוי ובהיסטוריית Git לפני סגירתו.
 
 ## נקודות שחזור
 - www לפני ניקוי: `backup/pre-moodle-unification-2026-09-28`
@@ -35,12 +35,9 @@
 - `docs/operations/work-plan.md` יושר למבנה הקנוני.
 - workflow אוטונומי כללי שאינו Moodle הוסר כדי לא לאפשר שינויי source לא מבוקרים.
 
-## חריגי תאימות שלא נמחקו
-לא נמחקו אוטומטית:
-- `luz-teddy/` ו-`downloads/hazaa-luz-teddy/` — קיימים URL-ים ציבוריים ישנים שנשלחו למורים.
-- `yanivcar/update.json` — עשוי להיות endpoint שנצרך מחוץ לריפו.
+## ניקוי מוצרים זרים
 
-אלה אינם חלק מ-Moodle. הם נשארים זמנית רק כדי לא לשבור משתמשים, עד אימות מעבר בטוח.
+ב־2026-09-28 הוסרו מ־`www` כל קבצי `luz-teddy`, ההורדות וה־workflows שלהם, וכן `yanivcar/update.json`. כל התוכן נשמר בענף הגיבוי ובהיסטוריית Git לפני המחיקה.
 
 ## כלל סופי
 פיתוח Teacher Hub חדש מתבצע רק ב-`yanivmizrachiy/www`. אין לפתוח ריפו Moodle Teacher Hub פעיל נוסף.
