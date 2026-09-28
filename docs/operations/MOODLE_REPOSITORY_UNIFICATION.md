@@ -3,12 +3,12 @@
 ## החלטה
 `yanivmizrachiy/www` הוא מקור האמת היחיד והפעיל של Moodle Teacher Hub.
 
-הריפו הישן `yanivmizrachiy/moodle-teacher-hub` אינו מקור אמת ואינו יעד פיתוח; התוכן ההיסטורי שלו נשמר בגיבוי ובהיסטוריית Git לפני סגירתו.
+הריפו הישן `yanivmizrachiy/moodle-teacher-hub` רוקן, אומת ונמחק לאחר שהתוכן ההיסטורי שלו נשמר בתוך `www`. הוא אינו מקור אמת ואינו יעד פיתוח.
 
 ## נקודות שחזור
 - www לפני ניקוי: `backup/pre-moodle-unification-2026-09-28`
-- legacy לפני צמצום: `yanivmizrachiy/moodle-teacher-hub:backup/pre-unification-2026-09-28`
-- legacy commit לפני האיחוד: `d56f583a99cba802b65f6b937d1714808bab1daa`
+- snapshot מלא של legacy לפני האיחוד: `archive/legacy-moodle-teacher-hub-pre-unification-20260928` בתוך `yanivmizrachiy/www`
+- legacy commit היסטורי לפני האיחוד: `d56f583a99cba802b65f6b937d1714808bab1daa`
 - www commit לפני האיחוד: `c23174a80bacd250797ee7ce6c1402345110c0d3`
 
 ## מיפוי הקוד הישן
@@ -27,7 +27,7 @@
 לא נמצאה יכולת production ייחודית בריפו הישן שחסרה ב-`www`. לכן לא בוצע copy-back של קוד ישן.
 
 ## מה הוסר כדי למנוע שני מקורות אמת
-מה-main של `moodle-teacher-hub` הוסרו runtime/package/workflow וקוד UI ישן. הם לא אבדו — נשמרו בענף הגיבוי ובהיסטוריית Git.
+מה-main של `moodle-teacher-hub` הוסרו runtime/package/workflow וקוד UI ישן; לאחר מכן הריפו רוקן ונמחק. התוכן לא אבד — snapshot מלא נשמר בענף `archive/legacy-moodle-teacher-hub-pre-unification-20260928` בתוך `www`.
 
 ב-`www`:
 - `public/PROJECT_MEMORY.md` הוסר כי היה mirror זהה ומיושן של מסמך פנימי.

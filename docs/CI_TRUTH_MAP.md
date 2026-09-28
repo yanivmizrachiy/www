@@ -1,6 +1,6 @@
 # מפת CI ואימותים — Moodle Teacher Hub
 
-עודכן: 2026-06-12
+עודכן: 2026-09-28
 Teacher Release: **NO**
 
 ## פקודות מקומיות קנוניות
@@ -52,5 +52,8 @@ Audits אלה לא מוכיחים live data isolation. הם מוכיחים חו�
 
 - `.github/workflows/ci.yml` רץ על PR/push ל־main: install, check, build, doctor.
 - `.github/workflows/moodle-automation-safety.yml` רץ על PR ל־main ו־workflow_dispatch: audits Moodle, check, build, doctor.
-- `.github/workflows/moodle-teacher-hub-safety-check.yml` הוא workflow ישן שמכוון לענף gemini וכולל references לנתיבי scripts ישנים; לא להסתמך עליו כשער release מודרני בלי עדכון.
 - `.github/workflows/build-termux-runtime.yml` מייצר runtime package לענף termux-runtime; אינו שער Teacher Release.
+
+## ניקוי CI — 2026-09-28
+
+ה-workflow הישן `moodle-teacher-hub-safety-check.yml` הוסר לאחר שהתברר שהוא מכוון לענף ישן ולנתיבי scripts שכבר אינם קיימים. שערי ה-CI הפעילים נשארים `ci.yml` ו-`moodle-automation-safety.yml`.

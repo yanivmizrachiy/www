@@ -36,7 +36,7 @@ https://yanivmizrachiy.github.io/moodle-guide-presentation/
 ## איחוד Teacher Hub
 
 מאז 2026-09-28, `yanivmizrachiy/www` הוא הריפו הפעיל היחיד של Moodle Teacher Hub.
-הריפו `yanivmizrachiy/moodle-teacher-hub` נשמר כהיסטוריה בלבד, ללא runtime פעיל ב-main.
+הריפו הישן `yanivmizrachiy/moodle-teacher-hub` רוקן, אומת ונמחק לאחר שנשמר snapshot מלא בתוך `www` בענף `archive/legacy-moodle-teacher-hub-pre-unification-20260928`.
 
 מיפוי מלא ושחזור:
 `docs/operations/MOODLE_REPOSITORY_UNIFICATION.md`
