@@ -3,12 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="refresh" content="0; url=https://www-tijc.onrender.com/" />
-    <title>Moodle Teacher Hub</title>
-    <link rel="canonical" href="https://www-tijc.onrender.com/" />
+    <title>מעבר למקור הקנוני</title>
     <script>
       (() => {
-        const target = new URL('https://www-tijc.onrender.com/');
+        const isGuide = window.location.pathname.includes('/guide');
+        const target = new URL(
+          isGuide
+            ? 'https://yanivmizrachiy.github.io/moodle-guide-presentation/'
+            : 'https://www-tijc.onrender.com/'
+        );
         target.search = window.location.search;
         target.hash = window.location.hash;
         window.location.replace(target.toString());
@@ -16,6 +19,6 @@
     </script>
   </head>
   <body>
-    <p><a href="https://www-tijc.onrender.com/">מעבר ל־Moodle Teacher Hub הקנוני</a></p>
+    <p>מעביר למקור הקנוני…</p>
   </body>
 </html>

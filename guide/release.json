@@ -1,8 +1,10 @@
 {
-  "product": "moodle-guide-legacy-redirect",
+  "product": "www-legacy-pages-compatibility-shell",
   "status": "retired",
-  "canonicalUrl": "https://yanivmizrachiy.github.io/moodle-guide-presentation/",
-  "legacyPath": "https://yanivmizrachiy.github.io/www/guide/",
+  "teacherHubCanonicalUrl": "https://www-tijc.onrender.com/",
+  "presentationCanonicalUrl": "https://yanivmizrachiy.github.io/moodle-guide-presentation/",
+  "legacyGuidePath": "/www/guide/",
   "retiredAt": "2026-09-28",
-  "backupBranch": "archive/guide-static-pre-redirect-20260928"
+  "fullBackupBranch": "archive/guide-static-pre-redirect-20260928",
+  "prePruneBackupBranch": "archive/guide-static-retired-shell-pre-prune-20260928"
 }
