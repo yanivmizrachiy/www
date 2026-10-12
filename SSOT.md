@@ -56,3 +56,52 @@ Teacher Hub: `https://www-tijc.onrender.com`
 - מצגת/Guide נפרדת: `yanivmizrachiy/moodle-guide-presentation`
 - אין מוצר פעיל נוסף של Teacher Hub.
 - `www` מכיל Moodle Teacher Hub בלבד; קוד ומסמכים של מוצרים אחרים אינם נשמרים כאן.
+
+## Moodle Web Services API — הפעלה אמיתית
+
+### דרישת המשתמש — 2026-10-12
+
+יש לקדם חיבור רשמי ואמיתי ל־Moodle Web Services רק אם הוא מועיל בפועל, ללא דמו וללא טענה שחיבור חי עובד לפני אימות אמיתי.
+
+המטרה: להפחית ככל האפשר הורדות ידניות של דוחות ולאפשר משיכה רשמית של נתוני קורס, תלמידים, השלמות, ציונים ופעילות, בכפוף להרשאות Moodle ובגבולות הפרטיות המאושרים.
+
+### מה כבר קיים ומאומת בריפו
+
+- קיים endpoint קריאה בטוח: `GET /api/automation/moodle-webservices/readiness`.
+- קיימת בדיקת חיים רשמית דרך `core_webservice_get_site_info` כאשר `MOODLE_WS_TOKEN` קיים.
+- הטוקן נקרא רק מ־environment ואסור לשמור אותו ב־GitHub.
+- קיימת בדיקת audit ייעודית: `npm run audit:moodle-webservices-readiness`.
+- קיימת רשימת בדיקה למנהל Moodle: `docs/moodle/MOODLE_AUTOMATION_ADMIN_ENABLEMENT_CHECKLIST_HE.md`.
+- פונקציות הקריאה הרצויות בהמשך מתועדות: קורס, נרשמים, השלמות, ציונים ולוגים.
+
+### החסם האמיתי
+
+נכון למידע המאומת בריפו, אין `MOODLE_WS_TOKEN` חי ומאומת ואין הוכחת קריאה חיה ל־Moodle Web Services. לכן אסור לסמן את החיבור כפעיל.
+
+כדי להשלים נדרש מנהל Moodle ש:
+1. יפעיל Web Services.
+2. יפעיל REST protocol.
+3. יאשר External Service / service user בהרשאות קריאה מינימליות.
+4. ינפיק token עם לפחות `core_webservice_get_site_info`.
+5. ישים את הטוקן ב־Render כ־`MOODLE_WS_TOKEN` ולא ב־GitHub.
+6. לאחר מכן יש להריץ את readiness probe ולתעד הצלחה אמיתית לפני הרחבת פונקציות.
+
+### פונקציות קריאה רצויות לאחר אימות בסיסי
+
+- `core_course_get_contents`
+- `core_enrol_get_enrolled_users`
+- `core_completion_get_activities_completion_status`
+- `gradereport_user_get_grade_items`
+- `core_grades_get_grades`
+- `report_log_get_events`
+
+אין לבקש הרשאות כתיבה בשלב זה.
+
+### יומן התקדמות
+
+- תאריך ושעה: `2026-10-12 14:18 +03:00` (Asia/Jerusalem)
+- התקדמות כוללת להפעלת Moodle Web Services: **75%**
+- הושלם: תשתית readiness, בדיקת site-info, כללי בטיחות, audit, תיעוד env, רשימת דרישות מנהל ופונקציות היעד.
+- נשאר: הרשאת מנהל Moodle, token אמיתי, הגדרת Render, קריאה חיה מוצלחת ותיעוד ראיה; לאחר מכן בדיקות הדרגתיות לפונקציות הנתונים.
+- סטטוס: **לא הסתיים**.
+- כלל שחרור: Teacher Release נשאר **NO** עד אימות end-to-end אמיתי ומאובטח.
