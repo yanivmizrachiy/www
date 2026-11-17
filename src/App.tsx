@@ -30,6 +30,7 @@ import SmartImport from "./pages/SmartImport";
 import TimeRangeReport from "./pages/TimeRangeReport";
 import Automation from "./pages/Automation";
 import Setup from "./pages/Setup";
+import OpenCourse from "./pages/OpenCourse";
 import LtiBootstrap from "./pages/LtiBootstrap";
 import NotFound from "./pages/NotFound";
 
@@ -84,6 +85,7 @@ const App = () => {
             <Route path="/isolation-check" element={<IsolationLiveCheck />} />
             <Route path="/install-check" element={<InstallCheck />} />
             <Route path="/setup" element={<Setup />} />
+            <Route path="/open-course" element={<OpenCourse />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -660,6 +660,12 @@ export default function Dashboard() {
         updatedAtText={updatedAtText}
       />
 
+      {/* MTH_COURSE_URL_VISUAL_ENTRY_V1: safe entry to a verified Moodle course. */}
+      <Link to="/open-course" className="flex min-h-12 items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-background px-5 py-4 text-right font-bold text-foreground shadow-sm transition hover:border-primary/50 hover:bg-muted/30">
+        <span>הצגת מרחב Moodle לפי כתובת — בעיצוב חדש</span>
+        <span className="shrink-0 text-sm font-medium text-primary">פתיחה</span>
+      </Link>
+
       <section className="min-w-0" aria-label="כפתורי פעולה ראשיים בעמוד הבית החכם">
         <HomeSectionHeader
           kicker="פעולות מהירות"

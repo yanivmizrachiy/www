@@ -19,6 +19,7 @@ jobs:
       - run: npm run check
       - run: npm run audit:repo-governance
       - run: npm run typecheck
+      - run: node --experimental-strip-types --test tests/moodle-course-url.test.mjs
       - run: npm run build
       - name: Ensure check/build did not mutate tracked source
         run: git diff --exit-code
