@@ -19,7 +19,7 @@ export default function OpenCourse() {
     if (loading) return;
 
     const result = parseMoodleCourseUrl(courseUrl, site?.site_url);
-    if (!result.ok) {
+    if (result.ok === false) {
       setNotice(result.error);
       return;
     }
